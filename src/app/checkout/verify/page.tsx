@@ -10,18 +10,35 @@ export const metadata = {
 };
 
 interface VerifyPageProps {
-  searchParams: Promise<{ reference?: string; trxref?: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export default async function VerifyPage({ searchParams }: VerifyPageProps) {
-  const { reference, trxref } = await searchParams;
-  const activeRef = reference || trxref || "";
+  const params = await searchParams;
+  
+  // Extract reference or trxref, handling string, array, or duplicated query params
+  let rawRef: string = "";
+  const candidate = params.reference || params.trxref;
+  if (Array.isArray(candidate)) {
+    rawRef = candidate.find((c) => typeof c === "string" && c.startsWith("JAMB_SUB_")) || candidate[0] || "";
+  } else if (typeof candidate === "string") {
+    rawRef = candidate;
+  }
+
+  // Clean any Paystack artifacts (e.g. 'JAMB_SUB_123?trxref=JAMB_SUB_123')
+  if (rawRef.includes("?")) {
+    rawRef = rawRef.split("?")[0];
+  }
+  if (rawRef.includes("&")) {
+    rawRef = rawRef.split("&")[0];
+  }
+  const activeRef = rawRef.trim();
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/login?redirectTo=/checkout/verify?reference=${activeRef}`);
+    redirect(`/login?redirectTo=/checkout/verify?reference=${encodeURIComponent(activeRef)}`);
   }
 
   return (

@@ -1,0 +1,38 @@
+.panel {
+  position: fixed;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  right: 1rem;
+  z-index: 40;
+  width: min(20rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+  padding: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 1.25rem;
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 12px 40px rgb(15 23 42 / 18%);
+}
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .5rem;
+  margin-top: .75rem;
+}
+.key {
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: .625rem .25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: .625rem;
+  background: #f8fafc;
+  color: #1e293b;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.key:hover { background: #e2e8f0; }
+.operator { background: #edf2f7; color: #334155; }
+.equals, .equals:hover { background: #0f172a; color: white; }

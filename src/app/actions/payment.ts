@@ -99,7 +99,7 @@ export async function initializePaystackCheckoutAction(): Promise<InitializePaym
   });
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const callbackUrl = `${appUrl}/checkout/verify?reference=${reference}`;
+  const callbackUrl = `${appUrl}/checkout/verify`;
   const paystackSecret = process.env.PAYSTACK_SECRET_KEY || "";
 
   // Check if valid Paystack test or live key exists
@@ -173,16 +173,39 @@ export async function verifyPaystackPaymentAction(reference: string): Promise<Ve
     throw new Error("You must be logged in to verify subscription.");
   }
 
-  // 1. Find transaction record
-  const txn = await db.query.paymentTransactions.findFirst({
-    where: eq(paymentTransactions.reference, reference),
-  });
+  // 1. Sanitize reference in case Paystack appended query artifacts
+  let cleanReference = (reference || "").trim();
+  if (cleanReference.includes("?")) {
+    cleanReference = cleanReference.split("?")[0];
+  }
+  if (cleanReference.includes("&")) {
+    cleanReference = cleanReference.split("&")[0];
+  }
+  cleanReference = cleanReference.trim();
+
+  // Find transaction record by reference
+  let txn = cleanReference
+    ? await db.query.paymentTransactions.findFirst({
+        where: eq(paymentTransactions.reference, cleanReference),
+      })
+    : null;
+
+  // Fallback: If reference was malformed or missing, look for user's latest pending transaction
+  if (!txn) {
+    txn = await db.query.paymentTransactions.findFirst({
+      where: and(
+        eq(paymentTransactions.userId, user.id),
+        eq(paymentTransactions.status, "pending")
+      ),
+      orderBy: (t, { desc }) => [desc(t.createdAt)],
+    });
+  }
 
   if (!txn) {
     return {
       success: false,
       message: "Transaction record not found.",
-      reference,
+      reference: cleanReference,
     };
   }
 
@@ -193,7 +216,7 @@ export async function verifyPaystackPaymentAction(reference: string): Promise<Ve
       success: true,
       message: "Subscription is already active.",
       expiresAt: subStatus.expiresAt || undefined,
-      reference,
+      reference: txn.reference,
       amountNaira: txn.amountKobo / 100,
     };
   }
@@ -206,7 +229,7 @@ export async function verifyPaystackPaymentAction(reference: string): Promise<Ve
 
   if (isRealKey && !isPlaceholder) {
     try {
-      const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+      const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${txn.reference}`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${paystackSecret}`,

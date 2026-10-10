@@ -12,7 +12,6 @@ import {
   map, 
   debounceTime, 
   distinctUntilChanged, 
-  switchMap, 
   tap 
 } from 'rxjs/operators';
 import { ExamEvent } from '../domain/events';
@@ -34,10 +33,7 @@ export class ExamEngine {
 
   constructor(syncHandler?: SyncAnswerHandler) {
     this.syncAnswerFn = syncHandler;
-    this.setupEventReducer();
-    this.setupTimerStream();
-    this.setupConnectivityStream();
-    this.setupAutosavePipeline();
+
   }
 
   /**
@@ -68,6 +64,13 @@ export class ExamEngine {
     initialAnswers?: Record<string, string>;
     initialLabels?: Record<string, 'A' | 'B' | 'C' | 'D'>;
   }): void {
+    // Effects may mount, clean up and mount again in React Strict Mode.
+    // Start browser subscriptions here, never during component rendering.
+    if (this.subscriptions.closed) this.subscriptions = new Subscription();
+    this.setupEventReducer();
+    this.setupTimerStream();
+    this.setupConnectivityStream();
+    this.setupAutosavePipeline();
     // Rehydrate local storage answers if newer
     let mergedAnswers = { ...(payload.initialAnswers || {}) };
     let mergedLabels = { ...(payload.initialLabels || {}) };
@@ -241,7 +244,6 @@ export class ExamEngine {
    */
   public destroy(): void {
     this.subscriptions.unsubscribe();
-    this.events$.complete();
-    this.state$.complete();
+
   }
 }

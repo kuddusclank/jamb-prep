@@ -1,5 +1,6 @@
 "use client";
 
+import { ExamCalculator } from "./exam-calculator";
 import { ExamConditions } from "./exam-conditions";
 import { useCallback, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -70,6 +71,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
   // 1. Reactive 8-Key Desktop Hotkeys (A, B, C, D, P, N, R, S)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || (e.target instanceof Element && e.target.closest('[data-calculator]'))) return;
       // Ignore key events when modal is open or typing in input
       if (isSubmitModalOpen) {
         if (e.key === 'Escape') setSubmitModalOpen(false);
@@ -160,7 +162,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
   const hours = Math.floor(timeRemainingSeconds / 3600);
   const minutes = Math.floor((timeRemainingSeconds % 3600) / 60);
   const seconds = timeRemainingSeconds % 60;
-  const timerString = `${hours > 0 ? `${hours}:` : ''}${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  const timerString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
   const isLowTime = timeRemainingSeconds < 900; // Under 15 mins
   const isCriticalTime = timeRemainingSeconds < 300; // Under 5 mins
@@ -171,20 +173,20 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
   const unansweredCount = totalQuestionsCount - totalAnsweredCount;
 
   return (
-    <div className="min-h-screen bg-[#092E28] text-slate-100 flex flex-col justify-between select-none">
-      <ExamConditions attemptId={initialPayload.attemptId} enabled={initialPayload.examConditions} active={!isPending && status !== "expired"} />
+    <div className="min-h-screen bg-[#F4F5F7] text-slate-900 flex flex-col">
+
       {/* 1. TOP EXAM HEADER */}
-      <header className="bg-[#102F29] border-b border-emerald-800/40 px-4 sm:px-8 py-3.5 flex items-center justify-between">
+      <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 sm:px-8 py-3.5 flex flex-wrap gap-3 items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="flex size-8 items-center justify-center rounded-xl bg-[#116149] text-white">
             <BookOpen size={16} />
           </span>
           <div>
-            <div className="text-xs font-bold tracking-wider text-emerald-400 uppercase">
+            <div className="text-xs font-bold tracking-wider text-[#116149] uppercase">
               JAMB UTME CBT SIMULATOR
             </div>
-            <div className="text-sm font-semibold text-white">
-              Candidate: <span className="text-emerald-100">{studentName}</span>
+            <div className="text-sm font-semibold text-slate-800">
+              Candidate: <span className="text-slate-700">{studentName}</span>
             </div>
           </div>
         </div>
@@ -192,18 +194,18 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
         {/* Synchronized Timer & Connectivity */}
         <div className="flex items-center gap-3 sm:gap-4">
           {/* Network status */}
-          <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-lg bg-[#0b2420] border border-emerald-900">
+          <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200">
             {isOnline ? (
               <>
-                <Wifi size={12} className="text-emerald-400" />
-                <span className="text-emerald-300">
-                  {syncStatus === 'syncing' ? 'Syncing...' : 'Outbox synced'}
+                <Wifi size={12} className="text-[#116149]" />
+                <span className="text-slate-600">
+                  {syncStatus === 'syncing' ? 'Saving…' : syncStatus === 'error' ? 'Save needs retry' : 'Answers saved'}
                 </span>
               </>
             ) : (
               <>
-                <WifiOff size={12} className="text-amber-400" />
-                <span className="text-amber-300">Offline (Outbox queued)</span>
+                <WifiOff size={12} className="text-amber-700" />
+                <span className="text-amber-800">Offline (Outbox queued)</span>
               </>
             )}
           </div>
@@ -211,28 +213,30 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
           <div
             className={`flex items-center gap-2 px-4 py-2 rounded-2xl border font-mono font-bold text-base transition-colors ${
               isCriticalTime
-                ? "bg-red-950/80 border-red-500 text-red-300 animate-pulse"
+                ? "bg-red-50 border-red-300 text-red-700"
                 : isLowTime
-                ? "bg-amber-950/70 border-amber-500 text-amber-300"
-                : "bg-emerald-950/70 border-emerald-700/60 text-emerald-200"
+                ? "bg-amber-50 border-amber-300 text-amber-800"
+                : "bg-slate-100 border-slate-200 text-slate-900"
             }`}
           >
             <Clock size={16} />
-            <span>{timerString}</span>
+            <span className="tabular-nums" role="timer" aria-label="Time remaining"><span className="block text-[10px] font-sans uppercase tracking-wider">Time left</span>{timerString}</span>
           </div>
 
           <button
             type="button"
             onClick={() => setSubmitModalOpen(true)}
-            className="hidden sm:inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs tracking-wider uppercase transition-colors cursor-pointer shadow-sm"
+            className="inline-flex min-h-11 items-center gap-1.5 px-5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs tracking-wider uppercase transition-colors cursor-pointer shadow-sm"
           >
             <Send size={14} /> Submit (S)
           </button>
         </div>
       </header>
 
+      <ExamConditions attemptId={initialPayload.attemptId} enabled={initialPayload.examConditions} active={!isPending && status !== "expired"} />
+      <ExamCalculator />
       {/* 2. SUBJECT TABS BAR */}
-      <div className="bg-[#0c2722] border-b border-emerald-900/60 px-4 sm:px-8 flex items-center gap-2 overflow-x-auto py-2">
+      <div className="bg-white border-b border-slate-200 px-4 sm:px-8 flex items-center gap-2 overflow-x-auto py-2">
         {subjectTabs.map((tab) => {
           const isTabActive = currentQ.subjectCode === tab.code;
           const subjectQuestions = questions.slice(tab.startIndex, tab.startIndex + tab.count);
@@ -242,19 +246,20 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
             <button
               key={tab.code}
               type="button"
+              aria-pressed={isTabActive}
               onClick={() => switchSubject(tab.code)}
               className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                 isTabActive
-                  ? "bg-[#116149] text-white shadow-md shadow-emerald-950"
-                  : "bg-emerald-950/60 text-slate-300 hover:bg-emerald-900/60"
+                  ? "bg-[#116149] text-white shadow-sm"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-100"
               }`}
             >
               <span>{tab.name}</span>
               <span
                 className={`text-[10px] px-2 py-0.5 rounded-full ${
                   isTabActive
-                    ? "bg-emerald-800 text-emerald-100"
-                    : "bg-emerald-900/80 text-emerald-300"
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-100 text-slate-600"
                 }`}
               >
                 {answeredInTab}/{tab.count}
@@ -269,13 +274,13 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
         {/* LEFT / CENTER: Question Pane (8 cols) */}
         <div className="lg:col-span-8 flex flex-col gap-4">
           {/* Question Meta Header */}
-          <div className="flex items-center justify-between text-xs text-emerald-300/80 bg-[#102F29] px-4 py-3 rounded-2xl border border-emerald-800/40">
-            <span className="font-bold tracking-wider uppercase text-white">
+          <div className="flex flex-wrap gap-3 items-center justify-between text-xs text-slate-600 bg-white px-4 py-3 rounded-2xl border border-slate-200">
+            <span className="font-bold tracking-wider uppercase text-slate-800">
               {currentQ.subjectName} · Question {currentQ.position} of {totalQuestionsCount}
             </span>
             <div className="flex items-center gap-3">
-              <span className="text-emerald-400/70 font-mono text-[11px]">
-                {syncStatus === 'syncing' ? 'Syncing...' : syncStatus === 'offline' ? 'Offline Queued' : 'Autosaved'}
+              <span className="text-slate-500 font-mono text-[11px]">
+                {syncStatus === 'syncing' ? 'Syncing...' : syncStatus === 'offline' ? 'Saved on device' : syncStatus === 'error' ? 'Save needs retry' : 'Saved'}
               </span>
               <button
                 type="button"
@@ -283,7 +288,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
                   isFlagged
                     ? "bg-amber-400 text-slate-900"
-                    : "bg-emerald-950 text-slate-300 hover:text-white"
+                    : "bg-slate-100 text-slate-600 hover:text-slate-900"
                 }`}
               >
                 <Flag size={13} /> {isFlagged ? "Flagged for Review" : "Flag"}
@@ -293,21 +298,21 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
 
           {/* Reading Comprehension Passage (if applicable) */}
           {currentQ.passage && (
-            <div className="bg-[#12362f] p-5 sm:p-6 rounded-2xl border border-emerald-800/40 text-emerald-50 text-xs sm:text-sm leading-relaxed max-h-56 overflow-y-auto">
+            <div className="bg-slate-50 p-5 sm:p-6 rounded-2xl border border-slate-200 text-slate-800 text-xs sm:text-sm leading-relaxed max-h-56 overflow-y-auto">
               {currentQ.passage.title && (
-                <div className="font-bold text-emerald-300 uppercase tracking-wider mb-2 text-xs">
+                <div className="font-bold text-slate-600 uppercase tracking-wider mb-2 text-xs">
                   Passage: {currentQ.passage.title}
                 </div>
               )}
-              <div className="italic text-slate-200">
+              <div className="italic text-slate-700">
                 {currentQ.passage.content}
               </div>
             </div>
           )}
 
           {/* Question Stem Card */}
-          <div className="bg-[#102F29] p-6 sm:p-8 rounded-3xl border border-emerald-800/50 shadow-xl space-y-6">
-            <div className="text-base sm:text-lg font-medium text-white leading-relaxed">
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+            <div className="text-base sm:text-lg font-medium text-slate-900 leading-relaxed">
               <MathRenderer content={currentQ.stem} />
             </div>
 
@@ -319,18 +324,19 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
                   <button
                     key={opt.id}
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => selectOption(opt.id, opt.label)}
                     className={`w-full flex items-start gap-3.5 p-4 rounded-2xl border text-left text-sm sm:text-base font-medium transition-all cursor-pointer ${
                       isSelected
                         ? "bg-[#116149] border-emerald-400 text-white ring-2 ring-emerald-400 shadow-md"
-                        : "bg-[#0b2420] border-emerald-900/80 text-slate-200 hover:border-emerald-700 hover:bg-[#0e2c27]"
+                        : "bg-slate-50 border-slate-200 text-slate-700 hover:border-emerald-700 hover:bg-slate-100"
                     }`}
                   >
                     <span
                       className={`flex size-7 shrink-0 items-center justify-center rounded-xl border text-xs font-bold transition-colors ${
                         isSelected
                           ? "bg-white text-[#116149] border-white"
-                          : "bg-emerald-950 text-emerald-300 border-emerald-800"
+                          : "bg-slate-100 text-slate-600 border-slate-300"
                       }`}
                     >
                       {opt.label}
@@ -345,7 +351,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
           </div>
 
           {/* 4. REACTIVE BOTTOM NAVIGATION BAR */}
-          <div className="bg-[#102F29] px-4 py-3 rounded-2xl border border-emerald-800/40 flex items-center justify-between">
+          <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 flex flex-wrap gap-2 items-center justify-between">
             {/* Previous Button (P) */}
             <button
               type="button"
@@ -354,7 +360,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
               className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold transition-all ${
                 canGoPrevious
                   ? "bg-emerald-800 hover:bg-emerald-700 text-white cursor-pointer"
-                  : "bg-emerald-950/60 text-slate-500 cursor-not-allowed opacity-40"
+                  : "bg-slate-100 text-slate-500 cursor-not-allowed opacity-40"
               }`}
             >
               <ArrowLeft size={14} /> Previous {previousPosition ? `(P: Q${previousPosition})` : '(P)'}
@@ -367,7 +373,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
               disabled={!selectedOptId}
               className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-semibold transition-all ${
                 selectedOptId
-                  ? "text-amber-300 hover:text-amber-200 hover:bg-emerald-950 cursor-pointer"
+                  ? "text-amber-800 hover:text-amber-900 hover:bg-slate-100 cursor-pointer"
                   : "text-slate-500 cursor-not-allowed opacity-40"
               }`}
               title="Reverse / Deselect chosen answer (Hot key: R)"
@@ -383,7 +389,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
               className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-semibold transition-all ${
                 canGoNext
                   ? "bg-[#116149] hover:bg-emerald-600 text-white cursor-pointer shadow-sm"
-                  : "bg-emerald-950/60 text-slate-500 cursor-not-allowed opacity-40"
+                  : "bg-slate-100 text-slate-500 cursor-not-allowed opacity-40"
               }`}
             >
               Next {nextPosition ? `(N: Q${nextPosition})` : '(N)'} <ArrowRight size={14} />
@@ -392,24 +398,24 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
         </div>
 
         {/* RIGHT: 180-Question Grid Palette (4 cols) */}
-        <div className="lg:col-span-4 bg-[#102F29] p-5 sm:p-6 rounded-3xl border border-emerald-800/50 shadow-xl space-y-5">
-          <div className="flex items-center justify-between border-b border-emerald-800/40 pb-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+        <div className="lg:col-span-4 bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">
               Question Palette ({totalAnsweredCount}/{totalQuestionsCount})
             </h3>
-            <span className="text-[11px] font-mono text-emerald-400">
+            <span className="text-[11px] font-mono text-[#116149]">
               {Math.round((totalAnsweredCount / totalQuestionsCount) * 100)}% Done
             </span>
           </div>
 
           {/* Palette Legend */}
-          <div className="grid grid-cols-3 gap-2 text-[10px] text-slate-300 border-b border-emerald-800/30 pb-3 font-medium">
+          <div className="grid grid-cols-3 gap-2 text-[10px] text-slate-600 border-b border-slate-200 pb-3 font-medium">
             <div className="flex items-center gap-1.5">
               <span className="size-3 rounded-full bg-[#116149] border border-emerald-400" />
               <span>Answered</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="size-3 rounded-full bg-[#0b2420] border border-emerald-800" />
+              <span className="size-3 rounded-full bg-slate-50 border border-slate-300" />
               <span>Unanswered</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -419,13 +425,13 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
           </div>
 
           {/* Interactive Palette Grid */}
-          <div className="grid grid-cols-6 sm:grid-cols-8 lg:grid-cols-6 gap-2 max-h-96 overflow-y-auto p-1">
+          <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-5 gap-2 max-h-96 overflow-y-auto p-1">
             {questions.map((q, idx) => {
               const isCurrent = idx === currentIndex;
               const isAnswered = Boolean(answers[q.id]);
               const qFlagged = flaggedQuestionIds.has(q.id);
 
-              let itemBg = "bg-[#0b2420] text-slate-400 border-emerald-900";
+              let itemBg = "bg-slate-50 text-slate-400 border-slate-200";
               if (isAnswered) {
                 itemBg = "bg-[#116149] text-white border-emerald-400 font-bold";
               }
@@ -438,8 +444,8 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
                   key={q.id}
                   type="button"
                   onClick={() => goToIndex(idx)}
-                  className={`size-9 rounded-xl border text-xs font-semibold flex items-center justify-center transition-all cursor-pointer ${itemBg} ${
-                    isCurrent ? "ring-2 ring-white scale-105" : "hover:border-emerald-600"
+                  className={`size-11 rounded-xl border text-xs font-semibold flex items-center justify-center transition-all cursor-pointer ${itemBg} ${
+                    isCurrent ? "ring-2 ring-slate-900 scale-105" : "hover:border-emerald-600"
                   }`}
                   title={`Question ${q.position} (${q.subjectCode})`}
                 >
@@ -450,11 +456,11 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
           </div>
 
           {/* Hotkey Helper Guidance */}
-          <div className="bg-[#0b2420] p-3 rounded-2xl border border-emerald-900/60 text-[11px] text-emerald-200/80 space-y-1">
-            <div className="font-bold text-emerald-300">8-Key Desktop Hotkeys:</div>
-            <div><strong className="text-white">A, B, C, D</strong> — Choose Option</div>
-            <div><strong className="text-white">P</strong> — Previous · <strong className="text-white">N</strong> — Next</div>
-            <div><strong className="text-white">R</strong> — Reverse/Deselect · <strong className="text-white">S</strong> — Submit Exam</div>
+          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-[11px] text-slate-600 space-y-1">
+            <div className="font-bold text-slate-600">8-Key Desktop Hotkeys:</div>
+            <div><strong className="text-slate-800">A, B, C, D</strong> — Choose Option</div>
+            <div><strong className="text-slate-800">P</strong> — Previous · <strong className="text-slate-800">N</strong> — Next</div>
+            <div><strong className="text-slate-800">R</strong> — Reverse/Deselect · <strong className="text-slate-800">S</strong> — Submit Exam</div>
           </div>
         </div>
       </main>
@@ -462,35 +468,35 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
       {/* 5. SUBMIT CONFIRMATION MODAL */}
       {isSubmitModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="max-w-md w-full rounded-3xl bg-[#102F29] border border-emerald-700/60 p-6 sm:p-8 text-center text-white shadow-2xl space-y-6">
-            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-emerald-900/60 text-emerald-300">
+          <div className="max-w-md w-full rounded-3xl bg-white border border-emerald-700/60 p-6 sm:p-8 text-center text-slate-900 shadow-2xl space-y-6">
+            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
               <AlertTriangle size={28} />
             </div>
 
             <div>
               <h3 className="text-xl font-bold tracking-tight">Submit Examination?</h3>
-              <p className="mt-2 text-xs text-slate-300 leading-relaxed">
+              <p className="mt-2 text-xs text-slate-600 leading-relaxed">
                 Once submitted, your responses will be server-graded and your official 400-point diagnostic scorecard will be generated.
               </p>
             </div>
 
             {/* Reactive Summary Statistics */}
-            <div className="grid grid-cols-3 gap-2 bg-[#0b2420] p-4 rounded-2xl border border-emerald-900 text-center">
+            <div className="grid grid-cols-3 gap-2 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center">
               <div>
-                <span className="text-xl font-bold text-emerald-400">{totalAnsweredCount}</span>
+                <span className="text-xl font-bold text-[#116149]">{totalAnsweredCount}</span>
                 <span className="block text-[10px] text-slate-400 font-semibold uppercase mt-0.5">Answered</span>
               </div>
               <div>
-                <span className="text-xl font-bold text-amber-400">{unansweredCount}</span>
+                <span className="text-xl font-bold text-amber-700">{unansweredCount}</span>
                 <span className="block text-[10px] text-slate-400 font-semibold uppercase mt-0.5">Unanswered</span>
               </div>
               <div>
-                <span className="text-xl font-bold text-yellow-300">{flaggedQuestionIds.size}</span>
+                <span className="text-xl font-bold text-amber-700">{flaggedQuestionIds.size}</span>
                 <span className="block text-[10px] text-slate-400 font-semibold uppercase mt-0.5">Flagged</span>
               </div>
             </div>
 
-            <div className="text-xs text-emerald-300/80 font-mono">
+            <div className="text-xs text-slate-600 font-mono">
               Time Remaining: {timerString}
             </div>
 
@@ -499,7 +505,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
                 type="button"
                 onClick={() => setSubmitModalOpen(false)}
                 disabled={isPending}
-                className="flex-1 py-3 rounded-full border border-slate-600 bg-transparent text-xs font-semibold text-slate-300 hover:bg-emerald-950 transition-colors cursor-pointer"
+                className="flex-1 py-3 rounded-full border border-slate-600 bg-transparent text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 Return to Exam
               </button>

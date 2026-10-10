@@ -187,3 +187,9 @@ Verification: changed-file ESLint and TypeScript pass; Webpack build passes with
 The auth grid aligns items to the start and uses `minmax(0, 1fr)` columns. Both columns have `min-width: 0`. The left panel has intrinsic content height and a fixed 40px gap between its three content groups. Do not stretch it to the form, distribute its content with `justify-between`, or impose viewport/equal-column heights: errors, referral notices and additional fields in the right column must not reposition left-panel content. The form is top-aligned rather than vertically centred. Allow normal document scrolling and text wrapping; do not clip overflow to hide layout defects.
 
 Verification for this correction: source-level layout review and targeted static checks only; browser testing remains excluded by user instruction.
+
+## Mock workspace revision — 2026-10-10
+
+The exam workspace uses a light grey canvas, white cards, slate text and subtle borders. Green is reserved for selected answers, active subjects and primary actions. Do not restore the full dark-green exam background. Keep the timer sticky, tabular and consistently HH:MM:SS, with amber/red urgency states rather than pulsing text. Submit remains visible on mobile. Calculator access is available for every subject; its state persists across question/subject switches. Basic arithmetic uses entry order, with explicit divide-by-zero feedback; no evaluated code expressions. Calculator keyboard events must not activate exam shortcuts.
+
+Timer subscriptions start during engine initialization, not React render, and survive effect cleanup/reinitialization. Verified with a lifecycle/visibility regression test, calculator arithmetic tests, TypeScript and focused lint. No browser/visual testing performed per user instruction.

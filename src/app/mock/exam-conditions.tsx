@@ -43,13 +43,13 @@ export function ExamConditions({ attemptId, enabled, active }: { attemptId: stri
   }, [attemptId, enabled, active]);
 
   return (
-    <div className="border-b border-white/10 bg-[#102F29] px-5 py-3 text-sm text-white">
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white px-5 py-2 text-xs text-slate-600">
       <p>{enabled ? "Exam Conditions · interruptions recorded separately from your score" : "Standard mock · no interruption monitoring"}</p>
       {enabled && interrupted && active && <div role="status" className="mt-3 rounded-xl bg-amber-100 p-4 text-amber-950">
         <p className="font-semibold">Your mock was interrupted. The timer is still running.</p>
         <p className="mt-1">Return to fullscreen when ready. This event does not establish malpractice.</p>
       </div>}
-      <button type="button" className="mt-2 min-h-11 rounded-full border border-white/30 px-5" onClick={() => {
+      <button type="button" className="min-h-11 rounded-full border border-slate-200 px-4 text-slate-700" onClick={() => {
         if (!document.documentElement.requestFullscreen) { setMessage("Fullscreen is unavailable on this browser."); return; }
         document.documentElement.requestFullscreen().catch(() => setMessage("Fullscreen was declined. You can retry; your timer continues."));
       }}>Enter / return to fullscreen</button>
