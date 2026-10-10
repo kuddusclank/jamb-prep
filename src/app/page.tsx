@@ -15,11 +15,11 @@ import {
   LogOut 
 } from "lucide-react";
 import { MobileMenu, Reveal, SubjectPicker } from "./landing-interactions";
+import { UserDropdown } from "@/components/user-dropdown";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/db";
 import { profiles, subscriptionEntitlements } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { signOutAction } from "@/app/actions/auth";
 
 const button = "inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-[#116149] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0b4936] hover:-translate-y-0.5";
 const faq = [
@@ -36,9 +36,10 @@ export default async function Home() {
 
   let profile = null;
   let isPremium = false;
+  let entitlement: { expiresAt: Date } | null = null;
 
   if (user) {
-    const [userProfile, entitlement] = await Promise.all([
+    const [userProfile, userEntitlement] = await Promise.all([
       db.query.profiles.findFirst({
         where: eq(profiles.id, user.id),
       }),
@@ -47,6 +48,7 @@ export default async function Home() {
       }),
     ]);
     profile = userProfile;
+    entitlement = userEntitlement ?? null;
     if (entitlement && new Date(entitlement.expiresAt) > new Date()) {
       isPremium = true;
     }
@@ -86,9 +88,11 @@ export default async function Home() {
               <Link href="/pricing" className="hover:text-[#116149] font-medium transition-colors">
                 Pricing
               </Link>
-              <Link href="/referrals" className="text-amber-800 font-semibold hover:text-amber-900 flex items-center gap-1 text-xs">
-                <Sparkles size={13} /> 50% Off
-              </Link>
+              {!isPremium && (
+                <Link href="/referrals" className="text-amber-800 font-semibold hover:text-amber-900 flex items-center gap-1 text-xs">
+                  <Sparkles size={13} /> 50% Off
+                </Link>
+              )}
             </nav>
           ) : (
             /* Guest Navigation */
@@ -106,38 +110,24 @@ export default async function Home() {
           <div className="flex items-center gap-3">
             {user ? (
               <>
-                <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/70 text-xs text-emerald-950 font-medium">
-                  <span className="size-2 rounded-full bg-emerald-600 animate-pulse" />
-                  <span className="truncate max-w-[130px] font-semibold">{displayName}</span>
-                  {isPremium ? (
-                    <span className="bg-[#116149] text-white text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                      PRO
-                    </span>
-                  ) : (
-                    <span className="bg-slate-200 text-slate-700 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                      FREE
-                    </span>
-                  )}
-                </div>
-                <Link href="/dashboard" className={`${button} hidden sm:inline-flex`}>
-                  Dashboard <ArrowRight size={16}/>
+                <Link href="/dashboard" className="hidden sm:inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-[#116149] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#0b4936]">
+                  Dashboard <ArrowRight size={14}/>
                 </Link>
-                <form action={signOutAction} className="hidden lg:block">
-                  <button
-                    type="submit"
-                    className="inline-flex min-h-10 items-center gap-1.5 justify-center rounded-full border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-600 hover:text-red-700 hover:border-red-200 transition-colors cursor-pointer"
-                    title="Sign Out"
-                  >
-                    <LogOut size={13} /> Sign Out
-                  </button>
-                </form>
+                <UserDropdown
+                  user={{ name: displayName, email: user.email }}
+                  isPremium={isPremium}
+                  expiresAt={entitlement?.expiresAt}
+                />
               </>
             ) : (
               <Link href="/register" className={`${button} hidden sm:inline-flex`}>
                 Create account <ArrowRight size={16}/>
               </Link>
             )}
-            <MobileMenu user={user ? { email: user.email, name: displayName } : null} />
+            <MobileMenu 
+              user={user ? { email: user.email, name: displayName } : null} 
+              isPremium={isPremium}
+            />
           </div>
         </div>
       </header>
@@ -591,22 +581,24 @@ export default async function Home() {
             Free practice resets at midnight WAT. Premium access lasts 30 days; additional periods extend access seamlessly.
           </p>
 
-          <Reveal className="mx-auto mt-8 flex max-w-4xl flex-col gap-3 rounded-2xl bg-[#f1e8cc] p-6 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-semibold text-amber-950 flex items-center gap-2">
-                <Sparkles size={16} className="text-amber-800" /> Refer & Earn 50% Off
-              </p>
-              <p className="max-w-lg text-sm leading-relaxed text-amber-900 mt-1">
-                Invite two friends who register and get your <strong>30-day Premium for just ₦500</strong>!
-              </p>
-            </div>
-            <Link 
-              href={user ? "/referrals" : "/login?redirect=/referrals"} 
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#116149] px-5 text-xs font-semibold text-white hover:bg-[#0c4a37] transition whitespace-nowrap self-start sm:self-auto"
-            >
-              {user ? "View Referral Hub" : "Sign In to Refer"} <ArrowRight size={14}/>
-            </Link>
-          </Reveal>
+          {!isPremium && (
+            <Reveal className="mx-auto mt-8 flex max-w-4xl flex-col gap-3 rounded-2xl bg-[#f1e8cc] p-6 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-semibold text-amber-950 flex items-center gap-2">
+                  <Sparkles size={16} className="text-amber-800" /> Refer & Earn 50% Off
+                </p>
+                <p className="max-w-lg text-sm leading-relaxed text-amber-900 mt-1">
+                  Invite two friends who register and get your <strong>30-day Premium for just ₦500</strong>!
+                </p>
+              </div>
+              <Link 
+                href={user ? "/referrals" : "/login?redirect=/referrals"} 
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#116149] px-5 text-xs font-semibold text-white hover:bg-[#0c4a37] transition whitespace-nowrap self-start sm:self-auto"
+              >
+                {user ? "View Referral Hub" : "Sign In to Refer"} <ArrowRight size={14}/>
+              </Link>
+            </Reveal>
+          )}
         </section>
 
         {/* FAQs */}

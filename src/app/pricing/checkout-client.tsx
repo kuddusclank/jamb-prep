@@ -63,7 +63,7 @@ export function CheckoutClient({ pricing }: CheckoutClientProps) {
             </p>
           </div>
         </div>
-      ) : (
+      ) : !pricing.isAlreadyPremium ? (
         <div className="rounded-2xl border border-amber-200 bg-[#F8F2DF] p-4 sm:p-5 flex items-center justify-between gap-4 text-[#092E28]">
           <div className="text-xs sm:text-sm">
             <span className="font-bold text-amber-900 block flex items-center gap-1.5">
@@ -80,7 +80,7 @@ export function CheckoutClient({ pricing }: CheckoutClientProps) {
             Get Referral Link
           </Link>
         </div>
-      )}
+      ) : null}
 
       {/* Pricing Cards Comparison */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">

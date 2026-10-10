@@ -7,6 +7,7 @@ import Link from "next/link";
 import { BookOpen, ArrowLeft, Sparkles } from "lucide-react";
 import { PracticeClient } from "./practice-client";
 import { getUserSubscriptionStatus } from "@/lib/subscription";
+import { UserDropdown } from "@/components/user-dropdown";
 
 export const metadata = {
   title: "Self-Paced Practice — JAMBPrep",
@@ -87,10 +88,21 @@ export default async function PracticePage({ searchParams }: PracticePageProps) 
             </Link>
           </div>
 
-          <div className="flex items-center gap-4 text-xs sm:text-sm font-semibold">
-            <span className="px-3 py-1 rounded-full bg-emerald-100 text-[#116149]">
-              15 Free Daily Questions
-            </span>
+          <div className="flex items-center gap-3">
+            {subStatus.isPremium ? (
+              <span className="hidden sm:inline-flex px-3 py-1 rounded-full bg-[#116149] text-white text-xs font-semibold">
+                Unlimited Pro Practice
+              </span>
+            ) : (
+              <span className="hidden sm:inline-flex px-3 py-1 rounded-full bg-emerald-100 text-[#116149] text-xs font-semibold">
+                15 Free Daily Questions
+              </span>
+            )}
+            <UserDropdown
+              user={{ name: user.user_metadata?.display_name || user.email?.split("@")[0] || "Candidate", email: user.email }}
+              isPremium={subStatus.isPremium}
+              expiresAt={subStatus.expiresAt}
+            />
           </div>
         </div>
       </header>

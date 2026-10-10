@@ -29,6 +29,7 @@ import {
 import { signOutAction } from "@/app/actions/auth";
 import { getStudentCoachInsights } from "@/lib/coach";
 import { getUserSubscriptionStatus } from "@/lib/subscription";
+import { UserDropdown } from "@/components/user-dropdown";
 
 export const metadata = {
   title: "Dashboard — JAMBPrep",
@@ -47,10 +48,11 @@ export default async function DashboardPage() {
   let qualifiedReferrals = 0;
   let has50PercentReward = false;
   let isPremium = false;
+  let subStatus: Awaited<ReturnType<typeof getUserSubscriptionStatus>> | null = null;
   let insights;
 
   try {
-    const [insightsRes, refCountRows, rewardRecord, subStatus] = await Promise.all([
+    const [insightsRes, refCountRows, rewardRecord, loadedSubStatus] = await Promise.all([
       getStudentCoachInsights(user.id),
       db.select({ value: count() }).from(referrals).where(eq(referrals.referrerId, user.id)),
       db.query.referralRewards.findFirst({
@@ -59,6 +61,7 @@ export default async function DashboardPage() {
       getUserSubscriptionStatus(user.id),
     ]);
 
+    subStatus = loadedSubStatus;
     insights = insightsRes;
     if (refCountRows?.[0]) qualifiedReferrals = refCountRows[0].value;
     if (rewardRecord && rewardRecord.status === "available") has50PercentReward = true;
@@ -122,20 +125,19 @@ export default async function DashboardPage() {
               )}
               <span>Performance</span>
             </Link>
-            <Link href="/referrals" className="text-amber-800 font-semibold hover:text-amber-900 flex items-center gap-1">
-              <Sparkles size={14} /> Refer & Earn 50%
-            </Link>
+            {!isPremium && (
+              <Link href="/referrals" className="text-amber-800 font-semibold hover:text-amber-900 flex items-center gap-1">
+                <Sparkles size={14} /> Refer & Earn 50%
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center gap-3">
-            <form action={signOutAction}>
-              <button
-                type="submit"
-                className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-red-700 transition-colors rounded-full hover:bg-slate-100 cursor-pointer"
-              >
-                <LogOut size={14} /> Sign Out
-              </button>
-            </form>
+            <UserDropdown
+              user={{ name: studentName, email: user.email }}
+              isPremium={isPremium}
+              expiresAt={subStatus?.expiresAt}
+            />
           </div>
         </div>
       </header>
@@ -574,30 +576,32 @@ export default async function DashboardPage() {
           )}
 
           {/* Viral Referral Milestone Widget */}
-          <div className="rounded-3xl border border-amber-300/50 bg-[#F8F2DF] p-6 text-[#092E28] flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-            <div>
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-900">
-                <Users size={14} /> REFER-AND-EARN PROGRESS
+          {!isPremium && (
+            <div className="rounded-3xl border border-amber-300/50 bg-[#F8F2DF] p-6 text-[#092E28] flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-900">
+                  <Users size={14} /> REFER-AND-EARN PROGRESS
+                </div>
+                <h4 className="text-lg font-bold mt-1">
+                  {has50PercentReward
+                    ? "🎉 50% Discount Voucher Ready!"
+                    : `[ ${qualifiedReferrals} / 2 ] Verified Friends Invited`}
+                </h4>
+                <p className="mt-1 text-xs text-amber-950/80 max-w-lg">
+                  {has50PercentReward
+                    ? "You unlocked 50% off! Pay ₦500 instead of ₦1,000 when you start your first monthly access."
+                    : "Invite 2 classmates with your link. Once both verify, you get 50% off your first 30 days of unlimited access."}
+                </p>
               </div>
-              <h4 className="text-lg font-bold mt-1">
-                {has50PercentReward
-                  ? "🎉 50% Discount Voucher Ready!"
-                  : `[ ${qualifiedReferrals} / 2 ] Verified Friends Invited`}
-              </h4>
-              <p className="mt-1 text-xs text-amber-950/80 max-w-lg">
-                {has50PercentReward
-                  ? "You unlocked 50% off! Pay ₦500 instead of ₦1,000 when you start your first monthly access."
-                  : "Invite 2 classmates with your link. Once both verify, you get 50% off your first 30 days of unlimited access."}
-              </p>
-            </div>
 
-            <Link
-              href="/referrals"
-              className="shrink-0 min-h-11 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-5 text-xs font-semibold text-white hover:bg-[#0b4936] transition-all hover:-translate-y-0.5"
-            >
-              View Invite Link & Progress <ArrowRight size={14} />
-            </Link>
-          </div>
+              <Link
+                href="/referrals"
+                className="shrink-0 min-h-11 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-5 text-xs font-semibold text-white hover:bg-[#0b4936] transition-all hover:-translate-y-0.5"
+              >
+                View Invite Link & Progress <ArrowRight size={14} />
+              </Link>
+            </div>
+          )}
         </div>
       </main>
 

@@ -4,6 +4,10 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { BookOpen, ArrowLeft, ShieldCheck, HelpCircle } from "lucide-react";
 import { CheckoutClient } from "./checkout-client";
+import { UserDropdown } from "@/components/user-dropdown";
+import { db } from "@/db";
+import { profiles } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export const metadata = {
   title: "Upgrade to Premium — JAMBPrep",
@@ -18,7 +22,14 @@ export default async function PricingPage() {
     redirect("/login");
   }
 
-  const pricing = await getCheckoutPricingAction();
+  const [pricing, profile] = await Promise.all([
+    getCheckoutPricingAction(),
+    db.query.profiles.findFirst({
+      where: eq(profiles.id, user.id),
+    }),
+  ]);
+
+  const displayName = profile?.displayName || user.user_metadata?.name || user.email?.split("@")[0] || "Candidate";
 
   return (
     <div className="min-h-screen bg-[#F6F8F5] text-[#092E28] flex flex-col justify-between">
@@ -45,9 +56,16 @@ export default async function PricingPage() {
             <Link href="/dashboard" className="hover:text-[#116149]">
               Dashboard
             </Link>
-            <Link href="/referrals" className="text-amber-800 hover:text-amber-900">
-              Refer & Earn 50%
-            </Link>
+            {!pricing.isAlreadyPremium && (
+              <Link href="/referrals" className="text-amber-800 hover:text-amber-900">
+                Refer & Earn 50%
+              </Link>
+            )}
+            <UserDropdown
+              user={{ name: displayName, email: user.email }}
+              isPremium={pricing.isAlreadyPremium}
+              expiresAt={pricing.currentExpiresAt}
+            />
           </nav>
         </div>
       </header>

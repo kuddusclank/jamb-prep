@@ -6,9 +6,11 @@ import {
   referralRewards 
 } from "@/db/schema";
 import { eq, count } from "drizzle-orm";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { BookOpen, Users, Sparkles, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { ReferralCard } from "./referral-card";
+import { getUserSubscriptionStatus } from "@/lib/subscription";
 
 export const metadata = {
   title: "Refer & Earn 50% Off — JAMBPrep",
@@ -18,6 +20,13 @@ export const metadata = {
 export default async function ReferralsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+
+  if (user) {
+    const subStatus = await getUserSubscriptionStatus(user.id);
+    if (subStatus.isPremium) {
+      redirect("/dashboard");
+    }
+  }
 
   let code = "JAMBPREP";
   let qualifiedCount = 0;

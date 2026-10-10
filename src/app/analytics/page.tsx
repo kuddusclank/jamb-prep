@@ -19,6 +19,10 @@ import {
 } from "lucide-react";
 
 import { getUserSubscriptionStatus } from "@/lib/subscription";
+import { UserDropdown } from "@/components/user-dropdown";
+import { db } from "@/db";
+import { profiles } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export const metadata = {
   title: "Performance Analytics & Diagnostics — JAMBPrep",
@@ -33,10 +37,18 @@ export default async function AnalyticsPage() {
     redirect("/login");
   }
 
-  const subStatus = await getUserSubscriptionStatus(user.id);
+  const [subStatus, userProfile] = await Promise.all([
+    getUserSubscriptionStatus(user.id),
+    db.query.profiles.findFirst({
+      where: eq(profiles.id, user.id),
+    }),
+  ]);
+
   if (!subStatus.isPremium) {
     redirect("/pricing");
   }
+
+  const displayName = userProfile?.displayName || user.user_metadata?.display_name || user.email?.split("@")[0] || "Candidate";
 
   const insights = await getStudentCoachInsights(user.id);
 
@@ -88,6 +100,14 @@ export default async function AnalyticsPage() {
               <BarChart3 size={15} /> Performance
             </Link>
           </nav>
+
+          <div className="flex items-center gap-3">
+            <UserDropdown
+              user={{ name: displayName, email: user.email }}
+              isPremium={subStatus.isPremium}
+              expiresAt={subStatus.expiresAt}
+            />
+          </div>
         </div>
       </header>
 

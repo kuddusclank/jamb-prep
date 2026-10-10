@@ -29,9 +29,11 @@ export function SubjectPicker() {
 import Link from "next/link";
 
 export function MobileMenu({ 
-  user 
+  user,
+  isPremium = false,
 }: { 
-  user?: { email?: string | null; name?: string | null } | null 
+  user?: { email?: string | null; name?: string | null } | null;
+  isPremium?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -55,7 +57,14 @@ export function MobileMenu({
             <>
               <div className="border-b border-slate-100 pb-2 mb-2 px-3">
                 <p className="text-xs text-slate-500">Signed in as</p>
-                <p className="text-sm font-bold text-emerald-900 truncate">{user.name || user.email}</p>
+                <div className="flex items-center justify-between gap-1 mt-0.5">
+                  <p className="text-sm font-bold text-emerald-900 truncate">{user.name || user.email}</p>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                    isPremium ? "bg-[#116149] text-white" : "bg-slate-200 text-slate-700"
+                  }`}>
+                    {isPremium ? "PRO" : "FREE"}
+                  </span>
+                </div>
               </div>
               <Link 
                 onClick={() => setOpen(false)} 
@@ -63,6 +72,13 @@ export function MobileMenu({
                 className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm font-semibold text-[#116149] hover:bg-emerald-50"
               >
                 Dashboard <ArrowRight size={14}/>
+              </Link>
+              <Link 
+                onClick={() => setOpen(false)} 
+                href="/profile" 
+                className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm hover:bg-emerald-50 font-medium"
+              >
+                Profile & Settings <ArrowRight size={14}/>
               </Link>
               <Link 
                 onClick={() => setOpen(false)} 
@@ -85,20 +101,32 @@ export function MobileMenu({
               >
                 Performance Coach <ArrowRight size={14}/>
               </Link>
-              <Link 
-                onClick={() => setOpen(false)} 
-                href="/pricing" 
-                className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm hover:bg-emerald-50"
-              >
-                Upgrade to Premium <ArrowRight size={14}/>
-              </Link>
-              <Link 
-                onClick={() => setOpen(false)} 
-                href="/referrals" 
-                className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm text-amber-800 hover:bg-amber-50"
-              >
-                Refer & Earn 50% <ArrowRight size={14}/>
-              </Link>
+              {!isPremium ? (
+                <Link 
+                  onClick={() => setOpen(false)} 
+                  href="/pricing" 
+                  className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm hover:bg-emerald-50 font-medium text-emerald-800"
+                >
+                  Upgrade to Premium <ArrowRight size={14}/>
+                </Link>
+              ) : (
+                <Link 
+                  onClick={() => setOpen(false)} 
+                  href="/profile#subscription" 
+                  className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm hover:bg-emerald-50 font-medium text-emerald-800"
+                >
+                  Manage Subscription <ArrowRight size={14}/>
+                </Link>
+              )}
+              {!isPremium && (
+                <Link 
+                  onClick={() => setOpen(false)} 
+                  href="/referrals" 
+                  className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm text-amber-800 hover:bg-amber-50"
+                >
+                  Refer & Earn 50% <ArrowRight size={14}/>
+                </Link>
+              )}
             </>
           ) : (
             <>
