@@ -26,7 +26,7 @@ export function SubjectPicker() {
   return <div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><div className="flex min-h-20 items-center justify-between gap-3 rounded-xl bg-[#116149] p-5 text-white"><span className="font-medium">Use of English<small className="mt-1 block text-emerald-100">Always included</small></span><Check size={18}/></div>{electives.map(subject => { const active = selected.includes(subject); return <button type="button" key={subject} aria-pressed={active} disabled={!active && selected.length === 3} onClick={() => setSelected(current => active ? current.filter(s => s !== subject) : [...current, subject])} className={`flex min-h-20 items-center justify-between gap-3 rounded-xl border p-5 text-left text-sm font-medium transition-colors disabled:opacity-50 ${active ? 'border-emerald-700 bg-emerald-50' : 'border-slate-200 bg-white enabled:hover:border-emerald-700'}`}>{subject}<span className={`flex size-5 shrink-0 items-center justify-center rounded-full border ${active ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-slate-300'}`}>{active && <Check size={12}/>}</span></button>; })}</div><p role="status" className="mt-5 text-sm text-slate-600">{selected.length === 3 ? `Your preview combination: English, ${selected.join(', ')}.` : `${selected.length} of 3 electives selected. Choose three to preview your combination.`}</p><p className="mt-2 text-xs text-slate-500">Preview only. You’ll confirm your combination during onboarding when registration opens.</p></div>;
 }
 
-import Link from "next/link";
+import Link from "@/components/pending-link";
 
 export function MobileMenu({ 
   user,

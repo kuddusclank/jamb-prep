@@ -21,7 +21,7 @@ import {
   Award,
   Lock
 } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/pending-link";
 
 interface SubjectOption {
   code: string;
@@ -73,8 +73,8 @@ export function PracticeClient({
       setAnswerResult(null);
       setScore(0);
       setIsCompleted(false);
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to load practice questions.");
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : "Failed to load practice questions.");
     } finally {
       setIsLoading(false);
     }
@@ -96,7 +96,7 @@ export function PracticeClient({
       if (result.isCorrect) {
         setScore((prev) => prev + 1);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
     } finally {
       setIsSubmitting(false);
@@ -293,7 +293,7 @@ export function PracticeClient({
           <span>•</span>
           <span className="text-slate-500">{currentQ.topicTitle}</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="font-semibold text-slate-700">
             Question {currentIndex + 1} of {questions.length}
           </span>

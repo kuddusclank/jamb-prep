@@ -11,7 +11,7 @@ import {
   Users,
   CreditCard
 } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/pending-link";
 
 interface CheckoutClientProps {
   pricing: CheckoutPricing;
@@ -32,8 +32,8 @@ export function CheckoutClient({ pricing }: CheckoutClientProps) {
         setErrorMessage("Unable to initiate payment session. Please try again.");
         setIsLoading(false);
       }
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to start checkout.");
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : "Failed to start checkout.");
       setIsLoading(false);
     }
   };
@@ -84,7 +84,7 @@ export function CheckoutClient({ pricing }: CheckoutClientProps) {
 
       {/* Pricing Cards Comparison */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-        
+
         {/* Plan 1: Free Tier */}
         <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 flex flex-col justify-between shadow-sm">
           <div>

@@ -1,19 +1,19 @@
-import { createClient } from "@/lib/supabase/server";
+import { StudyWorkspace } from "@/components/study-workspace";
 import { db } from "@/db";
-import { studentSubjects, subjects, attempts } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import { 
-  BookOpen, 
-  Keyboard, 
-  ArrowRight, 
-  ShieldCheck, 
-  CheckCircle2,
-  Sparkles
-} from "lucide-react";
-import { MockStartButton } from "./mock-start-button";
+import { attempts,studentSubjects,subjects } from "@/db/schema";
 import { getUserSubscriptionStatus } from "@/lib/subscription";
+import { getCurrentUser } from "@/lib/supabase/current-user";
+import { and,eq } from "drizzle-orm";
+import {
+ArrowRight,
+CheckCircle2,
+Keyboard,
+ShieldCheck,
+Sparkles
+} from "lucide-react";
+import Link from "@/components/pending-link";
+import { redirect } from "next/navigation";
+import { MockStartButton } from "./mock-start-button";
 
 export const metadata = {
   title: "CBT Mock Exam Instructions — JAMBPrep",
@@ -21,8 +21,7 @@ export const metadata = {
 };
 
 export default async function MockInstructionsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login");
@@ -69,23 +68,9 @@ export default async function MockInstructionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F8F5] text-[#092E28] flex flex-col justify-between">
+    <StudyWorkspace>
       {/* Header */}
-      <header className="border-b border-emerald-950/10 bg-[#FAFBF7]">
-        <div className="shell flex h-20 items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2 text-xl font-bold tracking-tight">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-[#116149] text-white">
-              <BookOpen size={20} />
-            </span>
-            <span>jambprep<span className="text-[#116149]">.</span></span>
-          </Link>
-          <div className="flex items-center gap-3 text-xs sm:text-sm font-semibold">
-            <span className="px-3 py-1 rounded-full bg-emerald-100 text-[#116149]">
-              Diagnostic Mock Simulation
-            </span>
-          </div>
-        </div>
-      </header>
+
 
       {/* Main Content */}
       <main className="shell section-space">
@@ -109,7 +94,7 @@ export default async function MockInstructionsPage() {
               1. Your 4-Subject Combination (180 Total Questions)
             </h2>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
               {enrolledSubjects.map((sub, idx) => (
                 <div key={sub.code} className="p-4 rounded-2xl bg-[#F6F8F5] border border-slate-200">
                   <div className="font-mono text-xs font-bold text-[#116149]">{sub.code}</div>
@@ -126,7 +111,7 @@ export default async function MockInstructionsPage() {
               <div className="flex items-center gap-2 mb-3 text-xs font-bold uppercase tracking-wider text-slate-700">
                 <Keyboard size={16} className="text-[#116149]" /> 2. The 8-Key Desktop Hotkeys System
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5 text-xs">
                 <div className="p-3 rounded-xl border border-slate-200 bg-white">
                   <span className="font-mono font-bold text-sm text-[#116149] bg-emerald-50 px-2 py-0.5 rounded">A, B, C, D</span>
                   <p className="mt-1.5 text-slate-600">Select corresponding option</p>
@@ -204,9 +189,7 @@ export default async function MockInstructionsPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-emerald-950/10 bg-[#FAFBF7] py-6 text-center text-xs text-slate-500">
-        JAMBPrep • Authentic Computer-Based Practice & Diagnostic Coaching for UTME Candidates
-      </footer>
-    </div>
+
+    </StudyWorkspace>
   );
 }

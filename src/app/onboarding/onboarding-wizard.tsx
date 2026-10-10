@@ -127,7 +127,7 @@ export function OnboardingWizard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5">
           {targetPresets.map((preset) => (
             <button
               type="button"

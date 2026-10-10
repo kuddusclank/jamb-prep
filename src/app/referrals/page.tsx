@@ -1,16 +1,16 @@
-import { createClient } from "@/lib/supabase/server";
+import { StudyWorkspace } from "@/components/study-workspace";
 import { db } from "@/db";
-import { 
-  referralCodes, 
-  referrals, 
-  referralRewards 
+import {
+referralCodes,
+referralRewards,
+referrals
 } from "@/db/schema";
-import { eq, count } from "drizzle-orm";
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import { BookOpen, Users, Sparkles, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
-import { ReferralCard } from "./referral-card";
 import { getUserSubscriptionStatus } from "@/lib/subscription";
+import { getCurrentUser } from "@/lib/supabase/current-user";
+import { count,eq } from "drizzle-orm";
+import { ShieldCheck,Sparkles } from "lucide-react";
+import { redirect } from "next/navigation";
+import { ReferralCard } from "./referral-card";
 
 export const metadata = {
   title: "Refer & Earn 50% Off — JAMBPrep",
@@ -18,8 +18,7 @@ export const metadata = {
 };
 
 export default async function ReferralsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (user) {
     const subStatus = await getUserSubscriptionStatus(user.id);
@@ -55,26 +54,9 @@ export default async function ReferralsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F8F5] text-[#092E28] flex flex-col justify-between">
+    <StudyWorkspace>
       {/* Header */}
-      <header className="border-b border-emerald-950/10 bg-[#FAFBF7]">
-        <div className="shell flex h-20 items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2 text-xl font-bold tracking-tight">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-[#116149] text-white">
-              <BookOpen size={20} />
-            </span>
-            <span>jambprep<span className="text-[#116149]">.</span></span>
-          </Link>
-          <div className="flex items-center gap-4 text-sm font-medium">
-            <Link href="/dashboard" className="text-slate-600 hover:text-[#116149] transition-colors">
-              Dashboard
-            </Link>
-            <Link href="/pricing" className="text-slate-600 hover:text-[#116149] transition-colors">
-              Pricing
-            </Link>
-          </div>
-        </div>
-      </header>
+
 
       {/* Main Content */}
       <main className="shell section-space">
@@ -128,9 +110,7 @@ export default async function ReferralsPage() {
       </main>
 
       {/* Footer */}
-      <footer className="shell py-8 border-t border-emerald-950/10 text-xs text-slate-500 text-center">
-        © 2026 JAMBPrep. Study together. Succeed together.
-      </footer>
-    </div>
+
+    </StudyWorkspace>
   );
 }

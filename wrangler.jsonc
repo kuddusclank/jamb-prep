@@ -35,6 +35,13 @@
 		// see https://opennext.js.org/cloudflare/howtos/image
 		"binding": "IMAGES"
 	},
+	"hyperdrive": [
+		{
+			"binding": "HYPERDRIVE",
+			"id": "67223d34f19c4b98a3920083dcdc5efb",
+			"localConnectionString": "postgresql://postgres.bqumnaoiiukifvanoonm:xuhsuc-0wavno-kygDyg@aws-0-eu-west-1.pooler.supabase.com:6543/postgres"
+		}
+	],
 	"routes": [
 		{
 			"pattern": "jambprep.lecterniq.com",

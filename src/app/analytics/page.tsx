@@ -1,27 +1,17 @@
-import { createClient } from "@/lib/supabase/server";
+import { StudyWorkspace } from "@/components/study-workspace";
 import { getStudentCoachInsights } from "@/lib/coach";
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import { 
-  BookOpen, 
-  ArrowLeft, 
-  Target, 
-  TrendingUp, 
-  Award, 
-  AlertCircle, 
-  CheckCircle2, 
-  ArrowRight,
-  Clock,
-  Sparkles,
-  BarChart3,
-  Layers,
-  HelpCircle
+import { getCurrentUser } from "@/lib/supabase/current-user";
+import {
+ArrowRight,
+BarChart3,
+Clock
 } from "lucide-react";
+import Link from "@/components/pending-link";
+import { redirect } from "next/navigation";
 
-import { getUserSubscriptionStatus } from "@/lib/subscription";
-import { UserDropdown } from "@/components/user-dropdown";
 import { db } from "@/db";
 import { profiles } from "@/db/schema";
+import { getUserSubscriptionStatus } from "@/lib/subscription";
 import { eq } from "drizzle-orm";
 
 export const metadata = {
@@ -30,8 +20,7 @@ export const metadata = {
 };
 
 export default async function AnalyticsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login");
@@ -66,55 +55,14 @@ export default async function AnalyticsPage() {
   } = insights;
 
   return (
-    <div className="min-h-screen bg-[#F6F8F5] text-[#092E28] flex flex-col justify-between">
+    <StudyWorkspace>
       {/* Header */}
-      <header className="border-b border-emerald-950/10 bg-[#FAFBF7] sticky top-0 z-30">
-        <div className="shell flex h-20 items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link 
-              href="/dashboard"
-              className="flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-[#116149] hover:border-slate-300 transition-colors"
-              title="Return to Dashboard"
-            >
-              <ArrowLeft size={18} />
-            </Link>
-            <Link href="/dashboard" className="flex items-center gap-2 text-xl font-bold tracking-tight">
-              <span className="flex size-8 items-center justify-center rounded-xl bg-[#116149] text-white">
-                <BookOpen size={18} />
-              </span>
-              <span>jambprep<span className="text-[#116149]">.</span></span>
-            </Link>
-          </div>
 
-          <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
-            <Link href="/dashboard" className="hover:text-[#116149] transition-colors">
-              Dashboard
-            </Link>
-            <Link href="/practice" className="hover:text-[#116149] transition-colors">
-              Topic Practice
-            </Link>
-            <Link href="/mock" className="hover:text-[#116149] transition-colors">
-              CBT Simulation
-            </Link>
-            <Link href="/analytics" className="text-[#116149] font-bold flex items-center gap-1">
-              <BarChart3 size={15} /> Performance
-            </Link>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <UserDropdown
-              user={{ name: displayName, email: user.email }}
-              isPremium={subStatus.isPremium}
-              expiresAt={subStatus.expiresAt}
-            />
-          </div>
-        </div>
-      </header>
 
       {/* Main Content */}
       <main className="shell section-space">
         <div className="max-w-5xl mx-auto space-y-8">
-          
+
           {/* Header Bar */}
           <div className="border-b border-slate-200 pb-6">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-[#116149] text-xs font-bold uppercase tracking-wider mb-2">
@@ -129,7 +77,7 @@ export default async function AnalyticsPage() {
           </div>
 
           {/* Metric Overview Strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Target Score</span>
               <div className="text-2xl font-bold text-[#092E28] mt-1">
@@ -384,7 +332,7 @@ export default async function AnalyticsPage() {
               Official JAMB UTME tests <strong>180 questions across 4 subjects in 120 minutes (7,200 seconds)</strong>. That gives an average of exactly <strong>40 seconds per question</strong>.
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mt-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 mt-5">
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
                 <div className="font-semibold text-xs text-[#092E28]">1. English First (Pacing: 35s/Q)</div>
                 <p className="text-[11px] text-slate-500 mt-1">
@@ -412,9 +360,7 @@ export default async function AnalyticsPage() {
       </main>
 
       {/* Footer */}
-      <footer className="shell py-8 border-t border-emerald-950/10 text-xs text-slate-500 text-center">
-        © 2026 JAMBPrep. Know what to study next.
-      </footer>
-    </div>
+
+    </StudyWorkspace>
   );
 }

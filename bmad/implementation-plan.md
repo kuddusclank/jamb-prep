@@ -204,3 +204,9 @@ Implemented optional Standard / Exam Conditions selection, gesture-triggered ful
 ### Database rollout — 2026-10-10
 
 Applied and verified the missing interruption table, cascade foreign key, index and RLS on the configured Supabase database. Existing exam-mode column verified. Full migration replay was avoided because topic mastery/mode already existed and no Drizzle journal was present. Baseline reconciliation remains required before routine migrations. No app deployment or browser testing performed.
+
+## 2026-10-10 — Responsive authenticated workspace
+
+Shared study workspace applied to dashboard, practice, analytics, profile, referrals, onboarding, pricing, checkout verification, mock briefing and results. Timed mock stays focused. Breakpoints and component contracts recorded in UI guide. Navigation stays available on mobile/tablet; desktop uses a sticky sidebar; card density increases at xl after accounting for sidebar width. Removed fabricated blurred dashboard upgrade preview.
+
+Validation: `tsc --noEmit` passed; focused ESLint completed without errors (existing unused-code warnings remain); `next build --webpack` passed with existing middleware deprecation/Edge-runtime warnings. No browser testing or deployment performed. Webpack compilation does not establish visual correctness or validate the Turbopack-only Tailwind loader; real-device QA remains pending.

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { verifyPaystackPaymentAction, VerifyPaymentResult } from "@/app/actions/payment";
 import { CheckCircle2, XCircle, Loader2, ArrowRight, BookOpen, ShieldCheck } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/pending-link";
 
 interface VerifyClientProps {
   reference: string;

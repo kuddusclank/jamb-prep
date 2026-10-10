@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import Link from "@/components/pending-link";
 import { Copy, Check, Share2, Sparkles, ArrowRight, Users } from "lucide-react";
 
 export function ReferralCard({
@@ -146,7 +146,7 @@ export function ReferralCard({
           </Link>
         </div>
       ) : (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 text-xs text-slate-600 flex items-center gap-3">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 text-xs text-slate-600 flex flex-wrap items-center gap-3">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
             <Users size={18} />
           </span>

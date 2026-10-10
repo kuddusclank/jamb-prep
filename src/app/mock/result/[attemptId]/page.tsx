@@ -1,27 +1,21 @@
-import { createClient } from "@/lib/supabase/server";
+import { StudyWorkspace } from "@/components/study-workspace";
 import { db } from "@/db";
-import { 
-  attemptInterruptions,
-  attempts, 
-  attemptResults, 
-  studentPreferences, 
-  subjects, 
-  attemptQuestions 
+import {
+attemptInterruptions,
+attemptQuestions,
+attemptResults,
+attempts,
+studentPreferences,
+subjects
 } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import { 
-  BookOpen, 
-  Award, 
-  Target, 
-  CheckCircle2, 
-  TrendingUp, 
-  ArrowRight, 
-  RotateCcw,
-  Sparkles,
-  BarChart3
+import { getCurrentUser } from "@/lib/supabase/current-user";
+import { and,eq } from "drizzle-orm";
+import {
+ArrowRight,
+Award
 } from "lucide-react";
+import Link from "@/components/pending-link";
+import { redirect } from "next/navigation";
 
 export const metadata = {
   title: "Diagnostic CBT Scorecard — JAMBPrep",
@@ -34,8 +28,7 @@ interface ResultPageProps {
 
 export default async function MockResultPage({ params }: ResultPageProps) {
   const { attemptId } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login");
@@ -91,38 +84,14 @@ export default async function MockResultPage({ params }: ResultPageProps) {
   const spentSeconds = result.timeSpentSeconds % 60;
 
   return (
-    <div className="min-h-screen bg-[#F6F8F5] text-[#092E28] flex flex-col justify-between">
+    <StudyWorkspace>
       <section className="shell py-5 text-sm" aria-label="Mock conditions summary">
         <strong>{attempt?.examConditions ? "Exam Conditions" : "Standard mock"}</strong>
         <p>{attempt?.examConditions ? `${interruptions.length} recorded interruption(s). This is a browser observation, not proof of malpractice; missing events do not prove uninterrupted work.` : "Interruption monitoring was off."}</p>
         <p>Your academic score is calculated independently of these observations.</p>
       </section>
       {/* Header */}
-      <header className="border-b border-emerald-950/10 bg-[#FAFBF7]">
-        <div className="shell flex h-20 items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2 text-xl font-bold tracking-tight">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-[#116149] text-white">
-              <BookOpen size={20} />
-            </span>
-            <span>jambprep<span className="text-[#116149]">.</span></span>
-          </Link>
 
-          <div className="flex items-center gap-4 text-sm font-semibold">
-            <Link
-              href="/dashboard"
-              className="text-slate-600 hover:text-[#116149] transition-colors"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/practice"
-              className="px-4 py-2 rounded-full bg-[#116149] text-white hover:bg-[#0e523e] transition-colors"
-            >
-              Topic Practice
-            </Link>
-          </div>
-        </div>
-      </header>
 
       {/* Main Scorecard */}
       <main className="shell section-space">
@@ -159,7 +128,7 @@ export default async function MockResultPage({ params }: ResultPageProps) {
           </div>
 
           {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
             <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Answered</span>
               <div className="text-2xl font-bold text-[#092E28] mt-1">{result.totalAnswered}</div>
@@ -251,9 +220,7 @@ export default async function MockResultPage({ params }: ResultPageProps) {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-emerald-950/10 bg-[#FAFBF7] py-6 text-center text-xs text-slate-500">
-        JAMBPrep • Authentic Computer-Based Practice & Diagnostic Coaching for UTME Candidates
-      </footer>
-    </div>
+
+    </StudyWorkspace>
   );
 }

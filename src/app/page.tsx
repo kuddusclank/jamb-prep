@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/pending-link";
 import { 
   ArrowRight, 
   ArrowUpRight, 
@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { MobileMenu, Reveal, SubjectPicker } from "./landing-interactions";
 import { UserDropdown } from "@/components/user-dropdown";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/current-user";
 import { db } from "@/db";
 import { profiles, subscriptionEntitlements } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -31,8 +31,7 @@ const faq = [
 ];
 
 export default async function Home() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   let profile = null;
   let isPremium = false;

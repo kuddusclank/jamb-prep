@@ -15,10 +15,9 @@ import {
   Building, 
   GraduationCap,
   Sparkles,
-  Lock,
-  ArrowLeft
+  Lock
 } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/pending-link";
 
 interface SubjectSummary {
   name: string;
@@ -81,8 +80,8 @@ export function ProfileClient({
         setIsCancelledLocally(true);
         setIsConfirmingCancel(false);
       }
-    } catch (err: any) {
-      setCancelFeedback({ error: err.message || "Failed to cancel subscription." });
+    } catch (err: unknown) {
+      setCancelFeedback({ error: err instanceof Error ? err.message : "Failed to cancel subscription." });
     } finally {
       setIsCancelling(false);
     }
@@ -101,34 +100,15 @@ export function ProfileClient({
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
-      
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-6">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard"
-            className="flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-[#116149] hover:border-slate-300 transition-colors"
-            title="Return to Dashboard"
-          >
-            <ArrowLeft size={18} />
-          </Link>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#092E28]">
-              Candidate Profile & Settings
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              Manage your academic goals, display identity, and subscription tier.
-            </p>
-          </div>
-        </div>
 
-        <Link
-          href="/dashboard"
-          className="self-start sm:self-auto text-xs font-semibold text-[#116149] hover:underline flex items-center gap-1.5"
-        >
-          <span>Open Dashboard</span>
-          <ArrowRight size={14} />
-        </Link>
+      {/* Page Header */}
+      <div className="border-b border-slate-200 pb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#092E28]">
+          Candidate Profile & Settings
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+          Manage your academic goals, display identity, and subscription tier.
+        </p>
       </div>
 
       {/* Section 1: Academic & Personal Preferences */}
@@ -196,7 +176,7 @@ export function ProfileClient({
               <label htmlFor="targetScore" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                 Target UTME Score (out of 400)
               </label>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <input
                   id="targetScore"
                   name="targetScore"
@@ -280,7 +260,7 @@ export function ProfileClient({
 
       {/* Section 2: Four Enrolled UTME Subjects */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-        <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+        <div className="flex flex-wrap gap-3 items-center justify-between mb-6 pb-4 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
             <span className="flex size-9 items-center justify-center rounded-xl bg-blue-100 text-blue-900">
               <BookOpen size={18} />
@@ -299,7 +279,7 @@ export function ProfileClient({
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
           {enrolledSubjects.map((sub) => (
             <div
               key={sub.code}
@@ -455,13 +435,7 @@ export function ProfileClient({
                     <CheckCircle2 size={16} className="text-amber-700 shrink-0" />
                     <span>Cancelled on Paystack · Automatically switches to Free on {formattedExpiry}</span>
                   </div>
-                  <Link
-                    href="/pricing"
-                    className="inline-flex items-center gap-1.5 font-bold text-[#116149] hover:underline"
-                  >
-                    <span>Keep Pro / Renew Early</span>
-                    <ArrowRight size={13} />
-                  </Link>
+                  <span className="text-slate-600">Your Pro access remains available until expiry.</span>
                 </div>
               )}
             </div>

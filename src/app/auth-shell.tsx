@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/pending-link";
 import { ArrowLeft, ArrowUpRight, BookOpen, Check, Target } from "lucide-react";
 import type { ReactNode } from "react";
 

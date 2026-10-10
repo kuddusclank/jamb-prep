@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { db } from "@/db";
 import { subscriptionEntitlements } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -14,7 +15,7 @@ export interface SubscriptionStatus {
 /**
  * Checks whether a student currently has an active premium entitlement.
  */
-export async function getUserSubscriptionStatus(userId: string): Promise<SubscriptionStatus> {
+export const getUserSubscriptionStatus = cache(async (userId: string): Promise<SubscriptionStatus> => {
   try {
     const entitlement = await db.query.subscriptionEntitlements.findFirst({
       where: eq(subscriptionEntitlements.userId, userId),
@@ -56,7 +57,7 @@ export async function getUserSubscriptionStatus(userId: string): Promise<Subscri
       cancelledAt: null,
     };
   }
-}
+});
 
 export interface PaystackMetadata {
   subscriptionCode?: string | null;

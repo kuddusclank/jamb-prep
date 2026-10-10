@@ -1,13 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
 import { getCheckoutPricingAction } from "@/app/actions/payment";
+import { StudyWorkspace } from "@/components/study-workspace";
+import { getCurrentUser } from "@/lib/supabase/current-user";
+import { HelpCircle } from "lucide-react";
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { BookOpen, ArrowLeft, ShieldCheck, HelpCircle } from "lucide-react";
 import { CheckoutClient } from "./checkout-client";
-import { UserDropdown } from "@/components/user-dropdown";
-import { db } from "@/db";
-import { profiles } from "@/db/schema";
-import { eq } from "drizzle-orm";
 
 export const metadata = {
   title: "Upgrade to Premium — JAMBPrep",
@@ -15,65 +11,24 @@ export const metadata = {
 };
 
 export default async function PricingPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login");
   }
 
-  const [pricing, profile] = await Promise.all([
-    getCheckoutPricingAction(),
-    db.query.profiles.findFirst({
-      where: eq(profiles.id, user.id),
-    }),
-  ]);
-
-  const displayName = profile?.displayName || user.user_metadata?.name || user.email?.split("@")[0] || "Candidate";
+  const pricing = await getCheckoutPricingAction();
+  if (pricing.isAlreadyPremium) redirect("/profile#subscription");
 
   return (
-    <div className="min-h-screen bg-[#F6F8F5] text-[#092E28] flex flex-col justify-between">
+    <StudyWorkspace>
       {/* Navigation Header */}
-      <header className="border-b border-emerald-950/10 bg-[#FAFBF7] sticky top-0 z-30">
-        <div className="shell flex h-20 items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link 
-              href="/dashboard"
-              className="flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-[#116149] hover:border-slate-300 transition-colors"
-              title="Return to Dashboard"
-            >
-              <ArrowLeft size={18} />
-            </Link>
-            <Link href="/dashboard" className="flex items-center gap-2 text-xl font-bold tracking-tight">
-              <span className="flex size-8 items-center justify-center rounded-xl bg-[#116149] text-white">
-                <BookOpen size={18} />
-              </span>
-              <span>jambprep<span className="text-[#116149]">.</span></span>
-            </Link>
-          </div>
 
-          <nav className="flex items-center gap-4 text-xs font-semibold text-slate-600">
-            <Link href="/dashboard" className="hover:text-[#116149]">
-              Dashboard
-            </Link>
-            {!pricing.isAlreadyPremium && (
-              <Link href="/referrals" className="text-amber-800 hover:text-amber-900">
-                Refer & Earn 50%
-              </Link>
-            )}
-            <UserDropdown
-              user={{ name: displayName, email: user.email }}
-              isPremium={pricing.isAlreadyPremium}
-              expiresAt={pricing.currentExpiresAt}
-            />
-          </nav>
-        </div>
-      </header>
 
       {/* Main Content */}
       <main className="shell section-space">
         <div className="max-w-4xl mx-auto space-y-10">
-          
+
           {/* Header Title */}
           <div className="text-center max-w-2xl mx-auto">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-[#116149] text-xs font-bold uppercase tracking-wider mb-3">
@@ -132,9 +87,7 @@ export default async function PricingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="shell py-8 border-t border-emerald-950/10 text-xs text-slate-500 text-center">
-        © 2026 JAMBPrep. Know what to study next.
-      </footer>
-    </div>
+
+    </StudyWorkspace>
   );
 }

@@ -1,3 +1,4 @@
+import styles from "./dashboard.module.css";
 import { StudyWorkspace } from "@/components/study-workspace";
 import { db } from "@/db";
 import {
@@ -6,7 +7,7 @@ referrals
 } from "@/db/schema";
 import { getStudentCoachInsights, getDefaultCoachInsights } from "@/lib/coach";
 import { getUserSubscriptionStatus } from "@/lib/subscription";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/current-user";
 import { count,eq } from "drizzle-orm";
 import {
 AlertCircle,
@@ -20,7 +21,7 @@ Target,
 TrendingUp,
 Users
 } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/pending-link";
 import { redirect } from "next/navigation";
 
 export const metadata = {
@@ -29,8 +30,7 @@ export const metadata = {
 };
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login");
@@ -104,7 +104,7 @@ export default async function DashboardPage() {
             </div>
 
             {/* Target and Progress Gauges */}
-            <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3 xl:min-w-80">
+            <div className={styles.scoreRow}>
               <div className="rounded-2xl border border-slate-200 bg-white p-3.5 flex items-center gap-3 shadow-sm min-w-0 flex-1">
                 <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-100 text-[#116149]">
                   <Target size={20} />

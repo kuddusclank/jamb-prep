@@ -193,3 +193,30 @@ Verification for this correction: source-level layout review and targeted static
 The exam workspace uses a light grey canvas, white cards, slate text and subtle borders. Green is reserved for selected answers, active subjects and primary actions. Do not restore the full dark-green exam background. Keep the timer sticky, tabular and consistently HH:MM:SS, with amber/red urgency states rather than pulsing text. Submit remains visible on mobile. Calculator access is available for every subject; its state persists across question/subject switches. Basic arithmetic uses entry order, with explicit divide-by-zero feedback; no evaluated code expressions. Calculator keyboard events must not activate exam shortcuts.
 
 Timer subscriptions start during engine initialization, not React render, and survive effect cleanup/reinitialization. Verified with a lifecycle/visibility regression test, calculator arithmetic tests, TypeScript and focused lint. No browser/visual testing performed per user instruction.
+
+## Authenticated workspace — 2026-10-10
+
+Use `components/study-workspace.tsx` and its CSS module for overview, practice, analytics, profile, referrals, onboarding, plans, payment verification, mock briefing and results. Active timed mocks retain their focused exam layout. Server pages retain their authentication and entitlement checks; navigation never grants access. Overview/Practice/Mock exams/Performance/Invite friends/My profile/Plans must remain reachable at every width.
+
+Breakpoints match installed Tailwind v4 `theme.css` and https://tailwindcss.com/docs/responsive-design:
+
+| Width | Layout contract |
+| --- | --- |
+| Below 640px | Single-column content, 16px gutters, horizontally scrollable labelled navigation, 44px navigation targets; form text 16px minimum. |
+| sm: 640px | 24px gutters, paired cards where readable, wrapping actions. |
+| md: 768px | 32px gutters, wrapping navigation bar; keep heavy content stacked. |
+| lg: 1024px | 216px sticky sidebar and independently sized fluid content; navigation no longer competes with account/header space. |
+| xl: 1280px | 240px sidebar, 40px gutters, four score/subject cards, three topic cards; coach actions may sit alongside copy. |
+| 2xl: 1536px | 48px gutters, maximum 1280px content width to preserve readable line lengths. |
+
+Shared surfaces: neutral grey canvas, white cards, slate text; green denotes current navigation/primary action. Workspace pages use 24–48px top padding rather than marketing-section spacing. Avoid fixed minimum card widths and unwrapped controls. Sidebar scrolls on short screens. Mobile account and sign-out remain available. The dashboard Premium explanation is a compact, explicit card, not fabricated blurred topic data.
+
+Verification: code review and TypeScript; no browser or screenshot verification was performed because the user's no-browser-testing instruction remains active. Cross-device visual QA is still needed before claiming pixel-perfect layouts.
+
+### CSS pipeline correction — 2026-10-10
+
+The Turbopack Tailwind rule must exclude `*.module.css`: its `as: "*.css"` rewrite otherwise changes module treatment and leaves component class mappings without their intended styles. Native Next.js CSS Modules now handle the workspace and calculator modules. Verified with `npm run build` (Turbopack), including emitted scoped selectors and their client references. A webpack-only build is insufficient to validate this configuration. No browser testing performed.
+
+### Pro navigation policy — 2026-10-10
+
+Confirmed: active Pro subscribers do not see Invite friends, Plans or upgrade/referral promotions. The shared workspace resolves entitlement on the server before rendering navigation (no free-navigation flash). `/pricing` redirects active Pro to `/profile#subscription`; `/referrals` already redirects them to overview. Profile retains expiry, billing and cancellation information. Cancelled-but-unexpired subscribers retain Pro navigation until access expires. Free/expired subscribers keep Plans and Invite friends. Removed the cancelled subscriber's misleading Renew Early link, which would otherwise loop back to the profile.
