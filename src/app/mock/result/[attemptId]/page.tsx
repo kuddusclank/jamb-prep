@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/db";
 import { 
+  attemptInterruptions,
   attempts, 
   attemptResults, 
   studentPreferences, 
@@ -52,6 +53,9 @@ export default async function MockResultPage({ params }: ResultPageProps) {
     redirect("/dashboard");
   }
 
+  const attempt = await db.query.attempts.findFirst({ where: eq(attempts.id, result.attemptId) });
+  const interruptions = await db.select().from(attemptInterruptions).where(eq(attemptInterruptions.attemptId, result.attemptId));
+
   // 2. Fetch student preferences for target score comparison
   const pref = await db.query.studentPreferences.findFirst({
     where: eq(studentPreferences.userId, user.id),
@@ -88,6 +92,11 @@ export default async function MockResultPage({ params }: ResultPageProps) {
 
   return (
     <div className="min-h-screen bg-[#F6F8F5] text-[#092E28] flex flex-col justify-between">
+      <section className="shell py-5 text-sm" aria-label="Mock conditions summary">
+        <strong>{attempt?.examConditions ? "Exam Conditions" : "Standard mock"}</strong>
+        <p>{attempt?.examConditions ? `${interruptions.length} recorded interruption(s). This is a browser observation, not proof of malpractice; missing events do not prove uninterrupted work.` : "Interruption monitoring was off."}</p>
+        <p>Your academic score is calculated independently of these observations.</p>
+      </section>
       {/* Header */}
       <header className="border-b border-emerald-950/10 bg-[#FAFBF7]">
         <div className="shell flex h-20 items-center justify-between">

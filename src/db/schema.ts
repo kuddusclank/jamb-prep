@@ -120,6 +120,7 @@ export const questionExplanations = pgTable('question_explanations', {
 export const attempts = pgTable('attempts', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
+  examConditions: boolean('exam_conditions').default(false).notNull(),
   mode: attemptModeEnum('mode').notNull(), // 'practice' or 'mock'
   status: attemptStatusEnum('status').default('in_progress').notNull(),
   startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
@@ -258,3 +259,10 @@ export const studentTopicMastery = pgTable('student_topic_mastery', {
   index('user_subject_mastery_idx').on(table.userId, table.subjectId)
 ]);
 
+
+export const attemptInterruptions = pgTable('attempt_interruptions', {
+  id: uuid('id').primaryKey(),
+  attemptId: uuid('attempt_id').references(() => attempts.id, { onDelete: 'cascade' }).notNull(),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+  endedAt: timestamp('ended_at', { withTimezone: true }),
+}, (table) => [index('interruption_attempt_idx').on(table.attemptId)]);

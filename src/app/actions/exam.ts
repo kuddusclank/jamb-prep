@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/db";
 import { 
+  attemptInterruptions,
   attempts, 
   attemptQuestions, 
   attemptAnswers, 
@@ -19,7 +20,8 @@ import { ExamQuestion } from "@/app/mock/exam-store";
 import { recordTopicMasteryBatch } from "@/lib/coach";
 import { getUserSubscriptionStatus } from "@/lib/subscription";
 
-export async function startMockAttempt(): Promise<{
+export async function startMockAttempt(examConditions = false, resumeId?: string): Promise<{
+  examConditions: boolean;
   attemptId: string;
   questions: ExamQuestion[];
   expiresAtTimestamp: number;
@@ -33,9 +35,11 @@ export async function startMockAttempt(): Promise<{
     redirect("/login");
   }
 
+  if (typeof examConditions !== "boolean") throw new Error("Invalid mock mode");
+
   // 1. Enforce subscription entitlement: free tier gets 1 diagnostic mock
   const subStatus = await getUserSubscriptionStatus(user.id);
-  if (!subStatus.isPremium) {
+  if (!resumeId && !subStatus.isPremium) {
     const pastCompletedMocks = await db.query.attempts.findMany({
       where: and(
         eq(attempts.userId, user.id),
@@ -57,9 +61,11 @@ export async function startMockAttempt(): Promise<{
       eq(attempts.userId, user.id),
       eq(attempts.mode, "mock"),
       eq(attempts.status, "in_progress"),
-      gt(attempts.expiresAt, now)
+      ...(resumeId ? [eq(attempts.id, resumeId)] : [gt(attempts.expiresAt, now)])
     ),
   });
+
+  if (resumeId && !activeAttempt) throw new Error("Active attempt not found");
 
   let attemptId = activeAttempt?.id;
   let expiresAt = activeAttempt?.expiresAt;
@@ -99,6 +105,7 @@ export async function startMockAttempt(): Promise<{
 
     const [newAttempt] = await db.insert(attempts).values({
       userId: user.id,
+      examConditions,
       mode: "mock",
       status: "in_progress",
       startedAt: now,
@@ -244,6 +251,7 @@ export async function startMockAttempt(): Promise<{
 
   return {
     attemptId,
+    examConditions: activeAttempt?.examConditions ?? examConditions,
     questions: formattedQuestions,
     expiresAtTimestamp: expiresAt ? new Date(expiresAt).getTime() : Date.now() + 120 * 60 * 1000,
     initialAnswers,
@@ -257,7 +265,16 @@ export async function syncExamAnswer(
   selectedOptionId: string | null
 ): Promise<{ success: boolean }> {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false };
+    const attempt = await db.query.attempts.findFirst({ where: and(eq(attempts.id, attemptId), eq(attempts.userId, user.id)) });
+    if (!attempt || attempt.status !== "in_progress" || attempt.expiresAt.getTime() <= Date.now()) return { success: false };
+    const question = await db.query.attemptQuestions.findFirst({ where: and(eq(attemptQuestions.attemptId, attemptId), eq(attemptQuestions.questionId, questionId)) });
+    if (!question) return { success: false };
     if (selectedOptionId) {
+      const option = await db.query.questionOptions.findFirst({ where: and(eq(questionOptions.id, selectedOptionId), eq(questionOptions.questionId, questionId)) });
+      if (!option) return { success: false };
       await db.insert(attemptAnswers).values({
         attemptId,
         questionId,
@@ -440,4 +457,20 @@ export async function submitMockExam(attemptId: string): Promise<{ resultId: str
   }).returning();
 
   return { resultId: resultRecord.id };
+}
+
+export async function recordMockInterruption(attemptId: string, id: string, ended: boolean) {
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuid.test(attemptId) || !uuid.test(id) || typeof ended !== "boolean") throw new Error("Invalid event");
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Sign in required");
+  const attempt = await db.query.attempts.findFirst({ where: and(eq(attempts.id, attemptId), eq(attempts.userId, user.id)) });
+  if (!attempt?.examConditions || attempt.status !== "in_progress") return;
+  const now = new Date(Math.min(Date.now(), attempt.expiresAt.getTime()));
+  if (ended) {
+    await db.update(attemptInterruptions).set({ endedAt: now }).where(and(eq(attemptInterruptions.id, id), eq(attemptInterruptions.attemptId, attemptId)));
+  } else {
+    await db.insert(attemptInterruptions).values({ id, attemptId, startedAt: now }).onConflictDoNothing();
+  }
 }

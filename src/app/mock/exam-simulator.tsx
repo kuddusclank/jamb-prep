@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useTransition } from "react";
+import { ExamConditions } from "./exam-conditions";
+import { useCallback, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useExamEngine } from "@/features/exam-engine/reactive/use-exam-engine";
 import { ExamQuestion } from "@/features/exam-engine/domain/types";
@@ -12,7 +13,6 @@ import {
   ArrowLeft, 
   ArrowRight, 
   RotateCcw, 
-  CheckCircle2, 
   AlertTriangle, 
   Send, 
   Loader2,
@@ -23,6 +23,7 @@ import {
 
 interface ExamSimulatorProps {
   initialPayload: {
+    examConditions: boolean;
     attemptId: string;
     questions: ExamQuestion[];
     expiresAtTimestamp: number;
@@ -121,23 +122,24 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
     setSubmitModalOpen,
   ]);
 
+  const handleFinalSubmit = useCallback(() => {
+    startTransition(async () => {
+      try {
+        await submitMockExam(attemptId);
+        if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
+        router.push(`/mock/result/${attemptId}`);
+      } catch (err) {
+        console.error("Submission failed:", err);
+      }
+    });
+  }, [attemptId, router]);
+
   // 2. Auto-Submit on Expiration
   useEffect(() => {
     if (status === 'expired' && questions.length > 0) {
       handleFinalSubmit();
     }
-  }, [status, questions.length]);
-
-  const handleFinalSubmit = () => {
-    startTransition(async () => {
-      try {
-        const result = await submitMockExam(attemptId);
-        router.push(`/mock/result/${result.resultId}`);
-      } catch (err) {
-        console.error("Submission failed:", err);
-      }
-    });
-  };
+  }, [status, questions.length, handleFinalSubmit]);
 
   if (questions.length === 0) {
     return (
@@ -170,6 +172,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
 
   return (
     <div className="min-h-screen bg-[#092E28] text-slate-100 flex flex-col justify-between select-none">
+      <ExamConditions attemptId={initialPayload.attemptId} enabled={initialPayload.examConditions} active={!isPending && status !== "expired"} />
       {/* 1. TOP EXAM HEADER */}
       <header className="bg-[#102F29] border-b border-emerald-800/40 px-4 sm:px-8 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">

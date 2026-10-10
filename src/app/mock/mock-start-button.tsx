@@ -1,41 +1,61 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { startMockAttempt } from "@/app/actions/exam";
-import { ArrowRight, Loader2 } from "lucide-react";
 
 export function MockStartButton() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [conditions, setConditions] = useState(false);
+  const [accepted, setAccepted] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleStart = () => {
+  function handleStart() {
+    setError("");
+    // Invoke synchronously from the click to preserve browser user activation.
+    const fullscreen = conditions
+      ? document.fullscreenEnabled && document.documentElement.requestFullscreen
+        ? document.documentElement.requestFullscreen()
+        : Promise.reject(new Error("Fullscreen is unavailable. Choose Standard mock on this device."))
+      : Promise.resolve();
     startTransition(async () => {
       try {
-        const payload = await startMockAttempt();
+        await fullscreen;
+      } catch {
+        setError("Fullscreen was unavailable or declined. Choose Standard mock, or try again. No new attempt has started.");
+        return;
+      }
+      try {
+        const payload = await startMockAttempt(conditions);
         router.push(`/mock/${payload.attemptId}`);
-      } catch (err: any) {
-        console.error("Failed to start mock attempt:", err);
+      } catch {
+        setError("We could not start your mock. Please check your connection and try again.");
+        if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
       }
     });
-  };
+  }
 
   return (
-    <button
-      type="button"
-      onClick={handleStart}
-      disabled={isPending}
-      className="w-full flex items-center justify-center gap-2 rounded-full bg-[#116149] px-8 py-4 text-sm font-semibold text-white shadow-lg shadow-[#116149]/20 hover:bg-[#0e523e] transition-all cursor-pointer disabled:opacity-50"
-    >
-      {isPending ? (
-        <>
-          <Loader2 size={18} className="animate-spin" /> Preparing 180-Question Hall...
-        </>
-      ) : (
-        <>
-          Enter Exam Hall & Start Timer <ArrowRight size={18} />
-        </>
-      )}
-    </button>
+    <div className="space-y-5">
+      <fieldset disabled={isPending} className="space-y-3">
+        <legend className="mb-3 font-semibold">Choose your mock experience</legend>
+        <label className="flex items-start gap-3 rounded-2xl border p-4">
+          <input type="radio" name="mock-mode" checked={!conditions} onChange={() => setConditions(false)} className="mt-1" />
+          <span><strong>Standard mock</strong><span className="block text-sm text-slate-600">Timed practice. Fullscreen is optional; no interruption monitoring.</span></span>
+        </label>
+        <label className="flex items-start gap-3 rounded-2xl border p-4">
+          <input type="radio" name="mock-mode" checked={conditions} onChange={() => setConditions(true)} className="mt-1" />
+          <span><strong>Exam Conditions</strong><span className="block text-sm text-slate-600">Fullscreen required. Hiding the page or leaving fullscreen records an interruption, separately from your score.</span></span>
+        </label>
+      </fieldset>
+      <p className="text-sm text-slate-600">Close unrelated tabs and applications and complete the mock independently. We cannot check your other tabs. No microphone or camera is used. The timer continues during interruptions.</p>
+      <label className="flex items-start gap-3 text-sm"><input type="checkbox" checked={accepted} onChange={e => setAccepted(e.target.checked)} disabled={isPending} className="mt-1" />I understand these rules. Interruptions alone do not establish malpractice.</label>
+      {error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-800">{error}</p>}
+      <button type="button" onClick={handleStart} disabled={isPending || !accepted} className="w-full min-h-12 rounded-full bg-[#116149] px-6 py-3 font-semibold text-white disabled:opacity-50">
+        {isPending ? "Preparing your mock…" : "Start or resume mock"}
+      </button>
+      <p className="text-xs text-slate-500">An existing active mock resumes with its original mode and timer.</p>
+    </div>
   );
 }

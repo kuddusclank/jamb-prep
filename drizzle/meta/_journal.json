@@ -8,6 +8,13 @@
       "when": 1791583951302,
       "tag": "0000_rare_chameleon",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791633460495,
+      "tag": "0001_daily_kid_colt",
+      "breakpoints": true
     }
   ]
 }

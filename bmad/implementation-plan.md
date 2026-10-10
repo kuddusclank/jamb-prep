@@ -196,3 +196,11 @@ The build is structured into **8 sequential execution phases** over a 10–12-we
 | **Integration Tests**| Vitest + Supabase Test DB | Exam start $\rightarrow$ autosave answers $\rightarrow$ submit $\rightarrow$ graded result calculation. |
 | **Payment Tests** | Vitest + Mock Paystack | Webhook signature verification, deduplication, entitlement extension, discount application. |
 | **E2E Tests** | Playwright | Full candidate journey: Signup $\rightarrow$ Onboard $\rightarrow$ Practice $\rightarrow$ Mock exam $\rightarrow$ Scorecard. |
+
+## 2026-10-10 — Mock conditions first stage
+
+Implemented optional Standard / Exam Conditions selection, gesture-triggered fullscreen preflight, interruption observations, owner-checked storage and separate result summary. See [mock-exam-conditions.md](mock-exam-conditions.md). Migration generated but not applied. No browser testing. TypeScript and three pure interruption-state regression tests pass; deployment/database integration checks remain outstanding.
+
+### Database rollout — 2026-10-10
+
+Applied and verified the missing interruption table, cascade foreign key, index and RLS on the configured Supabase database. Existing exam-mode column verified. Full migration replay was avoided because topic mastery/mode already existed and no Drizzle journal was present. Baseline reconciliation remains required before routine migrations. No app deployment or browser testing performed.

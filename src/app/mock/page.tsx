@@ -6,22 +6,18 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { 
   BookOpen, 
-  Clock, 
-  HelpCircle, 
   Keyboard, 
-  Award, 
   ArrowRight, 
   ShieldCheck, 
   CheckCircle2,
-  Sparkles,
-  Lock
+  Sparkles
 } from "lucide-react";
 import { MockStartButton } from "./mock-start-button";
 import { getUserSubscriptionStatus } from "@/lib/subscription";
 
 export const metadata = {
   title: "CBT Mock Exam Instructions — JAMBPrep",
-  description: "Official JAMB UTME simulation hall briefing, 180 questions, 120 minutes, 8-key hotkey guide.",
+  description: "JAMBPrep mock exam briefing, 180 questions, 120 minutes, 8-key hotkey guide.",
 };
 
 export default async function MockInstructionsPage() {
@@ -97,13 +93,13 @@ export default async function MockInstructionsPage() {
           {/* Header Banner */}
           <div className="rounded-3xl bg-[#102F29] text-white p-6 sm:p-10 shadow-xl">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-4">
-              <ShieldCheck size={14} /> OFFICIAL CBT SIMULATION HALL
+              <ShieldCheck size={14} /> YOUR MOCK EXAM BRIEFING
             </span>
             <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-tight">
               JAMB UTME Mock <span className="serif-accent text-[#E7B85A]">Examination Briefing</span>
             </h1>
             <p className="mt-3 text-sm sm:text-base text-emerald-100/90 leading-relaxed max-w-xl">
-              This simulation replicates the exact conditions of the official UTME test hall: 120 minutes, 180 questions across your 4 registered subjects, and the official 8-key desktop keyboard controls.
+              Practise with a timed UTME-style mock: 120 minutes, 180 questions across your 4 registered subjects, and 8-key desktop keyboard controls.
             </p>
           </div>
 

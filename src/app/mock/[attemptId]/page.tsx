@@ -22,7 +22,7 @@ export default async function MockAttemptPage({ params }: MockAttemptPageProps) 
   }
 
   // Load or rehydrate the attempt session
-  const payload = await startMockAttempt();
+  const payload = await startMockAttempt(false, attemptId);
 
   const studentName =
     user.user_metadata?.display_name || user.email?.split("@")[0] || "Candidate";
