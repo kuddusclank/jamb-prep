@@ -135,66 +135,62 @@ export async function recordTopicMasteryBatch(
  * Computes deep diagnostic study coach insights for a student.
  */
 export async function getStudentCoachInsights(userId: string): Promise<CoachInsights> {
-  // 1. Fetch Student Preferences
-  const pref = await db.query.studentPreferences.findFirst({
-    where: eq(studentPreferences.userId, userId),
-  });
+  // Fetch all 4 data dimensions in parallel to minimize network roundtrips
+  const [pref, enrolled, completedResults, masteryRows] = await Promise.all([
+    db.query.studentPreferences.findFirst({
+      where: eq(studentPreferences.userId, userId),
+    }),
+    db
+      .select({
+        id: subjects.id,
+        name: subjects.name,
+        code: subjects.code,
+        isCompulsory: subjects.isCompulsory,
+      })
+      .from(studentSubjects)
+      .innerJoin(subjects, eq(studentSubjects.subjectId, subjects.id))
+      .where(eq(studentSubjects.userId, userId)),
+    db
+      .select({
+        attemptId: attemptResults.attemptId,
+        totalScore: attemptResults.totalScore,
+        englishScore: attemptResults.englishScore,
+        subject2Score: attemptResults.subject2Score,
+        subject3Score: attemptResults.subject3Score,
+        subject4Score: attemptResults.subject4Score,
+        timeSpentSeconds: attemptResults.timeSpentSeconds,
+        createdAt: attemptResults.createdAt,
+      })
+      .from(attemptResults)
+      .where(eq(attemptResults.userId, userId))
+      .orderBy(desc(attemptResults.createdAt))
+      .limit(10),
+    db
+      .select({
+        topicId: studentTopicMastery.topicId,
+        topicTitle: topics.title,
+        topicSlug: topics.slug,
+        subjectCode: subjects.code,
+        subjectName: subjects.name,
+        subjectId: studentTopicMastery.subjectId,
+        accuracyPercent: studentTopicMastery.accuracyPercent,
+        totalAttempted: studentTopicMastery.totalAttempted,
+        totalCorrect: studentTopicMastery.totalCorrect,
+      })
+      .from(studentTopicMastery)
+      .innerJoin(topics, eq(studentTopicMastery.topicId, topics.id))
+      .innerJoin(subjects, eq(studentTopicMastery.subjectId, subjects.id))
+      .where(eq(studentTopicMastery.userId, userId))
+      .orderBy(studentTopicMastery.accuracyPercent),
+  ]);
+
   const targetScore = pref?.targetScore || 280;
-
-  // 2. Fetch Enrolled Subjects
-  const enrolled = await db
-    .select({
-      id: subjects.id,
-      name: subjects.name,
-      code: subjects.code,
-      isCompulsory: subjects.isCompulsory,
-    })
-    .from(studentSubjects)
-    .innerJoin(subjects, eq(studentSubjects.subjectId, subjects.id))
-    .where(eq(studentSubjects.userId, userId));
-
   const enrolledSubs = enrolled.length > 0 ? enrolled : await db.query.subjects.findMany({ limit: 4 });
-
-  // 3. Fetch Completed Mock Results
-  const completedResults = await db
-    .select({
-      attemptId: attemptResults.attemptId,
-      totalScore: attemptResults.totalScore,
-      englishScore: attemptResults.englishScore,
-      subject2Score: attemptResults.subject2Score,
-      subject3Score: attemptResults.subject3Score,
-      subject4Score: attemptResults.subject4Score,
-      timeSpentSeconds: attemptResults.timeSpentSeconds,
-      createdAt: attemptResults.createdAt,
-    })
-    .from(attemptResults)
-    .where(eq(attemptResults.userId, userId))
-    .orderBy(desc(attemptResults.createdAt))
-    .limit(10);
 
   const totalMocksCompleted = completedResults.length;
   const latestScore = completedResults[0]?.totalScore ?? null;
   const bestScore = completedResults.reduce((max, r) => Math.max(max, r.totalScore), 0) || null;
   const gapToTarget = latestScore !== null ? Math.max(0, targetScore - latestScore) : targetScore;
-
-  // 4. Fetch Topic Mastery Records
-  const masteryRows = await db
-    .select({
-      topicId: studentTopicMastery.topicId,
-      topicTitle: topics.title,
-      topicSlug: topics.slug,
-      subjectCode: subjects.code,
-      subjectName: subjects.name,
-      subjectId: studentTopicMastery.subjectId,
-      accuracyPercent: studentTopicMastery.accuracyPercent,
-      totalAttempted: studentTopicMastery.totalAttempted,
-      totalCorrect: studentTopicMastery.totalCorrect,
-    })
-    .from(studentTopicMastery)
-    .innerJoin(topics, eq(studentTopicMastery.topicId, topics.id))
-    .innerJoin(subjects, eq(studentTopicMastery.subjectId, subjects.id))
-    .where(eq(studentTopicMastery.userId, userId))
-    .orderBy(studentTopicMastery.accuracyPercent);
 
   // Group into weak vs mastered
   const weakestTopics: WeakTopicItem[] = masteryRows

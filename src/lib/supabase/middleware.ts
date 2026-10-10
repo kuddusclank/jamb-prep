@@ -14,6 +14,33 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  const pathname = request.nextUrl.pathname;
+
+  // Static files and webhooks don't need auth processing
+  if (pathname.startsWith("/api/webhooks")) {
+    return supabaseResponse;
+  }
+
+  const protectedPaths = ["/dashboard", "/onboarding", "/practice", "/mock", "/results", "/referrals", "/analytics", "/settings"];
+  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
+  const isAuthPage = pathname === "/login" || pathname === "/register";
+
+  const hasAuthCookie = request.cookies.getAll().some((c) => c.name.startsWith("sb-"));
+
+  // Fast-path: Unauthenticated visitor hitting a protected route
+  if (isProtected && !hasAuthCookie) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("redirectTo", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // Fast-path: Visitor on public marketing/pricing page without auth cookies
+  if (!isProtected && !isAuthPage && !hasAuthCookie) {
+    return supabaseResponse;
+  }
+
+  // Only create client and validate/refresh user if auth cookies are present
   const supabase = createServerClient(
     supabaseUrl,
     supabaseKey,
@@ -39,12 +66,6 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const pathname = request.nextUrl.pathname;
-
-  // Protect student app routes
-  const protectedPaths = ["/dashboard", "/onboarding", "/practice", "/mock", "/results", "/referrals", "/analytics", "/settings"];
-  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
-
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -53,7 +74,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Redirect signed-in users away from auth pages
-  if (user && (pathname === "/login" || pathname === "/register")) {
+  if (user && isAuthPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);

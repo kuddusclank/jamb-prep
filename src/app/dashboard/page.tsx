@@ -41,26 +41,26 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Load deep coach insights
-  const insights = await getStudentCoachInsights(user.id);
-
-  // Load referral progress
+  // Load coach insights and referral state concurrently in a single roundtrip
   let qualifiedReferrals = 0;
   let has50PercentReward = false;
+  let insights;
 
   try {
-    const [refCount] = await db
-      .select({ value: count() })
-      .from(referrals)
-      .where(eq(referrals.referrerId, user.id));
-    if (refCount) qualifiedReferrals = refCount.value;
+    const [insightsRes, refCountRows, rewardRecord] = await Promise.all([
+      getStudentCoachInsights(user.id),
+      db.select({ value: count() }).from(referrals).where(eq(referrals.referrerId, user.id)),
+      db.query.referralRewards.findFirst({
+        where: eq(referralRewards.userId, user.id),
+      }),
+    ]);
 
-    const reward = await db.query.referralRewards.findFirst({
-      where: eq(referralRewards.userId, user.id),
-    });
-    if (reward && reward.status === "available") has50PercentReward = true;
+    insights = insightsRes;
+    if (refCountRows?.[0]) qualifiedReferrals = refCountRows[0].value;
+    if (rewardRecord && rewardRecord.status === "available") has50PercentReward = true;
   } catch (err) {
-    console.warn("Notice loading referral data:", err);
+    console.warn("Notice loading dashboard state:", err);
+    insights = await getStudentCoachInsights(user.id);
   }
 
   const studentName = user.user_metadata?.display_name || user.email?.split("@")[0] || "Student";
