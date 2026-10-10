@@ -1,0 +1,55 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"main": ".open-next/worker.js",
+	"name": "jambprep",
+	"compatibility_date": "2026-10-10",
+	"compatibility_flags": [
+		"nodejs_compat",
+		"global_fetch_strictly_public"
+	],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"services": [
+		{
+			// Self-reference service binding, the service name must match the worker name
+			// see https://opennext.js.org/cloudflare/caching
+			"binding": "WORKER_SELF_REFERENCE",
+			"service": "jambprep"
+		}
+	],
+	"r2_buckets": [
+		// Use R2 incremental cache
+		// See https://opennext.js.org/cloudflare/caching
+		{
+			"binding": "NEXT_INC_CACHE_R2_BUCKET",
+			// Create the bucket before deploying
+			// You can change the bucket name if you want
+			// See https://developers.cloudflare.com/workers/wrangler/commands/#r2-bucket-create
+			"bucket_name": "jambprep-opennext-cache"
+		}
+	],
+	"images": {
+		// Enable image optimization
+		// see https://opennext.js.org/cloudflare/howtos/image
+		"binding": "IMAGES"
+	},
+	"routes": [
+		{
+			"pattern": "jambprep.lecterniq.com",
+			"custom_domain": true
+		}
+	],
+	"vars": {
+		"NEXT_PUBLIC_APP_URL": "https://jambprep.lecterniq.com",
+		"NEXT_PUBLIC_SUPABASE_URL": "https://bqumnaoiiukifvanoonm.supabase.co",
+		"NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_Fg-Vq3gTOa5Y6Au-Xu8FZw_Ld9ypzfW",
+		"DATABASE_URL": "postgresql://postgres.bqumnaoiiukifvanoonm:xuhsuc-0wavno-kygDyg@aws-0-eu-west-1.pooler.supabase.com:5432/postgres",
+		"DIRECT_DATABASE_URL": "postgresql://postgres:xuhsuc-0wavno-kygDyg@db.bqumnaoiiukifvanoonm.supabase.co:5432/postgres",
+		"NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY": "pk_test_eab1f68c7146da56e7408fb46ea912f7f2b3dc3d",
+		"PAYSTACK_SECRET_KEY": "sk_test_df9120d7fecc44d01fb40a16ba11af14d6222169",
+		"PAYSTACK_WEBHOOK_SECRET": "sk_test_df9120d7fecc44d01fb40a16ba11af14d6222169",
+		"PAYSTACK_PLAN_CODE": "PLN_tts4cz7tf89srcl"
+	}
+}
