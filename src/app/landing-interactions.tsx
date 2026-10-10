@@ -26,7 +26,118 @@ export function SubjectPicker() {
   return <div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><div className="flex min-h-20 items-center justify-between gap-3 rounded-xl bg-[#116149] p-5 text-white"><span className="font-medium">Use of English<small className="mt-1 block text-emerald-100">Always included</small></span><Check size={18}/></div>{electives.map(subject => { const active = selected.includes(subject); return <button type="button" key={subject} aria-pressed={active} disabled={!active && selected.length === 3} onClick={() => setSelected(current => active ? current.filter(s => s !== subject) : [...current, subject])} className={`flex min-h-20 items-center justify-between gap-3 rounded-xl border p-5 text-left text-sm font-medium transition-colors disabled:opacity-50 ${active ? 'border-emerald-700 bg-emerald-50' : 'border-slate-200 bg-white enabled:hover:border-emerald-700'}`}>{subject}<span className={`flex size-5 shrink-0 items-center justify-center rounded-full border ${active ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-slate-300'}`}>{active && <Check size={12}/>}</span></button>; })}</div><p role="status" className="mt-5 text-sm text-slate-600">{selected.length === 3 ? `Your preview combination: English, ${selected.join(', ')}.` : `${selected.length} of 3 electives selected. Choose three to preview your combination.`}</p><p className="mt-2 text-xs text-slate-500">Preview only. You’ll confirm your combination during onboarding when registration opens.</p></div>;
 }
 
-export function MobileMenu() {
- const [open, setOpen] = useState(false);
- return <div className="relative md:hidden"><button type="button" aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen(!open)} className="min-h-11 rounded-full border border-emerald-950/15 px-4 text-sm">{open ? 'Close' : 'Menu'}</button>{open && <nav id="mobile-menu" aria-label="Mobile navigation" className="absolute top-14 right-0 z-50 w-56 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">{[['How it works','how-it-works'],['Subjects','subjects'],['Pricing','pricing'],['Getting started','get-started']].map(([name,id]) => <a key={id} onClick={() => setOpen(false)} href={`#${id}`} className="flex min-h-12 items-center justify-between rounded-lg px-3 text-sm hover:bg-emerald-50">{name}<ArrowRight size={14}/></a>)}</nav>}</div>;
+import Link from "next/link";
+
+export function MobileMenu({ 
+  user 
+}: { 
+  user?: { email?: string | null; name?: string | null } | null 
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative md:hidden">
+      <button 
+        type="button" 
+        aria-expanded={open} 
+        aria-controls="mobile-menu" 
+        onClick={() => setOpen(!open)} 
+        className="min-h-11 rounded-full border border-emerald-950/15 px-4 text-sm font-semibold"
+      >
+        {open ? 'Close' : 'Menu'}
+      </button>
+      {open && (
+        <nav 
+          id="mobile-menu" 
+          aria-label="Mobile navigation" 
+          className="absolute top-14 right-0 z-50 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl"
+        >
+          {user ? (
+            <>
+              <div className="border-b border-slate-100 pb-2 mb-2 px-3">
+                <p className="text-xs text-slate-500">Signed in as</p>
+                <p className="text-sm font-bold text-emerald-900 truncate">{user.name || user.email}</p>
+              </div>
+              <Link 
+                onClick={() => setOpen(false)} 
+                href="/dashboard" 
+                className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm font-semibold text-[#116149] hover:bg-emerald-50"
+              >
+                Dashboard <ArrowRight size={14}/>
+              </Link>
+              <Link 
+                onClick={() => setOpen(false)} 
+                href="/practice" 
+                className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm hover:bg-emerald-50"
+              >
+                Topic Practice <ArrowRight size={14}/>
+              </Link>
+              <Link 
+                onClick={() => setOpen(false)} 
+                href="/mock" 
+                className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm hover:bg-emerald-50"
+              >
+                CBT Mock Exam <ArrowRight size={14}/>
+              </Link>
+              <Link 
+                onClick={() => setOpen(false)} 
+                href="/analytics" 
+                className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm hover:bg-emerald-50"
+              >
+                Performance Coach <ArrowRight size={14}/>
+              </Link>
+              <Link 
+                onClick={() => setOpen(false)} 
+                href="/pricing" 
+                className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm hover:bg-emerald-50"
+              >
+                Upgrade to Premium <ArrowRight size={14}/>
+              </Link>
+              <Link 
+                onClick={() => setOpen(false)} 
+                href="/referrals" 
+                className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm text-amber-800 hover:bg-amber-50"
+              >
+                Refer & Earn 50% <ArrowRight size={14}/>
+              </Link>
+            </>
+          ) : (
+            <>
+              {[
+                ['How it works', '#how-it-works'],
+                ['Subjects', '#subjects'],
+                ['Pricing', '#pricing'],
+                ['Getting started', '#get-started'],
+              ].map(([name, href]) => (
+                <a 
+                  key={href} 
+                  onClick={() => setOpen(false)} 
+                  href={href} 
+                  className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm hover:bg-emerald-50"
+                >
+                  {name}<ArrowRight size={14}/>
+                </a>
+              ))}
+              <div className="border-t border-slate-100 pt-2 mt-2">
+                <Link 
+                  onClick={() => setOpen(false)} 
+                  href="/login" 
+                  className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm font-semibold text-[#116149] hover:bg-emerald-50"
+                >
+                  Sign In <ArrowRight size={14}/>
+                </Link>
+                <Link 
+                  onClick={() => setOpen(false)} 
+                  href="/register" 
+                  className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 mt-1"
+                >
+                  Create Account <ArrowRight size={14}/>
+                </Link>
+              </div>
+            </>
+          )}
+        </nav>
+      )}
+    </div>
+  );
 }
+
