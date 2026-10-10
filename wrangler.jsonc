@@ -41,11 +41,25 @@
 			"custom_domain": true
 		}
 	],
+	"observability": {
+		"logs": {
+			"enabled": true,
+			"head_sampling_rate": 1,
+			"invocation_logs": true,
+			"persist": true
+		},
+		"traces": {
+			"enabled": false,
+			"head_sampling_rate": 1,
+			"persist": true
+		}
+	},
 	"vars": {
 		"NEXT_PUBLIC_APP_URL": "https://jambprep.lecterniq.com",
 		"NEXT_PUBLIC_SUPABASE_URL": "https://bqumnaoiiukifvanoonm.supabase.co",
 		"NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_Fg-Vq3gTOa5Y6Au-Xu8FZw_Ld9ypzfW",
 		"DATABASE_URL": "postgresql://postgres.bqumnaoiiukifvanoonm:xuhsuc-0wavno-kygDyg@aws-0-eu-west-1.pooler.supabase.com:5432/postgres",
+		"TRANSACTION_DATABASE_URL": "postgresql://postgres.bqumnaoiiukifvanoonm:xuhsuc-0wavno-kygDyg@aws-0-eu-west-1.pooler.supabase.com:6543/postgres",
 		"DIRECT_DATABASE_URL": "postgresql://postgres:xuhsuc-0wavno-kygDyg@db.bqumnaoiiukifvanoonm.supabase.co:5432/postgres",
 		"NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY": "pk_test_eab1f68c7146da56e7408fb46ea912f7f2b3dc3d",
 		"PAYSTACK_SECRET_KEY": "sk_test_df9120d7fecc44d01fb40a16ba11af14d6222169",

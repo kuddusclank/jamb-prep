@@ -15,14 +15,14 @@ const globalForDb = globalThis as unknown as {
 
 const client = globalForDb.postgresClient ?? postgres(connectionString, {
   prepare: false,
-  max: 10,
-  idle_timeout: 60,
+  max: 1,
+  idle_timeout: 15,
   connect_timeout: 10,
+  ssl: 'require',
 });
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForDb.postgresClient = client;
-}
+// Cache client singleton across warm invocations in all environments
+globalForDb.postgresClient = client;
 
 export const db = drizzle(client, { schema });
 

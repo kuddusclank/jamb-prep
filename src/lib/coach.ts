@@ -312,3 +312,27 @@ export async function getStudentCoachInsights(userId: string): Promise<CoachInsi
     coachRecommendation,
   };
 }
+
+export function getDefaultCoachInsights(targetScore: number = 280): CoachInsights {
+  return {
+    hasActivity: false,
+    targetScore,
+    targetInstitution: null,
+    targetCourse: null,
+    totalMocksCompleted: 0,
+    latestScore: null,
+    bestScore: null,
+    gapToTarget: targetScore,
+    weakestTopics: [],
+    masteredTopics: [],
+    subjectSummaries: [],
+    recentMockHistory: [],
+    coachRecommendation: {
+      badge: "BENCHMARK DIAGNOSTIC NEEDED",
+      headline: "Take your baseline diagnostic mock exam.",
+      explanation: "You haven't completed a full CBT simulation yet. Take a 180-question mock exam to uncover your starting scores across English and electives so your coach can generate your revision plan.",
+      suggestedSubjectCode: "ENG",
+      potentialGainPoints: 45,
+    },
+  };
+}
