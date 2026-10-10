@@ -226,6 +226,7 @@ export async function verifyPaystackPaymentAction(reference: string): Promise<Ve
   const isPlaceholder = paystackSecret.includes("placeholder");
 
   let isVerified = false;
+  let paystackMeta: { authorizationCode?: string | null; customerCode?: string | null; subscriptionCode?: string | null; emailToken?: string | null } | undefined = undefined;
 
   if (isRealKey && !isPlaceholder) {
     try {
@@ -239,6 +240,12 @@ export async function verifyPaystackPaymentAction(reference: string): Promise<Ve
       const verifyData = await verifyRes.json();
       if (verifyData.status && verifyData.data?.status === "success") {
         isVerified = true;
+        paystackMeta = {
+          authorizationCode: verifyData.data?.authorization?.authorization_code || null,
+          customerCode: verifyData.data?.customer?.customer_code || null,
+          subscriptionCode: verifyData.data?.subscription?.subscription_code || null,
+          emailToken: verifyData.data?.subscription?.email_token || null,
+        };
       }
     } catch (err) {
       console.warn("Notice during Paystack verification:", err);
@@ -262,11 +269,19 @@ export async function verifyPaystackPaymentAction(reference: string): Promise<Ve
 
   // 3. Mark transaction as success
   await db.update(paymentTransactions)
-    .set({ status: "success" })
+    .set({ 
+      status: "success",
+      ...(paystackMeta ? {
+        paystackPayload: {
+          ...(txn.paystackPayload as object || {}),
+          ...paystackMeta,
+        }
+      } : {})
+    })
     .where(eq(paymentTransactions.id, txn.id));
 
   // 4. Activate 30-day Premium Entitlement
-  const { expiresAt } = await activateUserSubscription(txn.userId, 30, "MONTHLY_1000");
+  const { expiresAt } = await activateUserSubscription(txn.userId, 30, "MONTHLY_1000", paystackMeta);
 
   // 5. If referral reward was used, redeem it and log subscription discount
   const payload = txn.paystackPayload as { rewardId?: string } | null;

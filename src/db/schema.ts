@@ -177,6 +177,12 @@ export const subscriptionEntitlements = pgTable('subscription_entitlements', {
   userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull().unique(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   planCode: text('plan_code').default('MONTHLY_1000').notNull(),
+  autoRenew: boolean('auto_renew').default(true).notNull(),
+  cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+  paystackSubscriptionCode: text('paystack_subscription_code'),
+  paystackEmailToken: text('paystack_email_token'),
+  paystackAuthorizationCode: text('paystack_authorization_code'),
+  paystackCustomerCode: text('paystack_customer_code'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 

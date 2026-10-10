@@ -41,6 +41,8 @@ interface ProfileClientProps {
     expiresAt: string | null;
     daysRemaining: number;
     planCode: string | null;
+    autoRenew?: boolean;
+    cancelledAt?: string | null;
   };
   enrolledSubjects: SubjectSummary[];
 }
@@ -58,7 +60,9 @@ export function ProfileClient({
   const [isConfirmingCancel, setIsConfirmingCancel] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelFeedback, setCancelFeedback] = useState<{ error?: string; message?: string } | null>(null);
-  const [isCancelledLocally, setIsCancelledLocally] = useState(false);
+  const [isCancelledLocally, setIsCancelledLocally] = useState(
+    subscription.autoRenew === false
+  );
 
   const [displayName, setDisplayName] = useState(initialProfile.displayName);
   const [targetScore, setTargetScore] = useState(initialPreferences.targetScore);
@@ -84,7 +88,8 @@ export function ProfileClient({
     }
   };
 
-  const isCurrentPremium = subscription.isPremium && !isCancelledLocally;
+  const isCurrentPremium = subscription.isPremium;
+  const isAutoRenewing = isCurrentPremium && !isCancelledLocally && subscription.autoRenew !== false;
 
   const formattedExpiry = subscription.expiresAt
     ? new Date(subscription.expiresAt).toLocaleDateString("en-NG", {
@@ -342,18 +347,36 @@ export function ProfileClient({
 
         {isCurrentPremium ? (
           /* Active Premium Plan Card */
-          <div className="rounded-2xl border-2 border-emerald-300 bg-emerald-50/50 p-6 space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-emerald-200/60 pb-4">
+          <div className={`rounded-2xl border-2 p-6 space-y-5 ${
+            isAutoRenewing 
+              ? "border-emerald-300 bg-emerald-50/50" 
+              : "border-amber-300 bg-amber-50/40"
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200/60 pb-4">
               <div>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#116149] text-white text-[11px] font-bold uppercase tracking-wider">
-                  <ShieldCheck size={12} /> ACTIVE PREMIUM SUBSCRIBER
-                </span>
+                {isAutoRenewing ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#116149] text-white text-[11px] font-bold uppercase tracking-wider">
+                    <ShieldCheck size={12} /> ACTIVE (AUTO-RENEWING)
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-700 text-white text-[11px] font-bold uppercase tracking-wider">
+                    <AlertTriangle size={12} /> CANCELLATION SCHEDULED
+                  </span>
+                )}
                 <h3 className="text-xl font-bold text-[#092E28] mt-2">
                   Premium Study Coach Access
                 </h3>
                 {formattedExpiry && (
-                  <p className="text-xs text-slate-600 mt-1">
-                    Your unlimited access is valid through <strong>{formattedExpiry}</strong> ({subscription.daysRemaining} days remaining).
+                  <p className="text-xs text-slate-600 mt-1 max-w-xl">
+                    {isAutoRenewing ? (
+                      <>
+                        Your unlimited access is valid through <strong>{formattedExpiry}</strong> ({subscription.daysRemaining} days remaining). Auto-renews on this date via Paystack.
+                      </>
+                    ) : (
+                      <>
+                        Auto-renewal has been cancelled on Paystack. You will not be charged again. Your Pro benefits remain active until <strong>{formattedExpiry}</strong> ({subscription.daysRemaining} days remaining), when your account will automatically switch to the Free plan.
+                      </>
+                    )}
                   </p>
                 )}
               </div>
@@ -383,46 +406,62 @@ export function ProfileClient({
               </div>
             </div>
 
-            {/* Cancel Subscription Area */}
-            <div className="pt-4 border-t border-emerald-200/60">
-              {!isConfirmingCancel ? (
-                <button
-                  type="button"
-                  onClick={() => setIsConfirmingCancel(true)}
-                  className="text-xs font-semibold text-red-600 hover:text-red-700 hover:underline cursor-pointer"
-                >
-                  Cancel Subscription
-                </button>
-              ) : (
-                <div className="p-4 rounded-xl border border-red-200 bg-white space-y-3">
-                  <div className="flex items-start gap-2.5">
-                    <AlertTriangle size={18} className="text-red-600 shrink-0 mt-0.5" />
-                    <div className="text-xs text-slate-700">
-                      <strong className="block font-bold text-red-900 mb-0.5">
-                        Are you sure you want to cancel your subscription?
-                      </strong>
-                      Cancelling will immediately end your unlimited CBT simulations, lock weak-topic analytics, and revert your account to the 15 questions/day Free tier.
+            {/* Cancel Subscription / Status Area */}
+            <div className="pt-4 border-t border-slate-200/60">
+              {isAutoRenewing ? (
+                !isConfirmingCancel ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsConfirmingCancel(true)}
+                    className="text-xs font-semibold text-red-600 hover:text-red-700 hover:underline cursor-pointer"
+                  >
+                    Cancel Subscription
+                  </button>
+                ) : (
+                  <div className="p-4 rounded-xl border border-red-200 bg-white space-y-3">
+                    <div className="flex items-start gap-2.5">
+                      <AlertTriangle size={18} className="text-red-600 shrink-0 mt-0.5" />
+                      <div className="text-xs text-slate-700">
+                        <strong className="block font-bold text-red-900 mb-0.5">
+                          Cancel recurring subscription on Paystack?
+                        </strong>
+                        Cancelling will stop all future automatic charges on Paystack. You will continue to enjoy unlimited CBT simulations, solutions, and coach analytics until your renewal date on <strong>{formattedExpiry}</strong>, when your account will automatically switch to the Free plan.
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-1">
+                      <button
+                        type="button"
+                        disabled={isCancelling}
+                        onClick={handleCancelSubscription}
+                        className="px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-semibold cursor-pointer disabled:opacity-50 transition"
+                      >
+                        {isCancelling ? "Cancelling on Paystack..." : "Confirm Cancellation"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isCancelling}
+                        onClick={() => setIsConfirmingCancel(false)}
+                        className="px-4 py-2 rounded-full border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-semibold cursor-pointer transition"
+                      >
+                        Keep Subscription
+                      </button>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-3 pt-1">
-                    <button
-                      type="button"
-                      disabled={isCancelling}
-                      onClick={handleCancelSubscription}
-                      className="px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-semibold cursor-pointer disabled:opacity-50 transition"
-                    >
-                      {isCancelling ? "Cancelling..." : "Confirm Cancellation"}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isCancelling}
-                      onClick={() => setIsConfirmingCancel(false)}
-                      className="px-4 py-2 rounded-full border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-semibold cursor-pointer transition"
-                    >
-                      Keep Subscription
-                    </button>
+                )
+              ) : (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2 text-amber-900 font-semibold">
+                    <CheckCircle2 size={16} className="text-amber-700 shrink-0" />
+                    <span>Cancelled on Paystack · Automatically switches to Free on {formattedExpiry}</span>
                   </div>
+                  <Link
+                    href="/pricing"
+                    className="inline-flex items-center gap-1.5 font-bold text-[#116149] hover:underline"
+                  >
+                    <span>Keep Pro / Renew Early</span>
+                    <ArrowRight size={13} />
+                  </Link>
                 </div>
               )}
             </div>

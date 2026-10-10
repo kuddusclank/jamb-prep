@@ -112,6 +112,8 @@ export default async function ProfilePage() {
             expiresAt: subStatus.expiresAt ? subStatus.expiresAt.toISOString() : null,
             daysRemaining: subStatus.daysRemaining,
             planCode: subStatus.planCode,
+            autoRenew: subStatus.autoRenew,
+            cancelledAt: subStatus.cancelledAt ? subStatus.cancelledAt.toISOString() : null,
           }}
           enrolledSubjects={enrolledRows}
         />

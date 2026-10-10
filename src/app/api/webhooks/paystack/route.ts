@@ -5,7 +5,8 @@ import {
   paymentTransactions, 
   paymentWebhookEvents, 
   referralRewards, 
-  subscriptionDiscounts 
+  subscriptionDiscounts,
+  subscriptionEntitlements 
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { activateUserSubscription } from "@/lib/subscription";
@@ -60,7 +61,13 @@ export async function POST(req: NextRequest) {
           .where(eq(paymentTransactions.id, txn.id));
 
         // Activate 30-day Premium Entitlement
-        await activateUserSubscription(txn.userId, 30, "MONTHLY_1000");
+        const paystackMeta = {
+          authorizationCode: event.data.authorization?.authorization_code || null,
+          customerCode: event.data.customer?.customer_code || null,
+          subscriptionCode: event.data.subscription?.subscription_code || null,
+          emailToken: event.data.subscription?.email_token || null,
+        };
+        await activateUserSubscription(txn.userId, 30, "MONTHLY_1000", paystackMeta);
 
         // Redeem referral reward if attached
         const payload = txn.paystackPayload as { rewardId?: string } | null;
@@ -85,6 +92,24 @@ export async function POST(req: NextRequest) {
             console.warn("Notice updating referral reward in webhook:", rwErr);
           }
         }
+      }
+    } else if (event.event === "subscription.disable") {
+      // User or merchant disabled subscription directly on Paystack
+      const subCode = event.data?.subscription_code;
+      const customerCode = event.data?.customer?.customer_code;
+
+      if (subCode || customerCode) {
+        await db.update(subscriptionEntitlements)
+          .set({
+            autoRenew: false,
+            cancelledAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(
+            subCode 
+              ? eq(subscriptionEntitlements.paystackSubscriptionCode, subCode)
+              : eq(subscriptionEntitlements.paystackCustomerCode, customerCode)
+          );
       }
     }
 

@@ -7,6 +7,8 @@ export interface SubscriptionStatus {
   expiresAt: Date | null;
   daysRemaining: number;
   planCode: string | null;
+  autoRenew: boolean;
+  cancelledAt: Date | null;
 }
 
 /**
@@ -24,6 +26,8 @@ export async function getUserSubscriptionStatus(userId: string): Promise<Subscri
         expiresAt: null,
         daysRemaining: 0,
         planCode: null,
+        autoRenew: true,
+        cancelledAt: null,
       };
     }
 
@@ -38,6 +42,8 @@ export async function getUserSubscriptionStatus(userId: string): Promise<Subscri
       expiresAt: expiry,
       daysRemaining: isPremium ? daysRemaining : 0,
       planCode: entitlement.planCode,
+      autoRenew: entitlement.autoRenew ?? true,
+      cancelledAt: entitlement.cancelledAt ? new Date(entitlement.cancelledAt) : null,
     };
   } catch (err) {
     console.warn("Notice checking subscription status:", err);
@@ -46,8 +52,17 @@ export async function getUserSubscriptionStatus(userId: string): Promise<Subscri
       expiresAt: null,
       daysRemaining: 0,
       planCode: null,
+      autoRenew: true,
+      cancelledAt: null,
     };
   }
+}
+
+export interface PaystackMetadata {
+  subscriptionCode?: string | null;
+  emailToken?: string | null;
+  authorizationCode?: string | null;
+  customerCode?: string | null;
 }
 
 /**
@@ -56,7 +71,8 @@ export async function getUserSubscriptionStatus(userId: string): Promise<Subscri
 export async function activateUserSubscription(
   userId: string,
   days: number = 30,
-  planCode: string = "MONTHLY_1000"
+  planCode: string = "MONTHLY_1000",
+  paystackMeta?: PaystackMetadata
 ): Promise<{ success: boolean; expiresAt: Date }> {
   const currentStatus = await getUserSubscriptionStatus(userId);
   const now = new Date();
@@ -75,12 +91,24 @@ export async function activateUserSubscription(
     userId,
     expiresAt: newExpiresAt,
     planCode,
+    autoRenew: true,
+    cancelledAt: null,
+    paystackSubscriptionCode: paystackMeta?.subscriptionCode || null,
+    paystackEmailToken: paystackMeta?.emailToken || null,
+    paystackAuthorizationCode: paystackMeta?.authorizationCode || null,
+    paystackCustomerCode: paystackMeta?.customerCode || null,
     updatedAt: now,
   }).onConflictDoUpdate({
     target: subscriptionEntitlements.userId,
     set: {
       expiresAt: newExpiresAt,
       planCode,
+      autoRenew: true,
+      cancelledAt: null,
+      ...(paystackMeta?.subscriptionCode ? { paystackSubscriptionCode: paystackMeta.subscriptionCode } : {}),
+      ...(paystackMeta?.emailToken ? { paystackEmailToken: paystackMeta.emailToken } : {}),
+      ...(paystackMeta?.authorizationCode ? { paystackAuthorizationCode: paystackMeta.authorizationCode } : {}),
+      ...(paystackMeta?.customerCode ? { paystackCustomerCode: paystackMeta.customerCode } : {}),
       updatedAt: now,
     },
   });
