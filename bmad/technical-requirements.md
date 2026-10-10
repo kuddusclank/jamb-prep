@@ -123,3 +123,41 @@ JAMBPrep is architected as a **modular monolith** optimized for speed of develop
 * **Cumulative Layout Shift (CLS)**: $< 0.05$ (guaranteed by explicit skeleton sizing for formulas and images).
 * **Bundle Size**: Total JavaScript loaded on `/mock/[attemptId]` must stay under $180\text{KB}$ gzipped.
 * **High-Availability SLA**: $99.9\%$ uptime during peak UTME preparation season (January – May).
+
+---
+
+## 6. Live Infrastructure & Dedicated Supabase Credentials
+
+The application is deployed with a dedicated, isolated Supabase project decoupled from any other systems:
+
+| Resource | Value | Details |
+| :--- | :--- | :--- |
+| **Project Name** | `jamb-prep` | Dedicated JAMB UTME application instance |
+| **Project Reference** | `bqumnaoiiukifvanoonm` | Unique Supabase project identifier |
+| **Organization** | `Clank Dynamic` | Supabase organization |
+| **Region** | `eu-west-1` (Ireland) | AWS Europe region |
+| **Project URL** | `https://bqumnaoiiukifvanoonm.supabase.co` | Base REST & Auth endpoint |
+| **Publishable / Anon Key**| `sb_publishable_Fg-Vq3gTOa5Y6Au-Xu8FZw_Ld9ypzfW` | Client-side Next.js browser key |
+| **Database User** | `postgres.bqumnaoiiukifvanoonm` | Default PostgreSQL superuser |
+| **Database Password** | `xuhsuc-0wavno-kygDyg` | Master database password |
+| **Direct URI (IPv6)** | `postgresql://postgres:xuhsuc-0wavno-kygDyg@db.bqumnaoiiukifvanoonm.supabase.co:5432/postgres` | Direct database connection |
+| **Session Pooler (IPv4)**| `postgresql://postgres.bqumnaoiiukifvanoonm:xuhsuc-0wavno-kygDyg@aws-0-eu-west-1.pooler.supabase.com:5432/postgres` | Drizzle Kit migrations & schema push |
+| **Transaction Pooler (IPv4)**| `postgresql://postgres.bqumnaoiiukifvanoonm:xuhsuc-0wavno-kygDyg@aws-0-eu-west-1.pooler.supabase.com:6543/postgres` | High-concurrency serverless pooler |
+
+### Supabase CLI Setup Commands
+
+To link this local workspace directly with the remote Supabase project:
+
+```bash
+# 1. Authenticate Supabase CLI
+supabase login
+
+# 2. Initialize Supabase workspace (if not already done)
+supabase init
+
+# 3. Link local project to the dedicated jamb-prep remote instance
+supabase link --project-ref bqumnaoiiukifvanoonm
+
+# 4. Pull remote configuration
+supabase db pull
+```

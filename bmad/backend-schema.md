@@ -392,3 +392,44 @@ export const bulkQuestionItemSchema = z.object({
 
 export const bulkImportPayloadSchema = z.array(bulkQuestionItemSchema);
 ```
+
+---
+
+## 5. Live Database Deployment & Table Catalog
+
+The production schema is actively deployed to the dedicated Supabase instance (`bqumnaoiiukifvanoonm`):
+
+### 5.1 Active Table Catalog (20 Tables)
+
+| # | Table Name | Purpose / Domain | Key Constraints |
+|---|:---|:---|:---|
+| 1 | `profiles` | User account identity | PK UUID -> `auth.users.id`, email unique |
+| 2 | `student_preferences` | Target scores & exam year | FK `user_id` -> `profiles.id` (1:1 cascade) |
+| 3 | `subjects` | UTME subject catalog (15 seeded) | Code unique, `is_compulsory` boolean |
+| 4 | `student_subjects` | Candidate subject combinations | Unique `(user_id, subject_id)` |
+| 5 | `topics` | Topic curriculum hierarchy | FK `subject_id` -> `subjects.id` |
+| 6 | `passages` | Reading comprehension passages | FK `subject_id` -> `subjects.id` |
+| 7 | `questions` | Question stems & metadata | FK `subject_id`, `topic_id`, `passage_id` |
+| 8 | `question_options` | Multiple choice options (A–D) | FK `question_id`, `is_correct` boolean |
+| 9 | `question_explanations`| Diagnostic solutions | FK `question_id` (1:1) |
+| 10 | `attempts` | Exam sessions (180 questions, 120m)| FK `user_id`, status enum, start/expiry timers |
+| 11 | `attempt_questions` | Frozen question sequence | FK `attempt_id`, `question_id`, sequence index |
+| 12 | `attempt_answers` | Student response ledger | FK `attempt_id`, `question_id`, selected option |
+| 13 | `attempt_results` | Official scaled scores (400 pts) | FK `attempt_id`, total score, subject breakdown |
+| 14 | `subscription_entitlements` | Paid access valid dates | FK `user_id`, `expires_at`, status |
+| 15 | `payment_transactions` | Paystack payment audit records | FK `user_id`, reference unique, amount, status |
+| 16 | `payment_webhook_events` | Webhook idempotency ledger | Paystack event ID unique, HMAC verified |
+| 17 | `referral_codes` | Viral invitation links | FK `user_id`, unique 8-char code |
+| 18 | `referrals` | Referral relationship tracking | FK `referrer_id`, `referred_user_id` |
+| 19 | `referral_rewards` | Unlocked 50% vouchers | FK `user_id`, status (available/redeemed) |
+| 20 | `subscription_discounts` | Applied checkout discounts | FK `transaction_id`, discount amount (₦500) |
+
+### 5.2 Live Credentials & Connection Strings
+
+* **Project Reference**: `bqumnaoiiukifvanoonm`
+* **Host (IPv4 Session Pooler)**: `aws-0-eu-west-1.pooler.supabase.com:5432`
+* **Direct URI (IPv6)**: `db.bqumnaoiiukifvanoonm.supabase.co:5432`
+* **Master User**: `postgres.bqumnaoiiukifvanoonm`
+* **Master Password**: `xuhsuc-0wavno-kygDyg`
+* **Connection String (Drizzle / Migrations)**:
+  `postgresql://postgres.bqumnaoiiukifvanoonm:xuhsuc-0wavno-kygDyg@aws-0-eu-west-1.pooler.supabase.com:5432/postgres`
