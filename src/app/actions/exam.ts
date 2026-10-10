@@ -17,6 +17,7 @@ import { eq, and, gt, sql, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { ExamQuestion } from "@/app/mock/exam-store";
 import { recordTopicMasteryBatch } from "@/lib/coach";
+import { getUserSubscriptionStatus } from "@/lib/subscription";
 
 export async function startMockAttempt(): Promise<{
   attemptId: string;
@@ -30,6 +31,22 @@ export async function startMockAttempt(): Promise<{
 
   if (!user) {
     redirect("/login");
+  }
+
+  // 1. Enforce subscription entitlement: free tier gets 1 diagnostic mock
+  const subStatus = await getUserSubscriptionStatus(user.id);
+  if (!subStatus.isPremium) {
+    const pastCompletedMocks = await db.query.attempts.findMany({
+      where: and(
+        eq(attempts.userId, user.id),
+        eq(attempts.mode, "mock"),
+        eq(attempts.status, "completed")
+      ),
+    });
+
+    if (pastCompletedMocks.length >= 1) {
+      throw new Error("Free tier includes 1 diagnostic benchmark mock. Please upgrade to Premium for unlimited full simulations.");
+    }
   }
 
   const now = new Date();

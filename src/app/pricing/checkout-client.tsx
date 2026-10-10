@@ -1,0 +1,239 @@
+"use client";
+
+import { useState } from "react";
+import { initializePaystackCheckoutAction, CheckoutPricing } from "@/app/actions/payment";
+import { 
+  Sparkles, 
+  Check, 
+  ArrowRight, 
+  Loader2, 
+  ShieldCheck, 
+  Users,
+  CreditCard
+} from "lucide-react";
+import Link from "next/link";
+
+interface CheckoutClientProps {
+  pricing: CheckoutPricing;
+}
+
+export function CheckoutClient({ pricing }: CheckoutClientProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleCheckout = async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      const result = await initializePaystackCheckoutAction();
+      if (result.authorizationUrl) {
+        window.location.href = result.authorizationUrl;
+      } else {
+        setErrorMessage("Unable to initiate payment session. Please try again.");
+        setIsLoading(false);
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to start checkout.");
+      setIsLoading(false);
+    }
+  };
+
+  const formattedExpiry = pricing.currentExpiresAt 
+    ? new Date(pricing.currentExpiresAt).toLocaleDateString("en-NG", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : null;
+
+  return (
+    <div className="space-y-8">
+      {/* Referral Discount Notice if available */}
+      {pricing.hasDiscount ? (
+        <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-4 sm:p-5 flex items-start gap-3.5 text-[#092E28]">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#116149] text-white">
+            <Sparkles size={18} />
+          </span>
+          <div className="text-sm">
+            <strong className="font-semibold block text-[#116149]">
+              50% Referral Discount Voucher Applied!
+            </strong>
+            <p className="text-slate-600 mt-0.5">
+              Because you invited 2 verified classmates, your first month is halved from ₦1,000 to <strong>₦500</strong>.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-amber-200 bg-[#F8F2DF] p-4 sm:p-5 flex items-center justify-between gap-4 text-[#092E28]">
+          <div className="text-xs sm:text-sm">
+            <span className="font-bold text-amber-900 block flex items-center gap-1.5">
+              <Users size={14} /> Want 50% off your first month?
+            </span>
+            <p className="text-slate-600 mt-0.5">
+              Invite 2 friends with your referral link to pay <strong>₦500</strong> instead of ₦1,000.
+            </p>
+          </div>
+          <Link
+            href="/referrals"
+            className="shrink-0 px-3.5 py-1.5 rounded-full bg-[#116149] text-white text-xs font-semibold hover:bg-[#0b4936] transition-colors"
+          >
+            Get Referral Link
+          </Link>
+        </div>
+      )}
+
+      {/* Pricing Cards Comparison */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+        
+        {/* Plan 1: Free Tier */}
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 flex flex-col justify-between shadow-sm">
+          <div>
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Starter Practice
+            </div>
+            <h3 className="text-2xl font-bold text-[#092E28] mt-1">Free Tier</h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Essential diagnostic practice to uncover your baseline.
+            </p>
+
+            <div className="mt-5 pb-5 border-b border-slate-100 flex items-baseline gap-1">
+              <span className="text-4xl font-extrabold text-[#092E28]">₦0</span>
+              <span className="text-xs text-slate-400">/ forever</span>
+            </div>
+
+            <ul className="mt-6 space-y-3 text-xs text-slate-600">
+              <li className="flex items-center gap-2.5">
+                <Check size={15} className="text-[#116149] shrink-0" />
+                <span><strong>15 practice questions</strong> per day</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Check size={15} className="text-[#116149] shrink-0" />
+                <span><strong>1 full diagnostic mock</strong> simulation</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Check size={15} className="text-[#116149] shrink-0" />
+                <span>Instant solution answers</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Check size={15} className="text-[#116149] shrink-0" />
+                <span>Basic topic accuracy tracking</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="mt-8 pt-4 border-t border-slate-100">
+            <Link
+              href="/practice"
+              className="w-full min-h-11 inline-flex items-center justify-center rounded-full border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Continue Free Practice
+            </Link>
+          </div>
+        </div>
+
+        {/* Plan 2: Premium Coach Tier */}
+        <div className="rounded-3xl border-2 border-[#116149] bg-white p-6 sm:p-8 flex flex-col justify-between shadow-lg shadow-[#116149]/10 relative">
+          <div className="absolute -top-3.5 right-6 px-3.5 py-0.5 rounded-full bg-[#116149] text-white text-[11px] font-bold uppercase tracking-wider">
+            Most Recommended
+          </div>
+
+          <div>
+            <div className="text-xs font-bold uppercase tracking-wider text-[#116149]">
+              Full Preparation Access
+            </div>
+            <h3 className="text-2xl font-bold text-[#092E28] mt-1">Premium Study Coach</h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Unlimited practice, authentic CBT hall simulations, and personalized revision.
+            </p>
+
+            <div className="mt-5 pb-5 border-b border-slate-100 flex items-baseline gap-2">
+              {pricing.hasDiscount ? (
+                <>
+                  <span className="text-4xl font-extrabold text-[#116149]">
+                    ₦{pricing.finalAmountNaira.toLocaleString()}
+                  </span>
+                  <span className="text-lg line-through text-slate-400 font-semibold">
+                    ₦{pricing.originalAmountNaira.toLocaleString()}
+                  </span>
+                  <span className="text-xs text-slate-400">/ 30 days</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-4xl font-extrabold text-[#092E28]">
+                    ₦{pricing.finalAmountNaira.toLocaleString()}
+                  </span>
+                  <span className="text-xs text-slate-400">/ 30 days</span>
+                </>
+              )}
+            </div>
+
+            {pricing.isAlreadyPremium && formattedExpiry && (
+              <div className="mt-3 text-xs bg-emerald-50 text-[#116149] p-2.5 rounded-xl font-medium">
+                ✓ Currently Active (Renews / Expires on {formattedExpiry})
+              </div>
+            )}
+
+            <ul className="mt-6 space-y-3 text-xs text-slate-600">
+              <li className="flex items-center gap-2.5">
+                <Check size={15} className="text-[#116149] shrink-0" />
+                <span><strong>Unlimited daily practice</strong> across all 15 subjects</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Check size={15} className="text-[#116149] shrink-0" />
+                <span><strong>Unlimited 180-question mock exams</strong> with 8-key desktop hotkeys</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Check size={15} className="text-[#116149] shrink-0" />
+                <span><strong>Detailed KaTeX step-by-step solutions</strong> & formulas</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Check size={15} className="text-[#116149] shrink-0" />
+                <span><strong>Diagnostic Study Coach</strong> with weak-topic revision roadmap</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Check size={15} className="text-[#116149] shrink-0" />
+                <span>Offline exam outbox resilience & instant scorecards</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="mt-8 pt-4 border-t border-slate-100">
+            {errorMessage && (
+              <div className="mb-3 text-xs text-red-600 bg-red-50 p-2.5 rounded-xl">
+                {errorMessage}
+              </div>
+            )}
+
+            <button
+              onClick={handleCheckout}
+              disabled={isLoading}
+              className="w-full min-h-12 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 text-sm font-semibold text-white hover:bg-[#0b4936] transition-all hover:-translate-y-0.5 shadow-md shadow-[#116149]/20 disabled:opacity-60 cursor-pointer"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Initiating Paystack Checkout...
+                </>
+              ) : pricing.isAlreadyPremium ? (
+                <>
+                  Extend 30 Days (₦{pricing.finalAmountNaira.toLocaleString()}) <ArrowRight size={15} />
+                </>
+              ) : (
+                <>
+                  <CreditCard size={15} />
+                  Upgrade to Premium (₦{pricing.finalAmountNaira.toLocaleString()})
+                </>
+              )}
+            </button>
+
+            <div className="mt-3 flex items-center justify-center gap-2 text-[11px] text-slate-400">
+              <ShieldCheck size={13} className="text-emerald-700" />
+              <span>Secured by Paystack • Card, Bank Transfer, USSD</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}

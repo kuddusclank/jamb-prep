@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/db";
-import { studentSubjects, subjects } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { studentSubjects, subjects, attempts } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { 
@@ -12,9 +12,12 @@ import {
   Award, 
   ArrowRight, 
   ShieldCheck, 
-  CheckCircle2 
+  CheckCircle2,
+  Sparkles,
+  Lock
 } from "lucide-react";
 import { MockStartButton } from "./mock-start-button";
+import { getUserSubscriptionStatus } from "@/lib/subscription";
 
 export const metadata = {
   title: "CBT Mock Exam Instructions — JAMBPrep",
@@ -28,6 +31,16 @@ export default async function MockInstructionsPage() {
   if (!user) {
     redirect("/login");
   }
+
+  const subStatus = await getUserSubscriptionStatus(user.id);
+  const completedMocks = await db.query.attempts.findMany({
+    where: and(
+      eq(attempts.userId, user.id),
+      eq(attempts.mode, "mock"),
+      eq(attempts.status, "completed")
+    ),
+  });
+  const hasExhaustedFreeMock = !subStatus.isPremium && completedMocks.length >= 1;
 
   // Load enrolled subjects
   let enrolledSubjects: Array<{ name: string; code: string; isCompulsory: boolean }> = [];
@@ -153,9 +166,42 @@ export default async function MockInstructionsPage() {
               </div>
             </div>
 
-            {/* Start Button */}
+            {/* Start Button or Upgrade Prompt */}
             <div className="pt-4">
-              <MockStartButton />
+              {hasExhaustedFreeMock ? (
+                <div className="rounded-2xl border-2 border-emerald-800/20 bg-emerald-50/70 p-6 text-center space-y-3">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-200/80 text-[#116149] text-xs font-bold uppercase tracking-wider">
+                    <Sparkles size={13} /> DIAGNOSTIC BENCHMARK COMPLETED
+                  </div>
+                  <h3 className="text-xl font-bold text-[#092E28]">
+                    You&apos;ve completed your free diagnostic baseline mock!
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
+                    Upgrade to Premium Study Coach to unlock unlimited 180-question timed CBT simulations, full KaTeX step-by-step solutions, and personalized revision.
+                  </p>
+                  <div className="pt-2">
+                    <Link
+                      href="/pricing"
+                      className="min-h-12 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-7 text-sm font-semibold text-white hover:bg-[#0b4936] transition-all hover:-translate-y-0.5 shadow-md shadow-[#116149]/20"
+                    >
+                      Upgrade to Premium (from ₦500) <ArrowRight size={15} />
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  {subStatus.isPremium ? (
+                    <div className="mb-3 flex items-center justify-center gap-1.5 text-xs text-[#116149] font-semibold bg-emerald-50 py-2 rounded-xl">
+                      <Sparkles size={14} /> Premium Active • Unlimited CBT Simulations Available
+                    </div>
+                  ) : (
+                    <div className="mb-3 flex items-center justify-center gap-1.5 text-xs text-amber-900 font-semibold bg-[#F8F2DF] py-2 rounded-xl">
+                      <span>Free Diagnostic Mock (1 of 1 Remaining)</span>
+                    </div>
+                  )}
+                  <MockStartButton />
+                </div>
+              )}
             </div>
           </div>
         </div>

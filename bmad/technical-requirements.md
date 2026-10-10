@@ -169,3 +169,20 @@ supabase link --project-ref bqumnaoiiukifvanoonm
 # 4. Pull remote configuration
 supabase db pull
 ```
+
+---
+
+## 7. Live Paystack Gateway Credentials & Webhook Architecture
+
+The application is integrated with Paystack in Test Mode for billing, monthly subscriptions, and referral reward redemptions:
+
+| Parameter | Value | Details |
+| :--- | :--- | :--- |
+| **Environment** | Test Mode | Sandbox testing for card, bank transfer, and USSD flows |
+| **Test Public Key** | `pk_test_eab1f68c7146da56e7408fb46ea912f7f2b3dc3d` | Client-side Paystack key for browser initialization |
+| **Test Secret Key** | `sk_test_df9120d7fecc44d01fb40a16ba11af14d6222169` | Server-side transaction initialize & verification API key |
+| **Webhook Secret** | `sk_test_df9120d7fecc44d01fb40a16ba11af14d6222169` | HMAC-SHA512 webhook signature verification |
+| **Local Webhook Route** | `/api/webhooks/paystack` | Receives and verifies `charge.success` events |
+| **Standard Subscription** | ₦1,000 / month (100,000 kobo) | 30 days of unlimited CBT simulation & practice |
+| **Referral Reward Price** | ₦500 / month (50,000 kobo) | 50% discount automatically applied after 2 friend referrals |
+

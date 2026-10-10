@@ -4,8 +4,9 @@ import { studentSubjects, subjects } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { BookOpen, ArrowLeft } from "lucide-react";
+import { BookOpen, ArrowLeft, Sparkles } from "lucide-react";
 import { PracticeClient } from "./practice-client";
+import { getUserSubscriptionStatus } from "@/lib/subscription";
 
 export const metadata = {
   title: "Self-Paced Practice — JAMBPrep",
@@ -24,6 +25,8 @@ export default async function PracticePage({ searchParams }: PracticePageProps) 
   if (!user) {
     redirect("/login");
   }
+
+  const subStatus = await getUserSubscriptionStatus(user.id);
 
   // Load candidate's chosen subjects from database
   let enrolledSubjects: Array<{ name: string; code: string; isCompulsory: boolean }> = [];
