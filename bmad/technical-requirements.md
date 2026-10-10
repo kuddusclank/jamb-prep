@@ -95,6 +95,14 @@ JAMBPrep is architected as a **modular monolith** optimized for speed of develop
   3. Multiple payments within a month cleanly stack (e.g., paying twice grants 60 days).
   4. Entitlement checks are cached in user sessions and verified server-side on protected routes.
 
+### ADR-05: Reactive Examination Engine with RxJS & Outbox Sync
+* **Decision**: Use RxJS for event orchestration in a headless TypeScript engine (`src/features/exam-engine/`), a pure reducer for deterministic state transitions, durable local storage outbox for zero-loss offline answer buffering, and React purely as the view layer.
+* **Scope Boundary**: RxJS is strictly confined to `src/features/exam-engine/` and never used for authentication, onboarding, billing, or general marketing pages.
+* **Key Mechanisms**:
+  1. **Hotkey Race Condition Resolution**: Answer events are piped through `debounceTime(350)` and queued in a local persistent outbox. Rapid mashing of options `A -> B -> C` will never generate out-of-order writes or let slow packets overwrite newer choices.
+  2. **Authoritative Countdown & Background Tab Protection**: Timer observable computes $\max(0, \text{expiresAt} - \text{Date.now()})$ using `distinctUntilChanged()`, re-evaluating on both 1-second ticks and `visibilitychange`/`focus` events so Chromium background tab throttling cannot desynchronize the exam clock.
+  3. **Offline Resilience**: When `window.offline` fires, the engine buffers answers locally. When `window.online` fires, it automatically drains the outbox queue to the server.
+
 ---
 
 ## 4. Security & Data Protection Specifications
