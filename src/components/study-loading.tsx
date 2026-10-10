@@ -1,8 +1,38 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 export default function StudyLoading() {
-  return <div role="status" aria-live="polite" style={{ width: 'min(960px, calc(100% - 32px))', margin: '40px auto', padding: 24, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 20 }}>
-    <p style={{ fontWeight: 600, color: '#116149', marginBottom: 24 }}>Loading your study space…</p>
-    <div aria-hidden="true" style={{ display: 'grid', gap: 16 }}>
-      {[55, 100, 100].map((width, i) => <div key={i} style={{ width: `${width}%`, height: i ? 96 : 24, borderRadius: 12, background: '#f1f5f9' }} />)}
+  const [showRetry, setShowRetry] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowRetry(true), 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="max-w-3xl w-full mx-auto my-10 p-6 bg-white border border-slate-200 rounded-3xl shadow-sm"
+    >
+      <div className="flex items-center justify-between mb-6">
+        <p className="font-semibold text-[#116149] text-sm">Loading your study space…</p>
+        {showRetry && (
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="text-xs text-emerald-800 underline font-medium hover:text-emerald-950 cursor-pointer"
+          >
+            Taking longer than usual? Click to reload
+          </button>
+        )}
+      </div>
+      <div aria-hidden="true" className="space-y-4 animate-pulse">
+        <div className="w-[55%] h-6 rounded-xl bg-slate-100" />
+        <div className="w-full h-24 rounded-2xl bg-slate-100" />
+        <div className="w-full h-24 rounded-2xl bg-slate-100" />
+      </div>
     </div>
-  </div>;
+  );
 }

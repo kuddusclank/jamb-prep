@@ -35,29 +35,39 @@ export default async function PracticePage({ searchParams }: PracticePageProps) 
   let enrolledSubjects: Array<{ name: string; code: string; isCompulsory: boolean }> = [];
 
   try {
-    const enrolled = await db
-      .select({
-        name: subjects.name,
-        code: subjects.code,
-        isCompulsory: subjects.isCompulsory,
-      })
-      .from(studentSubjects)
-      .innerJoin(subjects, eq(studentSubjects.subjectId, subjects.id))
-      .where(eq(studentSubjects.userId, user.id));
-
-    if (enrolled && enrolled.length > 0) {
-      enrolledSubjects = enrolled;
-    } else {
-      // Fallback to core subjects if onboarding wasn't completed
-      const defaultSubs = await db
+    const enrolled = await Promise.race([
+      db
         .select({
           name: subjects.name,
           code: subjects.code,
           isCompulsory: subjects.isCompulsory,
         })
-        .from(subjects)
-        .where(eq(subjects.isActive, true))
-        .limit(4);
+        .from(studentSubjects)
+        .innerJoin(subjects, eq(studentSubjects.subjectId, subjects.id))
+        .where(eq(studentSubjects.userId, user.id)),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Practice subjects timeout")), 3500)
+      ),
+    ]);
+
+    if (enrolled && enrolled.length > 0) {
+      enrolledSubjects = enrolled;
+    } else {
+      // Fallback to core subjects if onboarding wasn't completed
+      const defaultSubs = await Promise.race([
+        db
+          .select({
+            name: subjects.name,
+            code: subjects.code,
+            isCompulsory: subjects.isCompulsory,
+          })
+          .from(subjects)
+          .where(eq(subjects.isActive, true))
+          .limit(4),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Default subjects timeout")), 3500)
+        ),
+      ]);
       enrolledSubjects = defaultSubs;
     }
   } catch (err) {

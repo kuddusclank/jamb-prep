@@ -33,20 +33,26 @@ export default async function ReferralsPage() {
 
   if (user) {
     try {
-      const codeRecord = await db.query.referralCodes.findFirst({
-        where: eq(referralCodes.userId, user.id),
-      });
+      const [codeRecord, refCount, reward] = await Promise.race([
+        Promise.all([
+          db.query.referralCodes.findFirst({
+            where: eq(referralCodes.userId, user.id),
+          }),
+          db
+            .select({ value: count() })
+            .from(referrals)
+            .where(eq(referrals.referrerId, user.id)),
+          db.query.referralRewards.findFirst({
+            where: eq(referralRewards.userId, user.id),
+          }),
+        ]),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Referral data timeout")), 3500)
+        ),
+      ]);
+
       if (codeRecord) code = codeRecord.code;
-
-      const [refCount] = await db
-        .select({ value: count() })
-        .from(referrals)
-        .where(eq(referrals.referrerId, user.id));
-      if (refCount) qualifiedCount = refCount.value;
-
-      const reward = await db.query.referralRewards.findFirst({
-        where: eq(referralRewards.userId, user.id),
-      });
+      if (refCount?.[0]) qualifiedCount = refCount[0].value;
       if (reward && reward.status === "available") hasReward = true;
     } catch (err) {
       console.warn("Notice loading referral records:", err);

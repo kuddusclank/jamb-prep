@@ -28,44 +28,58 @@ export default async function MockInstructionsPage() {
   }
 
   const subStatus = await getUserSubscriptionStatus(user.id);
-  const completedMocks = await db.query.attempts.findMany({
-    where: and(
-      eq(attempts.userId, user.id),
-      eq(attempts.mode, "mock"),
-      eq(attempts.status, "completed")
-    ),
-  });
-  const hasExhaustedFreeMock = !subStatus.isPremium && completedMocks.length >= 1;
-
-  // Load enrolled subjects
+  let completedMocks: any[] = [];
   let enrolledSubjects: Array<{ name: string; code: string; isCompulsory: boolean }> = [];
-  try {
-    const enrolled = await db
-      .select({
-        name: subjects.name,
-        code: subjects.code,
-        isCompulsory: subjects.isCompulsory,
-      })
-      .from(studentSubjects)
-      .innerJoin(subjects, eq(studentSubjects.subjectId, subjects.id))
-      .where(eq(studentSubjects.userId, user.id));
 
+  try {
+    const [mocks, enrolled] = await Promise.race([
+      Promise.all([
+        db.query.attempts.findMany({
+          where: and(
+            eq(attempts.userId, user.id),
+            eq(attempts.mode, "mock"),
+            eq(attempts.status, "completed")
+          ),
+        }),
+        db
+          .select({
+            name: subjects.name,
+            code: subjects.code,
+            isCompulsory: subjects.isCompulsory,
+          })
+          .from(studentSubjects)
+          .innerJoin(subjects, eq(studentSubjects.subjectId, subjects.id))
+          .where(eq(studentSubjects.userId, user.id)),
+      ]),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Mock page queries timeout")), 3500)
+      ),
+    ]);
+
+    completedMocks = mocks || [];
     if (enrolled && enrolled.length > 0) {
       enrolledSubjects = enrolled;
     } else {
-      enrolledSubjects = await db
-        .select({
-          name: subjects.name,
-          code: subjects.code,
-          isCompulsory: subjects.isCompulsory,
-        })
-        .from(subjects)
-        .where(eq(subjects.isActive, true))
-        .limit(4);
+      enrolledSubjects = await Promise.race([
+        db
+          .select({
+            name: subjects.name,
+            code: subjects.code,
+            isCompulsory: subjects.isCompulsory,
+          })
+          .from(subjects)
+          .where(eq(subjects.isActive, true))
+          .limit(4),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Default subjects timeout")), 3500)
+        ),
+      ]);
     }
   } catch (err) {
-    console.warn("Notice loading enrolled subjects:", err);
+    console.warn("Notice loading mock setup:", err);
   }
+
+  const hasExhaustedFreeMock = !subStatus.isPremium && completedMocks.length >= 1;
 
   return (
     <StudyWorkspace>

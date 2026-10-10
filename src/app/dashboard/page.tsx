@@ -44,13 +44,18 @@ export default async function DashboardPage() {
   let insights = getDefaultCoachInsights();
 
   try {
-    const [insightsRes, refCountRows, rewardRecord, loadedSubStatus] = await Promise.all([
-      getStudentCoachInsights(user.id),
-      db.select({ value: count() }).from(referrals).where(eq(referrals.referrerId, user.id)),
-      db.query.referralRewards.findFirst({
-        where: eq(referralRewards.userId, user.id),
-      }),
-      getUserSubscriptionStatus(user.id),
+    const [insightsRes, refCountRows, rewardRecord, loadedSubStatus] = await Promise.race([
+      Promise.all([
+        getStudentCoachInsights(user.id),
+        db.select({ value: count() }).from(referrals).where(eq(referrals.referrerId, user.id)),
+        db.query.referralRewards.findFirst({
+          where: eq(referralRewards.userId, user.id),
+        }),
+        getUserSubscriptionStatus(user.id),
+      ]),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Dashboard data fetch timeout")), 3500)
+      ),
     ]);
 
     subStatus = loadedSubStatus;

@@ -135,11 +135,13 @@ export async function recordTopicMasteryBatch(
  * Computes deep diagnostic study coach insights for a student.
  */
 export async function getStudentCoachInsights(userId: string): Promise<CoachInsights> {
-  // Fetch all 4 data dimensions in parallel to minimize network roundtrips
-  const [pref, enrolled, completedResults, masteryRows] = await Promise.all([
-    db.query.studentPreferences.findFirst({
-      where: eq(studentPreferences.userId, userId),
-    }),
+  try {
+    const computeInsights = async (): Promise<CoachInsights> => {
+      // Fetch all 4 data dimensions in parallel to minimize network roundtrips
+      const [pref, enrolled, completedResults, masteryRows] = await Promise.all([
+        db.query.studentPreferences.findFirst({
+          where: eq(studentPreferences.userId, userId),
+        }),
     db
       .select({
         id: subjects.id,
@@ -309,8 +311,20 @@ export async function getStudentCoachInsights(userId: string): Promise<CoachInsi
       completedAt: r.createdAt,
       timeSpentSeconds: r.timeSpentSeconds,
     })),
-    coachRecommendation,
+      coachRecommendation,
+    };
   };
+
+  return await Promise.race([
+    computeInsights(),
+    new Promise<CoachInsights>((resolve) =>
+      setTimeout(() => resolve(getDefaultCoachInsights()), 3500)
+    ),
+  ]);
+} catch (err) {
+  console.warn("Notice loading coach insights:", err);
+  return getDefaultCoachInsights();
+}
 }
 
 export function getDefaultCoachInsights(targetScore: number = 280): CoachInsights {

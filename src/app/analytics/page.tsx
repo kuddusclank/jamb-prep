@@ -1,5 +1,5 @@
 import { StudyWorkspace } from "@/components/study-workspace";
-import { getStudentCoachInsights } from "@/lib/coach";
+import { getStudentCoachInsights, getDefaultCoachInsights, CoachInsights } from "@/lib/coach";
 import { getCurrentUser } from "@/lib/supabase/current-user";
 import {
 ArrowRight,
@@ -26,20 +26,36 @@ export default async function AnalyticsPage() {
     redirect("/login");
   }
 
-  const [subStatus, userProfile] = await Promise.all([
-    getUserSubscriptionStatus(user.id),
-    db.query.profiles.findFirst({
-      where: eq(profiles.id, user.id),
-    }),
-  ]);
+  let subStatus = { isPremium: false };
+  let userProfile = null;
+  let insights: CoachInsights = getDefaultCoachInsights();
+
+  try {
+    const [status, profile, coachInsights] = await Promise.race([
+      Promise.all([
+        getUserSubscriptionStatus(user.id),
+        db.query.profiles.findFirst({
+          where: eq(profiles.id, user.id),
+        }),
+        getStudentCoachInsights(user.id),
+      ]),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Analytics data timeout")), 3500)
+      ),
+    ]);
+
+    if (status) subStatus = status;
+    if (profile) userProfile = profile;
+    if (coachInsights) insights = coachInsights as any;
+  } catch (err) {
+    console.warn("Notice loading analytics state:", err);
+  }
 
   if (!subStatus.isPremium) {
     redirect("/pricing");
   }
 
   const displayName = userProfile?.displayName || user.user_metadata?.display_name || user.email?.split("@")[0] || "Candidate";
-
-  const insights = await getStudentCoachInsights(user.id);
 
   const { 
     targetScore, 

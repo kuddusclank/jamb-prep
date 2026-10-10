@@ -6,7 +6,7 @@ studentPreferences,
 studentSubjects,
 subjects
 } from "@/db/schema";
-import { getUserSubscriptionStatus } from "@/lib/subscription";
+import { getUserSubscriptionStatus, SubscriptionStatus } from "@/lib/subscription";
 import { getCurrentUser } from "@/lib/supabase/current-user";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
@@ -25,24 +25,43 @@ export default async function ProfilePage() {
   }
 
   // Load profile, preferences, subscription, and enrolled subjects in parallel
-  const [profile, preferences, subStatus, enrolledRows] = await Promise.all([
-    db.query.profiles.findFirst({
-      where: eq(profiles.id, user.id),
-    }),
-    db.query.studentPreferences.findFirst({
-      where: eq(studentPreferences.userId, user.id),
-    }),
-    getUserSubscriptionStatus(user.id),
-    db
-      .select({
-        name: subjects.name,
-        code: subjects.code,
-        isCompulsory: subjects.isCompulsory,
-      })
-      .from(studentSubjects)
-      .innerJoin(subjects, eq(studentSubjects.subjectId, subjects.id))
-      .where(eq(studentSubjects.userId, user.id)),
-  ]);
+  let profile = null;
+  let preferences = null;
+  let subStatus: SubscriptionStatus = { isPremium: false, expiresAt: null, daysRemaining: 0, planCode: null, autoRenew: true, cancelledAt: null };
+  let enrolledRows: Array<{ name: string; code: string; isCompulsory: boolean }> = [];
+
+  try {
+    const [p, pref, sub, enrolled] = await Promise.race([
+      Promise.all([
+        db.query.profiles.findFirst({
+          where: eq(profiles.id, user.id),
+        }),
+        db.query.studentPreferences.findFirst({
+          where: eq(studentPreferences.userId, user.id),
+        }),
+        getUserSubscriptionStatus(user.id),
+        db
+          .select({
+            name: subjects.name,
+            code: subjects.code,
+            isCompulsory: subjects.isCompulsory,
+          })
+          .from(studentSubjects)
+          .innerJoin(subjects, eq(studentSubjects.subjectId, subjects.id))
+          .where(eq(studentSubjects.userId, user.id)),
+      ]),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Profile data timeout")), 3500)
+      ),
+    ]);
+
+    profile = p;
+    preferences = pref;
+    subStatus = sub;
+    enrolledRows = enrolled || [];
+  } catch (err) {
+    console.warn("Notice loading profile state:", err);
+  }
 
   const displayName = profile?.displayName || user.user_metadata?.display_name || user.email?.split("@")[0] || "Candidate";
 

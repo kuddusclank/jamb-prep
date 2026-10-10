@@ -37,12 +37,20 @@ export async function getCheckoutPricingAction(): Promise<CheckoutPricing> {
   const subStatus = await getUserSubscriptionStatus(user.id);
 
   // Check for available 50% referral voucher
-  const reward = await db.query.referralRewards.findFirst({
-    where: and(
-      eq(referralRewards.userId, user.id),
-      eq(referralRewards.status, "available")
-    ),
-  });
+  let reward = null;
+  try {
+    reward = await Promise.race([
+      db.query.referralRewards.findFirst({
+        where: and(
+          eq(referralRewards.userId, user.id),
+          eq(referralRewards.status, "available")
+        ),
+      }),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 3500)),
+    ]);
+  } catch (err) {
+    console.warn("Notice checking referral rewards:", err);
+  }
 
   const baseKobo = 100000; // ₦1,000
   const hasDiscount = !!reward;
