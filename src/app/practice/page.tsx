@@ -28,6 +28,11 @@ export default async function PracticePage({ searchParams }: PracticePageProps) 
 
   const subStatus = await getUserSubscriptionStatus(user.id);
 
+  // If a free tier user attempts topic-specific practice, redirect to pricing
+  if (!subStatus.isPremium && queryTopic) {
+    redirect("/pricing");
+  }
+
   // Load candidate's chosen subjects from database
   let enrolledSubjects: Array<{ name: string; code: string; isCompulsory: boolean }> = [];
 
@@ -96,6 +101,7 @@ export default async function PracticePage({ searchParams }: PracticePageProps) 
           enrolledSubjects={enrolledSubjects} 
           initialSubjectCode={querySubject}
           initialTopicSlug={queryTopic}
+          isPremium={subStatus.isPremium}
         />
       </main>
 

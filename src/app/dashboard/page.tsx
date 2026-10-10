@@ -23,10 +23,12 @@ import {
   BarChart3,
   Calendar,
   Flame,
-  ArrowUpRight
+  ArrowUpRight,
+  Lock
 } from "lucide-react";
 import { signOutAction } from "@/app/actions/auth";
 import { getStudentCoachInsights } from "@/lib/coach";
+import { getUserSubscriptionStatus } from "@/lib/subscription";
 
 export const metadata = {
   title: "Dashboard — JAMBPrep",
@@ -41,23 +43,26 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Load coach insights and referral state concurrently in a single roundtrip
+  // Load coach insights, subscription state, and referral state concurrently in a single roundtrip
   let qualifiedReferrals = 0;
   let has50PercentReward = false;
+  let isPremium = false;
   let insights;
 
   try {
-    const [insightsRes, refCountRows, rewardRecord] = await Promise.all([
+    const [insightsRes, refCountRows, rewardRecord, subStatus] = await Promise.all([
       getStudentCoachInsights(user.id),
       db.select({ value: count() }).from(referrals).where(eq(referrals.referrerId, user.id)),
       db.query.referralRewards.findFirst({
         where: eq(referralRewards.userId, user.id),
       }),
+      getUserSubscriptionStatus(user.id),
     ]);
 
     insights = insightsRes;
     if (refCountRows?.[0]) qualifiedReferrals = refCountRows[0].value;
     if (rewardRecord && rewardRecord.status === "available") has50PercentReward = true;
+    if (subStatus) isPremium = subStatus.isPremium;
   } catch (err) {
     console.warn("Notice loading dashboard state:", err);
     insights = await getStudentCoachInsights(user.id);
@@ -94,14 +99,28 @@ export default async function DashboardPage() {
             <Link href="/dashboard" className="text-[#116149] font-bold">
               Dashboard
             </Link>
-            <Link href="/practice" className="hover:text-[#116149] transition-colors">
-              Topic Practice
+            <Link 
+              href={isPremium ? "/practice" : "/pricing"} 
+              className="hover:text-[#116149] transition-colors flex items-center gap-1.5"
+              title={isPremium ? "Self-Paced Topic Practice" : "Topic Practice (Locked - Upgrade to Premium)"}
+            >
+              {!isPremium && <Lock size={13} className="text-amber-700 shrink-0" />}
+              <span>Topic Practice</span>
             </Link>
             <Link href="/mock" className="hover:text-[#116149] transition-colors">
               CBT Simulation
             </Link>
-            <Link href="/analytics" className="hover:text-[#116149] transition-colors flex items-center gap-1">
-              <BarChart3 size={15} /> Performance
+            <Link 
+              href={isPremium ? "/analytics" : "/pricing"} 
+              className="hover:text-[#116149] transition-colors flex items-center gap-1.5"
+              title={isPremium ? "Performance Analytics" : "Performance Analytics (Locked - Upgrade to Premium)"}
+            >
+              {!isPremium ? (
+                <Lock size={13} className="text-amber-700 shrink-0" />
+              ) : (
+                <BarChart3 size={15} />
+              )}
+              <span>Performance</span>
             </Link>
             <Link href="/referrals" className="text-amber-800 font-semibold hover:text-amber-900 flex items-center gap-1">
               <Sparkles size={14} /> Refer & Earn 50%
@@ -242,78 +261,186 @@ export default async function DashboardPage() {
                 <h3 className="text-lg font-semibold text-[#092E28] flex items-center gap-2">
                   <AlertCircle size={18} className="text-amber-700" />
                   Diagnostic Weak Topics
+                  {!isPremium && (
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full">
+                      <Lock size={10} /> PRO ONLY
+                    </span>
+                  )}
                 </h3>
                 <p className="text-xs text-slate-500">
                   Topics where targeted practice yields the highest score gain.
                 </p>
               </div>
 
-              <Link href="/analytics" className="text-xs font-semibold text-[#116149] hover:underline flex items-center gap-1">
-                View all topics <ArrowRight size={12} />
+              <Link 
+                href={isPremium ? "/analytics" : "/pricing"} 
+                className="text-xs font-semibold text-[#116149] hover:underline flex items-center gap-1"
+              >
+                View all topics {!isPremium && <Lock size={12} className="text-amber-700" />} <ArrowRight size={12} />
               </Link>
             </div>
 
-            {weakestTopics.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
-                {weakestTopics.map((item) => (
-                  <div
-                    key={item.topicId}
-                    className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-emerald-300 transition-colors flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-mono text-[11px] font-bold text-[#116149] bg-emerald-50 px-2 py-0.5 rounded">
-                          {item.subjectCode}
-                        </span>
-                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
-                          item.priority === 'critical' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
-                        }`}>
-                          {item.priority === 'critical' ? 'Needs Attention' : 'Review'}
-                        </span>
+            {!isPremium ? (
+              /* Free Tier: Frosted Glass Effect with Padlock */
+              <div className="relative rounded-2xl overflow-hidden border border-slate-200/90 shadow-sm bg-slate-50">
+                {/* Background Weakness Cards Blurred */}
+                <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 filter blur-[3px] select-none pointer-events-none opacity-45">
+                  {(weakestTopics.length > 0 ? weakestTopics.slice(0, 3) : [
+                    {
+                      topicId: 'p-1',
+                      topicTitle: subjectSummaries[1]?.subjectCode === 'MTH' ? 'Surds, Matrices & Quadratics' : 'Concord, Lexis & Structural Stress',
+                      subjectCode: subjectSummaries[1]?.subjectCode || 'ENG',
+                      subjectName: subjectSummaries[1]?.subjectName || 'Use of English',
+                      accuracyPercent: 33,
+                      totalAttempted: 15,
+                      totalCorrect: 5,
+                      priority: 'critical' as const,
+                    },
+                    {
+                      topicId: 'p-2',
+                      topicTitle: subjectSummaries[2]?.subjectCode === 'PHY' ? 'Heat Energy & Thermodynamics' : 'Chemical Equilibrium & Stoichiometry',
+                      subjectCode: subjectSummaries[2]?.subjectCode || 'PHY',
+                      subjectName: subjectSummaries[2]?.subjectName || 'Physics',
+                      accuracyPercent: 40,
+                      totalAttempted: 15,
+                      totalCorrect: 6,
+                      priority: 'critical' as const,
+                    },
+                    {
+                      topicId: 'p-3',
+                      topicTitle: subjectSummaries[3]?.subjectCode === 'BIO' ? 'Mendelian Genetics & Photosynthesis' : 'Market Structures & Elasticity',
+                      subjectCode: subjectSummaries[3]?.subjectCode || 'BIO',
+                      subjectName: subjectSummaries[3]?.subjectName || 'Biology',
+                      accuracyPercent: 46,
+                      totalAttempted: 15,
+                      totalCorrect: 7,
+                      priority: 'review' as const,
+                    },
+                  ]).map((item) => (
+                    <div
+                      key={item.topicId}
+                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-mono text-[11px] font-bold text-[#116149] bg-emerald-50 px-2 py-0.5 rounded">
+                            {item.subjectCode}
+                          </span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-red-100 text-red-800">
+                            Needs Attention
+                          </span>
+                        </div>
+                        <h4 className="font-semibold text-sm text-[#092E28] line-clamp-1">{item.topicTitle}</h4>
+                        <p className="text-xs text-slate-500 mt-0.5">{item.subjectName}</p>
+                        <div className="mt-3 flex items-center justify-between text-xs font-medium text-slate-600">
+                          <span>Accuracy: <strong>{item.accuracyPercent}%</strong></span>
+                          <span className="text-slate-400">{item.totalCorrect}/{item.totalAttempted}</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden mt-1.5">
+                          <div 
+                            className="h-full rounded-full bg-red-500"
+                            style={{ width: `${item.accuracyPercent}%` }}
+                          />
+                        </div>
                       </div>
-
-                      <h4 className="font-semibold text-sm text-[#092E28] line-clamp-1">{item.topicTitle}</h4>
-                      <p className="text-xs text-slate-500 mt-0.5">{item.subjectName}</p>
-
-                      <div className="mt-3 flex items-center justify-between text-xs font-medium text-slate-600">
-                        <span>Accuracy: <strong>{item.accuracyPercent}%</strong></span>
-                        <span className="text-slate-400">{item.totalCorrect}/{item.totalAttempted} correct</span>
-                      </div>
-
-                      <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden mt-1.5">
-                        <div 
-                          className={`h-full rounded-full ${item.priority === 'critical' ? 'bg-red-500' : 'bg-amber-500'}`}
-                          style={{ width: `${item.accuracyPercent}%` }}
-                        />
+                      <div className="mt-4 pt-3 border-t border-slate-100 text-xs font-semibold text-[#116149]">
+                        Practice this topic
                       </div>
                     </div>
+                  ))}
+                </div>
 
-                    <div className="mt-4 pt-3 border-t border-slate-100">
-                      <Link
-                        href={`/practice?subject=${item.subjectCode}&topic=${item.topicSlug}`}
-                        className="text-xs font-semibold text-[#116149] hover:text-[#0b4936] flex items-center justify-between group"
-                      >
-                        <span>Practice this topic</span>
-                        <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-                      </Link>
-                    </div>
+                {/* Frosted Glass Overlay with Centered Padlock */}
+                <div className="absolute inset-0 backdrop-blur-md bg-white/70 flex flex-col items-center justify-center p-6 text-center z-10 border border-white/60">
+                  <div className="size-13 rounded-2xl bg-[#F8F2DF] border border-amber-300 text-amber-900 flex items-center justify-center shadow-md mb-3">
+                    <Lock size={24} className="text-amber-800" />
                   </div>
-                ))}
+                  <h4 className="text-base font-bold text-[#092E28] flex items-center gap-1.5">
+                    Diagnostic Weak-Topic Breakdown Locked
+                  </h4>
+                  <p className="text-xs text-slate-600 max-w-md mt-1.5 mb-4 leading-relaxed font-medium">
+                    Your diagnostic mock analyzed your subject weaknesses. Upgrade to Premium Study Coach to unlock tailored weak-topic revision, step-by-step KaTeX solutions, and unlimited full CBT mocks.
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <Link
+                      href="/pricing"
+                      className="min-h-11 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 text-xs font-semibold text-white hover:bg-[#0b4936] transition shadow-md shadow-[#116149]/20"
+                    >
+                      Unlock with Premium (₦1,000) <ArrowRight size={14} />
+                    </Link>
+                    <Link
+                      href="/referrals"
+                      className="text-xs font-semibold text-amber-900 hover:text-amber-950 underline"
+                    >
+                      Refer 2 friends for 50% off (₦500)
+                    </Link>
+                  </div>
+                </div>
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center">
-                <p className="text-sm text-slate-600">
-                  {totalMocksCompleted === 0 
-                    ? "Complete your first diagnostic mock exam or topic practice session to generate your weak-topic breakdown."
-                    : "🎉 Great job! No critical weak topics identified. Keep reviewing and taking full mocks!"}
-                </p>
-                <Link
-                  href="/practice"
-                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-[#116149] hover:underline"
-                >
-                  Start practice questions <ArrowRight size={12} />
-                </Link>
-              </div>
+              /* Premium Tier Unlocked View */
+              weakestTopics.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+                  {weakestTopics.map((item) => (
+                    <div
+                      key={item.topicId}
+                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-emerald-300 transition-colors flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-mono text-[11px] font-bold text-[#116149] bg-emerald-50 px-2 py-0.5 rounded">
+                            {item.subjectCode}
+                          </span>
+                          <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                            item.priority === 'critical' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {item.priority === 'critical' ? 'Needs Attention' : 'Review'}
+                          </span>
+                        </div>
+
+                        <h4 className="font-semibold text-sm text-[#092E28] line-clamp-1">{item.topicTitle}</h4>
+                        <p className="text-xs text-slate-500 mt-0.5">{item.subjectName}</p>
+
+                        <div className="mt-3 flex items-center justify-between text-xs font-medium text-slate-600">
+                          <span>Accuracy: <strong>{item.accuracyPercent}%</strong></span>
+                          <span className="text-slate-400">{item.totalCorrect}/{item.totalAttempted} correct</span>
+                        </div>
+
+                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden mt-1.5">
+                          <div 
+                            className={`h-full rounded-full ${item.priority === 'critical' ? 'bg-red-500' : 'bg-amber-500'}`}
+                            style={{ width: `${item.accuracyPercent}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-slate-100">
+                        <Link
+                          href={`/practice?subject=${item.subjectCode}&topic=${item.topicSlug}`}
+                          className="text-xs font-semibold text-[#116149] hover:text-[#0b4936] flex items-center justify-between group"
+                        >
+                          <span>Practice this topic</span>
+                          <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center">
+                  <p className="text-sm text-slate-600">
+                    {totalMocksCompleted === 0 
+                      ? "Complete your first diagnostic mock exam or topic practice session to generate your weak-topic breakdown."
+                      : "🎉 Great job! No critical weak topics identified. Keep reviewing and taking full mocks!"}
+                  </p>
+                  <Link
+                    href="/mock"
+                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-[#116149] hover:underline"
+                  >
+                    Start Diagnostic Mock <ArrowRight size={12} />
+                  </Link>
+                </div>
+              )
             )}
           </div>
 

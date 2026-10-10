@@ -18,6 +18,8 @@ import {
   HelpCircle
 } from "lucide-react";
 
+import { getUserSubscriptionStatus } from "@/lib/subscription";
+
 export const metadata = {
   title: "Performance Analytics & Diagnostics — JAMBPrep",
   description: "Comprehensive UTME topic mastery, exam pacing, and diagnostic study coach analysis.",
@@ -31,7 +33,13 @@ export default async function AnalyticsPage() {
     redirect("/login");
   }
 
+  const subStatus = await getUserSubscriptionStatus(user.id);
+  if (!subStatus.isPremium) {
+    redirect("/pricing");
+  }
+
   const insights = await getStudentCoachInsights(user.id);
+
   const { 
     targetScore, 
     latestScore, 

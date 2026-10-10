@@ -18,7 +18,8 @@ import {
   Loader2, 
   Layers, 
   HelpCircle,
-  Award
+  Award,
+  Lock
 } from "lucide-react";
 import Link from "next/link";
 
@@ -32,13 +33,16 @@ interface PracticeClientProps {
   enrolledSubjects: SubjectOption[];
   initialSubjectCode?: string;
   initialTopicSlug?: string;
+  isPremium?: boolean;
 }
 
 export function PracticeClient({ 
   enrolledSubjects, 
   initialSubjectCode,
-  initialTopicSlug 
+  initialTopicSlug,
+  isPremium = false
 }: PracticeClientProps) {
+
   const initialSub = enrolledSubjects.find((s) => s.code === initialSubjectCode)?.code || enrolledSubjects[0]?.code || "ENG";
   const [selectedSubject, setSelectedSubject] = useState<string>(initialSub);
   const [selectedTopicSlug, setSelectedTopicSlug] = useState<string | undefined>(initialTopicSlug);

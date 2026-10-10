@@ -108,5 +108,6 @@ export async function saveOnboardingAction(
     console.warn("Database notice on onboarding save:", err);
   }
 
-  redirect("/dashboard");
+  redirect("/pricing");
 }
+
