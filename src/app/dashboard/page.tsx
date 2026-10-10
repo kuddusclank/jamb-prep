@@ -178,12 +178,20 @@ export default async function DashboardPage() {
                 </p>
               </div>
 
-              <Link
-                href="/mock"
-                className="shrink-0 min-h-12 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-7 text-sm font-semibold text-white hover:bg-[#0b4936] transition-all hover:-translate-y-0.5 shadow-md shadow-[#116149]/20"
-              >
-                Start Diagnostic Mock <ArrowRight size={16} />
-              </Link>
+              <div className="shrink-0 flex flex-col sm:flex-row md:flex-col gap-3">
+                <Link
+                  href="/practice"
+                  className="min-h-12 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-7 text-sm font-semibold text-white hover:bg-[#0b4936] transition-all hover:-translate-y-0.5 shadow-md shadow-[#116149]/20"
+                >
+                  Start Topic Practice <ArrowRight size={16} />
+                </Link>
+                <Link
+                  href="/mock"
+                  className="min-h-12 inline-flex items-center justify-center gap-2 rounded-full border border-emerald-900/20 bg-white px-7 text-sm font-semibold text-[#092E28] hover:bg-emerald-50 transition-all"
+                >
+                  Full Mock Simulation
+                </Link>
+              </div>
             </div>
           </div>
 
