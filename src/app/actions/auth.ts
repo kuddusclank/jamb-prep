@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { db } from "@/db";
 import { 
   profiles, 
@@ -38,22 +39,76 @@ export async function signUpAction(prevState: AuthState | null, formData: FormDa
   }
 
   const supabase = await createClient();
+  const adminClient = createAdminClient();
 
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
+  let userId: string;
+
+  // Path A: Admin API bypasses email confirmation entirely (no SMTP, no rate limit)
+  if (adminClient) {
+    const { data: adminUserData, error: adminError } = await adminClient.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
         display_name: displayName,
       },
-    },
-  });
+    });
 
-  if (authError || !authData.user) {
-    return { error: authError?.message || "Failed to create account. Please try again." };
+    if (adminError) {
+      const msg = adminError.message.toLowerCase();
+      if (msg.includes("already registered") || msg.includes("already exists")) {
+        return { error: "An account with this email already exists. Please log in instead." };
+      }
+      return { error: adminError.message };
+    }
+
+    if (!adminUserData.user) {
+      return { error: "Failed to create user account. Please try again." };
+    }
+
+    userId = adminUserData.user.id;
+
+    // Immediately establish browser session cookies
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError) {
+      return { error: "Account created, but sign-in failed: " + signInError.message };
+    }
+  } else {
+    // Path B: Standard signUp (works seamlessly when "Confirm email" is disabled in dashboard)
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          display_name: displayName,
+        },
+      },
+    });
+
+    if (authError || !authData.user) {
+      const msg = authError?.message || "";
+      if (msg.toLowerCase().includes("rate limit") || msg.toLowerCase().includes("over_email_send_rate_limit")) {
+        return { 
+          error: "Supabase email rate limit triggered. Please disable 'Confirm email' in Supabase Dashboard (Auth > Providers > Email > uncheck 'Confirm email') or add SUPABASE_SERVICE_ROLE_KEY to bypass emails completely." 
+        };
+      }
+      return { error: authError?.message || "Failed to create account. Please try again." };
+    }
+
+    userId = authData.user.id;
+
+    // Ensure session cookie is saved
+    if (!authData.session) {
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+    }
   }
-
-  const userId = authData.user.id;
 
   // Provision profile and referral models in database
   try {

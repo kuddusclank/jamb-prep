@@ -180,3 +180,10 @@ The shell uses the landing wordmark, an alternate-auth link, a back-to-home link
 Onboarding retains its current form and persistence but uses a wider 768px composition and larger heading. Removed the misleading “Step 1 of 2” label because the form presents all setup sections together. Target presets are personal goals, not claimed institution/course admission thresholds. Range and aspiration inputs now have accessible names; score presets expose pressed state.
 
 Verification: changed-file ESLint and TypeScript pass; Webpack build passes with existing middleware/Edge warnings. Repository-wide lint remains blocked by two `no-explicit-any` errors in Supabase client/server helpers and reports unrelated unused imports. No browser/visual testing or live authentication verification was performed. This UI work does not establish Phase 2 security or production acceptance.
+
+
+### Auth layout stability correction
+
+The auth grid aligns items to the start and uses `minmax(0, 1fr)` columns. Both columns have `min-width: 0`. The left panel has intrinsic content height and a fixed 40px gap between its three content groups. Do not stretch it to the form, distribute its content with `justify-between`, or impose viewport/equal-column heights: errors, referral notices and additional fields in the right column must not reposition left-panel content. The form is top-aligned rather than vertically centred. Allow normal document scrolling and text wrapping; do not clip overflow to hide layout defects.
+
+Verification for this correction: source-level layout review and targeted static checks only; browser testing remains excluded by user instruction.
