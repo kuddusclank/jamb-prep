@@ -239,3 +239,22 @@ export const subscriptionDiscounts = pgTable('subscription_discounts', {
   discountedAmountKobo: integer('discounted_amount_kobo').notNull(), // 50000 = ₦500
   appliedAt: timestamp('applied_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+// ==========================================
+// 7. Diagnostic Study Coach & Topic Mastery
+// ==========================================
+export const studentTopicMastery = pgTable('student_topic_mastery', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
+  subjectId: uuid('subject_id').references(() => subjects.id, { onDelete: 'cascade' }).notNull(),
+  topicId: uuid('topic_id').references(() => topics.id, { onDelete: 'cascade' }).notNull(),
+  totalAttempted: integer('total_attempted').default(0).notNull(),
+  totalCorrect: integer('total_correct').default(0).notNull(),
+  accuracyPercent: integer('accuracy_percent').default(0).notNull(),
+  lastPracticedAt: timestamp('last_practiced_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('user_topic_mastery_unique_idx').on(table.userId, table.topicId),
+  index('user_mastery_accuracy_idx').on(table.userId, table.accuracyPercent),
+  index('user_subject_mastery_idx').on(table.userId, table.subjectId)
+]);
+

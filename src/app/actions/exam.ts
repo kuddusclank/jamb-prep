@@ -16,6 +16,7 @@ import {
 import { eq, and, gt, sql, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { ExamQuestion } from "@/app/mock/exam-store";
+import { recordTopicMasteryBatch } from "@/lib/coach";
 
 export async function startMockAttempt(): Promise<{
   attemptId: string;
@@ -312,16 +313,19 @@ export async function submitMockExam(attemptId: string): Promise<{ resultId: str
   const correctOptionIdSet = new Set(correctOptions.map((co) => co.id));
   const questionSubjectMap = new Map(correctOptions.map((co) => [co.questionId, co.subjectId]));
 
-  // Calculate subject-level breakdowns
+  // Calculate subject-level breakdowns and topic-level mastery
   const subjectScores: Record<string, { correct: number; total: number }> = {};
+  const topicScores: Record<string, { correct: number; total: number }> = {};
 
-  // Find all questions in the attempt
+  // Find all questions in the attempt with their topicId
   const attemptQList = await db
     .select({
       questionId: attemptQuestions.questionId,
       subjectId: attemptQuestions.subjectId,
+      topicId: questions.topicId,
     })
     .from(attemptQuestions)
+    .innerJoin(questions, eq(attemptQuestions.questionId, questions.id))
     .where(eq(attemptQuestions.attemptId, attemptId));
 
   attemptQList.forEach((q) => {
@@ -329,17 +333,32 @@ export async function submitMockExam(attemptId: string): Promise<{ resultId: str
       subjectScores[q.subjectId] = { correct: 0, total: 0 };
     }
     subjectScores[q.subjectId].total += 1;
+
+    if (!topicScores[q.topicId]) {
+      topicScores[q.topicId] = { correct: 0, total: 0 };
+    }
+    topicScores[q.topicId].total += 1;
   });
 
+  const userAnswerMap = new Map(userAnswers.map((ua) => [ua.questionId, ua.selectedOptionId]));
+  const masteryBatch: Array<{ subjectId: string; topicId: string; isCorrect: boolean }> = [];
   let totalCorrect = 0;
-  userAnswers.forEach((ans) => {
-    if (ans.selectedOptionId && correctOptionIdSet.has(ans.selectedOptionId)) {
+
+  attemptQList.forEach((q) => {
+    const selectedOptId = userAnswerMap.get(q.questionId);
+    const isCorrect = !!(selectedOptId && correctOptionIdSet.has(selectedOptId));
+
+    if (isCorrect) {
       totalCorrect += 1;
-      const subId = questionSubjectMap.get(ans.questionId);
-      if (subId && subjectScores[subId]) {
-        subjectScores[subId].correct += 1;
-      }
+      if (subjectScores[q.subjectId]) subjectScores[q.subjectId].correct += 1;
+      if (topicScores[q.topicId]) topicScores[q.topicId].correct += 1;
     }
+
+    masteryBatch.push({
+      subjectId: q.subjectId,
+      topicId: q.topicId,
+      isCorrect,
+    });
   });
 
   // Scale each subject to 100 points, total to 400 points
@@ -363,7 +382,19 @@ export async function submitMockExam(attemptId: string): Promise<{ resultId: str
     completedAt: new Date(),
   }).where(eq(attempts.id, attemptId));
 
-  // 4. Record official result
+  // 4. Update student topic mastery records for the diagnostic study coach
+  try {
+    await recordTopicMasteryBatch(user.id, masteryBatch);
+  } catch (err) {
+    console.warn("Notice updating topic mastery batch:", err);
+  }
+
+  // 5. Record official result
+  const richBreakdown = {
+    subjects: subjectScores,
+    topics: topicScores,
+  };
+
   const [resultRecord] = await db.insert(attemptResults).values({
     attemptId,
     userId: user.id,
@@ -375,7 +406,7 @@ export async function submitMockExam(attemptId: string): Promise<{ resultId: str
     totalAnswered: userAnswers.length,
     totalCorrect,
     timeSpentSeconds,
-    topicBreakdown: subjectScores,
+    topicBreakdown: richBreakdown,
   }).onConflictDoUpdate({
     target: attemptResults.attemptId,
     set: {
@@ -387,7 +418,7 @@ export async function submitMockExam(attemptId: string): Promise<{ resultId: str
       totalAnswered: userAnswers.length,
       totalCorrect,
       timeSpentSeconds,
-      topicBreakdown: subjectScores,
+      topicBreakdown: richBreakdown,
     },
   }).returning();
 

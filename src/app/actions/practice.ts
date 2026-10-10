@@ -11,6 +11,7 @@ import {
   questionExplanations 
 } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
+import { recordTopicMasteryBatch } from "@/lib/coach";
 
 export interface PracticeQuestionItem {
   id: string;
@@ -139,6 +140,11 @@ export async function checkPracticeAnswer(
     throw new Error("You must be signed in to submit answers.");
   }
 
+  // Find question details for subject and topic tracking
+  const qRecord = await db.query.questions.findFirst({
+    where: eq(questions.id, questionId),
+  });
+
   // Find correct option from database
   const correctOpt = await db.query.questionOptions.findFirst({
     where: and(
@@ -153,6 +159,19 @@ export async function checkPracticeAnswer(
   });
 
   const isCorrect = correctOpt ? correctOpt.label === selectedOption : false;
+
+  // Real-time study coach topic mastery update
+  if (qRecord && qRecord.topicId) {
+    try {
+      await recordTopicMasteryBatch(user.id, [{
+        subjectId: qRecord.subjectId,
+        topicId: qRecord.topicId,
+        isCorrect,
+      }]);
+    } catch (err) {
+      console.warn("Notice updating practice topic mastery:", err);
+    }
+  }
 
   return {
     isCorrect,

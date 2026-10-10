@@ -30,12 +30,18 @@ interface SubjectOption {
 
 interface PracticeClientProps {
   enrolledSubjects: SubjectOption[];
+  initialSubjectCode?: string;
+  initialTopicSlug?: string;
 }
 
-export function PracticeClient({ enrolledSubjects }: PracticeClientProps) {
-  const [selectedSubject, setSelectedSubject] = useState<string>(
-    enrolledSubjects[0]?.code || "ENG"
-  );
+export function PracticeClient({ 
+  enrolledSubjects, 
+  initialSubjectCode,
+  initialTopicSlug 
+}: PracticeClientProps) {
+  const initialSub = enrolledSubjects.find((s) => s.code === initialSubjectCode)?.code || enrolledSubjects[0]?.code || "ENG";
+  const [selectedSubject, setSelectedSubject] = useState<string>(initialSub);
+  const [selectedTopicSlug, setSelectedTopicSlug] = useState<string | undefined>(initialTopicSlug);
   const [questionCount, setQuestionCount] = useState<number>(5);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [questions, setQuestions] = useState<PracticeQuestionItem[]>([]);
@@ -51,9 +57,9 @@ export function PracticeClient({ enrolledSubjects }: PracticeClientProps) {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const qList = await getPracticeQuestions(selectedSubject, undefined, questionCount);
+      const qList = await getPracticeQuestions(selectedSubject, selectedTopicSlug, questionCount);
       if (qList.length === 0) {
-        setErrorMessage("No questions available for this subject yet. Please try another subject.");
+        setErrorMessage("No questions available for this selection yet. Try all topics for this subject.");
         setIsLoading(false);
         return;
       }

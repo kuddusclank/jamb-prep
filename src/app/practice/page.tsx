@@ -12,7 +12,12 @@ export const metadata = {
   description: "Focused UTME topic practice with step-by-step diagnostic solutions and formulas.",
 };
 
-export default async function PracticePage() {
+interface PracticePageProps {
+  searchParams: Promise<{ subject?: string; topic?: string }>;
+}
+
+export default async function PracticePage({ searchParams }: PracticePageProps) {
+  const { subject: querySubject, topic: queryTopic } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -84,7 +89,11 @@ export default async function PracticePage() {
 
       {/* Main Practice Container */}
       <main className="shell section-space">
-        <PracticeClient enrolledSubjects={enrolledSubjects} />
+        <PracticeClient 
+          enrolledSubjects={enrolledSubjects} 
+          initialSubjectCode={querySubject}
+          initialTopicSlug={queryTopic}
+        />
       </main>
 
       {/* Footer */}
