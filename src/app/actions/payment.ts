@@ -106,26 +106,34 @@ export async function initializePaystackCheckoutAction(): Promise<InitializePaym
   const isRealKey = paystackSecret.startsWith("sk_test_") || paystackSecret.startsWith("sk_live_");
   const isPlaceholder = paystackSecret.includes("placeholder");
 
+  const planCode = process.env.PAYSTACK_PLAN_CODE || "PLN_tts4cz7tf89srcl";
+
   if (isRealKey && !isPlaceholder) {
     try {
+      const payload: Record<string, any> = {
+        email: user.email,
+        amount: pricing.finalAmountKobo,
+        reference,
+        callback_url: callbackUrl,
+        metadata: {
+          userId: user.id,
+          rewardId: pricing.rewardId,
+          planCode: "MONTHLY_PREMIUM",
+          app: "jambprep",
+        },
+      };
+
+      if (planCode) {
+        payload.plan = planCode;
+      }
+
       const response = await fetch("https://api.paystack.co/transaction/initialize", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${paystackSecret}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email: user.email,
-          amount: pricing.finalAmountKobo,
-          reference,
-          callback_url: callbackUrl,
-          metadata: {
-            userId: user.id,
-            rewardId: pricing.rewardId,
-            planCode: "MONTHLY_PREMIUM",
-            app: "jambprep",
-          },
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
