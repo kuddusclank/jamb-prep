@@ -3,7 +3,7 @@
 import { useActionState, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { signInAction } from "@/app/actions/auth";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 
 function LoginFormContent() {
   const [showPassword, setShowPassword] = useState(false);
@@ -41,21 +41,26 @@ function LoginFormContent() {
         <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1.5">
           Password
         </label>
-        <input
-          id="password"
-          name="password"
-          type={showPassword ? "text" : "password"}
-          autoComplete="current-password"
-          required
-          placeholder="Enter your password"
-          className="w-full min-h-13 rounded-xl border border-slate-300 bg-white px-4 text-base text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
-        />
+        <div className="relative">
+          <input
+            id="password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            required
+            placeholder="Enter your password"
+            className="w-full min-h-13 rounded-xl border border-slate-300 bg-white pl-4 pr-11 text-base text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 focus:outline-none transition-colors"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
       </div>
-
-      <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-slate-600">
-        <input type="checkbox" checked={showPassword} onChange={(event) => setShowPassword(event.target.checked)} className="size-4 accent-[#116149]" />
-        Show password
-      </label>
 
       <button
         type="submit"

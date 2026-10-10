@@ -112,60 +112,68 @@ export async function signUpAction(prevState: AuthState | null, formData: FormDa
 
   // Provision profile and referral models in database
   try {
-    // 1. Create Profile
-    await db.insert(profiles).values({
-      id: userId,
-      displayName,
-      email,
-      role: "student",
-    }).onConflictDoNothing();
+    const provisionPromise = async () => {
+      // 1. Create Profile
+      await db.insert(profiles).values({
+        id: userId,
+        displayName,
+        email,
+        role: "student",
+      }).onConflictDoNothing();
 
-    // 2. Generate Candidate's Unique Referral Code
-    const studentCode = generateReferralCode(displayName);
-    await db.insert(referralCodes).values({
-      userId,
-      code: studentCode,
-    }).onConflictDoNothing();
+      // 2. Generate Candidate's Unique Referral Code
+      const studentCode = generateReferralCode(displayName);
+      await db.insert(referralCodes).values({
+        userId,
+        code: studentCode,
+      }).onConflictDoNothing();
 
-    // 3. Attribute Referral if referred by another student
-    if (referralCodeInput) {
-      const referrerRecord = await db.query.referralCodes.findFirst({
-        where: eq(referralCodes.code, referralCodeInput),
-      });
+      // 3. Attribute Referral if referred by another student
+      if (referralCodeInput) {
+        const referrerRecord = await db.query.referralCodes.findFirst({
+          where: eq(referralCodes.code, referralCodeInput),
+        });
 
-      if (referrerRecord && referrerRecord.userId !== userId) {
-        // Record qualified referral
-        await db.insert(referrals).values({
-          referrerId: referrerRecord.userId,
-          referredUserId: userId,
-          status: "qualified",
-          qualifiedAt: new Date(),
-        }).onConflictDoNothing();
+        if (referrerRecord && referrerRecord.userId !== userId) {
+          // Record qualified referral
+          await db.insert(referrals).values({
+            referrerId: referrerRecord.userId,
+            referredUserId: userId,
+            status: "qualified",
+            qualifiedAt: new Date(),
+          }).onConflictDoNothing();
 
-        // Check if referrer reached the 2-referral milestone
-        const [refCount] = await db
-          .select({ value: count() })
-          .from(referrals)
-          .where(eq(referrals.referrerId, referrerRecord.userId));
+          // Check if referrer reached the 2-referral milestone
+          const [refCount] = await db
+            .select({ value: count() })
+            .from(referrals)
+            .where(eq(referrals.referrerId, referrerRecord.userId));
 
-        if (refCount && refCount.value >= 2) {
-          // Check if reward already issued
-          const existingReward = await db.query.referralRewards.findFirst({
-            where: eq(referralRewards.userId, referrerRecord.userId),
-          });
-
-          if (!existingReward) {
-            await db.insert(referralRewards).values({
-              userId: referrerRecord.userId,
-              rewardType: "FIRST_MONTH_50_PERCENT",
-              status: "available",
+          if (refCount && refCount.value >= 2) {
+            // Check if reward already issued
+            const existingReward = await db.query.referralRewards.findFirst({
+              where: eq(referralRewards.userId, referrerRecord.userId),
             });
+
+            if (!existingReward) {
+              await db.insert(referralRewards).values({
+                userId: referrerRecord.userId,
+                rewardType: "FIRST_MONTH_50_PERCENT",
+                status: "available",
+              });
+            }
           }
         }
       }
-    }
+    };
+
+    // Use a 4-second timeout boundary to guarantee response never hangs
+    await Promise.race([
+      provisionPromise(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Provisioning timeout")), 4000)),
+    ]);
   } catch (dbErr) {
-    console.warn("Database provisioning notice (Supabase DB may not be connected yet):", dbErr);
+    console.warn("Database provisioning notice (Supabase DB notice):", dbErr);
   }
 
   redirect("/onboarding");
