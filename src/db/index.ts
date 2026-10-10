@@ -5,6 +5,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 // Maintain singleton instances on globalThis to survive warm worker requests
 const globalForDb = globalThis as unknown as {
+  currentConnStr?: string;
   postgresClient?: postgres.Sql;
   drizzleInstance?: ReturnType<typeof drizzle<typeof schema>>;
 };
@@ -28,19 +29,20 @@ function getResolvedConnectionString(): string {
 }
 
 function getDatabase() {
-  if (globalForDb.drizzleInstance) {
+  const connectionString = getResolvedConnectionString();
+
+  if (globalForDb.drizzleInstance && globalForDb.currentConnStr === connectionString) {
     return globalForDb.drizzleInstance;
   }
 
-  const connectionString = getResolvedConnectionString();
-
-  const client = globalForDb.postgresClient ?? postgres(connectionString, {
+  const client = postgres(connectionString, {
     prepare: false,
     max: 5,
     idle_timeout: 15,
     connect_timeout: 10,
   });
 
+  globalForDb.currentConnStr = connectionString;
   globalForDb.postgresClient = client;
   globalForDb.drizzleInstance = drizzle(client, { schema });
 
