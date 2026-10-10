@@ -27,7 +27,9 @@ export default function GlobalError({
             Something unexpected occurred
           </h2>
           <p className="mt-2 text-xs text-slate-500 leading-relaxed">
-            {error?.message || "An issue occurred while processing your request. Please try again."}
+            {error?.message === "Load failed"
+              ? "A network request was interrupted by the browser. Please tap Try again to refresh your session."
+              : error?.message || "An issue occurred while processing your request. Please try again."}
           </p>
         </div>
 

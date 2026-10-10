@@ -1,25 +1,66 @@
 "use client";
 
-import { useActionState, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { signInAction } from "@/app/actions/auth";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 
 function LoginFormContent() {
-  const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") || "/dashboard";
-  const [state, formAction, isPending] = useActionState(signInAction, null);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !password) {
+      setError("Please enter both your email address and password.");
+      return;
+    }
+
+    setError(null);
+    setIsPending(true);
+
+    try {
+      const supabase = createClient();
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
+      });
+
+      if (authError) {
+        const msg = authError.message || "Invalid email or password.";
+        setError(msg);
+        setIsPending(false);
+        return;
+      }
+
+      if (data?.session) {
+        // Successfully authenticated; navigate to target destination
+        router.push(redirectTo);
+        router.refresh();
+      } else {
+        router.push(redirectTo);
+      }
+    } catch (err: any) {
+      setError(err?.message || "An unexpected network error occurred. Please try again.");
+      setIsPending(false);
+    }
+  };
 
   return (
-    <form action={formAction} className="space-y-5" aria-busy={isPending}>
-      {state?.error && (
+    <form onSubmit={handleSubmit} className="space-y-5" aria-busy={isPending}>
+      {error && (
         <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">
-          {state.error}
+          {error}
         </div>
       )}
-
-      <input type="hidden" name="redirectTo" value={redirectTo} />
 
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1.5">
@@ -29,6 +70,8 @@ function LoginFormContent() {
           id="email"
           name="email"
           type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
           autoCapitalize="none"
           required
@@ -45,6 +88,8 @@ function LoginFormContent() {
           <input
             id="password"
             name="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
             required

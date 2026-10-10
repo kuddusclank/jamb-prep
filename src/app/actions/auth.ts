@@ -179,6 +179,53 @@ export async function signUpAction(prevState: AuthState | null, formData: FormDa
   redirect("/onboarding");
 }
 
+export async function provisionRegisteredUserAction(formData: FormData): Promise<{ success: boolean }> {
+  const displayName = (formData.get("displayName") as string)?.trim() || "";
+  const email = (formData.get("email") as string)?.trim() || "";
+  const referralCodeInput = (formData.get("referralCode") as string)?.trim().toUpperCase();
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { success: false };
+
+  const userId = user.id;
+
+  try {
+    await db.insert(profiles).values({
+      id: userId,
+      displayName: displayName || user.user_metadata?.display_name || "Student",
+      email: email || user.email || "",
+      role: "student",
+    }).onConflictDoNothing();
+
+    const studentCode = generateReferralCode(displayName || "Student");
+    await db.insert(referralCodes).values({
+      userId,
+      code: studentCode,
+    }).onConflictDoNothing();
+
+    if (referralCodeInput) {
+      const referrerRecord = await db.query.referralCodes.findFirst({
+        where: eq(referralCodes.code, referralCodeInput),
+      });
+
+      if (referrerRecord && referrerRecord.userId !== userId) {
+        await db.insert(referrals).values({
+          referrerId: referrerRecord.userId,
+          referredUserId: userId,
+          status: "qualified",
+          qualifiedAt: new Date(),
+        }).onConflictDoNothing();
+      }
+    }
+  } catch (err) {
+    console.warn("Notice in provisionRegisteredUserAction:", err);
+  }
+
+  return { success: true };
+}
+
 export async function signInAction(prevState: AuthState | null, formData: FormData): Promise<AuthState> {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;

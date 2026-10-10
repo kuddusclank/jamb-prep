@@ -1,18 +1,86 @@
 "use client";
 
-import { useActionState, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { signUpAction } from "@/app/actions/auth";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { provisionRegisteredUserAction } from "@/app/actions/auth";
 import { ArrowRight, Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
 
 function RegisterFormContent() {
-  const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
   const searchParams = useSearchParams();
   const initialReferralCode = searchParams.get("ref") || "";
-  const [state, formAction, isPending] = useActionState(signUpAction, null);
+
+  const [displayName, setDisplayName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [referralCode, setReferralCode] = useState(initialReferralCode);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanName = displayName.trim();
+    const cleanEmail = email.trim();
+
+    if (!cleanName || !cleanEmail || !password) {
+      setError("Please provide your full name, email address, and a password.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Your password must be at least 6 characters long.");
+      return;
+    }
+
+    setError(null);
+    setIsPending(true);
+
+    try {
+      const supabase = createClient();
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password,
+        options: {
+          data: {
+            display_name: cleanName,
+          },
+        },
+      });
+
+      if (authError) {
+        const msg = authError.message.toLowerCase();
+        if (msg.includes("already registered") || msg.includes("already exists")) {
+          setError("An account with this email already exists. Please log in instead.");
+        } else {
+          setError(authError.message || "Failed to create account. Please try again.");
+        }
+        setIsPending(false);
+        return;
+      }
+
+      // If user session is established immediately, provision profile record
+      try {
+        const formData = new FormData();
+        formData.append("displayName", cleanName);
+        formData.append("email", cleanEmail);
+        formData.append("referralCode", referralCode.trim());
+        await provisionRegisteredUserAction(formData);
+      } catch (provErr) {
+        console.warn("Notice during registration provisioning:", provErr);
+      }
+
+      router.push("/onboarding");
+      router.refresh();
+    } catch (err: any) {
+      setError(err?.message || "An unexpected error occurred. Please try again.");
+      setIsPending(false);
+    }
+  };
 
   return (
-    <form action={formAction} className="space-y-5" aria-busy={isPending}>
+    <form onSubmit={handleSubmit} className="space-y-5" aria-busy={isPending}>
       {initialReferralCode && (
         <div className="mb-4 rounded-2xl bg-[#F8F2DF] border border-amber-300/40 p-3.5 flex items-start gap-3">
           <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
@@ -21,15 +89,15 @@ function RegisterFormContent() {
           <div className="text-xs">
             <p className="font-semibold text-amber-950">Referral code supplied</p>
             <p className="mt-0.5 text-amber-900/80">
-              Code <strong>{initialReferralCode.toUpperCase()}</strong> will be checked when you register.
+              Code <strong>{initialReferralCode.toUpperCase()}</strong> will be applied upon account creation.
             </p>
           </div>
         </div>
       )}
 
-      {state?.error && (
+      {error && (
         <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">
-          {state.error}
+          {error}
         </div>
       )}
 
@@ -40,8 +108,10 @@ function RegisterFormContent() {
         <input
           id="displayName"
           name="displayName"
-          autoComplete="name"
           type="text"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          autoComplete="name"
           required
           placeholder="e.g. Amina Bello"
           className="w-full min-h-13 rounded-xl border border-slate-300 bg-white px-4 text-base text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
@@ -56,6 +126,8 @@ function RegisterFormContent() {
           id="email"
           name="email"
           type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
           autoCapitalize="none"
           required
@@ -72,6 +144,8 @@ function RegisterFormContent() {
           <input
             id="password"
             name="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
             required
@@ -104,7 +178,8 @@ function RegisterFormContent() {
           id="referralCode"
           name="referralCode"
           type="text"
-          defaultValue={initialReferralCode}
+          value={referralCode}
+          onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
           placeholder="e.g. TOBI99"
           className="w-full min-h-13 rounded-xl border border-slate-300 bg-white px-4 text-base text-[#092E28] uppercase font-mono placeholder:font-sans placeholder:normal-case placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
         />
