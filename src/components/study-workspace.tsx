@@ -7,6 +7,7 @@ import { StudyWorkspaceClient } from "./study-workspace-client";
 export async function StudyWorkspace({ children }: { children: ReactNode }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const { isPremium } = await getUserSubscriptionStatus(user.id);
+  const subStatus = await getUserSubscriptionStatus(user.id);
+  const isPremium = subStatus?.isPremium ?? false;
   return <StudyWorkspaceClient isPremium={isPremium}>{children}</StudyWorkspaceClient>;
 }

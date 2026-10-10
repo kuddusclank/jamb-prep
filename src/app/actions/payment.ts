@@ -30,8 +30,21 @@ export async function getCheckoutPricingAction(): Promise<CheckoutPricing> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  const baseKobo = 100000; // ₦1,000
+
   if (!user) {
-    throw new Error("You must be logged in to view checkout pricing.");
+    return {
+      originalAmountKobo: baseKobo,
+      finalAmountKobo: baseKobo,
+      originalAmountNaira: baseKobo / 100,
+      finalAmountNaira: baseKobo / 100,
+      hasDiscount: false,
+      rewardId: null,
+      discountReason: null,
+      userEmail: "",
+      isAlreadyPremium: false,
+      currentExpiresAt: null,
+    };
   }
 
   const subStatus = await getUserSubscriptionStatus(user.id);
@@ -52,7 +65,6 @@ export async function getCheckoutPricingAction(): Promise<CheckoutPricing> {
     console.warn("Notice checking referral rewards:", err);
   }
 
-  const baseKobo = 100000; // ₦1,000
   const hasDiscount = !!reward;
   const finalKobo = hasDiscount ? 50000 : baseKobo; // ₦500 or ₦1,000
 
@@ -86,7 +98,13 @@ export async function initializePaystackCheckoutAction(): Promise<InitializePaym
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    throw new Error("You must be logged in to subscribe.");
+    return {
+      authorizationUrl: "/login?redirectTo=/pricing",
+      reference: "",
+      amountKobo: 0,
+      isSimulated: false,
+      error: "You must be logged in to subscribe.",
+    };
   }
 
   const pricing = await getCheckoutPricingAction();
@@ -186,7 +204,11 @@ export async function verifyPaystackPaymentAction(reference: string): Promise<Ve
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    throw new Error("You must be logged in to verify subscription.");
+    return {
+      success: false,
+      message: "You must be logged in to verify subscription.",
+      reference: reference || "",
+    };
   }
 
   // 1. Sanitize reference in case Paystack appended query artifacts
