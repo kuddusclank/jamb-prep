@@ -603,4 +603,212 @@ export const bulkQuestionImportSchema: SchemaValidator<SingleQuestionImport[]> =
   },
 };
 
+export interface QuestionUpsertRequest {
+  id?: string;
+  subjectCode: string;
+  topicTitle: string;
+  stem: string;
+  imageUrl?: string | null;
+  difficulty: 'easy' | 'medium' | 'hard';
+  examYear?: number | null;
+  options: {
+    A: string;
+    B: string;
+    C: string;
+    D: string;
+  };
+  correctOption: 'A' | 'B' | 'C' | 'D';
+  explanation: string;
+  passageTitle?: string | null;
+  passageContent?: string | null;
+  status: 'draft' | 'reviewed' | 'published' | 'archived';
+}
+
+export const questionUpsertSchema: SchemaValidator<QuestionUpsertRequest> = {
+  safeParse(input: unknown): SafeParseResult<QuestionUpsertRequest> {
+    if (!isPlainObject(input)) {
+      return failIssues([{ path: ['body'], issue: 'Expected JSON object' }]);
+    }
+    const issues: ValidationIssue[] = [];
+    const subjectCode = typeof input.subjectCode === 'string' ? input.subjectCode.trim().toUpperCase() : '';
+    if (subjectCode.length < 2 || subjectCode.length > 6) {
+      issues.push({ path: ['subjectCode'], issue: 'subjectCode must be 2 to 6 characters' });
+    }
+    const topicTitle = typeof input.topicTitle === 'string' ? input.topicTitle.trim() : '';
+    if (topicTitle.length < 2 || topicTitle.length > 200) {
+      issues.push({ path: ['topicTitle'], issue: 'topicTitle must be 2 to 200 characters' });
+    }
+    const stem = typeof input.stem === 'string' ? input.stem.trim() : '';
+    if (stem.length < 5 || stem.length > 20000) {
+      issues.push({ path: ['stem'], issue: 'Question stem must be at least 5 characters' });
+    }
+    const difficulty = input.difficulty === undefined ? 'medium' : input.difficulty;
+    if (difficulty !== 'easy' && difficulty !== 'medium' && difficulty !== 'hard') {
+      issues.push({ path: ['difficulty'], issue: 'difficulty must be easy, medium, or hard' });
+    }
+    const status = input.status === undefined ? 'draft' : input.status;
+    if (status !== 'draft' && status !== 'reviewed' && status !== 'published' && status !== 'archived') {
+      issues.push({ path: ['status'], issue: 'status must be draft, reviewed, published, or archived' });
+    }
+    const opts = input.options;
+    if (
+      !isPlainObject(opts) ||
+      typeof opts.A !== 'string' || opts.A.trim().length < 1 ||
+      typeof opts.B !== 'string' || opts.B.trim().length < 1 ||
+      typeof opts.C !== 'string' || opts.C.trim().length < 1 ||
+      typeof opts.D !== 'string' || opts.D.trim().length < 1
+    ) {
+      issues.push({ path: ['options'], issue: 'Options A, B, C, and D are required' });
+    }
+    const correctOption = input.correctOption;
+    if (correctOption !== 'A' && correctOption !== 'B' && correctOption !== 'C' && correctOption !== 'D') {
+      issues.push({ path: ['correctOption'], issue: 'correctOption must be A, B, C, or D' });
+    }
+    const explanation = typeof input.explanation === 'string' ? input.explanation.trim() : '';
+    if (explanation.length < 5 || explanation.length > 20000) {
+      issues.push({ path: ['explanation'], issue: 'Detailed explanation is required' });
+    }
+    if (input.examYear !== undefined && input.examYear !== null && (!Number.isInteger(input.examYear) || Number(input.examYear) < 1978 || Number(input.examYear) > 2100)) {
+      issues.push({ path: ['examYear'], issue: 'Invalid exam year (1978-2100)' });
+    }
+    if (input.imageUrl) {
+      try {
+        const url = new URL(String(input.imageUrl));
+        if (url.protocol !== 'https:' || url.username || url.password) throw new Error();
+      } catch {
+        issues.push({ path: ['imageUrl'], issue: 'imageUrl must be a valid HTTPS URL' });
+      }
+    }
+    if (input.id !== undefined && input.id !== null) {
+      if (typeof input.id !== 'string' || !UUID_V1_TO_V5_REGEX.test(input.id)) {
+        issues.push({ path: ['id'], issue: 'id must be a valid UUID' });
+      }
+    }
+
+    if (issues.length > 0) return failIssues(issues);
+
+    return {
+      success: true,
+      data: {
+        id: typeof input.id === 'string' ? input.id.toLowerCase() : undefined,
+        subjectCode,
+        topicTitle,
+        stem,
+        imageUrl: typeof input.imageUrl === 'string' ? input.imageUrl : null,
+        difficulty: difficulty as 'easy' | 'medium' | 'hard',
+        examYear: typeof input.examYear === 'number' ? input.examYear : null,
+        options: {
+          A: (opts as Record<string, string>).A.trim(),
+          B: (opts as Record<string, string>).B.trim(),
+          C: (opts as Record<string, string>).C.trim(),
+          D: (opts as Record<string, string>).D.trim(),
+        },
+        correctOption: correctOption as 'A' | 'B' | 'C' | 'D',
+        explanation,
+        passageTitle: typeof input.passageTitle === 'string' ? input.passageTitle.trim() : null,
+        passageContent: typeof input.passageContent === 'string' ? input.passageContent.trim() : null,
+        status: status as 'draft' | 'reviewed' | 'published' | 'archived',
+      },
+    };
+  },
+};
+
+export interface QuestionStatusUpdateRequest {
+  status: 'draft' | 'reviewed' | 'published' | 'archived';
+}
+
+export const questionStatusUpdateSchema: SchemaValidator<QuestionStatusUpdateRequest> = {
+  safeParse(input: unknown): SafeParseResult<QuestionStatusUpdateRequest> {
+    if (!isPlainObject(input)) {
+      return failIssues([{ path: ['body'], issue: 'Expected JSON object' }]);
+    }
+    const status = input.status;
+    if (status !== 'draft' && status !== 'reviewed' && status !== 'published' && status !== 'archived') {
+      return failIssues([{ path: ['status'], issue: 'status must be draft, reviewed, published, or archived' }]);
+    }
+    return { success: true, data: { status } };
+  },
+};
+
+export interface QuestionReportCreateRequest {
+  questionId: string;
+  attemptId?: string | null;
+  reason: 'wrong_key' | 'ambiguous_wording' | 'multiple_or_no_correct' | 'faulty_explanation' | 'bad_media' | 'wrong_topic' | 'duplication' | 'other';
+  comment?: string | null;
+}
+
+export const questionReportCreateSchema: SchemaValidator<QuestionReportCreateRequest> = {
+  safeParse(input: unknown): SafeParseResult<QuestionReportCreateRequest> {
+    if (!isPlainObject(input)) {
+      return failIssues([{ path: ['body'], issue: 'Expected JSON object' }]);
+    }
+    const issues: ValidationIssue[] = [];
+    if (typeof input.questionId !== 'string' || !UUID_V1_TO_V5_REGEX.test(input.questionId)) {
+      issues.push({ path: ['questionId'], issue: 'questionId must be a valid UUID' });
+    }
+    if (input.attemptId !== undefined && input.attemptId !== null) {
+      if (typeof input.attemptId !== 'string' || !UUID_V1_TO_V5_REGEX.test(input.attemptId)) {
+        issues.push({ path: ['attemptId'], issue: 'attemptId must be a valid UUID' });
+      }
+    }
+    const validReasons = [
+      'wrong_key',
+      'ambiguous_wording',
+      'multiple_or_no_correct',
+      'faulty_explanation',
+      'bad_media',
+      'wrong_topic',
+      'duplication',
+      'other',
+    ];
+    if (typeof input.reason !== 'string' || !validReasons.includes(input.reason)) {
+      issues.push({ path: ['reason'], issue: `reason must be one of: ${validReasons.join(', ')}` });
+    }
+    const comment = typeof input.comment === 'string' ? input.comment.trim() : null;
+    if (comment && comment.length > 2000) {
+      issues.push({ path: ['comment'], issue: 'comment must be at most 2000 characters' });
+    }
+
+    if (issues.length > 0) return failIssues(issues);
+
+    return {
+      success: true,
+      data: {
+        questionId: (input.questionId as string).toLowerCase(),
+        attemptId: input.attemptId ? (input.attemptId as string).toLowerCase() : null,
+        reason: input.reason as QuestionReportCreateRequest['reason'],
+        comment,
+      },
+    };
+  },
+};
+
+export interface QuestionReportUpdateRequest {
+  status: 'open' | 'investigating' | 'resolved' | 'dismissed';
+  adminNotes?: string | null;
+}
+
+export const questionReportUpdateSchema: SchemaValidator<QuestionReportUpdateRequest> = {
+  safeParse(input: unknown): SafeParseResult<QuestionReportUpdateRequest> {
+    if (!isPlainObject(input)) {
+      return failIssues([{ path: ['body'], issue: 'Expected JSON object' }]);
+    }
+    const validStatuses = ['open', 'investigating', 'resolved', 'dismissed'];
+    if (typeof input.status !== 'string' || !validStatuses.includes(input.status)) {
+      return failIssues([{ path: ['status'], issue: `status must be one of: ${validStatuses.join(', ')}` }]);
+    }
+    const adminNotes = typeof input.adminNotes === 'string' ? input.adminNotes.trim() : null;
+    if (adminNotes && adminNotes.length > 4000) {
+      return failIssues([{ path: ['adminNotes'], issue: 'adminNotes must be at most 4000 characters' }]);
+    }
+    return {
+      success: true,
+      data: {
+        status: input.status as QuestionReportUpdateRequest['status'],
+        adminNotes,
+      },
+    };
+  },
+};
+
 export type { SingleQuestionImport };

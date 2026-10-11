@@ -7,7 +7,8 @@ import {
 // Enums
 // ==========================================
 export const userRoleEnum = pgEnum('user_role', ['student', 'admin', 'reviewer']);
-export const questionStatusEnum = pgEnum('question_status', ['draft', 'reviewed', 'published']);
+export const questionStatusEnum = pgEnum('question_status', ['draft', 'reviewed', 'published', 'archived']);
+export const reportStatusEnum = pgEnum('report_status', ['open', 'investigating', 'resolved', 'dismissed']);
 export const difficultyEnum = pgEnum('difficulty_level', ['easy', 'medium', 'hard']);
 export const attemptModeEnum = pgEnum('attempt_mode', ['practice', 'mock']);
 export const attemptStatusEnum = pgEnum('attempt_status', ['in_progress', 'completed', 'abandoned', 'expired']);
@@ -113,6 +114,25 @@ export const questionExplanations = pgTable('question_explanations', {
   verifiedBy: uuid('verified_by').references(() => profiles.id),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }).enableRLS();
+
+export const questionReports = pgTable('question_reports', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  questionId: uuid('question_id').references(() => questions.id, { onDelete: 'cascade' }).notNull(),
+  reporterUserId: uuid('reporter_user_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
+  attemptId: uuid('attempt_id').references(() => attempts.id, { onDelete: 'set null' }),
+  reason: text('reason').notNull(),
+  comment: text('comment'),
+  status: reportStatusEnum('status').default('open').notNull(),
+  adminNotes: text('admin_notes'),
+  resolvedBy: uuid('resolved_by').references(() => profiles.id, { onDelete: 'set null' }),
+  resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('report_question_idx').on(table.questionId),
+  index('report_status_idx').on(table.status),
+  index('report_reporter_idx').on(table.reporterUserId),
+]).enableRLS();
 
 // ==========================================
 // 4. CBT Exam Simulation & Practice Engine
