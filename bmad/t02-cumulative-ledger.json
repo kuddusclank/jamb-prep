@@ -1,0 +1,310 @@
+{
+  "updatedAt": "2026-10-11T06:21:01.454Z",
+  "hardBudgetCap": 900,
+  "maxConcurrencyCap": 5,
+  "conservativeHistoricalBaseline": 51,
+  "requests": [
+    {
+      "id": "baseline-prior-tail-and-probes",
+      "timestamp": "2026-10-10T22:03:14Z",
+      "count": 51,
+      "description": "Conservative baseline accounting 48 recorded tail events + 1 reviewer Auth login + 2 reviewer probes"
+    },
+    {
+      "id": "supabase-auth-login",
+      "timestamp": "2026-10-10T22:07:23.238Z",
+      "count": 1,
+      "description": "Supabase Auth password login for test subject 547fee7d-27cc-403f-8097-b2afb7cbc438"
+    },
+    {
+      "id": "probe-af3b2528-8776-47db-96be-9236ad739c59",
+      "timestamp": "2026-10-10T22:07:56.517Z",
+      "count": 1,
+      "description": "Database probe request probe-af3b2528-8776-47db-96be-9236ad739c59 (GET /api/spike/db-probe)"
+    },
+    {
+      "id": "probe-24023bce-6cd4-49c3-a552-a4342f3ceb7f",
+      "timestamp": "2026-10-10T22:08:32.566Z",
+      "count": 1,
+      "description": "Database probe request probe-24023bce-6cd4-49c3-a552-a4342f3ceb7f (GET /api/spike/db-probe)"
+    },
+    {
+      "id": "probe-0fc122ea-9f77-42db-8a9a-7f7b1e476ef9",
+      "timestamp": "2026-10-10T22:09:53.086Z",
+      "count": 1,
+      "description": "Database probe request probe-0fc122ea-9f77-42db-8a9a-7f7b1e476ef9 (GET /api/spike/db-probe)"
+    },
+    {
+      "id": "t02-six-scenario-matrix",
+      "timestamp": "2026-10-10T22:14:05.072Z",
+      "count": 6,
+      "description": "Bounded 6-scenario benchmark matrix (1 request per scenario, concurrency 1)"
+    },
+    {
+      "id": "probe-78aacb23-4d1a-4a7f-b0a1-d74000573574",
+      "timestamp": "2026-10-10T22:27:40.935Z",
+      "count": 1,
+      "description": "Database probe request probe-78aacb23-4d1a-4a7f-b0a1-d74000573574 (GET /api/spike/db-probe)"
+    },
+    {
+      "id": "probe-7d605451-96a1-4e21-a97c-7d9bc5160657",
+      "timestamp": "2026-10-10T22:27:46.356Z",
+      "count": 1,
+      "description": "Database probe request probe-7d605451-96a1-4e21-a97c-7d9bc5160657 (GET /api/spike/db-probe)"
+    },
+    {
+      "id": "t02-matrix-27355fa0-ae02-4411-b715-58d3eba38531",
+      "timestamp": "2026-10-10T22:28:08.455Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "t02-matrix-c36793bf-d757-45f3-8d6b-7d8745154707",
+      "timestamp": "2026-10-10T22:28:26.415Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "t02-matrix-772ba7da-bc9d-4280-8fa9-551ea14ee619",
+      "timestamp": "2026-10-10T22:28:38.708Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "t02-matrix-5d24b0d5-8480-4e06-b389-126ade7a86bf",
+      "timestamp": "2026-10-10T22:43:10.250Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "t02-matrix-49973d28-3c6e-444d-92cd-0f1240910bd4",
+      "timestamp": "2026-10-10T22:43:23.299Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "t02-matrix-10a9c36f-683d-461e-ad5e-c487329ade45",
+      "timestamp": "2026-10-10T22:43:34.421Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "review-omitted-local-sql-probes-allowance",
+      "timestamp": "2026-10-10T22:47:32.551Z",
+      "count": 64,
+      "description": "Conservative retrospective allowance for unreserved local direct/session database generator probes, SQL roundtrips and transaction control in optimization report; exact network history unavailable"
+    },
+    {
+      "id": "t02-matrix-d421c6f3-66b2-4b90-8771-07455e5247f1",
+      "timestamp": "2026-10-10T22:56:35.549Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "t02-matrix-67665e15-023c-454e-ac87-98490689afbd",
+      "timestamp": "2026-10-10T22:56:47.545Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "t02-matrix-96c3aa8b-fdcf-468b-b1e3-2229dd462871",
+      "timestamp": "2026-10-10T22:56:57.667Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "supabase-auth-login-1e10c5a4-bac5-420f-9fa9-51f5818e3956",
+      "timestamp": "2026-10-10T23:14:35.715Z",
+      "count": 1,
+      "description": "Supabase Auth password login for test subject 547fee7d-27cc-403f-8097-b2afb7cbc438"
+    },
+    {
+      "id": "setup-a75c2754-3a0d-4c11-bf30-99febd61a9ea",
+      "timestamp": "2026-10-10T23:15:23.355Z",
+      "count": 40,
+      "description": "Pre-seeded benchmark fixture DDL and deterministic seeding for schema jambprep_benchmark_9689e67124fd"
+    },
+    {
+      "id": "setup-5fa60a52-5811-4ab2-ab19-95f72a2dd043",
+      "timestamp": "2026-10-10T23:17:13.849Z",
+      "count": 40,
+      "description": "Pre-seeded benchmark fixture DDL and deterministic seeding for schema jambprep_benchmark_3512dd3df97b"
+    },
+    {
+      "id": "setup-ed71a82a-dca0-45b9-b7cb-d8a6446e6e42",
+      "timestamp": "2026-10-10T23:18:02.458Z",
+      "count": 40,
+      "description": "Pre-seeded benchmark fixture DDL and deterministic seeding for schema jambprep_benchmark_5d9841edd21f"
+    },
+    {
+      "id": "t02-parity-92b1fe84-e9a1-4444-8e29-a149b9b8fd24",
+      "timestamp": "2026-10-10T23:18:51.466Z",
+      "count": 6,
+      "description": "Real engine scoring parity (0/400) and security/deadline/stale checks; concurrency 1"
+    },
+    {
+      "id": "supabase-auth-login-4f126edc-cd6a-43e6-98c6-3bf401c137a1",
+      "timestamp": "2026-10-11T05:25:13.684Z",
+      "count": 1,
+      "description": "Supabase Auth password login for test subject 547fee7d-27cc-403f-8097-b2afb7cbc438"
+    },
+    {
+      "id": "t02-matrix-f4b4b23b-0179-4bf2-a67a-f0351c89b5e4",
+      "timestamp": "2026-10-11T05:25:38.032Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "cleanup-4f286fe4-3cb6-441e-b54c-61ef805a4575",
+      "timestamp": "2026-10-11T05:28:29.185Z",
+      "count": 5,
+      "description": "Cleanup and removal verification for pre-seeded benchmark schema jambprep_benchmark_5d9841edd21f"
+    },
+    {
+      "id": "setup-1d2a2c35-7b66-4e5a-a5f4-0752654a7b66",
+      "timestamp": "2026-10-11T05:30:06.373Z",
+      "count": 40,
+      "description": "Pre-seeded benchmark fixture DDL and deterministic seeding for schema jambprep_benchmark_98c6337dde6e"
+    },
+    {
+      "id": "t02-parity-6be06d97-e6e4-41a5-9e36-b6bf4fc26f36",
+      "timestamp": "2026-10-11T05:30:33.220Z",
+      "count": 6,
+      "description": "Real engine scoring parity (0/400) and security/deadline/stale checks; concurrency 1"
+    },
+    {
+      "id": "t02-matrix-0544fc4a-2cb4-4715-83e5-c74effdf2888",
+      "timestamp": "2026-10-11T05:30:40.281Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "t02-matrix-b01582a7-f81e-4c1b-95bd-901a44d5f87f",
+      "timestamp": "2026-10-11T05:30:49.744Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "t02-matrix-01618466-3fe1-4398-bf18-3b692b1e30e8",
+      "timestamp": "2026-10-11T05:31:10.735Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "t02-matrix-29d0bce7-5433-463a-9fb4-a8d70eade227",
+      "timestamp": "2026-10-11T05:31:26.147Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "cleanup-137201c3-e35c-4035-a282-950c76f6cd43",
+      "timestamp": "2026-10-11T05:31:38.352Z",
+      "count": 5,
+      "description": "Cleanup and removal verification for pre-seeded benchmark schema jambprep_benchmark_98c6337dde6e"
+    },
+    {
+      "id": "setup-6c6b9e08-1544-424b-b93c-c337de44482d",
+      "timestamp": "2026-10-11T05:50:39.815Z",
+      "count": 64,
+      "description": "Pre-seeded benchmark fixture DDL and deterministic seeding for schema jambprep_benchmark_36095b46fa87"
+    },
+    {
+      "id": "t02-parity-215c64d6-f965-415a-9a65-ed9aba01a597",
+      "timestamp": "2026-10-11T05:51:06.904Z",
+      "count": 7,
+      "description": "Real engine scoring parity (0/400) and security/deadline/stale checks; concurrency 1"
+    },
+    {
+      "id": "t02-matrix-6d317b42-c402-4cb5-8e34-8b8893502ae8",
+      "timestamp": "2026-10-11T05:51:18.628Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "t02-matrix-87ff2943-2c41-4837-91e5-2d89fe2e282e",
+      "timestamp": "2026-10-11T05:51:27.820Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "cleanup-0d65197e-0843-4e58-93e1-b96be25f4a25",
+      "timestamp": "2026-10-11T05:51:39.904Z",
+      "count": 8,
+      "description": "Cleanup and removal verification for pre-seeded benchmark schema jambprep_benchmark_36095b46fa87"
+    },
+    {
+      "id": "review-atomic-unreserved-local-probes-allowance",
+      "timestamp": "2026-10-11T05:56:32.593Z",
+      "count": 64,
+      "description": "Conservative retrospective allowance for atomic report local database connectivity/CTE/temp-table probes and residual-schema queries omitted from prior reservations; exact request history unavailable"
+    },
+    {
+      "id": "setup-1eb4ff61-b924-4ad9-a730-35af853b6592",
+      "timestamp": "2026-10-11T06:02:43.050Z",
+      "count": 64,
+      "description": "Pre-seeded benchmark fixture DDL and deterministic seeding for schema jambprep_benchmark_5ab3bb45a186"
+    },
+    {
+      "id": "t02-concurrency-48b91710-831f-48fb-835d-696f94972aeb",
+      "timestamp": "2026-10-11T06:03:15.559Z",
+      "count": 12,
+      "description": "Real Postgres concurrency regression in schema jambprep_benchmark_5ab3bb45a186: writer-holding-lock vs finalizer, finalizer-first, competing revisions, repeated finalization"
+    },
+    {
+      "id": "t02-parity-352e1f5f-c72c-41c5-886e-36d48c855b24",
+      "timestamp": "2026-10-11T06:03:34.742Z",
+      "count": 7,
+      "description": "Real engine scoring parity (0/400) and security/deadline/stale checks; concurrency 1"
+    },
+    {
+      "id": "t02-matrix-28535822-6fa2-4d8b-9045-41bc91e9783d",
+      "timestamp": "2026-10-11T06:03:47.069Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "t02-matrix-51ae93dc-7bd8-4825-9ea0-fc717c4d4f12",
+      "timestamp": "2026-10-11T06:03:55.304Z",
+      "count": 6,
+      "description": "Six-scenario matrix; concurrency 1; reservation before network"
+    },
+    {
+      "id": "cleanup-3697f94e-e2dd-4136-b282-c61a8541a17f",
+      "timestamp": "2026-10-11T06:04:07.537Z",
+      "count": 8,
+      "description": "Cleanup and removal verification for pre-seeded benchmark schema jambprep_benchmark_5ab3bb45a186"
+    },
+    {
+      "id": "review-v2-concurrency-control-underreservation",
+      "timestamp": "2026-10-11T06:09:23.857Z",
+      "count": 36,
+      "description": "Conservative36-operation retrospective allowance for concurrency suite SQL/control/retry underreservation and unreserved residual-schema probe; exact network count unavailable"
+    },
+    {
+      "id": "setup-f3d08229-780f-47a3-b449-dc3ca09a6ebf",
+      "timestamp": "2026-10-11T06:17:59.052Z",
+      "count": 64,
+      "description": "Pre-seeded benchmark fixture DDL and deterministic seeding for schema jambprep_benchmark_5589a9a0a44e"
+    },
+    {
+      "id": "setup-f6bec3aa-ed25-4ff0-b6ab-dc4254bca4ae",
+      "timestamp": "2026-10-11T06:20:07.889Z",
+      "count": 64,
+      "description": "Pre-seeded benchmark fixture DDL and deterministic seeding for schema jambprep_benchmark_80018a6b13fa"
+    },
+    {
+      "id": "t02-concurrency-bc1fb92d-d9dc-46b3-88bb-1955e852e64f",
+      "timestamp": "2026-10-11T06:20:34.929Z",
+      "count": 72,
+      "description": "Actual operation committed race checks; concurrency3; bounded controls/polling/retries"
+    },
+    {
+      "id": "cleanup-a17c223e-bc1e-4b16-a291-93081db4172b",
+      "timestamp": "2026-10-11T06:21:01.453Z",
+      "count": 8,
+      "description": "Cleanup and removal verification for pre-seeded benchmark schema jambprep_benchmark_80018a6b13fa"
+    }
+  ],
+  "totalCumulativeCount": 897,
+  "remainingBudget": 3
+}

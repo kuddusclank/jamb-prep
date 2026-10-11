@@ -1,209 +1,164 @@
+"use client";
+
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { StudyWorkspace } from "@/components/study-workspace";
-import { db } from "@/db";
-import { attempts,studentSubjects,subjects } from "@/db/schema";
-import { getUserSubscriptionStatus } from "@/lib/subscription";
-import { getCurrentUser } from "@/lib/supabase/current-user";
-import { and,eq } from "drizzle-orm";
 import {
-ArrowRight,
-CheckCircle2,
-Keyboard,
-ShieldCheck,
-Sparkles
+  AlertTriangle,
+  Award,
+  CheckCircle2,
+  Clock,
+  Keyboard,
+  ShieldAlert,
 } from "lucide-react";
-import Link from "@/components/pending-link";
-import { redirect } from "next/navigation";
 import { MockStartButton } from "./mock-start-button";
 
-export const metadata = {
-  title: "CBT Mock Exam Instructions — JAMBPrep",
-  description: "JAMBPrep mock exam briefing, 180 questions, 120 minutes, 8-key hotkey guide.",
-};
+import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
+import type { EnrolledData } from "@/lib/api/app-dtos";
 
-export default async function MockInstructionsPage() {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login");
+function MockRedirectNotice() {
+  const searchParams = useSearchParams();
+  const errorCode = searchParams.get("error");
+  if (!errorCode) {
+    return null;
   }
 
-  const subStatus = await getUserSubscriptionStatus(user.id);
-  let completedMocks: any[] = [];
-  let enrolledSubjects: Array<{ name: string; code: string; isCompulsory: boolean }> = [];
-
-  try {
-    const [mocks, enrolled] = await Promise.race([
-      Promise.all([
-        db.query.attempts.findMany({
-          where: and(
-            eq(attempts.userId, user.id),
-            eq(attempts.mode, "mock"),
-            eq(attempts.status, "completed")
-          ),
-        }),
-        db
-          .select({
-            name: subjects.name,
-            code: subjects.code,
-            isCompulsory: subjects.isCompulsory,
-          })
-          .from(studentSubjects)
-          .innerJoin(subjects, eq(studentSubjects.subjectId, subjects.id))
-          .where(eq(studentSubjects.userId, user.id)),
-      ]),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Mock page queries timeout")), 3500)
-      ),
-    ]);
-
-    completedMocks = mocks || [];
-    if (enrolled && enrolled.length > 0) {
-      enrolledSubjects = enrolled;
-    } else {
-      enrolledSubjects = await Promise.race([
-        db
-          .select({
-            name: subjects.name,
-            code: subjects.code,
-            isCompulsory: subjects.isCompulsory,
-          })
-          .from(subjects)
-          .where(eq(subjects.isActive, true))
-          .limit(4),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Default subjects timeout")), 3500)
-        ),
-      ]);
-    }
-  } catch (err) {
-    console.warn("Notice loading mock setup:", err);
-  }
-
-  const hasExhaustedFreeMock = !subStatus.isPremium && completedMocks.length >= 1;
+  const message =
+    errorCode === "missing" || errorCode === "missing_attempt"
+      ? "No mock exam attempt ID was specified in that link. Start or resume a mock session below."
+      : "The exam or result link contained an invalid attempt identifier. Please start or resume a valid mock session below.";
 
   return (
-    <StudyWorkspace>
-      {/* Header */}
+    <div
+      role="alert"
+      className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 flex items-start gap-2.5"
+    >
+      <AlertTriangle size={16} className="shrink-0 mt-0.5 text-amber-700" />
+      <span>{message}</span>
+    </div>
+  );
+}
 
-
-      {/* Main Content */}
+export default function MockLobbyPage() {
+  const resource=useApiResource<EnrolledData>("/api/v1/practice/subjects");
+  if(!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry}/></StudyWorkspace>;
+  const enrolledSubjects=resource.data.subjects.map((subject)=>({code:subject.subject_code,name:subject.subject_name,isCompulsory:subject.is_compulsory}));
+  return (
+    <StudyWorkspace isPremium={false}>
       <main className="shell section-space">
-        <div className="max-w-3xl mx-auto space-y-8">
-          {/* Header Banner */}
-          <div className="rounded-3xl bg-[#102F29] text-white p-6 sm:p-10 shadow-xl">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-4">
-              <ShieldCheck size={14} /> YOUR MOCK EXAM BRIEFING
+        <div className="max-w-3xl mx-auto">
+          <Suspense fallback={null}>
+            <MockRedirectNotice />
+          </Suspense>
+
+          <div className="rounded-3xl border border-emerald-950/10 bg-white p-6 sm:p-10 shadow-sm">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider">
+              <Clock size={13} /> Official CBT Exam Hall Briefing
             </span>
-            <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-tight">
-              JAMB UTME Mock <span className="serif-accent text-[#E7B85A]">Examination Briefing</span>
+
+            <h1 className="mt-4 text-2xl sm:text-4xl font-semibold tracking-tight text-[#092E28]">
+              Full 4-Subject <span className="serif-accent text-[#116149]">UTME Simulation</span>
             </h1>
-            <p className="mt-3 text-sm sm:text-base text-emerald-100/90 leading-relaxed max-w-xl">
-              Practise with a timed UTME-style mock: 120 minutes, 180 questions across your 4 registered subjects, and 8-key desktop keyboard controls.
+            <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+              This timed examination replicates the authentic Joint Admissions and Matriculation Board (JAMB) Computer-Based Test interface, keyboard navigation, and 400-point grading scale.
             </p>
-          </div>
 
-          {/* Test Structure & Registered Subjects */}
-          <div className="rounded-3xl border border-emerald-950/10 bg-white p-6 sm:p-8 shadow-sm space-y-6">
-            <h2 className="text-base font-bold text-[#092E28] uppercase tracking-wider">
-              1. Your 4-Subject Combination (180 Total Questions)
-            </h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-              {enrolledSubjects.map((sub, idx) => (
-                <div key={sub.code} className="p-4 rounded-2xl bg-[#F6F8F5] border border-slate-200">
-                  <div className="font-mono text-xs font-bold text-[#116149]">{sub.code}</div>
-                  <div className="text-sm font-semibold text-[#092E28] mt-1">{sub.name}</div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">
-                    {idx === 0 ? "60 Questions" : "40 Questions"}
+            {/* Subject Breakdown Grid */}
+            <div className="mt-7">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+                Your Registered Examination Subjects
+              </h2>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {enrolledSubjects.map((sub) => (
+                  <div
+                    key={sub.code}
+                    className="flex items-center justify-between p-4 rounded-2xl bg-[#F6F8F5] border border-slate-200/80"
+                  >
+                    <div>
+                      <span className="font-semibold text-sm text-[#092E28] block">
+                        {sub.name}
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        {sub.code === "ENG" ? "60 Questions (Compulsory)" : "40 Questions (Elective)"}
+                      </span>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-lg bg-emerald-950/5 font-mono text-xs font-bold text-[#116149]">
+                      {sub.code}
+                    </span>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            {/* 8-Key Hotkey Guide */}
-            <div className="pt-4 border-t border-slate-100">
-              <div className="flex items-center gap-2 mb-3 text-xs font-bold uppercase tracking-wider text-slate-700">
-                <Keyboard size={16} className="text-[#116149]" /> 2. The 8-Key Desktop Hotkeys System
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5 text-xs">
-                <div className="p-3 rounded-xl border border-slate-200 bg-white">
-                  <span className="font-mono font-bold text-sm text-[#116149] bg-emerald-50 px-2 py-0.5 rounded">A, B, C, D</span>
-                  <p className="mt-1.5 text-slate-600">Select corresponding option</p>
-                </div>
-                <div className="p-3 rounded-xl border border-slate-200 bg-white">
-                  <span className="font-mono font-bold text-sm text-[#116149] bg-emerald-50 px-2 py-0.5 rounded">P</span>
-                  <p className="mt-1.5 text-slate-600">Previous question</p>
-                </div>
-                <div className="p-3 rounded-xl border border-slate-200 bg-white">
-                  <span className="font-mono font-bold text-sm text-[#116149] bg-emerald-50 px-2 py-0.5 rounded">N</span>
-                  <p className="mt-1.5 text-slate-600">Next question</p>
-                </div>
-                <div className="p-3 rounded-xl border border-slate-200 bg-white">
-                  <span className="font-mono font-bold text-sm text-[#116149] bg-emerald-50 px-2 py-0.5 rounded">R</span>
-                  <p className="mt-1.5 text-slate-600">Reverse / deselect answer</p>
-                </div>
+                ))}
               </div>
             </div>
 
-            {/* Examination Hall Rules */}
-            <div className="pt-4 border-t border-slate-100 space-y-2 text-xs text-slate-600">
-              <div className="flex items-start gap-2">
-                <CheckCircle2 size={16} className="text-[#116149] shrink-0 mt-0.5" />
-                <span>The timer is server-authoritative (120 minutes) and begins immediately upon entering the hall.</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <CheckCircle2 size={16} className="text-[#116149] shrink-0 mt-0.5" />
-                <span>Your answers autosave continuously to your local device and sync with the database in the background.</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <CheckCircle2 size={16} className="text-[#116149] shrink-0 mt-0.5" />
-                <span>When 120 minutes expire, your examination will automatically submit for server grading.</span>
-              </div>
-            </div>
-
-            {/* Start Button or Upgrade Prompt */}
-            <div className="pt-4">
-              {hasExhaustedFreeMock ? (
-                <div className="rounded-2xl border-2 border-emerald-800/20 bg-emerald-50/70 p-6 text-center space-y-3">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-200/80 text-[#116149] text-xs font-bold uppercase tracking-wider">
-                    <Sparkles size={13} /> DIAGNOSTIC BENCHMARK COMPLETED
-                  </div>
-                  <h3 className="text-xl font-bold text-[#092E28]">
-                    You&apos;ve completed your free diagnostic baseline mock!
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
-                    Upgrade to Premium Study Coach to unlock unlimited 180-question timed CBT simulations, full KaTeX step-by-step solutions, and personalized revision.
-                  </p>
-                  <div className="pt-2">
-                    <Link
-                      href="/pricing"
-                      className="min-h-12 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-7 text-sm font-semibold text-white hover:bg-[#0b4936] transition-all hover:-translate-y-0.5 shadow-md shadow-[#116149]/20"
-                    >
-                      Upgrade to Premium (from ₦500) <ArrowRight size={15} />
-                    </Link>
-                  </div>
-                </div>
-              ) : (
+            {/* Examination Rules & Specifications */}
+            <div className="mt-7 grid gap-4 sm:grid-cols-3 p-5 rounded-2xl bg-[#EDF2E9]/70 border border-emerald-950/10">
+              <div className="flex items-start gap-3">
+                <Clock size={18} className="text-[#116149] shrink-0 mt-0.5" />
                 <div>
-                  {subStatus.isPremium ? (
-                    <div className="mb-3 flex items-center justify-center gap-1.5 text-xs text-[#116149] font-semibold bg-emerald-50 py-2 rounded-xl">
-                      <Sparkles size={14} /> Premium Active • Unlimited CBT Simulations Available
-                    </div>
-                  ) : (
-                    <div className="mb-3 flex items-center justify-center gap-1.5 text-xs text-amber-900 font-semibold bg-[#F8F2DF] py-2 rounded-xl">
-                      <span>Free Diagnostic Mock (1 of 1 Remaining)</span>
-                    </div>
-                  )}
-                  <MockStartButton />
+                  <strong className="text-xs font-bold uppercase tracking-wider block text-[#092E28]">
+                    Duration
+                  </strong>
+                  <span className="text-xs text-slate-600">
+                    120 Minutes (2 Hours) strict server-enforced countdown
+                  </span>
                 </div>
-              )}
+              </div>
+
+              <div className="flex items-start gap-3">
+                <Keyboard size={18} className="text-[#116149] shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-xs font-bold uppercase tracking-wider block text-[#092E28]">
+                    8-Key CBT Controls
+                  </strong>
+                  <span className="text-xs text-slate-600">
+                    Keys A, B, C, D, P (Prev), N (Next), R (Reverse), S (Submit)
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <Award size={18} className="text-[#116149] shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-xs font-bold uppercase tracking-wider block text-[#092E28]">
+                    400-Point Scale
+                  </strong>
+                  <span className="text-xs text-slate-600">
+                    Each subject is scaled to 100 marks for a total of 400
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Important Candidate Instructions */}
+            <div className="mt-7 space-y-2.5 text-xs text-slate-600 bg-slate-50 p-5 rounded-2xl border border-slate-200/70">
+              <div className="flex items-center gap-2 font-semibold text-slate-800 text-sm mb-1">
+                <ShieldAlert size={16} className="text-amber-600" />
+                <span>Candidate Instructions</span>
+              </div>
+              <p className="flex items-center gap-2">
+                <CheckCircle2 size={14} className="text-[#116149] shrink-0" />
+                <span>Your answers are automatically saved to your device and synced in the background.</span>
+              </p>
+              <p className="flex items-center gap-2">
+                <CheckCircle2 size={14} className="text-[#116149] shrink-0" />
+                <span>If your network drops briefly, keep answering—your outbox will sync once reconnected.</span>
+              </p>
+              <p className="flex items-center gap-2">
+                <CheckCircle2 size={14} className="text-[#116149] shrink-0" />
+                <span>When the 2-hour timer expires, your examination will be submitted and graded automatically.</span>
+              </p>
+            </div>
+
+            {/* Launch CTA */}
+            <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-xs text-slate-500">
+                Ready? Ensure you have 2 uninterrupted hours before starting.
+              </div>
+              <MockStartButton />
             </div>
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-
     </StudyWorkspace>
   );
 }

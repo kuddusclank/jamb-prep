@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useActionState } from "react";
-import { updateProfileAction, cancelSubscriptionAction } from "@/app/actions/profile";
+import { updateProfileAction, cancelSubscriptionAction } from "@/lib/client-actions";
 import { 
   User, 
   Target, 
@@ -354,7 +354,7 @@ export function ProfileClient({
                       </>
                     ) : (
                       <>
-                        Auto-renewal has been cancelled on Paystack. You will not be charged again. Your Pro benefits remain active until <strong>{formattedExpiry}</strong> ({subscription.daysRemaining} days remaining), when your account will automatically switch to the Free plan.
+                        Auto-renewal is disabled for this plan. Your Pro benefits remain active until <strong>{formattedExpiry}</strong> ({subscription.daysRemaining} days remaining), when your account will automatically switch to the Free plan.
                       </>
                     )}
                   </p>

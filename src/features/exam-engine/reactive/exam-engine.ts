@@ -22,13 +22,17 @@ import { ExamQuestion } from '../domain/types';
 export type SyncAnswerHandler = (
   attemptId: string, 
   questionId: string, 
-  optionId: string | null
-) => Promise<{ success: boolean }>;
+  optionId: string | null,
+  revision: number
+) => Promise<{ success: boolean; revision?: number; reason?: string }>;
 
 export class ExamEngine {
   private events$ = new Subject<ExamEvent>();
   private state$ = new BehaviorSubject<ExamEngineState>(initialExamState);
   private subscriptions = new Subscription();
+  private drain: Promise<void> | null = null;
+  private disposed = false;
+  private storageError: Error | null = null;
   private syncAnswerFn?: SyncAnswerHandler;
 
   constructor(syncHandler?: SyncAnswerHandler) {
@@ -64,6 +68,7 @@ export class ExamEngine {
     initialAnswers?: Record<string, string>;
     initialLabels?: Record<string, 'A' | 'B' | 'C' | 'D'>;
   }): void {
+    this.disposed = false;
     // Effects may mount, clean up and mount again in React Strict Mode.
     // Start browser subscriptions here, never during component rendering.
     if (this.subscriptions.closed) this.subscriptions = new Subscription();
@@ -75,10 +80,9 @@ export class ExamEngine {
     let mergedAnswers = { ...(payload.initialAnswers || {}) };
     let mergedLabels = { ...(payload.initialLabels || {}) };
 
-    const localSnapshot = LocalOutboxManager.loadSnapshot(payload.attemptId);
-    if (localSnapshot) {
-      mergedAnswers = { ...mergedAnswers, ...localSnapshot.answers };
-      mergedLabels = { ...mergedLabels, ...localSnapshot.labels };
+    for(const item of LocalOutboxManager.getOutbox(payload.attemptId)) {
+      if(item.optionId) { mergedAnswers[item.questionId]=item.optionId; if(item.label) mergedLabels[item.questionId]=item.label; }
+      else { delete mergedAnswers[item.questionId]; delete mergedLabels[item.questionId]; }
     }
 
     this.dispatch({
@@ -93,7 +97,7 @@ export class ExamEngine {
     });
 
     // Check for any un-synced items in outbox and flush immediately
-    this.flushOutbox();
+    void this.flushOutbox().catch(() => {});
   }
 
   // 1. Central Event Reducer Pipeline
@@ -160,7 +164,7 @@ export class ExamEngine {
         });
 
         if (isOnline) {
-          this.flushOutbox();
+          void this.flushOutbox().catch(() => {});
         }
       })
     );
@@ -180,6 +184,7 @@ export class ExamEngine {
       filter(isAnswerEvent),
       tap((event) => {
         const state = this.state$.getValue();
+        try {
         // Step 1: Immediate local storage snapshot save
         LocalOutboxManager.saveSnapshot(state.attemptId, state.answers, state.answerLabels);
 
@@ -194,6 +199,8 @@ export class ExamEngine {
         } else {
           LocalOutboxManager.enqueue(state.attemptId, event.payload.questionId, null);
         }
+        this.storageError=null;
+        } catch(error) { this.storageError=new Error("Your browser could not save this answer. Enable local storage and select the answer again before submitting."); this.dispatch({type:"SYNC_STATUS_CHANGED",payload:{status:"error"}}); }
       }),
       // Step 3: Debounce network requests to prevent server flooding on rapid hotkey mashing
       debounceTime(350)
@@ -201,7 +208,7 @@ export class ExamEngine {
 
     this.subscriptions.add(
       answerEvents$.subscribe(() => {
-        this.flushOutbox();
+        void this.flushOutbox().catch(() => {});
       })
     );
   }
@@ -210,39 +217,44 @@ export class ExamEngine {
    * Drain the outbox queue to the server
    */
   public async flushOutbox(): Promise<void> {
-    const state = this.state$.getValue();
-    if (!this.syncAnswerFn || !state.attemptId || !navigator.onLine) return;
-
-    const outbox = LocalOutboxManager.getOutbox(state.attemptId);
-    if (outbox.length === 0) {
-      if (state.syncStatus !== 'synced') {
-        this.dispatch({ type: 'SYNC_STATUS_CHANGED', payload: { status: 'synced' } });
-      }
-      return;
-    }
-
-    this.dispatch({ type: 'SYNC_STATUS_CHANGED', payload: { status: 'syncing' } });
-
-    for (const item of outbox) {
-      try {
-        const res = await this.syncAnswerFn(state.attemptId, item.questionId, item.optionId);
-        if (res.success) {
-          LocalOutboxManager.removeFromOutbox(state.attemptId, item.questionId);
+    if (!this.drain) this.drain=this.drainAnswers().finally(()=>{this.drain=null;});
+    await this.drain;
+    // An answer can arrive after an empty drain returned but before its promise settled.
+    const attemptId=this.state$.getValue().attemptId;
+    if (!this.disposed && attemptId && LocalOutboxManager.getOutbox(attemptId).length) await this.flushOutbox();
+  }
+  private async drainAnswers():Promise<void> {
+    const state=this.state$.getValue();
+    if(this.storageError) throw this.storageError;
+    if(this.disposed||!this.syncAnswerFn||!state.attemptId) throw new Error('Exam saving is unavailable.');
+    if(!navigator.onLine && LocalOutboxManager.getOutbox(state.attemptId).length) throw new Error('You are offline. Reconnect before submitting.');
+    this.dispatch({type:'SYNC_STATUS_CHANGED',payload:{status:'syncing'}});
+    try {
+      while(!this.disposed) {
+        const pending=LocalOutboxManager.getOutbox(state.attemptId);
+        if(!pending.length) break;
+        const item=pending[0];
+        try {
+          const result=await this.syncAnswerFn(state.attemptId,item.questionId,item.optionId,item.revision);
+          if(this.disposed) throw new Error('Exam session closed.');
+          if(!result.success||result.revision!==item.revision) throw new Error('Your answer was not acknowledged. Retry before submitting.');
+          LocalOutboxManager.removeFromOutbox(state.attemptId,item.questionId,result.revision);
+        } catch(error) {
+          const code=error && typeof error==='object' && 'code' in error ? String(error.code) : '';
+          if(!this.disposed && state.status==='expired' && code==='ATTEMPT_EXPIRED') { LocalOutboxManager.removeFromOutbox(state.attemptId,item.questionId,item.revision); continue; }
+          throw error;
         }
-      } catch (err) {
-        console.warn('Network sync failed for item in outbox:', item.questionId, err);
-        this.dispatch({ type: 'SYNC_STATUS_CHANGED', payload: { status: 'error' } });
-        return;
       }
-    }
-
-    this.dispatch({ type: 'SYNC_STATUS_CHANGED', payload: { status: 'synced' } });
+      if(this.disposed) throw new Error('Exam session closed.');
+      this.dispatch({type:'SYNC_STATUS_CHANGED',payload:{status:'synced'}});
+    } catch(error) { if(!this.disposed) this.dispatch({type:'SYNC_STATUS_CHANGED',payload:{status:'error'}}); throw error; }
   }
 
   /**
    * Cleanup and dispose RxJS subscriptions
    */
   public destroy(): void {
+    this.disposed = true;
     this.subscriptions.unsubscribe();
 
   }

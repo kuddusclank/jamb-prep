@@ -1,0 +1,49 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jambprep-api-foundation",
+  "main": "worker/api/entry.ts",
+  "compatibility_date": "2026-10-10",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "1d7b203e4b0d4913baaa695ffcf0c311"
+    }
+  ],
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    }
+  },
+  "vars": {
+    "ENVIRONMENT": "production",
+    "SUPABASE_URL": "https://bqumnaoiiukifvanoonm.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_Fg-Vq3gTOa5Y6Au-Xu8FZw_Ld9ypzfW",
+    "ALLOWED_ORIGINS": "https://jambprep.lecterniq.com,https://jambprep.pages.dev,http://localhost:3000,http://127.0.0.1:3000",
+    "PUBLIC_APP_ORIGIN": "https://jambprep.lecterniq.com",
+    "PAYSTACK_PLAN_CODE": "PLN_tts4cz7tf89srcl"
+  },
+  "ratelimits": [
+    {
+      "name": "EDGE_RATE_LIMIT",
+      "namespace_id": "10061",
+      "simple": {
+        "limit": 600,
+        "period": 60
+      }
+    },
+    {
+      "name": "ACTOR_WRITE_LIMIT",
+      "namespace_id": "10062",
+      "simple": {
+        "limit": 120,
+        "period": 60
+      }
+    }
+  ]
+}

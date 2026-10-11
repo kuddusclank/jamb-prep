@@ -1,96 +1,45 @@
+"use client";
+
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { StudyWorkspace } from "@/components/study-workspace";
-import { db } from "@/db";
-import { studentSubjects,subjects } from "@/db/schema";
-import { getUserSubscriptionStatus } from "@/lib/subscription";
-import { getCurrentUser } from "@/lib/supabase/current-user";
-import { eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { PracticeClient } from "./practice-client";
 
-export const metadata = {
-  title: "Self-Paced Practice — JAMBPrep",
-  description: "Focused UTME topic practice with step-by-step diagnostic solutions and formulas.",
-};
+import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
+import type { EnrolledData, DashboardData } from "@/lib/api/app-dtos";
 
-interface PracticePageProps {
-  searchParams: Promise<{ subject?: string; topic?: string }>;
-}
-
-export default async function PracticePage({ searchParams }: PracticePageProps) {
-  const { subject: querySubject, topic: queryTopic } = await searchParams;
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  const subStatus = await getUserSubscriptionStatus(user.id);
-
-  // If a free tier user attempts topic-specific practice, redirect to pricing
-  if (!subStatus.isPremium && queryTopic) {
-    redirect("/pricing");
-  }
-
-  // Load candidate's chosen subjects from database
-  let enrolledSubjects: Array<{ name: string; code: string; isCompulsory: boolean }> = [];
-
-  try {
-    const enrolled = await Promise.race([
-      db
-        .select({
-          name: subjects.name,
-          code: subjects.code,
-          isCompulsory: subjects.isCompulsory,
-        })
-        .from(studentSubjects)
-        .innerJoin(subjects, eq(studentSubjects.subjectId, subjects.id))
-        .where(eq(studentSubjects.userId, user.id)),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Practice subjects timeout")), 3500)
-      ),
-    ]);
-
-    if (enrolled && enrolled.length > 0) {
-      enrolledSubjects = enrolled;
-    } else {
-      // Fallback to core subjects if onboarding wasn't completed
-      const defaultSubs = await Promise.race([
-        db
-          .select({
-            name: subjects.name,
-            code: subjects.code,
-            isCompulsory: subjects.isCompulsory,
-          })
-          .from(subjects)
-          .where(eq(subjects.isActive, true))
-          .limit(4),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Default subjects timeout")), 3500)
-        ),
-      ]);
-      enrolledSubjects = defaultSubs;
-    }
-  } catch (err) {
-    console.warn("Notice loading enrolled subjects:", err);
-  }
+function PracticePageContent() {
+  const searchParams = useSearchParams();
+  const enrollment=useApiResource<EnrolledData>("/api/v1/practice/subjects");
+  const dashboard=useApiResource<DashboardData>("/api/v1/dashboard");
+  if(!enrollment.data||!dashboard.data) return <ResourceStatus error={enrollment.error??dashboard.error} retry={()=>{enrollment.retry();dashboard.retry();}}/>;
+  const initialSubjectCode = searchParams.get("subject") || undefined;
+  const initialTopicSlug = searchParams.get("topic") || undefined;
 
   return (
-    <StudyWorkspace>
-      {/* Header */}
+    <PracticeClient
+      enrolledSubjects={enrollment.data.subjects.map((subject)=>({code:subject.subject_code,name:subject.subject_name,isCompulsory:subject.is_compulsory}))}
+      initialSubjectCode={initialSubjectCode}
+      initialTopicSlug={initialTopicSlug}
+      isPremium={dashboard.data.subscription.isPremium}
+    />
+  );
+}
 
-
-      {/* Main Practice Container */}
+export default function PracticePage() {
+  return (
+    <StudyWorkspace isPremium={false}>
       <main className="shell section-space">
-        <PracticeClient 
-          enrolledSubjects={enrolledSubjects} 
-          initialSubjectCode={querySubject}
-          initialTopicSlug={queryTopic}
-          isPremium={subStatus.isPremium}
-        />
+        <Suspense
+          fallback={
+            <div className="rounded-3xl border border-emerald-950/10 bg-white p-8 text-center text-xs text-slate-500 max-w-2xl mx-auto">
+              Loading practice workspace...
+            </div>
+          }
+        >
+          <PracticePageContent />
+        </Suspense>
       </main>
-
-      {/* Footer */}
-
     </StudyWorkspace>
   );
 }

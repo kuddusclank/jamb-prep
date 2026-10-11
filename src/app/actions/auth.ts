@@ -2,21 +2,102 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sanitizeInternalRedirect } from "@/lib/auth/redirect";
 import { db } from "@/db";
-import { 
-  profiles, 
-  referralCodes, 
-  referrals, 
-  referralRewards 
+import {
+  profiles,
+  referralCodes,
+  referrals,
 } from "@/db/schema";
-import { eq, count } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
-// Generate a random, human-readable referral code (e.g. TOBI7482)
-function generateReferralCode(name: string): string {
+function generateCandidateReferralCodes(name: string, userId: string): string[] {
   const cleanPrefix = name.replace(/[^a-zA-Z]/g, "").slice(0, 4).toUpperCase() || "JAMB";
-  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-  return `${cleanPrefix}${randomSuffix}`;
+  const cleanHex = userId.replace(/[^a-fA-F0-9]/g, "").toUpperCase() || "000000000000";
+  return Array.from(
+    new Set([
+      `${cleanPrefix}${cleanHex.slice(0, 4)}`,
+      `${cleanPrefix}${cleanHex.slice(0, 6)}`,
+      `${cleanPrefix}${cleanHex.slice(0, 8)}`,
+      `${cleanPrefix}${cleanHex.slice(0, 12)}`,
+      `JP${cleanHex.slice(0, 16)}`,
+      `JP${cleanHex}`,
+    ])
+  );
+}
+
+async function provisionUserRecordsRecoverable(params: {
+  userId: string;
+  displayName: string;
+  email: string;
+  referralCodeInput?: string;
+}): Promise<void> {
+  const { userId, displayName, email, referralCodeInput } = params;
+
+  // 1. Create Profile with role = 'student' on creation; never overwrite existing role on conflict
+  await db
+    .insert(profiles)
+    .values({
+      id: userId,
+      displayName,
+      email,
+      role: "student",
+    })
+    .onConflictDoNothing();
+
+  // 2. Ensure Candidate's Unique Referral Code (recoverable & collision-safe)
+  const existingCode = await db.query.referralCodes.findFirst({
+    where: eq(referralCodes.userId, userId),
+  });
+
+  if (!existingCode) {
+    for (const candidateCode of generateCandidateReferralCodes(displayName, userId)) {
+      await db
+        .insert(referralCodes)
+        .values({
+          userId,
+          code: candidateCode,
+        })
+        .onConflictDoNothing();
+
+      const verifyMine = await db.query.referralCodes.findFirst({
+        where: eq(referralCodes.userId, userId),
+      });
+      if (verifyMine) {
+        break;
+      }
+    }
+  }
+
+  const confirmedProfile = await db.query.profiles.findFirst({ where: eq(profiles.id, userId) });
+  const confirmedCode = await db.query.referralCodes.findFirst({ where: eq(referralCodes.userId, userId) });
+  if (!confirmedProfile || !confirmedCode) {
+    throw new Error("ACCOUNT_PROVISIONING_NOT_CONFIRMED");
+  }
+
+  // 3. Attribute Referral strictly as 'pending' (Confirmed rule: qualifies only after first completed diagnostic mock)
+  const cleanRef = referralCodeInput?.trim().toUpperCase();
+  if (cleanRef) {
+    const referrerRecord = await db.query.referralCodes.findFirst({
+      where: eq(referralCodes.code, cleanRef),
+    });
+
+    if (
+      referrerRecord &&
+      referrerRecord.userId.toLowerCase() !== userId.toLowerCase()
+    ) {
+      await db
+        .insert(referrals)
+        .values({
+          referrerId: referrerRecord.userId,
+          referredUserId: userId,
+          status: "pending",
+          qualifiedAt: null,
+        })
+        .onConflictDoNothing();
+    }
+  }
 }
 
 export type AuthState = {
@@ -25,12 +106,12 @@ export type AuthState = {
 };
 
 export async function signUpAction(prevState: AuthState | null, formData: FormData): Promise<AuthState> {
-  const displayName = formData.get("displayName") as string;
-  const email = formData.get("email") as string;
+  const displayName = (formData.get("displayName") as string)?.trim();
+  const email = (formData.get("email") as string)?.trim();
   const password = formData.get("password") as string;
   const referralCodeInput = (formData.get("referralCode") as string)?.trim().toUpperCase();
 
-  if (!displayName || !email || !password) {
+  if (!displayName || displayName.length < 2 || !email || !password) {
     return { error: "Please provide your full name, email address, and a password." };
   }
 
@@ -92,8 +173,8 @@ export async function signUpAction(prevState: AuthState | null, formData: FormDa
     if (authError || !authData.user) {
       const msg = authError?.message || "";
       if (msg.toLowerCase().includes("rate limit") || msg.toLowerCase().includes("over_email_send_rate_limit")) {
-        return { 
-          error: "Supabase email rate limit triggered. Please disable 'Confirm email' in Supabase Dashboard (Auth > Providers > Email > uncheck 'Confirm email') or add SUPABASE_SERVICE_ROLE_KEY to bypass emails completely." 
+        return {
+          error: "Supabase email rate limit triggered. Please disable 'Confirm email' in Supabase Dashboard (Auth > Providers > Email > uncheck 'Confirm email') or add SUPABASE_SERVICE_ROLE_KEY to bypass emails completely."
         };
       }
       return { error: authError?.message || "Failed to create account. Please try again." };
@@ -112,74 +193,28 @@ export async function signUpAction(prevState: AuthState | null, formData: FormDa
 
   // Provision profile and referral models in database
   try {
-    const provisionPromise = async () => {
-      // 1. Create Profile
-      await db.insert(profiles).values({
-        id: userId,
+    await Promise.race([
+      provisionUserRecordsRecoverable({
+        userId,
         displayName,
         email,
-        role: "student",
-      }).onConflictDoNothing();
-
-      // 2. Generate Candidate's Unique Referral Code
-      const studentCode = generateReferralCode(displayName);
-      await db.insert(referralCodes).values({
-        userId,
-        code: studentCode,
-      }).onConflictDoNothing();
-
-      // 3. Attribute Referral if referred by another student
-      if (referralCodeInput) {
-        const referrerRecord = await db.query.referralCodes.findFirst({
-          where: eq(referralCodes.code, referralCodeInput),
-        });
-
-        if (referrerRecord && referrerRecord.userId !== userId) {
-          // Record qualified referral
-          await db.insert(referrals).values({
-            referrerId: referrerRecord.userId,
-            referredUserId: userId,
-            status: "qualified",
-            qualifiedAt: new Date(),
-          }).onConflictDoNothing();
-
-          // Check if referrer reached the 2-referral milestone
-          const [refCount] = await db
-            .select({ value: count() })
-            .from(referrals)
-            .where(eq(referrals.referrerId, referrerRecord.userId));
-
-          if (refCount && refCount.value >= 2) {
-            // Check if reward already issued
-            const existingReward = await db.query.referralRewards.findFirst({
-              where: eq(referralRewards.userId, referrerRecord.userId),
-            });
-
-            if (!existingReward) {
-              await db.insert(referralRewards).values({
-                userId: referrerRecord.userId,
-                rewardType: "FIRST_MONTH_50_PERCENT",
-                status: "available",
-              });
-            }
-          }
-        }
-      }
-    };
-
-    // Use a 4-second timeout boundary to guarantee response never hangs
-    await Promise.race([
-      provisionPromise(),
+        referralCodeInput,
+      }),
       new Promise((_, reject) => setTimeout(() => reject(new Error("Provisioning timeout")), 4000)),
     ]);
   } catch (dbErr) {
     console.warn("Database provisioning notice (Supabase DB notice):", dbErr);
+    return {
+      error: "Your account was created, but profile setup timed out. Please submit again to finish setup.",
+    };
   }
 
   redirect("/onboarding");
 }
 
-export async function provisionRegisteredUserAction(formData: FormData): Promise<{ success: boolean }> {
+export async function provisionRegisteredUserAction(
+  formData: FormData
+): Promise<{ success: boolean; error?: string }> {
   const displayName = (formData.get("displayName") as string)?.trim() || "";
   const email = (formData.get("email") as string)?.trim() || "";
   const referralCodeInput = (formData.get("referralCode") as string)?.trim().toUpperCase();
@@ -187,40 +222,29 @@ export async function provisionRegisteredUserAction(formData: FormData): Promise
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) return { success: false };
+  if (!user) {
+    return { success: false, error: "Authentication session is required to provision your profile." };
+  }
 
   const userId = user.id;
+  const safeMetaDisplayName =
+    typeof user.user_metadata?.display_name === "string"
+      ? user.user_metadata.display_name.trim()
+      : "";
 
   try {
-    await db.insert(profiles).values({
-      id: userId,
-      displayName: displayName || user.user_metadata?.display_name || "Student",
-      email: email || user.email || "",
-      role: "student",
-    }).onConflictDoNothing();
-
-    const studentCode = generateReferralCode(displayName || "Student");
-    await db.insert(referralCodes).values({
+    await provisionUserRecordsRecoverable({
       userId,
-      code: studentCode,
-    }).onConflictDoNothing();
-
-    if (referralCodeInput) {
-      const referrerRecord = await db.query.referralCodes.findFirst({
-        where: eq(referralCodes.code, referralCodeInput),
-      });
-
-      if (referrerRecord && referrerRecord.userId !== userId) {
-        await db.insert(referrals).values({
-          referrerId: referrerRecord.userId,
-          referredUserId: userId,
-          status: "qualified",
-          qualifiedAt: new Date(),
-        }).onConflictDoNothing();
-      }
-    }
+      displayName: displayName || safeMetaDisplayName || "Student",
+      email: user.email || `${userId}@student.jambprep.local`,
+      referralCodeInput,
+    });
   } catch (err) {
     console.warn("Notice in provisionRegisteredUserAction:", err);
+    return {
+      success: false,
+      error: "Unable to complete profile provisioning right now. Please try again.",
+    };
   }
 
   return { success: true };
@@ -229,7 +253,7 @@ export async function provisionRegisteredUserAction(formData: FormData): Promise
 export async function signInAction(prevState: AuthState | null, formData: FormData): Promise<AuthState> {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
+  const redirectTo = sanitizeInternalRedirect(formData.get("redirectTo") as string, "/dashboard");
 
   if (!email || !password) {
     return { error: "Please enter both your email address and password." };

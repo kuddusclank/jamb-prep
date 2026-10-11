@@ -1,10 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { resolveLegacyDeepLinkRedirect } from "@/lib/routing/deep-links";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
+
+  const pathname = request.nextUrl.pathname;
+  const legacyRedirect = resolveLegacyDeepLinkRedirect(pathname, request.nextUrl.search);
+  if (legacyRedirect) {
+    return NextResponse.redirect(new URL(legacyRedirect.target, request.url), legacyRedirect.status);
+  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -14,15 +21,13 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  const pathname = request.nextUrl.pathname;
-
   // Static files and webhooks don't need auth processing
   if (pathname.startsWith("/api/webhooks")) {
     return supabaseResponse;
   }
 
-  const protectedPaths = ["/dashboard", "/onboarding", "/practice", "/mock", "/results", "/referrals", "/analytics", "/settings"];
-  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
+  const protectedPaths = ["/dashboard", "/onboarding", "/practice", "/mock", "/exam", "/result", "/results", "/referrals", "/analytics", "/settings", "/profile", "/checkout"];
+  const isProtected = protectedPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const isAuthPage = pathname === "/login" || pathname === "/register";
 
   const hasAuthCookie = request.cookies.getAll().some((c) => c.name.startsWith("sb-"));
@@ -35,8 +40,8 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Fast-path: Visitor on public marketing/pricing page without auth cookies
-  if (!isProtected && !isAuthPage && !hasAuthCookie) {
+  // Public routes validate identity in their data-loading code when needed.
+  if (!isProtected && !isAuthPage) {
     return supabaseResponse;
   }
 
@@ -62,11 +67,10 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getClaims();
+  const claims = error ? null : data?.claims;
 
-  if (isProtected && !user) {
+  if (isProtected && !claims?.sub) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("redirectTo", pathname);
@@ -78,7 +82,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Redirect signed-in users away from auth pages
-  if (user && isAuthPage) {
+  if (claims?.sub && isAuthPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     const redirectRes = NextResponse.redirect(url);

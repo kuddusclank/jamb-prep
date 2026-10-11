@@ -1,63 +1,33 @@
+"use client";
 import { StudyWorkspace } from "@/components/study-workspace";
-import { db } from "@/db";
-import {
-referralCodes,
-referralRewards,
-referrals
-} from "@/db/schema";
-import { getUserSubscriptionStatus } from "@/lib/subscription";
-import { getCurrentUser } from "@/lib/supabase/current-user";
-import { count,eq } from "drizzle-orm";
-import { ShieldCheck,Sparkles } from "lucide-react";
-import { redirect } from "next/navigation";
-import { ReferralCard } from "./referral-card";
+import { useEffect, useState } from "react";
+import { Check, Copy, ShieldCheck, Sparkles } from "lucide-react";
 
-export const metadata = {
-  title: "Refer & Earn 50% Off — JAMBPrep",
-  description: "Invite 2 friends to JAMBPrep and unlock 50% off your first monthly subscription.",
-};
-
-export default async function ReferralsPage() {
-  const user = await getCurrentUser();
-
-  if (user) {
-    const subStatus = await getUserSubscriptionStatus(user.id);
-    if (subStatus.isPremium) {
-      redirect("/dashboard");
-    }
-  }
-
-  let code = "JAMBPREP";
-  let qualifiedCount = 0;
-  let hasReward = false;
-
-  if (user) {
+import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
+import type { ReferralData } from "@/lib/api/app-dtos";
+export default function ReferralsPage() {
+  const resource = useApiResource<ReferralData>("/api/v1/referrals");
+  const [copyState, setCopyState] = useState<'idle' | 'copying' | 'copied' | 'failed'>('idle');
+  useEffect(() => {
+    setCopyState('idle');
+  }, [resource.data?.code]);
+  useEffect(() => {
+    if (copyState !== 'copied') return;
+    const timeout = window.setTimeout(() => setCopyState('idle'), 2500);
+    return () => window.clearTimeout(timeout);
+  }, [copyState]);
+  async function copyInviteLink() {
+    if (!resource.data?.code || copyState === 'copying') return;
+    setCopyState('copying');
     try {
-      const [codeRecord, refCount, reward] = await Promise.race([
-        Promise.all([
-          db.query.referralCodes.findFirst({
-            where: eq(referralCodes.userId, user.id),
-          }),
-          db
-            .select({ value: count() })
-            .from(referrals)
-            .where(eq(referrals.referrerId, user.id)),
-          db.query.referralRewards.findFirst({
-            where: eq(referralRewards.userId, user.id),
-          }),
-        ]),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Referral data timeout")), 3500)
-        ),
-      ]);
-
-      if (codeRecord) code = codeRecord.code;
-      if (refCount?.[0]) qualifiedCount = refCount[0].value;
-      if (reward && reward.status === "available") hasReward = true;
-    } catch (err) {
-      console.warn("Notice loading referral records:", err);
+      await navigator.clipboard.writeText(`${window.location.origin}/register?ref=${encodeURIComponent(resource.data.code)}`);
+      setCopyState('copied');
+    } catch {
+      setCopyState('failed');
     }
   }
+  if (!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry} /></StudyWorkspace>;
+  const data = resource.data;
 
   return (
     <StudyWorkspace>
@@ -78,18 +48,21 @@ export default async function ReferralsPage() {
                 <span className="serif-accent text-[#E7B85A]">Get 50% off your first month.</span>
               </h1>
               <p className="mt-4 text-sm sm:text-base text-emerald-100/90 leading-relaxed">
-                UTME prep is better together. Share your personal invite code. Once 2 friends create their verified accounts, you unlock your first month of unlimited practice for just <strong>₦500</strong> instead of ₦1,000.
+                UTME prep is better together. Share your personal invite code. Once 2 friends each complete their account onboarding, you unlock your first month of unlimited practice for just <strong>₦500</strong> instead of ₦1,000.
               </p>
             </div>
           </div>
 
           {/* Interactive Share & Tracker Card */}
           <div className="mt-8 rounded-3xl border border-emerald-950/10 bg-white p-6 sm:p-8 shadow-sm">
-            <ReferralCard
-              code={code}
-              qualifiedCount={qualifiedCount}
-              hasReward={hasReward}
-            />
+            <p className="text-sm">Your invite code</p><p className="mt-2 text-3xl font-bold">{data.code ?? 'Complete account setup to get your code'}</p>{data.code && <>
+              <button type="button" disabled={copyState === 'copying'} onClick={() => { void copyInviteLink(); }}
+                className={`mt-4 inline-flex min-w-44 items-center justify-center gap-2 rounded-full px-5 py-3 text-white transition-all duration-200 motion-reduce:transition-none disabled:opacity-70 ${copyState === 'copied' ? 'bg-emerald-700 ring-4 ring-emerald-100' : 'bg-[#116149] hover:bg-[#0b4936] active:scale-95 motion-reduce:active:scale-100'}`}>
+                {copyState === 'copied' ? <Check size={18} className="motion-safe:animate-[entrance_.2s_ease-out]" aria-hidden="true" /> : <Copy size={18} aria-hidden="true" />}
+                <span aria-live="polite">{copyState === 'copied' ? 'Copied!' : copyState === 'copying' ? 'Copying…' : 'Copy invite link'}</span>
+              </button>
+              {copyState === 'failed' && <p role="alert" className="mt-2 text-sm text-red-700">Couldn’t copy the link. Please try again or allow clipboard access.</p>}
+            </>}<p className="mt-5">{data.qualifiedCount} qualified of {data.totalReferred} referrals. {data.rewards.some((reward) => reward.status === 'available') ? 'Your discount is available.' : 'Two qualifying classmates unlock your first-payment discount.'}</p>
           </div>
 
           {/* Business Rules & Guidance */}
@@ -104,11 +77,11 @@ export default async function ReferralsPage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-[#116149] font-bold">•</span>
-                <span><strong>Verified registrations:</strong> Each friend must register their own verified student account using your link.</span>
+                <span><strong>Verified registrations:</strong> Each friend must register using your link and complete their account onboarding.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-[#116149] font-bold">•</span>
-                <span><strong>Fair usage:</strong> Self-referrals and duplicate accounts are automatically filtered by fraud detection.</span>
+                <span><strong>Fair usage:</strong> Self-referrals are rejected. Each distinct account must complete its onboarding; creating another account does not qualify a referral.</span>
               </li>
             </ul>
           </div>

@@ -1,27 +1,36 @@
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { 
-  subjects, 
-  topics, 
-  passages, 
-  questions, 
-  questionOptions, 
-  questionExplanations 
+import {
+  profiles,
+  subjects,
+  topics,
+  passages,
+  questions,
+  questionOptions,
+  questionExplanations
 } from "@/db/schema";
 import { bulkQuestionImportSchema } from "@/lib/validation/question";
 import { eq, and } from "drizzle-orm";
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
+    const profile = await db.query.profiles.findFirst({ where: eq(profiles.id, user.id) });
+    if (profile?.role !== "admin") {
+      return NextResponse.json({ error: "Administrator access required." }, { status: 403 });
+    }
     const body = await req.json();
     const parseResult = bulkQuestionImportSchema.safeParse(body);
 
     if (!parseResult.success) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: "Validation error", 
-          details: parseResult.error.issues 
+        {
+          success: false,
+          error: "Validation error",
+          details: parseResult.error.issues
         },
         { status: 400 }
       );
@@ -101,8 +110,8 @@ export async function POST(req: Request) {
         });
 
         importedCount++;
-      } catch (err: any) {
-        errors.push({ index: i, reason: err?.message || "Failed to insert record" });
+      } catch (err: unknown) {
+        errors.push({ index: i, reason: err instanceof Error ? err.message : "Failed to insert record" });
       }
     }
 
@@ -112,9 +121,9 @@ export async function POST(req: Request) {
       totalReceived: items.length,
       errors,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { success: false, error: error?.message || "Internal server error" },
+      { success: false, error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }

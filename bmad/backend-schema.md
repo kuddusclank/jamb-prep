@@ -424,12 +424,8 @@ The production schema is actively deployed to the dedicated Supabase instance (`
 | 19 | `referral_rewards` | Unlocked 50% vouchers | FK `user_id`, status (available/redeemed) |
 | 20 | `subscription_discounts` | Applied checkout discounts | FK `transaction_id`, discount amount (₦500) |
 
-### 5.2 Live Credentials & Connection Strings
+### 5.2 Connection configuration (no credentials in documentation)
 
-* **Project Reference**: `bqumnaoiiukifvanoonm`
-* **Host (IPv4 Session Pooler)**: `aws-0-eu-west-1.pooler.supabase.com:5432`
-* **Direct URI (IPv6)**: `db.bqumnaoiiukifvanoonm.supabase.co:5432`
-* **Master User**: `postgres.bqumnaoiiukifvanoonm`
-* **Master Password**: `xuhsuc-0wavno-kygDyg`
-* **Connection String (Drizzle / Migrations)**:
-  `postgresql://postgres.bqumnaoiiukifvanoonm:xuhsuc-0wavno-kygDyg@aws-0-eu-west-1.pooler.supabase.com:5432/postgres`
+Read database credentials only from ignored local configuration or provider secret bindings. Never commit passwords or full credential-bearing URLs. The historical password documented here was removed after its rotation; this does not erase old Git history. The former credential is rejected by the database.
+
+Production Hyperdrive uses the direct Supabase endpoint on port 5432 with SQL caching disabled. Local tooling may use the session pooler on port 5432; transaction-pooler prepared-statement behavior differs. See the latest implementation-plan entries for verified deployment/security state. Full TLS certificate verification and migration-baseline reconciliation remain open.

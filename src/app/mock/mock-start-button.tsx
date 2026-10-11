@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { startMockAttempt } from "@/app/actions/exam";
+import { startMockAttempt } from "@/lib/client-actions";
+import { buildCanonicalExamUrl } from "@/lib/routing/deep-links";
 
 export function MockStartButton() {
   const router = useRouter();
@@ -10,6 +11,11 @@ export function MockStartButton() {
   const [conditions, setConditions] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState("");
+
+  const [fullscreenSupported, setFullscreenSupported] = useState<boolean | null>(null);
+  useEffect(() => {
+    setFullscreenSupported(Boolean(document.fullscreenEnabled && document.documentElement.requestFullscreen));
+  }, []);
 
   function handleStart() {
     setError("");
@@ -28,9 +34,9 @@ export function MockStartButton() {
       }
       try {
         const payload = await startMockAttempt(conditions);
-        router.push(`/mock/${payload.attemptId}`);
-      } catch {
-        setError("We could not start your mock. Please check your connection and try again.");
+        router.push(buildCanonicalExamUrl(payload.attemptId));
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "We could not start your mock. Please retry.");
         if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
       }
     });
@@ -41,12 +47,12 @@ export function MockStartButton() {
       <fieldset disabled={isPending} className="space-y-3">
         <legend className="mb-3 font-semibold">Choose your mock experience</legend>
         <label className="flex items-start gap-3 rounded-2xl border p-4">
-          <input type="radio" name="mock-mode" checked={!conditions} onChange={() => setConditions(false)} className="mt-1" />
+          <input type="radio" name="mock-mode" checked={!conditions} onChange={() => { setConditions(false); setError(""); }} className="mt-1" />
           <span><strong>Standard mock</strong><span className="block text-sm text-slate-600">Timed practice. Fullscreen is optional; no interruption monitoring.</span></span>
         </label>
         <label className="flex items-start gap-3 rounded-2xl border p-4">
-          <input type="radio" name="mock-mode" checked={conditions} onChange={() => setConditions(true)} className="mt-1" />
-          <span><strong>Exam Conditions</strong><span className="block text-sm text-slate-600">Fullscreen required. Hiding the page or leaving fullscreen records an interruption, separately from your score.</span></span>
+          <input type="radio" name="mock-mode" checked={conditions} disabled={fullscreenSupported !== true} onChange={() => { setConditions(true); setError(""); }} className="mt-1" />
+          <span><strong>Exam Conditions</strong><span className="block text-sm text-slate-600">{fullscreenSupported === false ? "Unavailable in this browser. Choose Standard mock; it works without fullscreen." : "Fullscreen required. Hiding the page or leaving fullscreen records an interruption, separately from your score."}</span></span>
         </label>
       </fieldset>
       <p className="text-sm text-slate-600">Close unrelated tabs and applications and complete the mock independently. We cannot check your other tabs. No microphone or camera is used. The timer continues during interruptions.</p>

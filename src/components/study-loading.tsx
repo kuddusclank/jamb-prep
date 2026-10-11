@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { StudyWorkspaceClient } from "./study-workspace-client";
 
 export default function StudyLoading() {
   const [showRetry, setShowRetry] = useState(false);
@@ -11,6 +12,7 @@ export default function StudyLoading() {
   }, []);
 
   return (
+    <StudyWorkspaceClient isPremium={false}>
     <div
       role="status"
       aria-live="polite"
@@ -34,5 +36,6 @@ export default function StudyLoading() {
         <div className="w-full h-24 rounded-2xl bg-slate-100" />
       </div>
     </div>
+    </StudyWorkspaceClient>
   );
 }

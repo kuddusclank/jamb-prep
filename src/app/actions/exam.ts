@@ -2,17 +2,17 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/db";
-import { 
+import {
   attemptInterruptions,
-  attempts, 
-  attemptQuestions, 
-  attemptAnswers, 
-  attemptResults, 
-  studentSubjects, 
-  subjects, 
-  questions, 
-  questionOptions, 
-  passages 
+  attempts,
+  attemptQuestions,
+  attemptAnswers,
+  attemptResults,
+  studentSubjects,
+  subjects,
+  questions,
+  questionOptions,
+  passages
 } from "@/db/schema";
 import { eq, and, gt, sql, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
@@ -123,24 +123,19 @@ export async function startMockAttempt(examConditions = false, resumeId?: string
       position: number;
     }> = [];
 
-    for (const sub of candidateSubjects) {
-      // Pull published questions for this subject
-      const subQuestions = await db
-        .select({ id: questions.id })
-        .from(questions)
-        .where(eq(questions.subjectId, sub.id))
-        .orderBy(sql`RANDOM()`)
-        .limit(sub.isCompulsory ? 60 : 40);
-
-      for (const q of subQuestions) {
+    const subjectQuestionLists = await Promise.all(candidateSubjects.map(sub =>
+      db.select({ id: questions.id }).from(questions)
+        .where(and(eq(questions.subjectId, sub.id), eq(questions.status, "published")))
+        .orderBy(sql`RANDOM()`).limit(sub.isCompulsory ? 60 : 40)
+    ));
+    candidateSubjects.forEach((sub, index) => {
+      for (const question of subjectQuestionLists[index]) {
         frozenQuestionsToInsert.push({
-          attemptId: newAttempt.id,
-          questionId: q.id,
-          subjectId: sub.id,
-          position: position++,
+          attemptId: newAttempt.id, questionId: question.id,
+          subjectId: sub.id, position: position++,
         });
       }
-    }
+    });
 
     if (frozenQuestionsToInsert.length > 0) {
       await db.insert(attemptQuestions).values(frozenQuestionsToInsert);
@@ -166,50 +161,30 @@ export async function startMockAttempt(examConditions = false, resumeId?: string
     .where(eq(attemptQuestions.attemptId, attemptId))
     .orderBy(attemptQuestions.position);
 
-  const formattedQuestions: ExamQuestion[] = [];
-
-  for (const item of frozenList) {
-    // Fetch passage if present
-    let passageData = null;
-    if (item.passageId) {
-      const p = await db.query.passages.findFirst({
-        where: eq(passages.id, item.passageId),
-      });
-      if (p) {
-        passageData = {
-          title: p.title,
-          content: p.content,
-        };
-      }
-    }
-
-    // Fetch options (WITHOUT isCorrect answer key)
-    const rawOptions = await db
-      .select({
-        id: questionOptions.id,
-        label: questionOptions.label,
-        content: questionOptions.content,
-      })
-      .from(questionOptions)
-      .where(eq(questionOptions.questionId, item.questionId))
-      .orderBy(questionOptions.label);
-
-    formattedQuestions.push({
-      id: item.questionId,
-      position: item.position,
-      subjectCode: item.subjectCode,
-      subjectName: item.subjectName,
-      stem: item.stem,
-      difficulty: item.difficulty,
-      examYear: item.examYear,
-      passage: passageData,
-      options: rawOptions.map((o) => ({
-        id: o.id,
-        label: o.label as 'A' | 'B' | 'C' | 'D',
-        content: o.content,
-      })),
-    });
+  const passageIds = [...new Set(frozenList.flatMap(item => item.passageId ? [item.passageId] : []))];
+  const [passageRows, optionRows] = await Promise.all([
+    passageIds.length ? db.select({ id: passages.id, title: passages.title, content: passages.content })
+      .from(passages).where(inArray(passages.id, passageIds)) : Promise.resolve([]),
+    frozenList.length ? db.select({
+      id: questionOptions.id, questionId: questionOptions.questionId,
+      label: questionOptions.label, content: questionOptions.content,
+    }).from(questionOptions).where(inArray(questionOptions.questionId, frozenList.map(item => item.questionId)))
+      .orderBy(questionOptions.label) : Promise.resolve([]),
+  ]);
+  const passageMap = new Map(passageRows.map(p => [p.id, { title: p.title, content: p.content }]));
+  const optionsByQuestion = new Map<string, ExamQuestion["options"]>();
+  for (const option of optionRows) {
+    const options = optionsByQuestion.get(option.questionId) || [];
+    options.push({ id: option.id, label: option.label as 'A' | 'B' | 'C' | 'D', content: option.content });
+    optionsByQuestion.set(option.questionId, options);
   }
+  const formattedQuestions: ExamQuestion[] = frozenList.map(item => ({
+    id: item.questionId, position: item.position,
+    subjectCode: item.subjectCode, subjectName: item.subjectName,
+    stem: item.stem, difficulty: item.difficulty, examYear: item.examYear,
+    passage: item.passageId ? passageMap.get(item.passageId) || null : null,
+    options: optionsByQuestion.get(item.questionId) || [],
+  }));
 
   // 4. Retrieve existing answers if rehydrating
   const existingAnswers = await db
@@ -329,9 +304,6 @@ export async function submitMockExam(attemptId: string): Promise<{ resultId: str
     .from(attemptAnswers)
     .where(eq(attemptAnswers.attemptId, attemptId));
 
-  const userSelectedOptionIds = userAnswers
-    .map((a) => a.selectedOptionId)
-    .filter((id): id is string => Boolean(id));
 
   // Fetch correct option IDs for all questions in this attempt
   const correctOptions = await db
@@ -345,7 +317,6 @@ export async function submitMockExam(attemptId: string): Promise<{ resultId: str
     .where(eq(questionOptions.isCorrect, true));
 
   const correctOptionIdSet = new Set(correctOptions.map((co) => co.id));
-  const questionSubjectMap = new Map(correctOptions.map((co) => [co.questionId, co.subjectId]));
 
   // Calculate subject-level breakdowns and topic-level mastery
   const subjectScores: Record<string, { correct: number; total: number }> = {};

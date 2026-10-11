@@ -1,14 +1,16 @@
 "use server";
 
+import { matchesPayment } from "@/lib/payment-security";
+import { settleVerifiedPayment } from "@/lib/payment-settlement";
+
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/db";
-import { 
-  paymentTransactions, 
-  referralRewards, 
-  subscriptionDiscounts 
+import {
+  paymentTransactions,
+  referralRewards,
 } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { activateUserSubscription, getUserSubscriptionStatus } from "@/lib/subscription";
+import { getUserSubscriptionStatus } from "@/lib/subscription";
 
 export interface CheckoutPricing {
   originalAmountKobo: number; // e.g. 100000 = ₦1,000
@@ -136,7 +138,7 @@ export async function initializePaystackCheckoutAction(): Promise<InitializePaym
 
   if (isRealKey && !isPlaceholder) {
     try {
-      const payload: Record<string, any> = {
+      const payload: Record<string, unknown> = {
         email: user.email,
         amount: pricing.finalAmountKobo,
         reference,
@@ -160,6 +162,7 @@ export async function initializePaystackCheckoutAction(): Promise<InitializePaym
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10000),
       });
 
       const data = await response.json();
@@ -179,12 +182,9 @@ export async function initializePaystackCheckoutAction(): Promise<InitializePaym
     }
   }
 
-  // Seamless fallback for local development / testing without live merchant keys
   return {
-    authorizationUrl: `/checkout/verify?reference=${reference}&simulated=true`,
-    reference,
-    amountKobo: pricing.finalAmountKobo,
-    isSimulated: true,
+    authorizationUrl: "", reference, amountKobo: pricing.finalAmountKobo,
+    isSimulated: false, error: "Payment provider is unavailable. Please try again later.",
   };
 }
 
@@ -222,22 +222,12 @@ export async function verifyPaystackPaymentAction(reference: string): Promise<Ve
   cleanReference = cleanReference.trim();
 
   // Find transaction record by reference
-  let txn = cleanReference
+  const txn = cleanReference
     ? await db.query.paymentTransactions.findFirst({
-        where: eq(paymentTransactions.reference, cleanReference),
+        where: and(eq(paymentTransactions.reference, cleanReference), eq(paymentTransactions.userId, user.id)),
       })
     : null;
 
-  // Fallback: If reference was malformed or missing, look for user's latest pending transaction
-  if (!txn) {
-    txn = await db.query.paymentTransactions.findFirst({
-      where: and(
-        eq(paymentTransactions.userId, user.id),
-        eq(paymentTransactions.status, "pending")
-      ),
-      orderBy: (t, { desc }) => [desc(t.createdAt)],
-    });
-  }
 
   if (!txn) {
     return {
@@ -273,10 +263,11 @@ export async function verifyPaystackPaymentAction(reference: string): Promise<Ve
         headers: {
           Authorization: `Bearer ${paystackSecret}`,
         },
+        signal: AbortSignal.timeout(10000),
       });
 
       const verifyData = await verifyRes.json();
-      if (verifyData.status && verifyData.data?.status === "success") {
+      if (verifyRes.ok && verifyData.status && matchesPayment(verifyData.data, txn.reference, txn.amountKobo)) {
         isVerified = true;
         paystackMeta = {
           authorizationCode: verifyData.data?.authorization?.authorization_code || null,
@@ -288,15 +279,9 @@ export async function verifyPaystackPaymentAction(reference: string): Promise<Ve
     } catch (err) {
       console.warn("Notice during Paystack verification:", err);
     }
-  } else {
-    // In local sandbox / testing mode, mark as verified
-    isVerified = true;
   }
 
   if (!isVerified) {
-    await db.update(paymentTransactions)
-      .set({ status: "failed" })
-      .where(eq(paymentTransactions.id, txn.id));
 
     return {
       success: false,
@@ -305,45 +290,7 @@ export async function verifyPaystackPaymentAction(reference: string): Promise<Ve
     };
   }
 
-  // 3. Mark transaction as success
-  await db.update(paymentTransactions)
-    .set({ 
-      status: "success",
-      ...(paystackMeta ? {
-        paystackPayload: {
-          ...(txn.paystackPayload as object || {}),
-          ...paystackMeta,
-        }
-      } : {})
-    })
-    .where(eq(paymentTransactions.id, txn.id));
-
-  // 4. Activate 30-day Premium Entitlement
-  const { expiresAt } = await activateUserSubscription(txn.userId, 30, "MONTHLY_1000", paystackMeta);
-
-  // 5. If referral reward was used, redeem it and log subscription discount
-  const payload = txn.paystackPayload as { rewardId?: string } | null;
-  if (payload?.rewardId) {
-    try {
-      await db.update(referralRewards)
-        .set({
-          status: "redeemed",
-          redeemedAt: new Date(),
-        })
-        .where(eq(referralRewards.id, payload.rewardId));
-
-      await db.insert(subscriptionDiscounts).values({
-        userId: txn.userId,
-        rewardId: payload.rewardId,
-        transactionId: txn.id,
-        originalAmountKobo: 100000,
-        discountedAmountKobo: txn.amountKobo,
-        appliedAt: new Date(),
-      });
-    } catch (rewardErr) {
-      console.warn("Notice updating referral reward redemption:", rewardErr);
-    }
-  }
+  const expiresAt = await settleVerifiedPayment(txn.reference, paystackMeta || {});
 
   return {
     success: true,

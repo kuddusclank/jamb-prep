@@ -2,13 +2,17 @@
 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
+import { BrowserAccountBoundary } from "@/components/browser-account-boundary";
+import { sanitizeInternalRedirect } from "@/lib/auth/redirect";
 import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 
 function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/dashboard";
+  const redirectTo = sanitizeInternalRedirect(searchParams.get("redirectTo"), "/dashboard");
+  const queryError = searchParams.get("error");
+  const queryMessage = searchParams.get("message");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,37 +32,30 @@ function LoginFormContent() {
     setIsPending(true);
 
     try {
-      const supabase = createClient();
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password,
-      });
-
-      if (authError) {
-        const msg = authError.message || "Invalid email or password.";
-        setError(msg);
-        setIsPending(false);
-        return;
-      }
-
-      if (data?.session) {
-        // Successfully authenticated; navigate to target destination
-        router.push(redirectTo);
-        router.refresh();
-      } else {
-        router.push(redirectTo);
-      }
-    } catch (err: any) {
-      setError(err?.message || "An unexpected network error occurred. Please try again.");
+      const coordinator = getAccountCoordinator();
+      const result = await coordinator.manager.signInWithPassword({ email: cleanEmail, password });
+      if (result.error || result.state.status !== 'authenticated') { setError(result.error || 'Sign-in failed.'); return; }
+      coordinator.clear();
+      router.replace(redirectTo);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An unexpected network error occurred. Please try again.");
       setIsPending(false);
-    }
+    } finally { setIsPending(false); }
   };
+
+  const displayError = error || queryError;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5" aria-busy={isPending}>
-      {error && (
+      {queryMessage && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900">
+          {queryMessage}
+        </div>
+      )}
+
+      {displayError && (
         <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">
-          {error}
+          {displayError}
         </div>
       )}
 
@@ -132,7 +129,7 @@ function LoginFormContent() {
 export function LoginForm() {
   return (
     <Suspense fallback={<div className="py-8 text-center text-xs text-slate-400">Loading form...</div>}>
-      <LoginFormContent />
+      <BrowserAccountBoundary mode="auth"><LoginFormContent /></BrowserAccountBoundary>
     </Suspense>
   );
 }

@@ -47,4 +47,5 @@ export interface OutboxItem {
   label?: 'A' | 'B' | 'C' | 'D';
   timestamp: number;
   retryCount: number;
+  revision: number;
 }

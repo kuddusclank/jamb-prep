@@ -1,3 +1,4 @@
+import { BrowserAccountBoundary } from "@/components/browser-account-boundary";
 import { BookOpen } from "lucide-react";
 import { OnboardingWizard } from "./onboarding-wizard";
 
@@ -8,7 +9,7 @@ export const metadata = {
 
 export default function OnboardingPage() {
   return (
-    <div className="min-h-screen bg-[#F6F8F5] text-[#092E28] flex flex-col justify-between p-4 sm:p-6">
+    <BrowserAccountBoundary><div className="min-h-screen bg-[#F6F8F5] text-[#092E28] flex flex-col justify-between p-4 sm:p-6">
       <header className="max-w-3xl w-full mx-auto pt-4 flex items-center justify-between">
         <div className="flex items-center gap-2 text-xl font-bold tracking-tight">
           <span className="flex size-8 items-center justify-center rounded-xl bg-[#116149] text-white">
@@ -42,6 +43,6 @@ export default function OnboardingPage() {
       <footer className="text-center py-4 text-xs text-slate-400">
         Choose the subjects you intend to take in UTME.
       </footer>
-    </div>
+    </div></BrowserAccountBoundary>
   );
 }

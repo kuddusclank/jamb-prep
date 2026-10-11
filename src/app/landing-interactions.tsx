@@ -27,14 +27,12 @@ export function SubjectPicker() {
 }
 
 import Link from "@/components/pending-link";
+import { useBrowserAccount } from "@/components/browser-account-boundary";
 
-export function MobileMenu({ 
-  user,
-  isPremium = false,
-}: { 
-  user?: { email?: string | null; name?: string | null } | null;
-  isPremium?: boolean;
-}) {
+export function MobileMenu() {
+  const account = useBrowserAccount();
+  const user = account.identity?.user;
+  const isPremium = false; // Entitlement-specific navigation is deferred to T08.
   const [open, setOpen] = useState(false);
   return (
     <div className="relative md:hidden">
@@ -58,7 +56,7 @@ export function MobileMenu({
               <div className="border-b border-slate-100 pb-2 mb-2 px-3">
                 <p className="text-xs text-slate-500">Signed in as</p>
                 <div className="flex items-center justify-between gap-1 mt-0.5">
-                  <p className="text-sm font-bold text-emerald-900 truncate">{user.name || user.email}</p>
+                  <p className="text-sm font-bold text-emerald-900 truncate">{user.displayName || user.email}</p>
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
                     isPremium ? "bg-[#116149] text-white" : "bg-slate-200 text-slate-700"
                   }`}>
@@ -107,7 +105,7 @@ export function MobileMenu({
                   href="/pricing" 
                   className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm hover:bg-emerald-50 font-medium text-emerald-800"
                 >
-                  Upgrade to Premium <ArrowRight size={14}/>
+                  Plans <ArrowRight size={14}/>
                 </Link>
               ) : (
                 <Link 
@@ -124,7 +122,7 @@ export function MobileMenu({
                   href="/referrals" 
                   className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm text-amber-800 hover:bg-amber-50"
                 >
-                  Refer & Earn 50% <ArrowRight size={14}/>
+                  Invite friends <ArrowRight size={14}/>
                 </Link>
               )}
             </>

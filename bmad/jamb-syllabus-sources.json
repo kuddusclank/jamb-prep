@@ -1,0 +1,183 @@
+{
+  "retrievedAt": "2026-10-11",
+  "status": "research-only-awaiting-leaf-topic-editorial-review",
+  "portal": "https://ibass.jamb.gov.ng/e-syllabus",
+  "subjectCount": 25,
+  "sources": [
+    {
+      "subject": "Agriculture science",
+      "url": "https://ibass.jamb.gov.ng/static/media/AgricPdf.9465f3cd595e9542868a.pdf",
+      "pages": 16,
+      "sha256": "8134bf3b3a22633163e733a777b5fe63629614ce4a3daf4ea9dd77307f99c81e",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Arabic",
+      "url": "https://ibass.jamb.gov.ng/static/media/Arabic.233fe7117fc534609a6e.pdf",
+      "pages": 5,
+      "sha256": "438cc6e7369bdb4548c2a068ac1c82df7d42b3cbe53cafc2b7d8db29d1b0cfc5",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Art",
+      "url": "https://ibass.jamb.gov.ng/static/media/Artpdf.85197ba4c495458e1ba8.pdf",
+      "pages": 5,
+      "sha256": "31505bd8250a01756996dd4342e29ef8aaab06a147b01061c4d1e07fe8db3a64",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Biology",
+      "url": "https://ibass.jamb.gov.ng/static/media/Biology.0075e70afd357d7a39ae.pdf",
+      "pages": 12,
+      "sha256": "8afb9aa5c3bece851d6a7ec9b6ce85909aa94f1657d0d01b76d96a5d904467f5",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Chemistry",
+      "url": "https://ibass.jamb.gov.ng/static/media/Chemistry.9efd0b98043d56922aaa.pdf",
+      "pages": 16,
+      "sha256": "a3c15bfee3beac0f4106a32b0091e2a2c51eaec8baa62fafa44afcad72193738",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Christian religious studies",
+      "url": "https://ibass.jamb.gov.ng/static/media/CRS.7f96f8e535ca408ca474.pdf",
+      "pages": 12,
+      "sha256": "ea8cbe0c793c451527034c531246b31fd37f70be833b8de5eb4cccd02755254a",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Commerce",
+      "url": "https://ibass.jamb.gov.ng/static/media/Commerce.819d9c6929bc849d1cd9.pdf",
+      "pages": 8,
+      "sha256": "200792d4c77333f47427c3cc0ea064f4aea95aacc79720edb07294df5a270c68",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Computer studies",
+      "url": "https://ibass.jamb.gov.ng/static/media/Computer.ea1ead8cea82f53d3717.pdf",
+      "pages": 23,
+      "sha256": "166486f25996554f4ebd7c58ea757e612fb539d7833b7201c9438c257f862163",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Economics",
+      "url": "https://ibass.jamb.gov.ng/static/media/Economics.da2a30ae8659e29c8bb4.pdf",
+      "pages": 9,
+      "sha256": "4b56a76c3845468a7fe2cb463a16d37e23a76e9f9576bffaaa9a88567f6393b5",
+      "examYearVerified": false
+    },
+    {
+      "subject": "French",
+      "url": "https://ibass.jamb.gov.ng/static/media/French.170eeaabf96471e303c5.pdf",
+      "pages": 5,
+      "sha256": "d01b001b95433d1e82fa1767281027f7ef6b2b8079e009e01d0c2df356d3868e",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Geography",
+      "url": "https://ibass.jamb.gov.ng/static/media/Geography.0bf33e33f48e4139be13.pdf",
+      "pages": 9,
+      "sha256": "3c3d1b4fc57f37496e4c745f72c9d5ef29d61c13f09a8f91d9961e331a01d62f",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Government",
+      "url": "https://ibass.jamb.gov.ng/static/media/Government.92e42612590a98eeba28.pdf",
+      "pages": 8,
+      "sha256": "a162a3db37a000772bf1e111e5c403eed573a3d12aa3c816411d712a534818fe",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Hausa",
+      "url": "https://ibass.jamb.gov.ng/static/media/Hausa.ca90bfcfca9f88527acf.pdf",
+      "pages": 10,
+      "sha256": "1fa1bb70e4f30ad5cc637689832ed96d698f3778ee04b4207d12e7a700df53c1",
+      "examYearVerified": false
+    },
+    {
+      "subject": "History",
+      "url": "https://ibass.jamb.gov.ng/static/media/History.64d0bbe89bb7585bcddc.pdf",
+      "pages": 12,
+      "sha256": "7d79d865f6a5a51850a9060bf15f819c8c1d27d65a0ee1bca12f5dc6689ac7dc",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Home-Economics",
+      "url": "https://ibass.jamb.gov.ng/static/media/Home-Economics.89dc0fce33c5910e66c6.pdf",
+      "pages": 10,
+      "sha256": "c3c4337d5307f9d50a226eee6fc448e463994eb4e17343be7e538f9bf3282ce8",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Igbo",
+      "url": "https://ibass.jamb.gov.ng/static/media/Igbo.7a09449bbeefc39b4f44.pdf",
+      "pages": 9,
+      "sha256": "11a74b8605caf216e7c2bd668efcddc081a902e847fa616ffd1a15ea9d542ca8",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Islamic-Studies",
+      "url": "https://ibass.jamb.gov.ng/static/media/Islamic.973a07ea012af6554ed3.pdf",
+      "pages": 13,
+      "sha256": "69ccbc33817976cea4c49e59d608890d134ed95b70903332722a14ff40b7c145",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Literature-In-English",
+      "url": "https://ibass.jamb.gov.ng/static/media/Literature.f24a00818658eb8ecbd0.pdf",
+      "pages": 6,
+      "sha256": "623832f18e3d26fbf6dd66e80e01cc80002c911e3cf4bcd0fb79c4ae9d82d18e",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Mathematics",
+      "url": "https://ibass.jamb.gov.ng/static/media/Mathematics.c0621f4b8b674e75fd05.pdf",
+      "pages": 6,
+      "sha256": "aff7a7c2cc46036902dda38db1d1567d10982de709305cfbfc90dc437329754f",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Music",
+      "url": "https://ibass.jamb.gov.ng/static/media/Music.6a7142057d840d45959d.pdf",
+      "pages": 9,
+      "sha256": "991be53543662ec259542f5dbb263efa06dfcca428af3df76d7182f79288c720",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Physics",
+      "url": "https://ibass.jamb.gov.ng/static/media/Physics.16527a294cb7e7a87a35.pdf",
+      "pages": 20,
+      "sha256": "62f5ac84592735cd5829296cb52da5bc8b582ee0f2227999cca73b58dcabfee5",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Physical and Health Education",
+      "url": "https://ibass.jamb.gov.ng/static/media/PHE.d3add6c626efcb3f0f2b.pdf",
+      "pages": 11,
+      "sha256": "a6f02706da5daa5e0ad27542e4f2edeade64297deff63d5278809181e2de6345",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Principles of Accounts",
+      "url": "https://ibass.jamb.gov.ng/static/media/Principles-of-Accounting.64fc902ad37449d1f6ff.pdf",
+      "pages": 6,
+      "sha256": "5662db42e549144884a4ec01d1bade7b58220198eac58c9531e904fd77642e27",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Use of English",
+      "url": "https://ibass.jamb.gov.ng/static/media/Use-of-English.885e843b1f51e6a3d062.pdf",
+      "pages": 5,
+      "sha256": "f2b6bc4f2c30fc19ecf57bc14778100ce0deca59445beff9f7e10f34cbf7da18",
+      "examYearVerified": false
+    },
+    {
+      "subject": "Yoruba",
+      "url": "https://ibass.jamb.gov.ng/static/media/Yoruba.c9f0848e61ff86f1349b.pdf",
+      "pages": 5,
+      "sha256": "bd2f306a457863a2144957fd9586d88b6354629355553a8b92fcbf053cff04cd",
+      "examYearVerified": false
+    }
+  ]
+}

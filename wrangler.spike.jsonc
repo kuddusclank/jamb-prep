@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jambprep-spike",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-10",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "1d7b203e4b0d4913baaa695ffcf0c311"
+    }
+  ],
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    }
+  },
+  "vars": {
+    "ENVIRONMENT": "spike-preview",
+    "SUPABASE_URL": "https://bqumnaoiiukifvanoonm.supabase.co",
+    "SYNTHETIC_HMAC_SECRET": "synthetic-spike-secret-not-production-key-32chars"
+  }
+}

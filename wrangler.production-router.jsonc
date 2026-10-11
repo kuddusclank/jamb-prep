@@ -1,0 +1,17 @@
+{
+  "name": "jambprep",
+  "main": "worker/production-router.js",
+  "compatibility_date": "2026-10-10",
+  "routes": [
+    {
+      "pattern": "jambprep.lecterniq.com",
+      "custom_domain": true
+    }
+  ],
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  }
+}

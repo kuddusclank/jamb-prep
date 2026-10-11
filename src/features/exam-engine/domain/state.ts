@@ -88,6 +88,7 @@ export function examReducer(state: ExamEngineState, event: ExamEvent): ExamEngin
         questions,
         subjectTabs: tabs,
         currentIndex: 0,
+        flaggedQuestionIds: new Set(questions.filter(question=> 'isFlagged' in question && question.isFlagged).map(question=>question.id)),
         answers: initialAnswers,
         answerLabels: initialLabels,
         expiresAtTimestamp,

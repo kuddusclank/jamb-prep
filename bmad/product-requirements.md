@@ -163,3 +163,19 @@ All practice questions, papers, diagnostic mocks and exams require account creat
 * **Bandwidth Optimization**: Lightweight payload, asset preloading, and no heavy client dependencies.
 * **Zero Client Trust**: Timing, scoring, and answer keys are strictly controlled by the server.
 * **Student Privacy**: No sensitive government IDs (NIN, JAMB Reg Number) required.
+
+
+## User clarification — 10 October 2026: no signup email confirmation
+
+Confirmed: signup must not require email confirmation; do not introduce Resend or another paid signup-email dependency. This supersedes earlier email-verification requirements for registration. Use the standard Supabase Auth signup/session flow with confirmation disabled when configuring the approved implementation; do not expose an admin/service-role auto-confirm endpoint. Authentication and server ownership/admin/entitlement checks remain required. An authenticated signup is not evidence of ownership of its stated email address.
+
+The old referral requirement based on verified email/phone is superseded for email confirmation. Replacement referral qualification is awaiting the user's choice (first completed diagnostic versus signup plus subject selection). Do not silently count signup as qualified or implement the reviewing assistant's recommendation as a confirmed rule. Password recovery and any optional transactional emails are separate decisions; this clarification does not require adding an email vendor.
+
+
+### Confirmed referral qualification — 10 October 2026
+
+The user selected **completion of the referred student's first diagnostic mock** as the qualification event. Signup and subject selection alone do not qualify. No email confirmation is required. Two distinct eligible referred accounts completing their first diagnostic unlock the existing one-time first-payment 50% reward, subject to the existing first-payment eligibility rules.
+
+Implementation must qualify from the authoritative server-completed diagnostic result, exactly once, in a replay/concurrency-safe transaction with immutable attribution and self-referral rejection. Client completion flags are insufficient. Existing referrals/rewards need an explicit migration/backfill policy; do not silently rewrite prior awards. Handle the undersized bank and labeled test-fixture policy consistently so a broken or abandoned attempt does not qualify. Multi-account abuse remains a residual risk without identity verification; do not invent phone verification, fingerprinting or paid email requirements.
+
+This confirmation supersedes the pending referral-choice notes above. T00 corrections should use this rule; implementation belongs to the assigned referral/mock tasks. No application or provider change was made by this documentation update.

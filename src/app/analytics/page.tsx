@@ -1,74 +1,42 @@
+"use client";
 import { StudyWorkspace } from "@/components/study-workspace";
-import { getStudentCoachInsights, getDefaultCoachInsights, CoachInsights } from "@/lib/coach";
-import { getCurrentUser } from "@/lib/supabase/current-user";
 import {
 ArrowRight,
 BarChart3,
 Clock
 } from "lucide-react";
 import Link from "@/components/pending-link";
-import { redirect } from "next/navigation";
 
-import { db } from "@/db";
-import { profiles } from "@/db/schema";
-import { getUserSubscriptionStatus } from "@/lib/subscription";
-import { eq } from "drizzle-orm";
+interface StaticTopicDiagnostic {
+  topicId: string;
+  topicTitle: string;
+  topicSlug: string;
+  subjectCode: string;
+  subjectName: string;
+  accuracyPercent: number;
+  totalAttempted: number;
+  totalCorrect: number;
+  priority: "critical" | "moderate" | "strong";
+}
 
-export const metadata = {
-  title: "Performance Analytics & Diagnostics — JAMBPrep",
-  description: "Comprehensive UTME topic mastery, exam pacing, and diagnostic study coach analysis.",
-};
+interface StaticSubjectSummary {
+  subjectId: string;
+  subjectCode: string;
+  subjectName: string;
+  questionsAttempted: number;
+  questionsCorrect: number;
+  accuracyPercent: number;
+  estimatedScore: number;
+  weakTopicsCount: number;
+  masteredTopicsCount: number;
+}
 
-export default async function AnalyticsPage() {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  let subStatus = { isPremium: false };
-  let userProfile = null;
-  let insights: CoachInsights = getDefaultCoachInsights();
-
-  try {
-    const [status, profile, coachInsights] = await Promise.race([
-      Promise.all([
-        getUserSubscriptionStatus(user.id),
-        db.query.profiles.findFirst({
-          where: eq(profiles.id, user.id),
-        }),
-        getStudentCoachInsights(user.id),
-      ]),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Analytics data timeout")), 3500)
-      ),
-    ]);
-
-    if (status) subStatus = status;
-    if (profile) userProfile = profile;
-    if (coachInsights) insights = coachInsights as any;
-  } catch (err) {
-    console.warn("Notice loading analytics state:", err);
-  }
-
-  if (!subStatus.isPremium) {
-    redirect("/pricing");
-  }
-
-  const displayName = userProfile?.displayName || user.user_metadata?.display_name || user.email?.split("@")[0] || "Candidate";
-
-  const { 
-    targetScore, 
-    latestScore, 
-    bestScore, 
-    gapToTarget, 
-    weakestTopics, 
-    masteredTopics, 
-    subjectSummaries, 
-    recentMockHistory,
-    totalMocksCompleted,
-    coachRecommendation 
-  } = insights;
+import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
+import type { CoachInsights } from "@/lib/api/app-dtos";
+export default function AnalyticsPage() {
+  const resource = useApiResource<CoachInsights>('/api/v1/coach');
+  if (!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry} /><Link href="/pricing">View plans</Link></StudyWorkspace>;
+  const { targetScore, latestScore, bestScore, gapToTarget, weakestTopics, masteredTopics, subjectSummaries, totalMocksCompleted, coachRecommendation } = resource.data;
 
   return (
     <StudyWorkspace>
@@ -180,8 +148,8 @@ export default async function AnalyticsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {subjectSummaries.map((sub) => (
-                <div 
-                  key={sub.subjectCode} 
+                <div
+                  key={sub.subjectCode}
                   className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4"
                 >
                   <div className="flex items-center justify-between">
@@ -203,7 +171,7 @@ export default async function AnalyticsPage() {
                       <span className="font-semibold text-slate-700">{sub.accuracyPercent}%</span>
                     </div>
                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className="h-full bg-[#116149] rounded-full transition-all"
                         style={{ width: `${sub.accuracyPercent}%` }}
                       />
@@ -277,7 +245,7 @@ export default async function AnalyticsPage() {
                             <div className="flex items-center gap-2">
                               <span className="font-bold w-9">{topic.accuracyPercent}%</span>
                               <div className="h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden">
-                                <div 
+                                <div
                                   className={`h-full rounded-full ${topic.priority === 'critical' ? 'bg-red-500' : 'bg-amber-500'}`}
                                   style={{ width: `${topic.accuracyPercent}%` }}
                                 />
@@ -311,7 +279,7 @@ export default async function AnalyticsPage() {
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
                 <p className="text-sm text-slate-600">
-                  {totalMocksCompleted === 0 
+                  {totalMocksCompleted === 0
                     ? "No topic diagnostic data yet. Take your first mock exam or practice session to populate this matrix."
                     : "All tested topics are currently above 65% accuracy! Great work."}
                 </p>

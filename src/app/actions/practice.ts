@@ -2,15 +2,15 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/db";
-import { 
-  subjects, 
-  topics, 
-  passages, 
-  questions, 
-  questionOptions, 
-  questionExplanations 
+import {
+  subjects,
+  topics,
+  passages,
+  questions,
+  questionOptions,
+  questionExplanations
 } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import { recordTopicMasteryBatch } from "@/lib/coach";
 
 export interface PracticeQuestionItem {
@@ -43,6 +43,10 @@ export async function getPracticeQuestions(
     throw new Error("You must be signed in to practice.");
   }
 
+  if (!Number.isInteger(count) || count < 1 || count > 60) {
+    throw new Error("Choose between 1 and 60 practice questions.");
+  }
+
   // 1. Resolve subject
   const subject = await db.query.subjects.findFirst({
     where: eq(subjects.code, subjectCode),
@@ -51,13 +55,14 @@ export async function getPracticeQuestions(
   if (!subject) return [];
 
   // 2. Fetch questions for subject (optionally filtered by topic)
-  let whereClause = eq(questions.subjectId, subject.id);
+  let whereClause = and(eq(questions.subjectId, subject.id), eq(questions.status, "published"));
   if (topicSlug) {
     const topic = await db.query.topics.findFirst({
       where: and(eq(topics.subjectId, subject.id), eq(topics.slug, topicSlug)),
     });
+    if (!topic) return [];
     if (topic) {
-      whereClause = and(eq(questions.subjectId, subject.id), eq(questions.topicId, topic.id)) as any;
+      whereClause = and(eq(questions.subjectId, subject.id), eq(questions.topicId, topic.id), eq(questions.status, "published"));
     }
   }
 
@@ -75,50 +80,32 @@ export async function getPracticeQuestions(
     .orderBy(sql`RANDOM()`)
     .limit(count);
 
-  const results: PracticeQuestionItem[] = [];
-
-  for (const q of rawQuestions) {
-    // Fetch topic
-    const topicRecord = await db.query.topics.findFirst({
-      where: eq(topics.id, q.topicId),
-    });
-
-    // Fetch passage if any
-    let passageData = null;
-    if (q.passageId) {
-      const pRecord = await db.query.passages.findFirst({
-        where: eq(passages.id, q.passageId),
-      });
-      if (pRecord) {
-        passageData = {
-          title: pRecord.title,
-          content: pRecord.content,
-        };
-      }
-    }
-
-    // Fetch options WITHOUT revealing isCorrect (client will verify on submit)
-    const opts = await db
-      .select({
-        label: questionOptions.label,
-        content: questionOptions.content,
-      })
-      .from(questionOptions)
-      .where(eq(questionOptions.questionId, q.id))
-      .orderBy(questionOptions.label);
-
-    results.push({
-      id: q.id,
-      stem: q.stem,
-      difficulty: q.difficulty,
-      examYear: q.examYear,
-      subjectCode: subject.code,
-      subjectName: subject.name,
-      topicTitle: topicRecord?.title || "General",
-      passage: passageData,
-      options: opts,
-    });
+  if (rawQuestions.length === 0) return [];
+  const passageIds = [...new Set(rawQuestions.flatMap(q => q.passageId ? [q.passageId] : []))];
+  const [topicRows, passageRows, optionRows] = await Promise.all([
+    db.select({ id: topics.id, title: topics.title }).from(topics)
+      .where(inArray(topics.id, [...new Set(rawQuestions.map(q => q.topicId))])),
+    passageIds.length ? db.select({ id: passages.id, title: passages.title, content: passages.content })
+      .from(passages).where(inArray(passages.id, passageIds)) : Promise.resolve([]),
+    db.select({ questionId: questionOptions.questionId, label: questionOptions.label, content: questionOptions.content })
+      .from(questionOptions).where(inArray(questionOptions.questionId, rawQuestions.map(q => q.id)))
+      .orderBy(questionOptions.label),
+  ]);
+  const topicMap = new Map(topicRows.map(t => [t.id, t.title]));
+  const passageMap = new Map(passageRows.map(p => [p.id, { title: p.title, content: p.content }]));
+  const optionsByQuestion = new Map<string, PracticeQuestionItem["options"]>();
+  for (const option of optionRows) {
+    const options = optionsByQuestion.get(option.questionId) || [];
+    options.push({ label: option.label, content: option.content });
+    optionsByQuestion.set(option.questionId, options);
   }
+  const results: PracticeQuestionItem[] = rawQuestions.map(q => ({
+    id: q.id, stem: q.stem, difficulty: q.difficulty, examYear: q.examYear,
+    subjectCode: subject.code, subjectName: subject.name,
+    topicTitle: topicMap.get(q.topicId) || "General",
+    passage: q.passageId ? passageMap.get(q.passageId) || null : null,
+    options: optionsByQuestion.get(q.id) || [],
+  }));
 
   return results;
 }

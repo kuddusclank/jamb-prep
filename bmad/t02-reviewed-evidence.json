@@ -1,0 +1,372 @@
+{
+  "reviewedAt": "2026-10-10T22:03:14.339Z",
+  "priorTailEvents": 48,
+  "priorTailOutcomes": {
+    "ok": 48
+  },
+  "runs": [
+    {
+      "filename": "manifest-smoke.json",
+      "runId": "61c09bef-35da-4460-9a3b-7c545cc7bcde",
+      "perScenario": [
+        {
+          "scenarioId": 1,
+          "scenarioName": "auth-jwt",
+          "sentCount": 1,
+          "successCount": 1,
+          "failureCount": 0,
+          "exceptionCount": 0,
+          "matchedSamples": 0,
+          "missingCpuSamples": 0,
+          "entirelyMissingSamples": 1,
+          "cpuP50Ms": null,
+          "cpuP95Ms": null,
+          "cpuMaxMs": null,
+          "wallP50Ms": null,
+          "wallP95Ms": null,
+          "wallMaxMs": null,
+          "outcomes": {},
+          "exceptionEvents": 0
+        },
+        {
+          "scenarioId": 2,
+          "scenarioName": "db-read",
+          "sentCount": 1,
+          "successCount": 0,
+          "failureCount": 1,
+          "exceptionCount": 1,
+          "matchedSamples": 0,
+          "missingCpuSamples": 0,
+          "entirelyMissingSamples": 1,
+          "cpuP50Ms": null,
+          "cpuP95Ms": null,
+          "cpuMaxMs": null,
+          "wallP50Ms": null,
+          "wallP95Ms": null,
+          "wallMaxMs": null,
+          "outcomes": {},
+          "exceptionEvents": 0
+        },
+        {
+          "scenarioId": 3,
+          "scenarioName": "answer-write",
+          "sentCount": 1,
+          "successCount": 0,
+          "failureCount": 1,
+          "exceptionCount": 1,
+          "matchedSamples": 0,
+          "missingCpuSamples": 0,
+          "entirelyMissingSamples": 1,
+          "cpuP50Ms": null,
+          "cpuP95Ms": null,
+          "cpuMaxMs": null,
+          "wallP50Ms": null,
+          "wallP95Ms": null,
+          "wallMaxMs": null,
+          "outcomes": {},
+          "exceptionEvents": 0
+        },
+        {
+          "scenarioId": 4,
+          "scenarioName": "mock-payload",
+          "sentCount": 1,
+          "successCount": 0,
+          "failureCount": 1,
+          "exceptionCount": 1,
+          "matchedSamples": 0,
+          "missingCpuSamples": 0,
+          "entirelyMissingSamples": 1,
+          "cpuP50Ms": null,
+          "cpuP95Ms": null,
+          "cpuMaxMs": null,
+          "wallP50Ms": null,
+          "wallP95Ms": null,
+          "wallMaxMs": null,
+          "outcomes": {},
+          "exceptionEvents": 0
+        },
+        {
+          "scenarioId": 5,
+          "scenarioName": "mock-score",
+          "sentCount": 1,
+          "successCount": 1,
+          "failureCount": 0,
+          "exceptionCount": 0,
+          "matchedSamples": 0,
+          "missingCpuSamples": 0,
+          "entirelyMissingSamples": 1,
+          "cpuP50Ms": null,
+          "cpuP95Ms": null,
+          "cpuMaxMs": null,
+          "wallP50Ms": null,
+          "wallP95Ms": null,
+          "wallMaxMs": null,
+          "outcomes": {},
+          "exceptionEvents": 0
+        },
+        {
+          "scenarioId": 6,
+          "scenarioName": "webhook-hmac",
+          "sentCount": 1,
+          "successCount": 1,
+          "failureCount": 0,
+          "exceptionCount": 0,
+          "matchedSamples": 0,
+          "missingCpuSamples": 0,
+          "entirelyMissingSamples": 1,
+          "cpuP50Ms": null,
+          "cpuP95Ms": null,
+          "cpuMaxMs": null,
+          "wallP50Ms": null,
+          "wallP95Ms": null,
+          "wallMaxMs": null,
+          "outcomes": {},
+          "exceptionEvents": 0
+        }
+      ],
+      "evidenceComplete": false,
+      "matchedCount": 0,
+      "unmatchedCount": 48
+    },
+    {
+      "filename": "manifest-smoke-6.json",
+      "runId": "f56aebd0-eaf8-47b9-8b1b-bd4b2206d66b",
+      "perScenario": [
+        {
+          "scenarioId": 1,
+          "scenarioName": "auth-jwt",
+          "sentCount": 1,
+          "successCount": 1,
+          "failureCount": 0,
+          "exceptionCount": 0,
+          "matchedSamples": 1,
+          "missingCpuSamples": 0,
+          "entirelyMissingSamples": 0,
+          "cpuP50Ms": 3,
+          "cpuP95Ms": 3,
+          "cpuMaxMs": 3,
+          "wallP50Ms": 42,
+          "wallP95Ms": 42,
+          "wallMaxMs": 42,
+          "outcomes": {
+            "ok": 1
+          },
+          "exceptionEvents": 0
+        },
+        {
+          "scenarioId": 2,
+          "scenarioName": "db-read",
+          "sentCount": 1,
+          "successCount": 0,
+          "failureCount": 1,
+          "exceptionCount": 0,
+          "matchedSamples": 1,
+          "missingCpuSamples": 0,
+          "entirelyMissingSamples": 0,
+          "cpuP50Ms": 9,
+          "cpuP95Ms": 9,
+          "cpuMaxMs": 9,
+          "wallP50Ms": 16023,
+          "wallP95Ms": 16023,
+          "wallMaxMs": 16023,
+          "outcomes": {
+            "ok": 1
+          },
+          "exceptionEvents": 0
+        },
+        {
+          "scenarioId": 3,
+          "scenarioName": "answer-write",
+          "sentCount": 1,
+          "successCount": 0,
+          "failureCount": 1,
+          "exceptionCount": 0,
+          "matchedSamples": 1,
+          "missingCpuSamples": 0,
+          "entirelyMissingSamples": 0,
+          "cpuP50Ms": 4,
+          "cpuP95Ms": 4,
+          "cpuMaxMs": 4,
+          "wallP50Ms": 16018,
+          "wallP95Ms": 16018,
+          "wallMaxMs": 16018,
+          "outcomes": {
+            "ok": 1
+          },
+          "exceptionEvents": 0
+        },
+        {
+          "scenarioId": 4,
+          "scenarioName": "mock-payload",
+          "sentCount": 1,
+          "successCount": 0,
+          "failureCount": 1,
+          "exceptionCount": 0,
+          "matchedSamples": 1,
+          "missingCpuSamples": 0,
+          "entirelyMissingSamples": 0,
+          "cpuP50Ms": 4,
+          "cpuP95Ms": 4,
+          "cpuMaxMs": 4,
+          "wallP50Ms": 16019,
+          "wallP95Ms": 16019,
+          "wallMaxMs": 16019,
+          "outcomes": {
+            "ok": 1
+          },
+          "exceptionEvents": 0
+        },
+        {
+          "scenarioId": 5,
+          "scenarioName": "mock-score",
+          "sentCount": 1,
+          "successCount": 0,
+          "failureCount": 1,
+          "exceptionCount": 0,
+          "matchedSamples": 1,
+          "missingCpuSamples": 0,
+          "entirelyMissingSamples": 0,
+          "cpuP50Ms": 5,
+          "cpuP95Ms": 5,
+          "cpuMaxMs": 5,
+          "wallP50Ms": 16020,
+          "wallP95Ms": 16020,
+          "wallMaxMs": 16020,
+          "outcomes": {
+            "ok": 1
+          },
+          "exceptionEvents": 0
+        },
+        {
+          "scenarioId": 6,
+          "scenarioName": "webhook-hmac",
+          "sentCount": 1,
+          "successCount": 1,
+          "failureCount": 0,
+          "exceptionCount": 0,
+          "matchedSamples": 1,
+          "missingCpuSamples": 0,
+          "entirelyMissingSamples": 0,
+          "cpuP50Ms": 1,
+          "cpuP95Ms": 1,
+          "cpuMaxMs": 1,
+          "wallP50Ms": 1,
+          "wallP95Ms": 1,
+          "wallMaxMs": 1,
+          "outcomes": {
+            "ok": 1
+          },
+          "exceptionEvents": 0
+        }
+      ],
+      "evidenceComplete": false,
+      "matchedCount": 6,
+      "unmatchedCount": 42
+    },
+    {
+      "filename": "manifest-s1.json",
+      "runId": "d3854caf-8035-4a7c-82b1-7622ab1edcf7",
+      "perScenario": [
+        {
+          "scenarioId": 1,
+          "scenarioName": "auth-jwt",
+          "sentCount": 5,
+          "successCount": 5,
+          "failureCount": 0,
+          "exceptionCount": 0,
+          "matchedSamples": 5,
+          "missingCpuSamples": 0,
+          "entirelyMissingSamples": 0,
+          "cpuP50Ms": 0,
+          "cpuP95Ms": 1,
+          "cpuMaxMs": 1,
+          "wallP50Ms": 1,
+          "wallP95Ms": 1,
+          "wallMaxMs": 1,
+          "outcomes": {
+            "ok": 5
+          },
+          "exceptionEvents": 0
+        }
+      ],
+      "evidenceComplete": true,
+      "matchedCount": 5,
+      "unmatchedCount": 43
+    },
+    {
+      "filename": "manifest-s6.json",
+      "runId": "a70bf821-23e6-4256-8562-bd890ce4c953",
+      "perScenario": [
+        {
+          "scenarioId": 6,
+          "scenarioName": "webhook-hmac",
+          "sentCount": 5,
+          "successCount": 5,
+          "failureCount": 0,
+          "exceptionCount": 0,
+          "matchedSamples": 5,
+          "missingCpuSamples": 0,
+          "entirelyMissingSamples": 0,
+          "cpuP50Ms": 0,
+          "cpuP95Ms": 0,
+          "cpuMaxMs": 0,
+          "wallP50Ms": 1,
+          "wallP95Ms": 1,
+          "wallMaxMs": 1,
+          "outcomes": {
+            "ok": 5
+          },
+          "exceptionEvents": 0
+        }
+      ],
+      "evidenceComplete": true,
+      "matchedCount": 5,
+      "unmatchedCount": 43
+    }
+  ],
+  "probes": [
+    {
+      "operation": "test-auth",
+      "status": 200,
+      "elapsedMs": 986
+    },
+    {
+      "id": "review-755b88a0-94da-4be1-920b-bf2b236d64ad-probe-0",
+      "status": 200,
+      "elapsedMs": 956,
+      "success": true,
+      "firstQueryMs": 108,
+      "secondQueryMs": 23,
+      "interpretation": "First query includes connection acquisition; second reuses the client. Neither isolates TCP/TLS handshake or server execution alone."
+    },
+    {
+      "id": "review-7ad3952b-84cf-46f5-97ef-11f4400e5d33-probe-1",
+      "status": null,
+      "elapsedMs": 12002,
+      "error": "CLIENT_TIMEOUT_OR_NETWORK_FAILURE"
+    }
+  ],
+  "probeTail": [
+    {
+      "cpuTimeMs": 14,
+      "wallTimeMs": 200,
+      "outcome": "ok",
+      "hasExceptions": false,
+      "requestId": "review-755b88a0-94da-4be1-920b-bf2b236d64ad-probe-0"
+    },
+    {
+      "cpuTimeMs": 2,
+      "wallTimeMs": 12002,
+      "outcome": "canceled",
+      "hasExceptions": false,
+      "requestId": "review-7ad3952b-84cf-46f5-97ef-11f4400e5d33-probe-1"
+    }
+  ],
+  "limitations": [
+    "HTTP outcome ok does not mean application status 200 or valid response",
+    "Prior raw tail includes browser/background requests beyond reported workload",
+    "Request ledger is agent reported and excludes multiple test login/local DB probes; cumulative count is not independently complete",
+    "Fixture benchmarks include CREATE/seed/rollback overhead; cannot prove minimum production Postgres CPU",
+    "Warm JWT/HMAC samples do not prove all DB scenario Free feasibility"
+  ]
+}

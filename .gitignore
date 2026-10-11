@@ -48,3 +48,8 @@ next-env.d.ts
 .wrangler
 .dev.vars*
 !.dev.vars.example
+
+# Database certificate and private backup artifacts
+supabase-ca.crt
+*.dump
+bmad/staging-verification-ledger.json.lock

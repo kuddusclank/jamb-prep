@@ -1,6 +1,6 @@
-import { 
-  pgTable, uuid, text, timestamp, boolean, integer, 
-  pgEnum, jsonb, index, uniqueIndex 
+import {
+  pgTable, uuid, text, timestamp, boolean, integer,
+  pgEnum, jsonb, index, uniqueIndex, date, primaryKey
 } from 'drizzle-orm/pg-core';
 
 // ==========================================
@@ -25,7 +25,7 @@ export const profiles = pgTable('profiles', {
   role: userRoleEnum('role').default('student').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}).enableRLS();
 
 export const studentPreferences = pgTable('student_preferences', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -36,7 +36,7 @@ export const studentPreferences = pgTable('student_preferences', {
   targetCourse: text('target_course'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}).enableRLS();
 
 // ==========================================
 // 2. Academic Curriculum Hierarchy
@@ -48,7 +48,7 @@ export const subjects = pgTable('subjects', {
   isCompulsory: boolean('is_compulsory').default(false).notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   displayOrder: integer('display_order').default(0).notNull(),
-});
+}).enableRLS();
 
 export const studentSubjects = pgTable('student_subjects', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -56,7 +56,7 @@ export const studentSubjects = pgTable('student_subjects', {
   subjectId: uuid('subject_id').references(() => subjects.id, { onDelete: 'cascade' }).notNull(),
 }, (table) => [
   uniqueIndex('user_subject_unique_idx').on(table.userId, table.subjectId)
-]);
+]).enableRLS();
 
 export const topics = pgTable('topics', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -66,7 +66,7 @@ export const topics = pgTable('topics', {
   displayOrder: integer('display_order').default(0).notNull(),
 }, (table) => [
   index('topic_subject_idx').on(table.subjectId)
-]);
+]).enableRLS();
 
 export const passages = pgTable('passages', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -75,7 +75,7 @@ export const passages = pgTable('passages', {
   content: text('content').notNull(),
   source: text('source'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}).enableRLS();
 
 // ==========================================
 // 3. Question Bank & Solutions
@@ -94,7 +94,7 @@ export const questions = pgTable('questions', {
 }, (table) => [
   index('question_subject_topic_idx').on(table.subjectId, table.topicId),
   index('question_status_idx').on(table.status)
-]);
+]).enableRLS();
 
 export const questionOptions = pgTable('question_options', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -104,7 +104,7 @@ export const questionOptions = pgTable('question_options', {
   isCorrect: boolean('is_correct').notNull(), // Privileged field!
 }, (table) => [
   index('option_question_idx').on(table.questionId)
-]);
+]).enableRLS();
 
 export const questionExplanations = pgTable('question_explanations', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -112,7 +112,7 @@ export const questionExplanations = pgTable('question_explanations', {
   explanation: text('explanation').notNull(), // Markdown + LaTeX
   verifiedBy: uuid('verified_by').references(() => profiles.id),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}).enableRLS();
 
 // ==========================================
 // 4. CBT Exam Simulation & Practice Engine
@@ -129,29 +129,34 @@ export const attempts = pgTable('attempts', {
 }, (table) => [
   index('attempt_user_idx').on(table.userId),
   index('attempt_status_idx').on(table.status)
-]);
+]).enableRLS();
 
 export const attemptQuestions = pgTable('attempt_questions', {
   id: uuid('id').defaultRandom().primaryKey(),
   attemptId: uuid('attempt_id').references(() => attempts.id, { onDelete: 'cascade' }).notNull(),
-  questionId: uuid('question_id').references(() => questions.id, { onDelete: 'cascade' }).notNull(),
+  questionId: uuid('question_id').references(() => questions.id, { onDelete: 'restrict' }).notNull(),
   subjectId: uuid('subject_id').references(() => subjects.id, { onDelete: 'cascade' }).notNull(),
   position: integer('position').notNull(), // 1 to 180
   isFlagged: boolean('is_flagged').default(false).notNull(),
+  snapshot: jsonb('snapshot'),
+  topicId: uuid('topic_id').references(() => topics.id),
+  correctOptionId: uuid('correct_option_id'),
+  frozenExplanation: text('frozen_explanation'),
 }, (table) => [
   uniqueIndex('attempt_position_unique_idx').on(table.attemptId, table.position),
   index('attempt_questions_attempt_idx').on(table.attemptId)
-]);
+]).enableRLS();
 
 export const attemptAnswers = pgTable('attempt_answers', {
   id: uuid('id').defaultRandom().primaryKey(),
   attemptId: uuid('attempt_id').references(() => attempts.id, { onDelete: 'cascade' }).notNull(),
   questionId: uuid('question_id').references(() => questions.id, { onDelete: 'cascade' }).notNull(),
   selectedOptionId: uuid('selected_option_id').references(() => questionOptions.id, { onDelete: 'set null' }),
+  revision: integer('revision').default(0).notNull(),
   answeredAt: timestamp('answered_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   uniqueIndex('attempt_question_answer_unique_idx').on(table.attemptId, table.questionId)
-]);
+]).enableRLS();
 
 export const attemptResults = pgTable('attempt_results', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -167,7 +172,7 @@ export const attemptResults = pgTable('attempt_results', {
   timeSpentSeconds: integer('time_spent_seconds').notNull(),
   topicBreakdown: jsonb('topic_breakdown').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}).enableRLS();
 
 // ==========================================
 // 5. Payments, Subscriptions & Entitlements
@@ -184,7 +189,7 @@ export const subscriptionEntitlements = pgTable('subscription_entitlements', {
   paystackAuthorizationCode: text('paystack_authorization_code'),
   paystackCustomerCode: text('paystack_customer_code'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}).enableRLS();
 
 export const paymentTransactions = pgTable('payment_transactions', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -195,7 +200,7 @@ export const paymentTransactions = pgTable('payment_transactions', {
   channel: text('channel'),
   paystackPayload: jsonb('paystack_payload'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}).enableRLS();
 
 export const paymentWebhookEvents = pgTable('payment_webhook_events', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -203,7 +208,7 @@ export const paymentWebhookEvents = pgTable('payment_webhook_events', {
   eventType: text('event_type').notNull(),
   payload: jsonb('payload').notNull(),
   processedAt: timestamp('processed_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}).enableRLS();
 
 // ==========================================
 // 6. Refer-and-Earn Viral Acquisition Engine
@@ -213,7 +218,7 @@ export const referralCodes = pgTable('referral_codes', {
   userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull().unique(),
   code: text('code').notNull().unique(), // e.g. 'TOBI99'
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}).enableRLS();
 
 export const referrals = pgTable('referrals', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -224,7 +229,7 @@ export const referrals = pgTable('referrals', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index('referral_referrer_idx').on(table.referrerId)
-]);
+]).enableRLS();
 
 export const referralRewards = pgTable('referral_rewards', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -235,7 +240,7 @@ export const referralRewards = pgTable('referral_rewards', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index('reward_user_status_idx').on(table.userId, table.status)
-]);
+]).enableRLS();
 
 export const subscriptionDiscounts = pgTable('subscription_discounts', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -245,7 +250,7 @@ export const subscriptionDiscounts = pgTable('subscription_discounts', {
   originalAmountKobo: integer('original_amount_kobo').notNull(), // 100000 = ₦1,000
   discountedAmountKobo: integer('discounted_amount_kobo').notNull(), // 50000 = ₦500
   appliedAt: timestamp('applied_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}).enableRLS();
 
 // ==========================================
 // 7. Diagnostic Study Coach & Topic Mastery
@@ -263,7 +268,7 @@ export const studentTopicMastery = pgTable('student_topic_mastery', {
   uniqueIndex('user_topic_mastery_unique_idx').on(table.userId, table.topicId),
   index('user_mastery_accuracy_idx').on(table.userId, table.accuracyPercent),
   index('user_subject_mastery_idx').on(table.userId, table.subjectId)
-]);
+]).enableRLS();
 
 
 export const attemptInterruptions = pgTable('attempt_interruptions', {
@@ -271,4 +276,28 @@ export const attemptInterruptions = pgTable('attempt_interruptions', {
   attemptId: uuid('attempt_id').references(() => attempts.id, { onDelete: 'cascade' }).notNull(),
   startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
   endedAt: timestamp('ended_at', { withTimezone: true }),
-}, (table) => [index('interruption_attempt_idx').on(table.attemptId)]);
+}, (table) => [index('interruption_attempt_idx').on(table.attemptId)]).enableRLS();
+
+export const apiIdempotencyKeys = pgTable('api_idempotency_keys', {
+  userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
+  operation: text('operation').notNull(), idempotencyKey: text('idempotency_key').notNull(), requestHash: text('request_hash').notNull(),
+  status: text('status').notNull(), responseStatus: integer('response_status'), responseBody: jsonb('response_body'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(), expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+}, (table) => [primaryKey({columns:[table.userId,table.operation,table.idempotencyKey]}), index('api_idempotency_expiry_idx').on(table.expiresAt)]).enableRLS();
+export const dailyPracticeAllowances = pgTable('daily_practice_allowances', {
+  userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
+  practiceDateWat: date('practice_date_wat').notNull(), questionsAllocated: integer('questions_allocated').notNull(),
+}, (table) => [primaryKey({columns:[table.userId,table.practiceDateWat]})]).enableRLS();
+
+export const paymentCheckoutRequests = pgTable('payment_checkout_requests', {
+  userId: uuid('user_id').references(() => profiles.id, {onDelete:'cascade'}).notNull(),
+  idempotencyKey: text('idempotency_key').notNull(), requestHash:text('request_hash').notNull(),
+  reference:text('reference').references(()=>paymentTransactions.reference).unique().notNull(),
+  status:text('status').notNull(),authorizationUrl:text('authorization_url'),
+  createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},table=>[primaryKey({columns:[table.userId,table.idempotencyKey]})]).enableRLS();
+
+export const paymentRenewalRequests=pgTable('payment_renewal_requests',{
+ reference:text('reference').references(()=>paymentTransactions.reference).primaryKey(),userId:uuid('user_id').references(()=>profiles.id,{onDelete:'cascade'}).notNull(),
+ status:text('status').notNull(),planCode:text('plan_code').notNull(),customerCode:text('customer_code').notNull(),authorizationCode:text('authorization_code').notNull(),subscriptionCode:text('subscription_code'),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},table=>[index('payment_renewal_user_idx').on(table.userId,table.status)]).enableRLS();

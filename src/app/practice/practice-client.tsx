@@ -7,7 +7,7 @@ import {
   checkPracticeAnswer, 
   PracticeQuestionItem, 
   PracticeAnswerResult 
-} from "@/app/actions/practice";
+} from "@/lib/client-actions";
 import { 
   BookOpen, 
   CheckCircle2, 
@@ -97,7 +97,7 @@ export function PracticeClient({
         setScore((prev) => prev + 1);
       }
     } catch (err: unknown) {
-      console.error(err);
+      setErrorMessage(err instanceof Error ? err.message : "Unable to check your answer. Please retry.");
     } finally {
       setIsSubmitting(false);
     }

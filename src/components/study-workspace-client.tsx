@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import Link from "@/components/pending-link";
 import { usePathname } from "next/navigation";
 import { BookOpen, LayoutDashboard, Layers, Clock, ChartNoAxesCombined, Users, UserRound, CreditCard, LogOut } from "lucide-react";
-import { signOutAction } from "@/app/actions/auth";
+import { signOutAction } from "@/lib/client-actions";
 import styles from "./study-workspace.module.css";
 
 const destinations = [

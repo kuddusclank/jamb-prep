@@ -1,18 +1,10 @@
 "use client";
 
-import { useState, useActionState } from "react";
-import { saveOnboardingAction } from "@/app/actions/onboarding";
+import { useState, useEffect } from "react";
+import { getAccountCoordinator, OnboardingData } from "@/lib/auth/account-coordinator";
+import { useRouter } from "next/navigation";
 import { Check, ArrowRight, Loader2, Target } from "lucide-react";
 
-const electives = [
-  "Mathematics",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "Economics",
-  "Government",
-  "Literature in English",
-];
 
 const targetPresets = [
   { score: 220, label: "Personal target" },
@@ -24,7 +16,35 @@ const targetPresets = [
 export function OnboardingWizard() {
   const [selectedElectives, setSelectedElectives] = useState<string[]>([]);
   const [targetScore, setTargetScore] = useState<number>(280);
-  const [state, formAction, isPending] = useActionState(saveOnboardingAction, null);
+  const router = useRouter();
+  const [catalog, setCatalog] = useState<OnboardingData | null>(null);
+  const [state, setState] = useState<{ error?: string } | null>(null);
+  const [isPending, setIsPending] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  useEffect(() => {
+    let active = true;
+    setState(null);
+    void getAccountCoordinator().loadOnboarding().then((data) => {
+      if (!active) return;
+      setCatalog(data);
+      const available = new Set(data.availableSubjects.filter((subject) => subject.code !== 'ENG' && !subject.is_compulsory).map((subject) => subject.name));
+      setSelectedElectives([...new Set(data.enrolledSubjects.filter((subject) => available.has(subject.name)).map((subject) => subject.name))].slice(0, 3));
+      setTargetScore(data.preferences?.target_score ?? 280);
+    }).catch((err: unknown) => { if (active) setState({ error: err instanceof Error ? err.message : 'Unable to load your subject choices.' }); });
+    return () => { active = false; };
+  }, [loadAttempt]);
+  const electives = catalog?.availableSubjects.filter((subject) => subject.code !== 'ENG' && !subject.is_compulsory).map((subject) => subject.name) ?? [];
+  const formAction = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isPending || !catalog) return;
+    const form = new FormData(event.currentTarget);
+    setIsPending(true); setState(null);
+    try {
+      await getAccountCoordinator().saveOnboarding({ electives: selectedElectives, targetScore, targetInstitution: String(form.get('targetInstitution') || '').trim() || null, targetCourse: String(form.get('targetCourse') || '').trim() || null });
+      router.replace('/dashboard');
+    } catch (err: unknown) { setState({ error: err instanceof Error ? err.message : 'Your setup could not be saved. Please retry.' }); }
+    finally { setIsPending(false); }
+  };
 
   const toggleElective = (subject: string) => {
     if (selectedElectives.includes(subject)) {
@@ -34,16 +54,18 @@ export function OnboardingWizard() {
     }
   };
 
-  const isReady = selectedElectives.length === 3;
+  const isReady = Boolean(catalog?.availableSubjects.some((subject) => subject.code === 'ENG' && subject.is_compulsory)) && selectedElectives.length === 3;
 
   return (
-    <form action={formAction} className="space-y-8">
+    <form onSubmit={formAction} className="space-y-8">
       {state?.error && (
         <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3.5 text-xs text-red-800">
           {state.error}
         </div>
       )}
 
+      {!catalog && <p role="status">Loading subject choices…</p>}
+      {!catalog && state?.error && <button type="button" onClick={() => { getAccountCoordinator().clear(); setLoadAttempt((value) => value + 1); }}>Retry loading subjects</button>}
       {/* Hidden input to pass selected electives */}
       <input type="hidden" name="electives" value={JSON.stringify(selectedElectives)} />
       <input type="hidden" name="targetScore" value={targetScore} />
@@ -170,6 +192,8 @@ export function OnboardingWizard() {
           <div>
             <input
               name="targetInstitution"
+              defaultValue={catalog?.preferences?.target_institution ?? ""}
+              key={`institution-${catalog?.preferences?.target_institution ?? ""}`}
               aria-label="First-choice institution"
               type="text"
               placeholder="e.g. University of Lagos (UNILAG)"
@@ -179,6 +203,8 @@ export function OnboardingWizard() {
           <div>
             <input
               name="targetCourse"
+              defaultValue={catalog?.preferences?.target_course ?? ""}
+              key={`course-${catalog?.preferences?.target_course ?? ""}`}
               aria-label="Course of study"
               type="text"
               placeholder="e.g. Personal target"

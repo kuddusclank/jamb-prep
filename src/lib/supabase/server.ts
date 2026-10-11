@@ -11,6 +11,7 @@ export async function createClient() {
     // Return a safe stub client during development before Supabase keys are configured
     return {
       auth: {
+        getClaims: async () => ({ data: null, error: null }),
         getUser: async () => ({ data: { user: null }, error: null }),
         getSession: async () => ({ data: { session: null }, error: null }),
         signUp: async () => ({ data: { user: null }, error: new Error("Supabase is not configured yet. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env") }),

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { initializePaystackCheckoutAction, CheckoutPricing } from "@/app/actions/payment";
+import { initializePaystackCheckoutAction, CheckoutPricing } from "@/lib/client-actions";
 import { 
   Sparkles, 
   Check, 
@@ -20,13 +20,16 @@ interface CheckoutClientProps {
 export function CheckoutClient({ pricing }: CheckoutClientProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const pendingReference = errorMessage?.match(/JAMB-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0];
 
   const handleCheckout = async () => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
       const result = await initializePaystackCheckoutAction();
-      if (result.authorizationUrl) {
+      if (result.confirmationUrl) {
+        window.location.href = result.confirmationUrl;
+      } else if (result.authorizationUrl) {
         window.location.href = result.authorizationUrl;
       } else {
         setErrorMessage("Unable to initiate payment session. Please try again.");
@@ -59,7 +62,7 @@ export function CheckoutClient({ pricing }: CheckoutClientProps) {
               50% Referral Discount Voucher Applied!
             </strong>
             <p className="text-slate-600 mt-0.5">
-              Because you invited 2 verified classmates, your first month is halved from ₦1,000 to <strong>₦500</strong>.
+              Because you invited 2 classmates who completed their first diagnostic, your first month is halved from ₦1,000 to <strong>₦500</strong>.
             </p>
           </div>
         </div>
@@ -70,7 +73,7 @@ export function CheckoutClient({ pricing }: CheckoutClientProps) {
               <Users size={14} /> Want 50% off your first month?
             </span>
             <p className="text-slate-600 mt-0.5">
-              Invite 2 friends with your referral link to pay <strong>₦500</strong> instead of ₦1,000.
+              Invite 2 friends who complete their first diagnostic to pay <strong>₦500</strong> instead of ₦1,000.
             </p>
           </div>
           <Link
@@ -201,6 +204,7 @@ export function CheckoutClient({ pricing }: CheckoutClientProps) {
             {errorMessage && (
               <div className="mb-3 text-xs text-red-600 bg-red-50 p-2.5 rounded-xl">
                 {errorMessage}
+                {pendingReference && <Link href={`/checkout/verify/?reference=${encodeURIComponent(pendingReference)}`} className="block mt-2 underline font-semibold">Check the existing payment</Link>}
               </div>
             )}
 

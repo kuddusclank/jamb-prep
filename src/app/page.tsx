@@ -1,3 +1,4 @@
+import { BrowserAccountNavigation } from "@/components/browser-account-boundary";
 import Link from "@/components/pending-link";
 import { 
   ArrowRight, 
@@ -16,10 +17,6 @@ import {
 } from "lucide-react";
 import { MobileMenu, Reveal, SubjectPicker } from "./landing-interactions";
 import { UserDropdown } from "@/components/user-dropdown";
-import { getCurrentUser } from "@/lib/supabase/current-user";
-import { db } from "@/db";
-import { profiles, subscriptionEntitlements } from "@/db/schema";
-import { eq } from "drizzle-orm";
 
 const button = "inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-[#116149] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0b4936] hover:-translate-y-0.5";
 const faq = [
@@ -30,30 +27,11 @@ const faq = [
   ['How does Premium access work?', 'Premium access is ₦1,000 for 30 days via Paystack, granting unlimited CBT mocks, unlimited practice questions, full answer explanations, and advanced study coach analytics. If you refer 2 verified friends, you unlock 50% off (₦500).'],
 ];
 
-export default async function Home() {
-  const user = await getCurrentUser();
-
-  let profile = null;
-  let isPremium = false;
-  let entitlement: { expiresAt: Date } | null = null;
-
-  if (user) {
-    const [userProfile, userEntitlement] = await Promise.all([
-      db.query.profiles.findFirst({
-        where: eq(profiles.id, user.id),
-      }),
-      db.query.subscriptionEntitlements.findFirst({
-        where: eq(subscriptionEntitlements.userId, user.id),
-      }),
-    ]);
-    profile = userProfile;
-    entitlement = userEntitlement ?? null;
-    if (entitlement && new Date(entitlement.expiresAt) > new Date()) {
-      isPremium = true;
-    }
-  }
-
-  const displayName = profile?.displayName || user?.email?.split('@')[0] || "Candidate";
+export default function Home() {
+  const user = null as { email?: string | null } | null;
+  const isPremium = false as boolean;
+  const entitlement = null as { expiresAt: Date } | null;
+  const displayName = "Candidate";
 
   return (
     <>
@@ -99,34 +77,13 @@ export default async function Home() {
               <a href="#how-it-works" className="hover:text-[#116149] transition-colors">How it works</a>
               <a href="#subjects" className="hover:text-[#116149] transition-colors">Subjects</a>
               <a href="#pricing" className="hover:text-[#116149] transition-colors">Pricing</a>
-              <Link href="/login" className="hover:text-[#116149] font-medium transition-colors">
-                Sign In
-              </Link>
             </nav>
           )}
 
           {/* Action Area */}
           <div className="flex items-center gap-3">
-            {user ? (
-              <>
-                <Link href="/dashboard" className="hidden sm:inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-[#116149] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#0b4936]">
-                  Dashboard <ArrowRight size={14}/>
-                </Link>
-                <UserDropdown
-                  user={{ name: displayName, email: user.email }}
-                  isPremium={isPremium}
-                  expiresAt={entitlement?.expiresAt}
-                />
-              </>
-            ) : (
-              <Link href="/register" className={`${button} hidden sm:inline-flex`}>
-                Create account <ArrowRight size={16}/>
-              </Link>
-            )}
-            <MobileMenu 
-              user={user ? { email: user.email, name: displayName } : null} 
-              isPremium={isPremium}
-            />
+            <BrowserAccountNavigation />
+            <MobileMenu />
           </div>
         </div>
       </header>

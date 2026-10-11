@@ -15,6 +15,13 @@
       "when": 1791633460495,
       "tag": "0001_daily_kid_colt",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791652645958,
+      "tag": "0002_secure-server-only-tables",
+      "breakpoints": true
     }
   ]
 }

@@ -12,7 +12,7 @@ import {
   Sparkles,
   LayoutDashboard
 } from "lucide-react";
-import { signOutAction } from "@/app/actions/auth";
+import { signOutAction } from "@/lib/client-actions";
 
 interface UserDropdownProps {
   user: {
@@ -170,7 +170,9 @@ export function UserDropdown({ user, isPremium = false, expiresAt }: UserDropdow
 
           {/* Sign Out Form */}
           <div className="p-1.5">
-            <form action={signOutAction}>
+            <form
+              action={signOutAction}
+            >
               <button
                 type="submit"
                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer text-left"

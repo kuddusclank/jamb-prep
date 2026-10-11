@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {spawn} from 'node:child_process';
+const runtime=fs.readFileSync(path.join(os.homedir(),'.codex/private-backups/jambprep/local-runtime.env'),'utf8').trim().slice('DATABASE_URL='.length);
+if(new URL(runtime).hostname!=='127.0.0.1')throw Error('Only isolated loopback databases are allowed');
+console.log('Starting local native API with the restored staging database.');
+const child=spawn(process.execPath,['node_modules/wrangler/bin/wrangler.js','dev','--local','--config','wrangler.api.jsonc','--ip','127.0.0.1','--port','8787'],{env:{...process.env,WRANGLER_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE:runtime},stdio:'inherit'});
+child.on('exit',code=>process.exit(code??1));
+for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>child.kill(signal));

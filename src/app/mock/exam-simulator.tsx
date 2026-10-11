@@ -2,11 +2,12 @@
 
 import { ExamCalculator } from "./exam-calculator";
 import { ExamConditions } from "./exam-conditions";
-import { useCallback, useEffect, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useExamEngine } from "@/features/exam-engine/reactive/use-exam-engine";
 import { ExamQuestion } from "@/features/exam-engine/domain/types";
-import { syncExamAnswer, submitMockExam } from "@/app/actions/exam";
+import { syncExamAnswer, submitMockExam } from "@/lib/client-actions";
+import { buildCanonicalResultUrl } from "@/lib/routing/deep-links";
 import { MathRenderer } from "@/components/math-renderer";
 import { 
   Clock, 
@@ -28,6 +29,7 @@ interface ExamSimulatorProps {
     attemptId: string;
     questions: ExamQuestion[];
     expiresAtTimestamp: number;
+    initialRevisions?: Record<string, number>;
     initialAnswers?: Record<string, string>;
     initialLabels?: Record<string, 'A' | 'B' | 'C' | 'D'>;
   };
@@ -36,10 +38,14 @@ interface ExamSimulatorProps {
 
 export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProps) {
   const router = useRouter();
+  const [submitError,setSubmitError]=useState<string|null>(null);
   const [isPending, startTransition] = useTransition();
 
   const {
     state,
+    engine,
+    engineError,
+    flagError,
     selectOption,
     reverseOption,
     toggleFlag,
@@ -127,22 +133,25 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
   const handleFinalSubmit = useCallback(() => {
     startTransition(async () => {
       try {
+        setSubmitError(null);
+        await engine.flushOutbox();
         await submitMockExam(attemptId);
         if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
-        router.push(`/mock/result/${attemptId}`);
+        router.push(buildCanonicalResultUrl(attemptId));
       } catch (err) {
-        console.error("Submission failed:", err);
+        setSubmitError(err instanceof Error ? err.message : "Submission failed. Please retry.");
       }
     });
-  }, [attemptId, router]);
+  }, [attemptId, router, engine]);
 
   // 2. Auto-Submit on Expiration
   useEffect(() => {
-    if (status === 'expired' && questions.length > 0) {
+    if (status === 'expired' && questions.length > 0 && !submitError && !isPending) {
       handleFinalSubmit();
     }
-  }, [status, questions.length, handleFinalSubmit]);
+  }, [status, questions.length, handleFinalSubmit, submitError, isPending]);
 
+  if(engineError) return <section role="alert" className="shell section-space"><p>{engineError}</p><button type="button" onClick={()=>window.location.reload()}>Reload</button></section>;
   if (questions.length === 0) {
     return (
       <div className="min-h-screen bg-[#F6F8F5] flex items-center justify-center p-6 text-center">
@@ -233,6 +242,8 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
         </div>
       </header>
 
+      {submitError && <div role="alert" className="bg-red-50 p-4 text-red-800"><p>{submitError}</p><button type="button" disabled={isPending} onClick={handleFinalSubmit}>Retry submission</button></div>}
+      {flagError && <p role="status" className="rounded-xl bg-amber-50 p-3 text-amber-900">{flagError}</p>}
       <ExamConditions attemptId={initialPayload.attemptId} enabled={initialPayload.examConditions} active={!isPending && status !== "expired"} />
       <ExamCalculator />
       {/* 2. SUBJECT TABS BAR */}

@@ -1,4 +1,38 @@
-# https://developers.cloudflare.com/workers/static-assets/headers
-# https://opennext.js.org/cloudflare/caching#static-assets-caching
 /_next/static/*
-  Cache-Control: public,max-age=31536000,immutable
+  Cache-Control: public, max-age=31536000, immutable
+
+/mock/*
+  Cache-Control: private, no-store, no-cache, must-revalidate
+
+/exam/*
+  Cache-Control: private, no-store, no-cache, must-revalidate
+
+/result/*
+  Cache-Control: private, no-store, no-cache, must-revalidate
+
+/practice/*
+  Cache-Control: private, no-store, no-cache, must-revalidate
+
+/dashboard/*
+  Cache-Control: private, no-store, no-cache, must-revalidate
+
+/analytics/*
+  Cache-Control: private, no-store, no-cache, must-revalidate
+
+/profile/*
+  Cache-Control: private, no-store, no-cache, must-revalidate
+
+/referrals/*
+  Cache-Control: private, no-store, no-cache, must-revalidate
+
+/onboarding/*
+  Cache-Control: private, no-store, no-cache, must-revalidate
+
+/checkout/*
+  Cache-Control: private, no-store, no-cache, must-revalidate
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=()

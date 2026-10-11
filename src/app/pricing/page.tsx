@@ -1,23 +1,19 @@
-import { getCheckoutPricingAction } from "@/app/actions/payment";
+"use client";
+import type { CheckoutPricing } from "@/lib/client-actions";
 import { StudyWorkspace } from "@/components/study-workspace";
-import { getCurrentUser } from "@/lib/supabase/current-user";
 import { HelpCircle, BookOpen } from "lucide-react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { CheckoutClient } from "./checkout-client";
 
-export const metadata = {
-  title: "Upgrade to Premium — JAMBPrep",
-  description: "Unlock unlimited UTME practice, 180-question CBT simulations, and diagnostic study coach analysis.",
-};
-
-export default async function PricingPage() {
-  const user = await getCurrentUser();
-  const pricing = await getCheckoutPricingAction();
-
-  if (user && pricing.isAlreadyPremium) {
-    redirect("/profile#subscription");
-  }
+import { useBrowserAccount } from "@/components/browser-account-boundary";
+import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
+export default function PricingPage() {
+  const account = useBrowserAccount();
+  const resource = useApiResource<CheckoutPricing>('/api/v1/pricing');
+  const user = account.session.user;
+  if (!user) return <main className="shell section-space"><h1 className="text-3xl font-bold">Premium: ₦1,000 per month</h1><p className="mt-4">Unlock unlimited practice, mocks and detailed coaching. Your first month may qualify for the referral discount.</p><Link href="/login?redirectTo=/pricing" className="mt-6 inline-block rounded-full bg-[#116149] px-6 py-3 text-white">Sign in to check your price</Link></main>;
+  if (!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry} /></StudyWorkspace>;
+  const pricing = resource.data;
 
   const content = (
     <div className="max-w-4xl mx-auto space-y-10 py-6">
@@ -49,7 +45,7 @@ export default async function PricingPage() {
             <strong className="block font-semibold text-slate-800 mb-1">
               How does the 50% referral discount work?
             </strong>
-            Invite 2 classmates with your unique referral link. Once both verify their accounts, your first month is automatically halved from ₦1,000 to ₦500.
+            Invite 2 classmates with your unique referral link. Once both complete their first diagnostic mock, your first month is automatically halved from ₦1,000 to ₦500.
           </div>
 
           <div>

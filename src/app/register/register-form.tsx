@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { provisionRegisteredUserAction } from "@/app/actions/auth";
+import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
+import { BrowserAccountBoundary, useBrowserAccount } from "@/components/browser-account-boundary";
 import { ArrowRight, Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
 
 function RegisterFormContent() {
   const router = useRouter();
+  const account = useBrowserAccount();
+  const recovering = account.session.status === "authenticated";
   const searchParams = useSearchParams();
   const initialReferralCode = searchParams.get("ref") || "";
+  const queryError = searchParams.get("error");
 
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -19,17 +22,23 @@ function RegisterFormContent() {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (account.session.user?.email) setEmail(account.session.user.email);
+    if (account.session.user?.displayName) setDisplayName(account.session.user.displayName);
+  }, [account.session.user?.id, account.session.user?.email, account.session.user?.displayName]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanName = displayName.trim();
     const cleanEmail = email.trim();
+    const cleanReferral = referralCode.trim().toUpperCase();
 
-    if (!cleanName || !cleanEmail || !password) {
+    if (!cleanName || cleanName.length < 2 || !cleanEmail || (!recovering && !password)) {
       setError("Please provide your full name, email address, and a password.");
       return;
     }
 
-    if (password.length < 6) {
+    if (!recovering && password.length < 6) {
       setError("Your password must be at least 6 characters long.");
       return;
     }
@@ -38,46 +47,24 @@ function RegisterFormContent() {
     setIsPending(true);
 
     try {
-      const supabase = createClient();
-      const { data, error: authError } = await supabase.auth.signUp({
-        email: cleanEmail,
-        password,
-        options: {
-          data: {
-            display_name: cleanName,
-          },
-        },
+      const coordinator = getAccountCoordinator();
+      const result = await coordinator.manager.signUpAndProvision({
+        displayName: cleanName, email: cleanEmail, password, referralCode: cleanReferral,
+        provisioningExecutor: (input) => coordinator.api.bootstrapAccount({ ...input, accessToken: input.accessToken }),
       });
-
-      if (authError) {
-        const msg = authError.message.toLowerCase();
-        if (msg.includes("already registered") || msg.includes("already exists")) {
-          setError("An account with this email already exists. Please log in instead.");
-        } else {
-          setError(authError.message || "Failed to create account. Please try again.");
-        }
-        setIsPending(false);
-        return;
-      }
-
-      // If user session is established immediately, provision profile record
-      try {
-        const formData = new FormData();
-        formData.append("displayName", cleanName);
-        formData.append("email", cleanEmail);
-        formData.append("referralCode", referralCode.trim());
-        await provisionRegisteredUserAction(formData);
-      } catch (provErr) {
-        console.warn("Notice during registration provisioning:", provErr);
-      }
-
-      router.push("/onboarding");
-      router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "An unexpected error occurred. Please try again.");
+      if (result.error || !result.provisioned) { setError(result.error || 'Account setup is temporarily unavailable. Please retry.'); return; }
+      coordinator.clear();
+      router.replace('/onboarding');
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message :
+          "Your account was created, but profile setup encountered a network error. Please submit again to complete setup."
+      );
       setIsPending(false);
-    }
+    } finally { setIsPending(false); }
   };
+
+  const displayError = error || queryError;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5" aria-busy={isPending}>
@@ -95,9 +82,9 @@ function RegisterFormContent() {
         </div>
       )}
 
-      {error && (
+      {displayError && (
         <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">
-          {error}
+          {displayError}
         </div>
       )}
 
@@ -129,6 +116,7 @@ function RegisterFormContent() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
+          readOnly={recovering}
           autoCapitalize="none"
           required
           placeholder="you@example.com"
@@ -148,8 +136,8 @@ function RegisterFormContent() {
             onChange={(e) => setPassword(e.target.value)}
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
-            required
-            minLength={6}
+            required={!recovering}
+            minLength={recovering ? undefined : 6}
             placeholder="At least 6 characters"
             className="w-full min-h-13 rounded-xl border border-slate-300 bg-white pl-4 pr-11 text-base text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
           />
@@ -207,7 +195,7 @@ function RegisterFormContent() {
 export function RegisterForm() {
   return (
     <Suspense fallback={<div className="py-8 text-center text-xs text-slate-400">Loading form...</div>}>
-      <RegisterFormContent />
+      <BrowserAccountBoundary mode="auth"><RegisterFormContent /></BrowserAccountBoundary>
     </Suspense>
   );
 }

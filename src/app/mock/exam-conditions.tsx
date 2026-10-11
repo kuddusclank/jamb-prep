@@ -1,8 +1,9 @@
 "use client";
 
+import { getDefaultBrowserSessionManager } from "@/lib/auth/session-manager";
 import { interruptionTransition } from "@/features/exam-engine/domain/interruption";
 import { useEffect, useState } from "react";
-import { recordMockInterruption } from "@/app/actions/exam";
+import { recordMockInterruption } from "@/lib/client-actions";
 
 export function ExamConditions({ attemptId, enabled, active }: { attemptId: string; enabled: boolean; active: boolean }) {
   const [interrupted, setInterrupted] = useState(false);
@@ -12,7 +13,7 @@ export function ExamConditions({ attemptId, enabled, active }: { attemptId: stri
     if (!enabled || !active) return;
     let episode: string | null = null;
     let writes = Promise.resolve();
-    const key = `mock-interruption:${attemptId}`;
+    const key = `mock-interruption:${getDefaultBrowserSessionManager().getState().user?.id}:${attemptId}`;
     try { episode = sessionStorage.getItem(key); } catch {}
     function record(id: string, ended: boolean) {
       writes = writes.then(() => recordMockInterruption(attemptId, id, ended)).catch(() => {

@@ -1,0 +1,236 @@
+{
+  "budget": 260,
+  "maxConcurrency": 3,
+  "used": 256,
+  "operations": [
+    {
+      "id": 1,
+      "action": "audit",
+      "status": "aborted-before-network",
+      "at": "2026-10-11T10:56:29.845Z",
+      "reason": "private destination initially outside sandbox; reservation retained conservatively"
+    },
+    {
+      "id": 2,
+      "action": "audit",
+      "status": "failed",
+      "at": "2026-10-11T10:56:43.474Z",
+      "completedAt": "2026-10-11T10:56:44.224Z"
+    },
+    {
+      "id": 3,
+      "action": "audit",
+      "status": "failed",
+      "at": "2026-10-11T10:57:08.427Z",
+      "completedAt": "2026-10-11T10:57:09.103Z"
+    },
+    {
+      "id": 4,
+      "action": "audit",
+      "status": "passed",
+      "at": "2026-10-11T11:00:42.218Z",
+      "completedAt": "2026-10-11T11:00:47.318Z"
+    },
+    {
+      "id": 5,
+      "action": "backup",
+      "status": "passed",
+      "at": "2026-10-11T11:00:56.922Z",
+      "completedAt": "2026-10-11T11:02:18.962Z"
+    },
+    {
+      "id": 6,
+      "action": "local-api-auth-smoke",
+      "reservedRequests": 2,
+      "status": "failed",
+      "at": "2026-10-11T11:13:39.700Z",
+      "scope": "One Supabase test login plus one Worker JWKS fetch; remaining requests are loopback."
+    },
+    {
+      "id": 7,
+      "action": "local-auth-diagnostic",
+      "reservedRequests": 4,
+      "status": "reserved",
+      "at": "2026-10-11T11:14:50.512Z",
+      "scope": "Conservative live-user calls and JWKS rebuild during local auth diagnostics"
+    },
+    {
+      "id": 8,
+      "action": "local-api-auth-smoke",
+      "reservedRequests": 10,
+      "status": "passed",
+      "at": "2026-10-11T11:15:27.110Z",
+      "scope": "Conservative allowance for login, JWKS and live-user checks; remaining requests are loopback."
+    },
+    {
+      "id": 9,
+      "action": "local-practice-smoke",
+      "reservedRequests": 2,
+      "status": "passed",
+      "at": "2026-10-11T11:16:49.478Z",
+      "scope": "Conservative JWKS fetch allowance; practice requests target isolated loopback database",
+      "note": "Initial harness assumed an envelope; raw-body handling corrected, replay and feedback passed without reissuing questions."
+    },
+    {
+      "id": 10,
+      "action": "local-onboarding-save-replay",
+      "reservedRequests": 4,
+      "status": "passed",
+      "at": "2026-10-11T11:26:03.240Z"
+    },
+    {
+      "id": 11,
+      "action": "cloudflare-release-discovery",
+      "reservedRequests": 5,
+      "status": "reserved",
+      "scope": "Account, Pages projects and current Worker release inventory"
+    },
+    {
+      "id": 12,
+      "action": "audit",
+      "status": "passed",
+      "at": "2026-10-11T11:29:35.553Z",
+      "completedAt": "2026-10-11T11:29:40.410Z"
+    },
+    {
+      "id": 13,
+      "action": "backup",
+      "status": "passed",
+      "at": "2026-10-11T11:29:40.464Z",
+      "completedAt": "2026-10-11T11:30:53.749Z"
+    },
+    {
+      "id": 14,
+      "action": "native-worker-and-pages-release-preparation",
+      "reservedRequests": 15,
+      "status": "in-progress",
+      "scope": "Reconciled reservation after backup completion; native deployment, encrypted TEST secrets and Pages release controls"
+    },
+    {
+      "id": 15,
+      "action": "cloud-native-readonly-checks",
+      "reservedRequests": 40,
+      "status": "reserved",
+      "scope": "Tail connection, read-only authenticated requests and their live-session/JWKS subrequests"
+    },
+    {
+      "id": 16,
+      "action": "release-control-and-static-postchecks",
+      "reservedRequests": 25,
+      "status": "reserved",
+      "scope": "Conservative additional provider control/upload requests, retained-version restore, Pages headers/deep-links and release evidence"
+    },
+    {
+      "id": 17,
+      "action": "single-socket-cloud-cpu-check",
+      "reservedRequests": 20,
+      "status": "reserved",
+      "scope": "Additional allowance for sequential read-only API checks and cold JWKS refresh after redeploy"
+    },
+    {
+      "id": 18,
+      "action": "batched-coach-hosted-check",
+      "reservedRequests": 20,
+      "status": "reserved",
+      "scope": "Sequential read-only dashboard checks, cold JWKS allowance and static redirect postchecks"
+    },
+    {
+      "id": 19,
+      "action": "migrate",
+      "status": "passed",
+      "at": "2026-10-11T12:08:28.140Z",
+      "completedAt": "2026-10-11T12:08:37.247Z"
+    },
+    {
+      "id": 20,
+      "action": "audit",
+      "status": "passed",
+      "at": "2026-10-11T12:08:45.300Z",
+      "completedAt": "2026-10-11T12:08:49.372Z"
+    },
+    {
+      "id": 21,
+      "action": "hosted-api-write-smoke",
+      "reservedRequests": 30,
+      "status": "partial-harness-expectation-failed",
+      "at": "2026-10-11T12:09:22.099Z",
+      "scope": "Conservative allowance for login, JWKS and live-user checks; remaining requests are loopback."
+    },
+    {
+      "id": 22,
+      "action": "hosted-api-write-smoke",
+      "reservedRequests": 20,
+      "status": "partial-harness-expectation-failed",
+      "at": "2026-10-11T12:09:50.385Z",
+      "scope": "Conservative allowance for login, JWKS and live-user checks; remaining requests are loopback."
+    },
+    {
+      "id": 23,
+      "action": "domain-routing-read-audit",
+      "reservedRequests": 5,
+      "status": "reserved"
+    },
+    {
+      "id": 24,
+      "action": "domain-routing-read-audit",
+      "reservedRequests": 5,
+      "status": "reserved"
+    },
+    {
+      "id": 25,
+      "action": "hosted-final-write-check",
+      "reservedRequests": 12,
+      "status": "passed"
+    },
+    {
+      "id": 26,
+      "action": "hosted-bounded-cpu-replay-check",
+      "reservedRequests": 12,
+      "status": "passed-http-cpu-gate-open"
+    },
+    {
+      "id": 27,
+      "action": "referral-recovery-pages-publish",
+      "reservedRequests": 6,
+      "status": "passed",
+      "scope": "Pages control/upload allowance and one static postcheck; no database probes."
+    },
+    {
+      "id": 28,
+      "action": "copy-feedback-pages-deploy",
+      "reservedRequests": 10,
+      "status": "passed",
+      "authorization": "User instructed deploy it in response to the explicit 10-request publishing question."
+    }
+  ],
+  "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",
+  "publicationOnlyAllowance": {
+    "limit": 50,
+    "reserved": 50,
+    "authorization": "User selected Publish only; skip hosted signup checks in response to the 50-request extension question. Scope is provider publishing operations only; no hosted signup, application probes or database checks.",
+    "maxConcurrency": 3,
+    "status": "published",
+    "workerVersion": "1ed49211-26f5-4add-bf24-36e5b2912722",
+    "pagesDeployment": "b7046c82",
+    "hostedSignupChecks": 0,
+    "note": "Includes the subsequent user-requested checkout callback and onboarding referral rule publication; no hosted application probes."
+  },
+  "paymentIncidentReadOnly": {
+    "scope": "User-reported transaction investigation only, no hosted signup or charges",
+    "databaseConnections": 3,
+    "paystackReadOnlyVerifications": 2
+  },
+  "referralCorrection": {
+    "scope": "Explicit user-requested ABDU2B08 correction",
+    "databaseConnections": 2,
+    "updated": 2
+  },
+  "productionCutoverAllowance": {
+    "limit": 40,
+    "used": 28,
+    "maxConcurrency": 3,
+    "authorization": "User confirmed existing jambprep.lecterniq.com and accepted recommendation for bounded cutover/checks. No new charges/signup accounts.",
+    "status": "published-and-checked",
+    "accounting": "Conservative 20-request reservation for three deployments plus individually counted provider discovery and HTTP checks."
+  }
+}

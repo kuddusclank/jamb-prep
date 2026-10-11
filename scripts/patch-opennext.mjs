@@ -32,38 +32,12 @@ if (fs.existsSync(manifestPlugin)) {
   }
 }
 
-// 2. Patch templates/worker.js to bind HYPERDRIVE connectionString to globalThis and process.env
-const workerTemplate = path.resolve(__dirname, "../node_modules/@opennextjs/cloudflare/dist/cli/templates/worker.js");
-if (fs.existsSync(workerTemplate)) {
-  let content = fs.readFileSync(workerTemplate, "utf-8");
-  if (!content.includes("__HYPERDRIVE_CONN__")) {
-    content = content.replace(
-      "async fetch(request, env, ctx) {",
-      `async fetch(request, env, ctx) {
-        if (env?.HYPERDRIVE?.connectionString) {
-            globalThis.__HYPERDRIVE_CONN__ = env.HYPERDRIVE.connectionString;
-            process.env.HYPERDRIVE_CONNECTION_STRING = env.HYPERDRIVE.connectionString;
-        }`
-    );
-    fs.writeFileSync(workerTemplate, content, "utf-8");
-    console.log("Successfully patched @opennextjs/cloudflare templates/worker.js for Hyperdrive injection.");
-  }
-}
-
-// 3. Patch templates/init.js for Hyperdrive context preservation
-const initTemplate = path.resolve(__dirname, "../node_modules/@opennextjs/cloudflare/dist/cli/templates/init.js");
-if (fs.existsSync(initTemplate)) {
-  let content = fs.readFileSync(initTemplate, "utf-8");
-  if (!content.includes("__HYPERDRIVE_CONN__")) {
-    content = content.replace(
-      "init(request, env);",
-      `init(request, env);
-    if (env?.HYPERDRIVE?.connectionString) {
-        globalThis.__HYPERDRIVE_CONN__ = env.HYPERDRIVE.connectionString;
-        process.env.HYPERDRIVE_CONNECTION_STRING = env.HYPERDRIVE.connectionString;
-    }`
-    );
-    fs.writeFileSync(initTemplate, content, "utf-8");
-    console.log("Successfully patched @opennextjs/cloudflare templates/init.js for Hyperdrive injection.");
-  }
+// Remove older global Hyperdrive injections on existing installations.
+// The binding belongs to OpenNext's request context, not process-wide state.
+for (const template of ["worker.js", "init.js"]) {
+  const filename = path.resolve(__dirname, `../node_modules/@opennextjs/cloudflare/dist/cli/templates/${template}`);
+  if (!fs.existsSync(filename)) continue;
+  const original = fs.readFileSync(filename, "utf-8");
+  const cleaned = original.replace(/\s*if \(env\?\.HYPERDRIVE\?\.connectionString\) \{\s*globalThis\.__HYPERDRIVE_CONN__ = env\.HYPERDRIVE\.connectionString;\s*process\.env\.HYPERDRIVE_CONNECTION_STRING = env\.HYPERDRIVE\.connectionString;\s*\}/g, "");
+  if (cleaned !== original) fs.writeFileSync(filename, cleaned, "utf-8");
 }

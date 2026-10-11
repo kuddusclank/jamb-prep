@@ -1,14 +1,7 @@
+"use client";
 import styles from "./dashboard.module.css";
 import { StudyWorkspace } from "@/components/study-workspace";
-import { db } from "@/db";
-import {
-referralRewards,
-referrals
-} from "@/db/schema";
-import { getStudentCoachInsights, getDefaultCoachInsights } from "@/lib/coach";
-import { getUserSubscriptionStatus } from "@/lib/subscription";
-import { getCurrentUser } from "@/lib/supabase/current-user";
-import { count,eq } from "drizzle-orm";
+import { buildCanonicalResultUrl } from "@/lib/routing/deep-links";
 import {
 AlertCircle,
 ArrowRight,
@@ -22,68 +15,61 @@ TrendingUp,
 Users
 } from "lucide-react";
 import Link from "@/components/pending-link";
-import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Dashboard — JAMBPrep",
-  description: "Personalized UTME study coach dashboard, target scores, and weak-topic revision.",
-};
+interface StaticTopicDiagnostic {
+  topicId: string;
+  topicTitle: string;
+  topicSlug: string;
+  subjectCode: string;
+  subjectName: string;
+  accuracyPercent: number;
+  totalAttempted: number;
+  totalCorrect: number;
+  priority: "critical" | "moderate" | "strong";
+}
 
-export default async function DashboardPage() {
-  const user = await getCurrentUser();
+interface StaticSubjectSummary {
+  subjectId: string;
+  subjectCode: string;
+  subjectName: string;
+  isCompulsory: boolean;
+  questionsAttempted: number;
+  questionsCorrect: number;
+  accuracyPercent: number;
+  estimatedScore: number;
+  weakTopicsCount: number;
+  masteredTopicsCount: number;
+}
 
-  if (!user) {
-    redirect("/login");
-  }
+interface StaticMockHistoryItem {
+  attemptId: string;
+  completedAt: string | Date;
+  timeSpentSeconds: number;
+  totalScore: number;
+  englishScore: number;
+  subject2Score: number;
+  subject3Score: number;
+  subject4Score: number;
+}
 
-  // Load coach insights, subscription state, and referral state concurrently in a single roundtrip
-  let qualifiedReferrals = 0;
-  let has50PercentReward = false;
-  let isPremium = false;
-  let subStatus: Awaited<ReturnType<typeof getUserSubscriptionStatus>> | null = null;
-  let insights = getDefaultCoachInsights();
+import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
+import { useBrowserAccount } from "@/components/browser-account-boundary";
+import type { DashboardData } from "@/lib/api/app-dtos";
 
-  try {
-    const [insightsRes, refCountRows, rewardRecord, loadedSubStatus] = await Promise.race([
-      Promise.all([
-        getStudentCoachInsights(user.id),
-        db.select({ value: count() }).from(referrals).where(eq(referrals.referrerId, user.id)),
-        db.query.referralRewards.findFirst({
-          where: eq(referralRewards.userId, user.id),
-        }),
-        getUserSubscriptionStatus(user.id),
-      ]),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Dashboard data fetch timeout")), 3500)
-      ),
-    ]);
-
-    subStatus = loadedSubStatus;
-    insights = insightsRes;
-    if (refCountRows?.[0]) qualifiedReferrals = refCountRows[0].value;
-    if (rewardRecord && rewardRecord.status === "available") has50PercentReward = true;
-    if (subStatus) isPremium = subStatus.isPremium;
-  } catch (err) {
-    console.warn("Notice loading dashboard state:", err);
-  }
-
-  const studentName = user.user_metadata?.display_name || user.email?.split("@")[0] || "Student";
-  const { 
-    targetScore, 
-    latestScore, 
-    gapToTarget, 
-    coachRecommendation, 
-    weakestTopics, 
-    subjectSummaries, 
-    recentMockHistory,
-    totalMocksCompleted 
-  } = insights;
+export default function DashboardPage() {
+  const resource = useApiResource<DashboardData>('/api/v1/dashboard');
+  const account = useBrowserAccount();
+  if (!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry} /></StudyWorkspace>;
+  const { subscription, coach, qualifiedReferrals, has50PercentReward } = resource.data;
+  const isPremium = subscription.isPremium;
+  const studentName = account.identity?.user.displayName ?? account.session.user?.displayName ?? '';
+  const { targetScore, latestScore, gapToTarget, coachRecommendation, weakestTopics, subjectSummaries, recentMockHistory, totalMocksCompleted } = coach;
 
   // Percentage to target score
   const scorePercent = latestScore ? Math.min(100, Math.round((latestScore / targetScore) * 100)) : 0;
 
   return (
-    <StudyWorkspace>
+    <StudyWorkspace isPremium={isPremium}>
       {/* Navigation Header */}
 
 
@@ -164,9 +150,9 @@ export default async function DashboardPage() {
                       </span>
                     </div>
                     <div className="h-2.5 w-full bg-emerald-950/10 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-[#116149] rounded-full transition-all duration-500" 
-                        style={{ width: `${scorePercent}%` }} 
+                      <div
+                        className="h-full bg-[#116149] rounded-full transition-all duration-500"
+                        style={{ width: `${scorePercent}%` }}
                       />
                     </div>
                   </div>
@@ -219,8 +205,8 @@ export default async function DashboardPage() {
                 </p>
               </div>
 
-              <Link 
-                href={isPremium ? "/analytics" : "/pricing"} 
+              <Link
+                href={isPremium ? "/analytics" : "/pricing"}
                 className="text-xs font-semibold text-[#116149] hover:underline flex items-center gap-1"
               >
                 View all topics {!isPremium && <Lock size={12} className="text-amber-700" />} <ArrowRight size={12} />
@@ -267,7 +253,7 @@ export default async function DashboardPage() {
                         </div>
 
                         <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden mt-1.5">
-                          <div 
+                          <div
                             className={`h-full rounded-full ${item.priority === 'critical' ? 'bg-red-500' : 'bg-amber-500'}`}
                             style={{ width: `${item.accuracyPercent}%` }}
                           />
@@ -289,7 +275,7 @@ export default async function DashboardPage() {
               ) : (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center">
                   <p className="text-sm text-slate-600">
-                    {totalMocksCompleted === 0 
+                    {totalMocksCompleted === 0
                       ? "Complete your first diagnostic mock exam or topic practice session to generate your weak-topic breakdown."
                       : "🎉 Great job! No critical weak topics identified. Keep reviewing and taking full mocks!"}
                   </p>
@@ -380,8 +366,8 @@ export default async function DashboardPage() {
                     });
 
                     return (
-                      <div 
-                        key={mock.attemptId} 
+                      <div
+                        key={mock.attemptId}
                         className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/70 transition-colors"
                       >
                         <div>
@@ -419,7 +405,7 @@ export default async function DashboardPage() {
 
                         <div className="shrink-0">
                           <Link
-                            href={`/mock/result/${mock.attemptId}`}
+                            href={buildCanonicalResultUrl(mock.attemptId)}
                             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 text-xs font-semibold text-[#092E28] hover:bg-emerald-50 hover:border-emerald-200 hover:text-[#116149] transition-all"
                           >
                             Review Solutions <ArrowUpRight size={13} />

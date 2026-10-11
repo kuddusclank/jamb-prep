@@ -4,6 +4,10 @@ Welcome to the definitive specification repository for **JAMBPrep**, an authenti
 
 ---
 
+## Current performance remediation handoff — 10 October 2026
+
+User direction: stay on Cloudflare Free for testing; upgrade at launch. The deployed SSR Worker has confirmed CPU-limit failures. Start with the [free-tier remediation plan](free-tier-remediation-plan.md), [reviewed tasklist](free-tier-tasklist.md), and [current agent prompt](next-agent-prompt.md). These supersede the earlier immediate-upgrade direction and older architecture assumptions for this work. The conversion is planned, not implemented; the API CPU feasibility gate must pass first. Existing product/security requirements remain in force.
+
 ## Current UI handoff
 
 Read [UI design and component guide](ui-design-and-component-guide.md) before frontend work. It documents the implemented landing design, reusable components, motion, accessibility and the confirmed account requirement. It takes precedence over older landing-page guidance. All practice and exams require a signed-in account; there is no anonymous question demo.
@@ -43,3 +47,8 @@ Read [UI design and component guide](ui-design-and-component-guide.md) before fr
 ## Mock integrity handoff
 
 Read [Mock exam conditions](mock-exam-conditions.md) for approved behaviour, implementation status, migration requirements and deferred audio work.
+
+
+## Admin expansion planning — 11 October 2026
+
+User requested planning and then a hold. Read [admin expansion plan](admin-expansion-plan.md), [JAMB syllabus topic research](jamb-syllabus-topic-catalogue.md) and [official-source manifest](jamb-syllabus-sources.json). The plan contains confirmed requirements, proposed defaults and A00–A10 acceptance tasks. All 25 portal PDFs were inspected; complete leaf-topic/editorial mapping remains an explicit implementation gate. No implementation is authorised by these documents.

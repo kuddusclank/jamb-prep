@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { verifyPaystackPaymentAction, VerifyPaymentResult } from "@/app/actions/payment";
+import { verifyPaystackPaymentAction, VerifyPaymentResult } from "@/lib/client-actions";
 import { CheckCircle2, XCircle, Loader2, ArrowRight, BookOpen, ShieldCheck } from "lucide-react";
 import Link from "@/components/pending-link";
 
@@ -98,6 +98,7 @@ export function VerifyClient({ reference }: VerifyClientProps) {
         <CheckCircle2 size={36} />
       </span>
 
+      {result?.message && <p className="mb-4 text-sm text-slate-600">{result.message}</p>}
       <span className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-[#116149] text-xs font-bold uppercase tracking-wider mb-2">
         PAYMENT CONFIRMED
       </span>

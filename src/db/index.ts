@@ -2,53 +2,72 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { cache } from 'react';
+import { after } from 'next/server';
 
-function getResolvedConnectionString(): string {
-  // 1. Injected by Cloudflare Worker fetch event handler
-  if ((globalThis as any).__HYPERDRIVE_CONN__) {
-    return (globalThis as any).__HYPERDRIVE_CONN__;
-  }
-  if (process.env.HYPERDRIVE_CONNECTION_STRING) {
-    return process.env.HYPERDRIVE_CONNECTION_STRING;
-  }
+type Database = ReturnType<typeof drizzle<typeof schema>>;
+type Connection = { sql: ReturnType<typeof postgres>; database: Database; stats: () => { queryCount: number; lifetimeMs: number } };
 
-  // 2. OpenNext Cloudflare AsyncLocalStorage context
-  try {
-    const ctx = getCloudflareContext();
-    const hyperdrive = (ctx?.env as { HYPERDRIVE?: { connectionString?: string } })?.HYPERDRIVE;
-    if (hyperdrive?.connectionString) {
-      return hyperdrive.connectionString;
-    }
-  } catch {
-    // Outside of Cloudflare request context or build time
-  }
+// React.cache does not memoize outside a component render (actions/route handlers).
+// Key by the Worker request context so those paths also share one pool per request.
+const workerConnections = new WeakMap<object, Connection>();
+let localConnection: Connection | undefined;
 
-  // 3. Fallback for local scripts and development
-  return (
-    process.env.TRANSACTION_DATABASE_URL ||
-    process.env.DATABASE_URL ||
-    'postgresql://postgres:postgres@localhost:54322/postgres'
-  );
+function createConnection(connectionString: string, hyperdrive: boolean): Connection {
+  const startedAt = performance.now();
+  let queryCount = 0;
+  const sql = postgres(connectionString, {
+    debug: () => { queryCount += 1; },
+    max: 5,
+    idle_timeout: 10,
+    connect_timeout: 5,
+    fetch_types: false,
+    // Supabase transaction pooler does not support prepared statements;
+    // Hyperdrive does and requires them for reliable Postgres.js operation.
+    prepare: hyperdrive || new URL(connectionString).port !== '6543',
+  });
+  return { sql, database: drizzle(sql, { schema }), stats: () => ({ queryCount, lifetimeMs: Math.round(performance.now() - startedAt) }) };
 }
 
-// Scoped strictly to the active React request context:
-// Prevents dead/closed worker TCP sockets from being reused across subsequent requests.
-export const getDatabase = cache(() => {
-  const connectionString = getResolvedConnectionString();
+function getConnection(): Connection {
+  let context: { env: { HYPERDRIVE?: { connectionString: string } }; ctx: object } | undefined;
+  try {
+    context = getCloudflareContext() as typeof context;
+  } catch {
+    // Node development and database scripts do not have a Worker request context.
+  }
 
-  const client = postgres(connectionString, {
-    max: 1,
-    idle_timeout: 4,
-    connect_timeout: 4,
-  });
+  if (context && process.env.NODE_ENV !== "development") {
+    const existing = workerConnections.get(context.ctx);
+    if (existing) return existing;
+    const hyperdrive = (context.env as { HYPERDRIVE?: { connectionString: string } }).HYPERDRIVE;
+    if (!hyperdrive?.connectionString) {
+      throw new Error('The HYPERDRIVE binding is required in the Worker runtime.');
+    }
+    const connection = createConnection(hyperdrive.connectionString, true);
+    workerConnections.set(context.ctx, connection);
+    after(async () => {
+      workerConnections.delete(context.ctx);
+      await connection.sql.end({ timeout: 1 });
+      if (process.env.PERFORMANCE_LOGGING === "true") {
+        console.info(JSON.stringify({ event: "database_request", ...connection.stats() }));
+      }
+    });
+    return connection;
+  }
 
-  return drizzle(client, { schema });
-});
+  if (!localConnection) {
+    const url = process.env.TRANSACTION_DATABASE_URL || process.env.DATABASE_URL;
+    if (!url) throw new Error('A database connection URL is required for local development.');
+    localConnection = createConnection(url, false);
+  }
+  return localConnection;
+}
 
-export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
+export const getSqlClient = () => getConnection().sql;
+export const getDatabase = () => getConnection().database;
+
+export const db = new Proxy({} as Database, {
   get(_target, prop) {
-    const instance = getDatabase();
-    return (instance as any)[prop];
+    return Reflect.get(getDatabase(), prop);
   },
 });
