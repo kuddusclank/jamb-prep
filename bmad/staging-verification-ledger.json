@@ -285,5 +285,12 @@
     "hostedSignupChecks": 0,
     "chargesCreated": 0,
     "browserVerification": "Isolated Chrome, synthetic responses, desktop and 390px mobile; no overflow or exceptions. Does not certify real iPhone or authenticated hosted editing."
+  },
+  "authLoadingRelease": {
+    "pagesDeployment": "40937bb4",
+    "status": "published-and-checked",
+    "checks": "login/register/dashboard HTTP 200 with expected auth layout and branded loading HTML; three reads included in ten-request publication reservation",
+    "signupAccountsCreated": 0,
+    "chargesCreated": 0
   }
 }
