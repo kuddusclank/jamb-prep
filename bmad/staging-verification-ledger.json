@@ -267,10 +267,10 @@
   },
   "adminExpansionAllowance": {
     "limit": 100,
-    "used": 42,
+    "used": 52,
     "maxConcurrency": 3,
     "authorization": "User approved up to 100 requests for admin expansion audit, private backup, publishing and bounded production checks; no charges or signup accounts.",
-    "accounting": "Conservative twenty-request reservation for R2 provisioning and upcoming native API/Pages deploy operations; audits and HTTP checks counted separately. Ten further requests reserved for auth/loading Pages publication and minimal checks."
+    "accounting": "Conservative twenty-request reservation for R2 provisioning and upcoming native API/Pages deploy operations; audits and HTTP checks counted separately. Ten further requests reserved for auth/loading Pages publication and minimal checks. Ten requests reserved for question-source cleanup Pages publication and minimal checks."
   },
   "activeVerificationBudget": "adminExpansionAllowance",
   "adminExpansionRelease": {
@@ -292,5 +292,12 @@
     "checks": "login/register/dashboard HTTP 200 with expected auth layout and branded loading HTML; three reads included in ten-request publication reservation",
     "signupAccountsCreated": 0,
     "chargesCreated": 0
+  },
+  "questionSourceCleanup": {
+    "pagesDeployment": "8d7dc758",
+    "status": "published-and-checked",
+    "filesRemoved": 18,
+    "databaseMutations": 0,
+    "checks": "Protected admin HTML shell 200; published importer JavaScript 200 with database topic reference and no bundled sample question. Two reads covered by ten-request reservation."
   }
 }

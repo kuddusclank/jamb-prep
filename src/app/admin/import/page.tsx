@@ -8,7 +8,6 @@ import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
 import { parseRfcCsv, sanitizeCell, buildImportBatches, escapeCsvCell } from "@/lib/admin-csv";
 
 const CSV_HEADER = "template_version,external_reference,subject_code,topic_slug,subtopic_slug,stem,option_a,option_b,option_c,option_d,correct_option,explanation,difficulty,exam_year,source_type,source_reference,rights_note,passage_reference,passage_title,passage_content,image_url,image_alt,tags";
-const SAMPLE_CSV_ROWS = [CSV_HEADER,'v1,ENG-ORIGINAL-001,ENG,reading-comprehension,,"In the passage, what colour is the sky?",Blue,Green,Red,Black,A,"The passage states that the sky is blue.",easy,,original,JAMBPrep original example,Original educational example,EXAMPLE-PASSAGE,Example passage,"The sky is blue on a clear day.",,,comprehension'].join("\r\n");
 
 interface ParsedQuestion {
   templateVersion?:string;
@@ -302,17 +301,11 @@ function ImportContent() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-            <h2 className="font-bold text-slate-900">2. Sample Pre-Filled CSV</h2>
+            <h2 className="font-bold text-slate-900">2. Subject and Topic Reference</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Download 3 example questions (English comprehension with passage, Mathematics with KaTeX formulas, and Chemistry).
+              Download subject codes and canonical topic slugs from the database to fill in your question template.
             </p>
-            <button
-              type="button"
-              onClick={() => downloadCsvFile("jambprep_sample_questions.csv", SAMPLE_CSV_ROWS)}
-              className="mt-4 inline-flex items-center rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2 text-xs font-semibold text-[#116149] hover:bg-emerald-100"
-            >
-              📥 Download Sample CSV
-            </button><button type="button" onClick={()=>void downloadTopicReference()} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-emerald-800">Download subject/topic reference</button>
+            <button type="button" onClick={()=>void downloadTopicReference()} className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-emerald-800">Download subject/topic reference</button>
           </div>
         </div>
 
