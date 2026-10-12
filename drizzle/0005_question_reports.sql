@@ -35,24 +35,10 @@ CREATE INDEX IF NOT EXISTS report_reporter_idx ON public.question_reports(report
 
 ALTER TABLE public.question_reports ENABLE ROW LEVEL SECURITY;
 
--- Students can insert their own reports
-CREATE POLICY "Students can submit question reports"
-  ON public.question_reports FOR INSERT
-  WITH CHECK (auth.uid() = reporter_user_id);
-
--- Students can read their own reports
-CREATE POLICY "Students can view their submitted reports"
-  ON public.question_reports FOR SELECT
-  USING (auth.uid() = reporter_user_id);
-
--- Admins have full access
-CREATE POLICY "Admins have full access to question reports"
-  ON public.question_reports FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
-    )
-  );
+-- All browser table access remains closed; the native API enforces ownership and admin roles.
+DROP POLICY IF EXISTS "Students can submit question reports" ON public.question_reports;
+DROP POLICY IF EXISTS "Students can view their submitted reports" ON public.question_reports;
+DROP POLICY IF EXISTS "Admins have full access to question reports" ON public.question_reports;
+REVOKE ALL ON TABLE public.question_reports FROM anon, authenticated;
 
 COMMIT;

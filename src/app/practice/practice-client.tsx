@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ReportQuestionDialog } from "@/components/report-question-dialog";
 import { MathRenderer } from "@/components/math-renderer";
 import { 
   getPracticeQuestions, 
@@ -302,6 +303,8 @@ export function PracticeClient({
           </span>
         </div>
       </div>
+
+      <ReportQuestionDialog key={currentQ.id} questionId={currentQ.id} />
 
       {/* Reading Passage (if present) */}
       {currentQ.passage && (

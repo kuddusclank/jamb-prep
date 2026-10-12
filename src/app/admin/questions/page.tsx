@@ -6,7 +6,6 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
 import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
 import { MathRenderer } from "@/components/math-renderer";
-import { AdminNav } from "../admin-nav";
 
 interface QuestionOption {
   id: string;
@@ -63,6 +62,7 @@ function QuestionsContent() {
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
 
   const [expandedExplanations, setExpandedExplanations] = useState<Record<string, boolean>>({});
+  const [actionError, setActionError] = useState<string | null>(null);
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
 
   // Build query string
@@ -98,6 +98,7 @@ function QuestionsContent() {
   }
 
   async function handleStatusChange(questionId: string, nextStatus: QuestionItem["status"]) {
+    setActionError(null);
     setStatusUpdating((prev) => ({ ...prev, [questionId]: true }));
     try {
       await getAccountCoordinator().mutate(
@@ -107,7 +108,7 @@ function QuestionsContent() {
       );
       questionsRes.retry();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to update question status.");
+      setActionError(err instanceof Error ? err.message : "Failed to update question status.");
     } finally {
       setStatusUpdating((prev) => ({ ...prev, [questionId]: false }));
     }
@@ -119,9 +120,10 @@ function QuestionsContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <AdminNav />
+
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+        {actionError && <p role="alert" className="mb-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{actionError}</p>}
         {/* Title bar */}
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
@@ -230,7 +232,9 @@ function QuestionsContent() {
             <div className="flex-1">
               <input
                 type="text"
-                placeholder="Search question stem text (e.g. formula, keyword)..."
+                aria-label="Search questions; press Enter to apply"
+                key={`search-${currentSearch}`}
+                placeholder="Search questions — press Enter"
                 defaultValue={currentSearch}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -244,9 +248,11 @@ function QuestionsContent() {
             <div className="flex items-center gap-2">
               <input
                 type="number"
+                aria-label="Filter by examination year"
+                key={`year-${currentYear}`}
                 placeholder="Year (e.g. 2024)"
                 defaultValue={currentYear}
-                onChange={(e) => updateQuery({ year: e.target.value ? e.target.value : null })}
+                onBlur={(e) => { if (e.target.value !== currentYear) updateQuery({ year: e.target.value || null }); }}
                 className="w-28 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-[#116149] focus:outline-hidden"
               />
 
@@ -520,7 +526,7 @@ export default function QuestionsPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-slate-50">
-          <AdminNav />
+
           <div className="mx-auto max-w-7xl p-8 text-center text-sm text-slate-500">
             Loading Question Library…
           </div>

@@ -3,7 +3,6 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
-import { AdminNav } from "../admin-nav";
 import type { OfficialJambSubject } from "@/lib/curriculum/jamb-syllabus-data";
 
 interface TopicItem {
@@ -41,7 +40,7 @@ function CurriculumContent() {
   if (!curriculumRes.data) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <AdminNav />
+
         <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
           <ResourceStatus error={curriculumRes.error} retry={curriculumRes.retry} />
         </main>
@@ -68,7 +67,7 @@ function CurriculumContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-16">
-      <AdminNav />
+
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -171,7 +170,7 @@ function CurriculumContent() {
                         }`}
                       >
                         {isReady
-                          ? `Ready (${sub.published_questions} published)`
+                          ? `Count target met (${sub.published_questions} published)`
                           : `Coverage low: ${sub.published_questions}/${reqMin} published`}
                       </span>
 
@@ -317,7 +316,7 @@ export default function CurriculumPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-slate-50">
-          <AdminNav />
+
           <div className="mx-auto max-w-7xl p-8 text-center text-sm text-slate-500">
             Loading Curriculum Research…
           </div>

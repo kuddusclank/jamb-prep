@@ -6,6 +6,10 @@
 
 ---
 
+## Reviewer status — 12 October 2026
+
+**Partial implementation; original completed checkboxes below are the author’s claims, not full BMAD acceptance.** See admin-review-and-fixes.md for confirmed findings, corrections and remaining release gates. Persistent import jobs, provenance, editorial revision/audit, managed media and full syllabus mapping were not delivered. The report component was not mounted in student practice until this review. Production deployment/schema application have not been verified by these local checks.
+
 ## Task Progress
 
 - [x] **T0: Plan Analysis & Tasklist Creation**

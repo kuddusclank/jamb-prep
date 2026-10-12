@@ -3,105 +3,11 @@
 import { Suspense, useState, useRef } from "react";
 import Link from "next/link";
 import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
-import { AdminNav } from "../admin-nav";
 
-// RFC 4180 CSV Parser
-function parseRfcCsv(text: string): string[][] {
-  const clean = text.replace(/^\uFEFF/, ""); // Remove UTF-8 BOM if present
-  const rows: string[][] = [];
-  let currentRow: string[] = [];
-  let currentCell = "";
-  let inQuotes = false;
+import { parseRfcCsv, sanitizeCell } from "@/lib/admin-csv";
 
-  for (let i = 0; i < clean.length; i++) {
-    const char = clean[i];
-    const nextChar = clean[i + 1];
-
-    if (inQuotes) {
-      if (char === '"') {
-        if (nextChar === '"') {
-          // Escaped quote: ""
-          currentCell += '"';
-          i++;
-        } else {
-          // Closing quote
-          inQuotes = false;
-        }
-      } else {
-        currentCell += char;
-      }
-    } else {
-      if (char === '"') {
-        inQuotes = true;
-      } else if (char === ",") {
-        currentRow.push(currentCell);
-        currentCell = "";
-      } else if (char === "\r") {
-        if (nextChar === "\n") i++;
-        currentRow.push(currentCell);
-        rows.push(currentRow);
-        currentRow = [];
-        currentCell = "";
-      } else if (char === "\n") {
-        currentRow.push(currentCell);
-        rows.push(currentRow);
-        currentRow = [];
-        currentCell = "";
-      } else {
-        currentCell += char;
-      }
-    }
-  }
-
-  if (currentCell.length > 0 || currentRow.length > 0) {
-    currentRow.push(currentCell);
-    rows.push(currentRow);
-  }
-
-  return rows.filter((r) => r.length > 0 && r.some((c) => c.trim().length > 0));
-}
-
-// Sanitize cell to prevent spreadsheet formula injection (=, +, -, @)
-function sanitizeCell(value: string): string {
-  const trimmed = value.trim();
-  if (/^[=+\-@]/.test(trimmed)) {
-    return trimmed.slice(1).trim();
-  }
-  return trimmed;
-}
-
-const CSV_HEADER = [
-  "template_version",
-  "external_reference",
-  "subject_code",
-  "topic_slug",
-  "subtopic_slug",
-  "stem",
-  "option_a",
-  "option_b",
-  "option_c",
-  "option_d",
-  "correct_option",
-  "explanation",
-  "difficulty",
-  "exam_year",
-  "source_type",
-  "source_reference",
-  "rights_note",
-  "passage_reference",
-  "passage_title",
-  "passage_content",
-  "image_url",
-  "image_alt",
-  "tags",
-].join(",");
-
-const SAMPLE_CSV_ROWS = [
-  CSV_HEADER,
-  'v1,ENG-2024-001,ENG,"Comprehension",,"According to the passage, why did the author describe the migration as unusual?","The animals traveled during the daytime","The herd changed their usual migratory path","Predators were accompanying the herd","The journey was delayed by severe floods",B,"The author explicitly notes that the herd deviated from their standard southern trail due to unusual weather patterns.",medium,2024,past_question,"JAMB 2024 Paper",,,PASS-01,"The Serengeti Crossing","Each dry season, millions of wildebeest and zebras embark on an epic circular journey across the Mara River. However, this season presented an unexpected obstacle as unusual rainfall forced the herds to alter their ancestral path.",,,',
-  'v1,MTH-2024-002,MTH,"Calculus",,"If $y = 3x^3 - 5x^2 + 4x - 7$, evaluate $\\frac{dy}{dx}$ at $x = 2$.","16","18","20","24",C,"Differentiating $y$ with respect to $x$: $\\frac{dy}{dx} = 9x^2 - 10x + 4$. At $x = 2$: $9(4) - 10(2) + 4 = 36 - 20 + 4 = 20$.",easy,2024,past_question,"JAMB 2024 Paper",,,,,,,',
-  'v1,CHM-2024-003,CHM,"Separation of Mixtures",,"Which of the following methods is most suitable for separating a mixture of kerosene and water?","Fractional distillation","Paper chromatography","Using a separating funnel","Sublimation",C,"Kerosene and water are immiscible liquids with different densities; a separating funnel is used to separate them cleanly.",easy,2023,past_question,"JAMB 2023 Paper",,,,,,,',
-].join("\n");
+const CSV_HEADER = "subject_code,topic_slug,stem,option_a,option_b,option_c,option_d,correct_option,explanation,difficulty,exam_year,passage_title,passage_content,image_url";
+const SAMPLE_CSV_ROWS = [CSV_HEADER,'ENG,comprehension,"What is the opposite of hot?",Cold,Warm,Boiling,Heated,A,"Cold is the opposite of hot.",easy,,,,'].join("\r\n");
 
 interface ParsedQuestion {
   subjectCode: string;
@@ -130,6 +36,7 @@ function ImportContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [rawText, setRawText] = useState("");
   const [parsedQuestions, setParsedQuestions] = useState<ParsedQuestion[]>([]);
+  const completedBatches = useRef(0);
   const [parseError, setParseError] = useState("");
   const [validationResults, setValidationResults] = useState<ValidationRow[] | null>(null);
 
@@ -163,16 +70,22 @@ function ImportContent() {
 
   function parseCsvData(text: string) {
     setParseError("");
+    setParsedQuestions([]);
+    completedBatches.current = 0;
     setValidationResults(null);
     setReceiptMsg("");
 
     try {
+      if (new TextEncoder().encode(text).length > 1048576) throw new Error("CSV must be smaller than 1 MB.");
       const rows = parseRfcCsv(text);
+      if (rows.length > 1001) throw new Error("Import up to 1,000 rows at a time.");
       if (rows.length < 2) {
         throw new Error("CSV must include a header row and at least one question row.");
       }
 
       const header = rows[0].map((h) => h.trim().toLowerCase());
+      if (new Set(header).size !== header.length) throw new Error("CSV contains duplicate headers.");
+      if (header.some(h => !CSV_HEADER.split(",").includes(h))) throw new Error("CSV contains unsupported headers. Download the current template.");
       const subIdx = header.indexOf("subject_code");
       const topIdx = header.indexOf("topic_slug");
       const stemIdx = header.indexOf("stem");
@@ -207,6 +120,7 @@ function ImportContent() {
       const questions: ParsedQuestion[] = [];
       for (let r = 1; r < rows.length; r++) {
         const row = rows[r];
+        if (row.length !== header.length) throw new Error(`Row ${r + 1}: incorrect number of columns.`);
         const subjectCode = sanitizeCell(row[subIdx] || "").toUpperCase();
         const topicTitle = sanitizeCell(row[topIdx] || "");
         const stem = sanitizeCell(row[stemIdx] || "");
@@ -222,6 +136,10 @@ function ImportContent() {
         const passageContent = pContentIdx !== -1 ? sanitizeCell(row[pContentIdx] || "") : "";
         const imageUrl = imgIdx !== -1 ? sanitizeCell(row[imgIdx] || "") : "";
 
+        if (!["A", "B", "C", "D"].includes(correctRaw)) throw new Error(`Row ${r + 1}: correct_option must be A, B, C or D.`);
+        if (diffRaw && !["easy", "medium", "hard"].includes(diffRaw)) throw new Error(`Row ${r + 1}: invalid difficulty.`);
+        if (yearRaw && !/^\d{4}$/.test(yearRaw)) throw new Error(`Row ${r + 1}: exam_year must be a four-digit year.`);
+        if (!topicTitle || !stem || !optionA || !optionB || !optionC || !optionD || !explanation) throw new Error(`Row ${r + 1}: complete all required question fields.`);
         const correctOption = (["A", "B", "C", "D"].includes(correctRaw) ? correctRaw : "A") as "A" | "B" | "C" | "D";
         const difficulty = (["easy", "medium", "hard"].includes(diffRaw) ? diffRaw : "medium") as "easy" | "medium" | "hard";
         const examYear = yearRaw ? parseInt(yearRaw, 10) || null : null;
@@ -254,19 +172,13 @@ function ImportContent() {
     setProgressMsg("Running preflight validation checks…");
 
     try {
-      // Validate first batch of up to 10
-      const checkSlice = parsedQuestions.slice(0, 10);
-      const res = await getAccountCoordinator().mutate<{
-        totalRows: number;
-        validCount: number;
-        invalidCount: number;
-        rows: ValidationRow[];
-      }>("/api/v1/admin/questions/import/dry-run", checkSlice, "POST");
-
-      setValidationResults(res.rows);
-      setProgressMsg(
-        `Preflight check complete: ${res.validCount} valid of ${res.totalRows} tested.`
-      );
+      const allRows: ValidationRow[] = [];
+      for (let offset = 0; offset < parsedQuestions.length; offset += 10) {
+        const res = await getAccountCoordinator().mutate<{rows:ValidationRow[]}>("/api/v1/admin/questions/import/dry-run", parsedQuestions.slice(offset, offset + 10), "POST");
+        allRows.push(...res.rows.map(row => ({...row,row:row.row + offset})));
+      }
+      setValidationResults(allRows);
+      setProgressMsg(`Checked all ${allRows.length} rows: ${allRows.filter(row=>row.valid).length} valid.`);
     } catch (err) {
       setParseError(err instanceof Error ? err.message : "Validation request failed.");
     } finally {
@@ -281,10 +193,10 @@ function ImportContent() {
 
     const batchSize = 10;
     const totalBatches = Math.ceil(parsedQuestions.length / batchSize);
-    let totalImported = 0;
+    let totalImported = Math.min(completedBatches.current * batchSize, parsedQuestions.length);
 
     try {
-      for (let i = 0; i < totalBatches; i++) {
+      for (let i = completedBatches.current; i < totalBatches; i++) {
         const batch = parsedQuestions.slice(i * batchSize, (i + 1) * batchSize);
         setProgressMsg(
           `Importing batch ${i + 1} of ${totalBatches} (${Math.round(
@@ -297,18 +209,19 @@ function ImportContent() {
           batch,
           "POST"
         );
-        totalImported += res.importedCount || batch.length;
+        totalImported += res.importedCount ?? batch.length;
+        completedBatches.current = i + 1;
       }
 
       setReceiptMsg(
-        `🎉 Successfully published ${totalImported} questions across ${totalBatches} batches into the question bank!`
+        `Successfully imported draft ${totalImported} questions across ${totalBatches} batches into the question bank!`
       );
       setProgressMsg("");
       setParsedQuestions([]);
       setRawText("");
     } catch (err) {
       setParseError(
-        err instanceof Error ? err.message : "Batch import failed midway. Partial records retained."
+        `${totalImported} rows committed. Retry resumes at the next unfinished batch. ${err instanceof Error ? err.message : "Import failed."}`
       );
     } finally {
       setBusy(false);
@@ -317,7 +230,7 @@ function ImportContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-16">
-      <AdminNav />
+
 
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <div>
@@ -370,6 +283,7 @@ function ImportContent() {
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
             <input
               type="file"
+              disabled={busy}
               ref={fileInputRef}
               accept=".csv,text/csv"
               onChange={handleFileSelected}
@@ -388,7 +302,7 @@ function ImportContent() {
             </span>
           </div>
 
-          <textarea
+          <textarea disabled={busy}
             rows={8}
             placeholder="Paste your CSV content here..."
             value={rawText}
@@ -436,11 +350,11 @@ function ImportContent() {
                 </button>
                 <button
                   type="button"
-                  disabled={busy}
+                  disabled={busy || !validationResults || validationResults.length !== parsedQuestions.length || validationResults.some(row => !row.valid)}
                   onClick={() => void handleBatchImport()}
                   className="rounded-xl bg-[#116149] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0e4e3b] disabled:opacity-50"
                 >
-                  {busy ? "Importing…" : `Commit & Publish ${parsedQuestions.length} Questions`}
+                  {busy ? "Importing…" : `Import as Draft ${parsedQuestions.length} Questions`}
                 </button>
               </div>
             </div>
@@ -496,7 +410,7 @@ export default function ImportPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-slate-50">
-          <AdminNav />
+
           <div className="mx-auto max-w-7xl p-8 text-center text-sm text-slate-500">
             Loading CSV Import Tool…
           </div>

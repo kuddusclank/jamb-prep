@@ -90,3 +90,23 @@ test('real PostgreSQL: simultaneous preference updates retry whole rolled-back t
  const [replayed]=await tx`SELECT count(*)::int AS n FROM referral_rewards WHERE user_id=${ids[0]}::uuid`;assert.equal(replayed.n,1);throw rollback;
  }),error=>error===rollback);}finally{await sql.end();}
  });
+
+test('real PostgreSQL: admin create replays once and editing a shared passage isolates the edited question',{skip:!enabled,timeout:20000},async()=>{
+ const {NATIVE_API_ROUTES}=await import('../worker/api/router.ts');
+ const url=fs.readFileSync(path.join(os.homedir(),'.codex/private-backups/jambprep/local-runtime.env'),'utf8').trim().slice('DATABASE_URL='.length);assert.equal(new URL(url).hostname,'127.0.0.1');
+ const sql=postgres(url,{max:1,prepare:false});const rollback=new Error('ADMIN_FIXTURE_ROLLBACK');
+ try{await assert.rejects(sql.begin('isolation level serializable',async tx=>{
+  const uid=crypto.randomUUID();await tx`INSERT INTO auth.users(id,email) VALUES (${uid}::uuid,${`admin-${uid}@example.invalid`})`;await tx`INSERT INTO profiles(id,email,display_name,role) VALUES (${uid}::uuid,${`admin-${uid}@example.invalid`},'Admin fixture','admin') ON CONFLICT(id) DO NOTHING`;
+  const db={sql:tx,isHyperdrive:false,runSerializableTransaction:fn=>fn(tx),runCommittedTransaction:fn=>fn(tx)};
+  const payload={subjectCode:'ENG',topicTitle:'Comprehension',stem:'Local admin fixture question?',options:{A:'First',B:'Second',C:'Third',D:'Fourth'},correctOption:'B',explanation:'Local explanation fixture',difficulty:'medium',status:'draft',passageTitle:'Fixture',passageContent:'Original shared passage'};
+  const invoke=(id,body,key,params={})=>NATIVE_API_ROUTES.find(r=>r.id===id).handler({request:new Request('http://localhost',{method:id.includes('update')?'PUT':'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key},body:JSON.stringify(body)}),actor:{userId:uid},adminActor:{userId:uid},now:new Date(),getDb:()=>db,params});
+  const first=await invoke('admin.questions.create',payload,'create-first');const replay=await invoke('admin.questions.create',payload,'create-first');assert.equal(replay.body.questionId,first.body.questionId);
+  const second=await invoke('admin.questions.create',payload,'create-second');
+  const [original]=await tx`SELECT passage_id FROM questions WHERE id=${first.body.questionId}::uuid`;await tx`UPDATE questions SET passage_id=${original.passage_id}::uuid WHERE id=${second.body.questionId}::uuid`;
+  await invoke('admin.questions.update',{...payload,expectedRevision:1,passageContent:'Edited private passage'},'edit-first',{questionId:first.body.questionId});
+  await assert.rejects(invoke('admin.questions.update',{...payload,expectedRevision:1,passageContent:'Stale edit'},'stale-edit',{questionId:first.body.questionId}),e=>e.status===409);
+  const [other]=await tx`SELECT p.content FROM questions q JOIN passages p ON p.id=q.passage_id WHERE q.id=${second.body.questionId}::uuid`;assert.equal(other.content,'Original shared passage');
+  await invoke('admin.questions.update',{...payload,expectedRevision:2,passageContent:null},'remove-passage',{questionId:first.body.questionId});const [removed]=await tx`SELECT passage_id FROM questions WHERE id=${first.body.questionId}::uuid`;assert.equal(removed.passage_id,null);
+  throw rollback;
+ }),e=>e===rollback);}finally{await sql.end();}
+});

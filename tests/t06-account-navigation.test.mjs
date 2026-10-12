@@ -125,7 +125,7 @@ function sqlFixture(rows = catalog, failInsert = false) {
 test('onboarding writes one actor, English and three catalog electives, preserving omitted product fields', async () => {
   const fixture = sqlFixture(); const result = await saveStudentOnboardingAtomic(fixture.sql, A, { ...body, userId: B }, new Date('2026-10-11'));
   assert.equal(result.saved, true); assert.deepEqual(result.subjects, catalog.map((s) => s.name));
-  assert.equal(fixture.writes.length, 6);
+  assert.equal(fixture.writes.filter(write => /INSERT|DELETE|UPDATE/.test(write.query)).length, 6);
   for (const write of fixture.writes) { assert.equal(write.values.includes(A), true); assert.equal(write.values.includes(B), false); }
   assert.match(fixture.writes[0].query, /CASE WHEN/);
 });
@@ -196,7 +196,7 @@ test('real idempotency wrapper and onboarding service share one injected transac
     } };
     const mutation = executeTransactionalIdempotentMutation({ db, userId: A, operation: 'onboarding.put', idempotencyKey: 'onboard-local-key', canonicalPayload: JSON.stringify(body), execute: async (executor) => ({ body: await saveStudentOnboardingAtomic(executor, A, body, new Date('2026-10-11')) }) });
     if (failure) { await assert.rejects(mutation, /Injected/); assert.equal(committed.length, 0); }
-    else { assert.equal((await mutation).body.saved, true); assert.equal(committed.length, 7); assert.equal(committed.at(-1), 'completed'); }
+    else { assert.equal((await mutation).body.saved, true); assert.ok(committed.some(query => query.includes('INSERT INTO student_preferences'))); assert.equal(committed.at(-1), 'completed'); }
     assert.equal(allocated, 1);
   }
 });

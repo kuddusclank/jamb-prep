@@ -6,7 +6,6 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useApiResource } from "@/lib/api/use-api-resource";
 import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
 import { MathRenderer } from "@/components/math-renderer";
-import { AdminNav } from "../../admin-nav";
 
 interface SubjectItem {
   id: string;
@@ -22,6 +21,7 @@ interface CurriculumResponse {
 interface QuestionDetailResponse {
   question: {
     id: string;
+    editorial_revision: number;
     subject_code: string;
     subject_name: string;
     topic_id: string;
@@ -70,6 +70,12 @@ function QuestionEditorContent() {
   const [passageContent, setPassageContent] = useState("");
 
   const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => { if (dirty) { event.preventDefault(); event.returnValue = ""; } };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -142,6 +148,7 @@ function QuestionEditorContent() {
     }
 
     const payload = {
+      expectedRevision: questionId ? existingRes.data?.question.editorial_revision : undefined,
       subjectCode,
       topicTitle: finalTopic,
       stem: stem.trim(),
@@ -170,6 +177,8 @@ function QuestionEditorContent() {
           payload,
           "PUT"
         );
+        setDirty(false);
+        existingRes.retry();
         setSuccessMsg(`Question updated successfully as ${status}!`);
       } else {
         // Create new question
@@ -178,6 +187,7 @@ function QuestionEditorContent() {
           payload,
           "POST"
         );
+        setDirty(false);
         setSuccessMsg(`Question created successfully as ${status}!`);
         if (status === "published") {
           setTimeout(() => router.push(`/admin/questions/?subject=${subjectCode}`), 1200);
@@ -192,9 +202,9 @@ function QuestionEditorContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-16">
-      <AdminNav />
 
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+
+      <main onChange={() => setDirty(true)} className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <div className="flex items-center justify-between border-b border-slate-200 pb-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
@@ -582,7 +592,7 @@ export default function QuestionEditorPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-slate-50">
-          <AdminNav />
+
           <div className="mx-auto max-w-7xl p-8 text-center text-sm text-slate-500">
             Loading Question Editor…
           </div>

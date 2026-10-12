@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
-import { AdminNav } from "./admin-nav";
 
 interface SubjectSummary {
   code: string;
@@ -34,7 +33,7 @@ export default function AdminPage() {
   if (!overview.data) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <AdminNav />
+
         <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
           <ResourceStatus error={overview.error} retry={overview.retry} />
         </main>
@@ -46,7 +45,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <AdminNav />
+
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         {/* Header & Quick Action Buttons */}
@@ -246,7 +245,7 @@ export default function AdminPage() {
                           : "bg-amber-50 text-amber-700 border border-amber-200"
                       }`}
                     >
-                      {isReady ? "Ready" : `${sub.published_count}/${reqMin}`}
+                      {isReady ? "Count target met" : `${sub.published_count}/${reqMin}`}
                     </span>
                   </div>
 

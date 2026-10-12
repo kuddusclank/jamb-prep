@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useBrowserAccount } from "@/components/browser-account-boundary";
+import { buildLoginRedirectUrl } from "@/lib/auth/redirect";
 import { signOutAction } from "@/lib/client-actions";
 
 export function AdminNav() {
@@ -13,7 +14,7 @@ export function AdminNav() {
 
   useEffect(() => {
     if (session.status === "unauthenticated") {
-      router.replace(`/login?redirect=${encodeURIComponent(pathname || "/admin")}`);
+      router.replace(buildLoginRedirectUrl(pathname || "/admin/"));
     }
   }, [session.status, pathname, router]);
 
@@ -27,10 +28,10 @@ export function AdminNav() {
   ];
 
   return (
-    <header className="border-b border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
+    <header className="border-b border-slate-200 bg-white lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-64 lg:flex-col lg:border-b-0 lg:border-r">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-5 lg:flex-col lg:items-start lg:px-6">
         <div className="flex items-center gap-3">
-          <Link href="/admin/" className="flex items-center gap-2">
+          <Link href="/admin/" className="flex flex-wrap items-center gap-2">
             <span className="text-xl font-bold tracking-tight text-[#116149]">
               JAMBPrep
             </span>
@@ -40,7 +41,7 @@ export function AdminNav() {
           </Link>
         </div>
 
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex min-w-0 flex-wrap items-center gap-3 text-sm lg:mt-4 lg:w-full">
           <Link
             href="/dashboard"
             className="hidden font-medium text-slate-600 hover:text-[#116149] sm:inline-block"
@@ -48,7 +49,7 @@ export function AdminNav() {
             ← Student Dashboard
           </Link>
           <span className="hidden text-xs text-slate-400 sm:inline">|</span>
-          <span className="font-mono text-xs text-slate-500">
+          <span className="max-w-48 truncate text-xs text-slate-500">
             {session.user?.email ?? "Administrator"}
           </span>
           <button
@@ -61,18 +62,19 @@ export function AdminNav() {
         </div>
       </div>
 
-      <nav className="mx-auto flex max-w-7xl overflow-x-auto px-4 sm:px-6">
-        <ul className="flex items-center gap-1 border-t border-slate-100 py-1 text-sm font-medium text-slate-600 sm:border-0 sm:py-0">
+      <nav className="overflow-x-auto px-4 pb-4 lg:flex-1 lg:px-3 lg:pt-4">
+        <ul className="flex gap-1 text-sm font-medium text-slate-600 lg:flex-col">
           {navLinks.map((link) => {
             const isActive =
               link.href === "/admin/"
                 ? pathname === "/admin" || pathname === "/admin/"
-                : pathname.startsWith(link.href.replace(/\/$/, ""));
+                : link.href === "/admin/questions/" ? pathname.replace(/\/$/, "") === "/admin/questions" : pathname.startsWith(link.href.replace(/\/$/, ""));
             return (
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className={`inline-block whitespace-nowrap rounded-lg px-3 py-2 transition-colors ${
+                  aria-current={isActive ? "page" : undefined}
+                  className={`block whitespace-nowrap rounded-xl px-4 py-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 ${
                     isActive
                       ? "bg-[#116149]/10 font-semibold text-[#116149]"
                       : "hover:bg-slate-100 hover:text-slate-900"

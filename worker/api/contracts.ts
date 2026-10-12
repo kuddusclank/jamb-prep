@@ -604,6 +604,7 @@ export const bulkQuestionImportSchema: SchemaValidator<SingleQuestionImport[]> =
 };
 
 export interface QuestionUpsertRequest {
+  expectedRevision?: number;
   id?: string;
   subjectCode: string;
   topicTitle: string;
@@ -664,6 +665,7 @@ export const questionUpsertSchema: SchemaValidator<QuestionUpsertRequest> = {
     if (correctOption !== 'A' && correctOption !== 'B' && correctOption !== 'C' && correctOption !== 'D') {
       issues.push({ path: ['correctOption'], issue: 'correctOption must be A, B, C, or D' });
     }
+    if (input.expectedRevision !== undefined && (!Number.isSafeInteger(input.expectedRevision) || Number(input.expectedRevision) < 1)) issues.push({path:['expectedRevision'],issue:'Invalid editorial revision'});
     const explanation = typeof input.explanation === 'string' ? input.explanation.trim() : '';
     if (explanation.length < 5 || explanation.length > 20000) {
       issues.push({ path: ['explanation'], issue: 'Detailed explanation is required' });
@@ -674,7 +676,7 @@ export const questionUpsertSchema: SchemaValidator<QuestionUpsertRequest> = {
     if (input.imageUrl) {
       try {
         const url = new URL(String(input.imageUrl));
-        if (url.protocol !== 'https:' || url.username || url.password) throw new Error();
+        if (url.protocol !== 'https:' || url.username || url.password || url.hostname !== 'bqumnaoiiukifvanoonm.supabase.co' || !url.pathname.startsWith('/storage/v1/object/public/')) throw new Error();
       } catch {
         issues.push({ path: ['imageUrl'], issue: 'imageUrl must be a valid HTTPS URL' });
       }
@@ -691,6 +693,7 @@ export const questionUpsertSchema: SchemaValidator<QuestionUpsertRequest> = {
       success: true,
       data: {
         id: typeof input.id === 'string' ? input.id.toLowerCase() : undefined,
+        expectedRevision: typeof input.expectedRevision === 'number' ? input.expectedRevision : undefined,
         subjectCode,
         topicTitle,
         stem,

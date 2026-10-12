@@ -8,6 +8,7 @@ import { useExamEngine } from "@/features/exam-engine/reactive/use-exam-engine";
 import { ExamQuestion } from "@/features/exam-engine/domain/types";
 import { syncExamAnswer, submitMockExam } from "@/lib/client-actions";
 import { buildCanonicalResultUrl } from "@/lib/routing/deep-links";
+import { ReportQuestionDialog } from "@/components/report-question-dialog";
 import { MathRenderer } from "@/components/math-renderer";
 import { 
   Clock, 
@@ -289,7 +290,8 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
             <span className="font-bold tracking-wider uppercase text-slate-800">
               {currentQ.subjectName} · Question {currentQ.position} of {totalQuestionsCount}
             </span>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <ReportQuestionDialog key={currentQ.id} questionId={currentQ.id} attemptId={initialPayload.attemptId} />
               <span className="text-slate-500 font-mono text-[11px]">
                 {syncStatus === 'syncing' ? 'Syncing...' : syncStatus === 'offline' ? 'Saved on device' : syncStatus === 'error' ? 'Save needs retry' : 'Saved'}
               </span>

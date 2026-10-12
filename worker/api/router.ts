@@ -499,7 +499,7 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
                 ${item.imageUrl ?? null},
                 ${item.difficulty},
                 ${item.examYear ?? null},
-                'published'
+                'draft'
               )
               RETURNING id
             `;
@@ -1446,7 +1446,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
     id: 'reports.question.create',
     method: 'POST',
     pattern: '/api/v1/reports/question',
-    auth: 'student',
+    auth: 'student_live_session',
     handler: async (ctx) => {
       const { data: item } = await readBoundedJsonBody(ctx.request, {
         schema: questionReportCreateSchema,
@@ -1464,6 +1464,10 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
         });
       }
 
+      if (item.attemptId) {
+        const owned = await dbCtx.sql`SELECT a.id FROM attempts a JOIN attempt_questions aq ON aq.attempt_id=a.id WHERE a.id=${item.attemptId}::uuid AND a.user_id=${ctx.actor!.userId}::uuid AND aq.question_id=${item.questionId}::uuid LIMIT 1`;
+        if (!owned.length) throw new ApiError({status:404,code:'NOT_FOUND',message:'This question was not found in your attempt.'});
+      }
       const reportRows = await dbCtx.sql<Array<{ id: string }>>`
         INSERT INTO question_reports (
           question_id,
@@ -1600,7 +1604,13 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
       const rawDiff = ctx.url.searchParams.get('difficulty')?.trim() || null;
       const difficulty = rawDiff && ['easy', 'medium', 'hard'].includes(rawDiff) ? rawDiff : null;
       const year = ctx.url.searchParams.get('year') ? parseInt(ctx.url.searchParams.get('year')!, 10) : null;
+      if (rawTopic && !UUID_V1_TO_V5_REGEX.test(rawTopic)) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Invalid topic filter.'});
+      if (rawStatus && !status) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Invalid status filter.'});
+      if (rawDiff && !difficulty) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Invalid difficulty filter.'});
+      if (year !== null && (!Number.isInteger(year) || year < 1978 || year > 2100)) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Invalid year filter.'});
       const search = ctx.url.searchParams.get('search')?.trim() || null;
+      if (search && search.length > 200) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Search must be 200 characters or fewer.'});
+      if (!Number.isSafeInteger(offset) || offset > 1000000) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Page is outside the supported range.'});
 
       const rows = await dbCtx.sql<
         Array<{
@@ -1673,11 +1683,11 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
           ) AS explanation
         FROM filtered f
         CROSS JOIN counted c
-        ORDER BY f.created_at DESC
+        ORDER BY f.subject_code, f.topic_title, f.created_at DESC, f.id
         LIMIT ${limit} OFFSET ${offset}
       `;
 
-      const total = rows.length > 0 ? (rows[0].total_count ?? 0) : 0;
+      const total = rows.length > 0 ? (rows[0].total_count ?? 0) : Number((await dbCtx.sql`SELECT count(*)::int AS total FROM questions q JOIN subjects s ON s.id=q.subject_id JOIN topics t ON t.id=q.topic_id WHERE (${subject}::text IS NULL OR s.code=${subject}) AND (${topic}::uuid IS NULL OR q.topic_id=${topic}::uuid) AND (${status}::text IS NULL OR q.status::text=${status}) AND (${difficulty}::text IS NULL OR q.difficulty::text=${difficulty}) AND (${year}::int IS NULL OR q.exam_year=${year}) AND (${search}::text IS NULL OR q.stem ILIKE '%' || ${search} || '%')`)[0]?.total ?? 0);
       const totalPages = Math.ceil(total / limit) || 1;
 
       return {
@@ -1741,7 +1751,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
         }>
       >`
         SELECT
-          q.id,
+          q.id, q.editorial_revision,
           q.subject_id,
           s.code AS subject_code,
           s.name AS subject_name,
@@ -1806,12 +1816,13 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
     method: 'POST',
     pattern: '/api/v1/admin/questions',
     auth: 'admin',
-    idempotency: 'optional',
+    idempotency: 'required',
     handler: async (ctx) => {
-      const { data: item } = await readBoundedJsonBody(ctx.request, {
+      const { rawText, data: item } = await readBoundedJsonBody(ctx.request, {
         schema: questionUpsertSchema,
       });
 
+      return runWithIdempotency(ctx, 'admin.questions.create', true, rawText, async (ctx) => {
       const dbCtx = ctx.getDb();
       let questionId = '';
 
@@ -1901,9 +1912,10 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
       });
 
       return {
-        status: 201,
+        status: 201 as const,
         body: { success: true, questionId },
       };
+      });
     },
   },
 
@@ -1913,17 +1925,18 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
     method: 'PUT',
     pattern: '/api/v1/admin/questions/:questionId',
     auth: 'admin',
-    idempotency: 'optional',
+    idempotency: 'required',
     handler: async (ctx) => {
       const questionId = assertValidUuid(ctx.params.questionId, 'questionId');
-      const { data: item } = await readBoundedJsonBody(ctx.request, {
+      const { rawText, data: item } = await readBoundedJsonBody(ctx.request, {
         schema: questionUpsertSchema,
       });
 
+      return runWithIdempotency(ctx, 'admin.questions.update', true, rawText, async (ctx) => {
       const dbCtx = ctx.getDb();
       await dbCtx.runSerializableTransaction(async (tx) => {
-        const existing = await tx<Array<{ id: string; passage_id: string | null }>>`
-          SELECT id, passage_id FROM questions WHERE id = ${questionId}::uuid LIMIT 1 FOR UPDATE
+        const existing = await tx<Array<{ id: string; passage_id: string | null; editorial_revision: number }>>`
+          SELECT id, passage_id, editorial_revision FROM questions WHERE id = ${questionId}::uuid LIMIT 1 FOR UPDATE
         `;
         if (existing.length === 0) {
           throw new ApiError({
@@ -1933,6 +1946,8 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
           });
         }
 
+        if (!item.expectedRevision) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Reload the question before saving.'});
+        if (existing[0].editorial_revision !== item.expectedRevision) throw new ApiError({status:409,code:'CONFLICT',message:'Another administrator changed this question. Your edits are retained; reload and compare before saving.'});
         const subRows = await tx<Array<{ id: string }>>`
           SELECT id FROM subjects WHERE code = ${item.subjectCode} LIMIT 1
         `;
@@ -1949,6 +1964,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-|-$/g, '');
+        await tx`SELECT id FROM subjects WHERE id=${subjectId}::uuid FOR UPDATE`;
         let topicRows = await tx<Array<{ id: string }>>`
           SELECT id FROM topics WHERE subject_id=${subjectId}::uuid AND slug=${topicSlug} ORDER BY id LIMIT 1
         `;
@@ -1959,27 +1975,16 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
         }
         const topicId = topicRows[0].id;
 
-        let passageId = existing[0].passage_id;
-        if (item.passageContent && item.passageContent.trim().length > 0) {
-          if (passageId) {
-            await tx`
-              UPDATE passages
-              SET title = ${item.passageTitle ?? null}, content = ${item.passageContent}
-              WHERE id = ${passageId}::uuid
-            `;
-          } else {
-            const pRows = await tx<Array<{ id: string }>>`
-              INSERT INTO passages (subject_id, title, content)
-              VALUES (${subjectId}::uuid, ${item.passageTitle ?? null}, ${item.passageContent})
-              RETURNING id
-            `;
-            passageId = pRows[0].id;
-          }
+        let passageId: string | null = null;
+        if (item.passageContent?.trim()) {
+          const rows = await tx<Array<{id:string}>>`INSERT INTO passages(subject_id,title,content) VALUES (${subjectId}::uuid,${item.passageTitle ?? null},${item.passageContent}) RETURNING id`;
+          passageId = rows[0].id;
         }
 
         await tx`
           UPDATE questions
           SET
+            editorial_revision = editorial_revision + 1,
             subject_id = ${subjectId}::uuid,
             topic_id = ${topicId}::uuid,
             passage_id = ${passageId}::uuid,
@@ -2020,9 +2025,10 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
       });
 
       return {
-        status: 200,
+        status: 200 as const,
         body: { success: true, questionId },
       };
+      });
     },
   },
 
@@ -2039,12 +2045,18 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
       });
 
       const dbCtx = ctx.getDb();
-      const updated = await dbCtx.sql<Array<{ id: string; status: string }>>`
+      const updated = await dbCtx.runSerializableTransaction(async tx => {
+        if (body.status === 'published') {
+          const valid = await tx`SELECT q.id FROM questions q JOIN subjects s ON s.id=q.subject_id JOIN topics t ON t.id=q.topic_id AND t.subject_id=q.subject_id WHERE q.id=${questionId}::uuid AND s.is_active AND length(trim(q.stem))>=5 AND (SELECT count(*) FROM question_options o WHERE o.question_id=q.id)=4 AND (SELECT count(DISTINCT label) FROM question_options o WHERE o.question_id=q.id AND label IN ('A','B','C','D') AND length(trim(content))>0)=4 AND (SELECT count(*) FROM question_options o WHERE o.question_id=q.id AND o.is_correct)=1 AND EXISTS(SELECT 1 FROM question_explanations e WHERE e.question_id=q.id AND length(trim(e.explanation))>=5) FOR UPDATE OF q`;
+          if (!valid.length) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Publishing requires an active subject, matching topic, four options, one correct answer and an explanation.'});
+        }
+        return await tx<Array<{ id: string; status: string }>>`
         UPDATE questions
-        SET status = ${body.status}::question_status
+        SET status = ${body.status}::question_status, editorial_revision = editorial_revision + 1
         WHERE id = ${questionId}::uuid
         RETURNING id, status
       `;
+      });
 
       if (updated.length === 0) {
         throw new ApiError({

@@ -85,6 +85,60 @@ function createSimulatedAdminDb(handler) {
   };
 }
 
+function createSimulatedIdempotencyStore() {
+  const records = new Map();
+  return {
+    records,
+    async claimOrLookup({ userId, operation, idempotencyKey, requestHash }) {
+      const mapKey = `${userId}:${operation}:${idempotencyKey}`;
+      const existing = records.get(mapKey);
+      if (!existing) {
+        records.set(mapKey, {
+          requestHash,
+          status: 'pending',
+          responseStatus: null,
+          responseBody: null,
+        });
+        return { kind: 'acquired' };
+      }
+      if (existing.requestHash !== requestHash) {
+        return { kind: 'hash_mismatch' };
+      }
+      if (existing.status === 'pending') {
+        return { kind: 'conflict_pending' };
+      }
+      return {
+        kind: 'replayed',
+        responseStatus: existing.responseStatus,
+        responseBody: existing.responseBody,
+      };
+    },
+    async markCompleted({
+      userId,
+      operation,
+      idempotencyKey,
+      requestHash,
+      responseStatus,
+      responseBody,
+    }) {
+      const mapKey = `${userId}:${operation}:${idempotencyKey}`;
+      records.set(mapKey, {
+        requestHash,
+        status: 'completed',
+        responseStatus,
+        responseBody,
+      });
+    },
+    async releasePending({ userId, operation, idempotencyKey }) {
+      const mapKey = `${userId}:${operation}:${idempotencyKey}`;
+      const existing = records.get(mapKey);
+      if (existing && existing.status === 'pending') {
+        records.delete(mapKey);
+      }
+    },
+  };
+}
+
 test('1. Admin Authorization & Overview: Enforces role checks and returns metrics with subject breakdown', async () => {
   resetJwksCache();
   const { privateKey, jwks } = await generateTestEs256KeyPair();
@@ -351,13 +405,14 @@ test('4. Question Create & Update: Validates input, creates draft or published, 
     if (queryText.includes('FROM subjects WHERE code')) return [{ id: SUBJECT_ID }];
     if (queryText.includes('FROM topics WHERE subject_id')) return [{ id: TOPIC_ID }];
     if (queryText.includes('INSERT INTO questions')) return [{ id: QUESTION_ID }];
-    if (queryText.includes('SELECT id, passage_id FROM questions')) return [{ id: QUESTION_ID, passage_id: null }];
+    if (queryText.includes('SELECT id, passage_id, editorial_revision FROM questions')) return [{ id: QUESTION_ID, passage_id: null, editorial_revision: 1 }];
     return [];
   });
 
   const worker = createNativeApiHandler({
     dbFactory: db.factory,
     hooks: {
+      idempotencyStore: createSimulatedIdempotencyStore(),
       nowSec: NOW_SEC,
       now: () => NOW_DATE,
       customJwks: jwks,
@@ -372,6 +427,7 @@ test('4. Question Create & Update: Validates input, creates draft or published, 
       headers: {
         Authorization: `Bearer ${adminToken}`,
         'Content-Type': 'application/json',
+        'Idempotency-Key': 'admin-authoring-test',
       },
       body: JSON.stringify(validPayload),
     }),
@@ -391,8 +447,9 @@ test('4. Question Create & Update: Validates input, creates draft or published, 
       headers: {
         Authorization: `Bearer ${adminToken}`,
         'Content-Type': 'application/json',
+        'Idempotency-Key': 'admin-authoring-test',
       },
-      body: JSON.stringify({ ...validPayload, status: 'published' }),
+      body: JSON.stringify({ ...validPayload, status: 'published', expectedRevision: 1 }),
     }),
     { SUPABASE_URL: TEST_SUPABASE_URL },
     { waitUntil() {} }

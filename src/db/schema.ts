@@ -91,6 +91,7 @@ export const questions = pgTable('questions', {
   difficulty: difficultyEnum('difficulty').default('medium').notNull(),
   examYear: integer('exam_year'),
   status: questionStatusEnum('status').default('draft').notNull(),
+  editorialRevision: integer('editorial_revision').default(1).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index('question_subject_topic_idx').on(table.subjectId, table.topicId),

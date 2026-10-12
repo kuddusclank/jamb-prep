@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
 
 interface ReportQuestionDialogProps {
@@ -14,12 +14,17 @@ export function ReportQuestionDialog({
   attemptId,
   buttonClassName = "text-xs text-slate-500 hover:text-rose-600 underline",
 }: ReportQuestionDialogProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [reason, setReason] = useState<string>("wrong_key");
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => { if (isOpen && !dialogRef.current?.open) dialogRef.current?.showModal(); }, [isOpen]);
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,7 +43,7 @@ export function ReportQuestionDialog({
         "POST"
       );
       setSubmitted(true);
-      setTimeout(() => {
+      timerRef.current = setTimeout(() => {
         setIsOpen(false);
         setSubmitted(false);
         setComment("");
@@ -61,12 +66,13 @@ export function ReportQuestionDialog({
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-xs">
+        <dialog ref={dialogRef} onCancel={() => setIsOpen(false)} aria-labelledby="report-dialog-title" className="fixed inset-0 z-50 m-0 flex h-full max-h-none w-full max-w-none items-center justify-center border-0 bg-slate-900/50 p-4 backdrop-blur-xs">
           <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl text-slate-900">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">Report Question Issue</h3>
+              <h3 id="report-dialog-title" className="text-base font-bold text-slate-900">Report Question Issue</h3>
               <button
                 type="button"
+                aria-label="Close report dialog"
                 onClick={() => setIsOpen(false)}
                 className="text-slate-400 hover:text-slate-600 font-bold"
               >
@@ -128,7 +134,8 @@ export function ReportQuestionDialog({
                 <div className="flex items-center justify-end gap-2 pt-2">
                   <button
                     type="button"
-                    onClick={() => setIsOpen(false)}
+                    aria-label="Close report dialog"
+                onClick={() => setIsOpen(false)}
                     className="rounded-xl border border-slate-200 px-3.5 py-2 font-medium text-slate-600 hover:bg-slate-50"
                   >
                     Cancel
@@ -144,7 +151,7 @@ export function ReportQuestionDialog({
               </form>
             )}
           </div>
-        </div>
+        </dialog>
       )}
     </>
   );

@@ -1,7 +1,7 @@
 {
   "budget": 260,
   "maxConcurrency": 3,
-  "used": 256,
+  "used": 260,
   "operations": [
     {
       "id": 1,
@@ -201,6 +201,13 @@
       "reservedRequests": 10,
       "status": "passed",
       "authorization": "User instructed deploy it in response to the explicit 10-request publishing question."
+    },
+    {
+      "id": 29,
+      "action": "backup",
+      "status": "passed",
+      "at": "2026-10-12T13:48:20.009Z",
+      "completedAt": "2026-10-12T13:49:35.747Z"
     }
   ],
   "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",
@@ -227,10 +234,21 @@
   },
   "productionCutoverAllowance": {
     "limit": 40,
-    "used": 28,
+    "used": 40,
     "maxConcurrency": 3,
     "authorization": "User confirmed existing jambprep.lecterniq.com and accepted recommendation for bounded cutover/checks. No new charges/signup accounts.",
     "status": "published-and-checked",
-    "accounting": "Conservative 20-request reservation for three deployments plus individually counted provider discovery and HTTP checks."
+    "accounting": "Conservative 20-request reservation for three deployments plus individually counted provider discovery and HTTP checks.",
+    "note": "Includes conservative ten-request reservation for approved admin API/Pages publication."
+  },
+  "adminRelease": {
+    "workerVersion": "675c43bf-00c4-4c07-bc49-e303ffd79c4b",
+    "pagesDeployment": "4d4793a5",
+    "migrations": [
+      "0005_question_reports.sql",
+      "0006_question_editorial_revision.sql"
+    ],
+    "checks": "Two admin page shells 200; two unauthenticated APIs 401",
+    "status": "published"
   }
 }
