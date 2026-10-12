@@ -140,6 +140,15 @@ export function createNativeApiClient(options?: NativeApiClientOptions): NativeA
     if ((!localHttp && base.protocol !== 'https:') || base.username || base.password || base.search || base.hash || base.pathname !== '/') {
       throw new NativeApiClientError({ status: 503, code: 'API_NOT_CONFIGURED', message: 'Account services are temporarily unavailable. Please try again later.' });
     }
+    if (
+      options?.baseUrl === undefined &&
+      localHttp &&
+      typeof window !== 'undefined' &&
+      window.location?.protocol === 'https:' &&
+      window.location?.origin
+    ) {
+      return `${window.location.origin}${normalizedPath}`;
+    }
     return `${base.origin}${normalizedPath}`;
   }
 
