@@ -108,9 +108,16 @@ function QuestionEditorContent() {
       setSubjectCode(q.subject_code);
       setTopicTitle(q.topic_title);
       setTopicMode("custom"); // Preload topic title safely
-      setSourceType(q.editorial_metadata?.source_type ?? "original");
-      setSourceReference(q.editorial_metadata?.source_reference ?? "");
-      setRightsNote(q.editorial_metadata?.rights_note ?? "");
+      const loadedSourceType = q.editorial_metadata?.source_type ?? "original";
+      const loadedSourceRef = q.editorial_metadata?.source_reference ?? "";
+      const loadedRightsNote = q.editorial_metadata?.rights_note?.trim()
+        ? q.editorial_metadata.rights_note
+        : loadedSourceType === "past_question" && loadedSourceRef.trim()
+          ? "Standard JAMB UTME educational past question"
+          : "";
+      setSourceType(loadedSourceType);
+      setSourceReference(loadedSourceRef);
+      setRightsNote(loadedRightsNote);
       setImageAlt(q.editorial_metadata?.image_alt ?? "");
       setTags((q.editorial_metadata?.tags??[]).join(" | "));
       setReusePassageId(q.passage_id);
@@ -176,8 +183,32 @@ function QuestionEditorContent() {
       return;
     }
 
+    const effectiveRightsNote =
+      rightsNote.trim() ||
+      (sourceType === "past_question" && sourceReference.trim()
+        ? "Standard JAMB UTME educational past question"
+        : "");
+
+    if (status === "published") {
+      if (!sourceReference.trim() || !effectiveRightsNote) {
+        setErrorMsg("Publishing requires a source reference and a permission/rights note.");
+        return;
+      }
+      if (imageUrl.trim() && !imageAlt.trim()) {
+        setErrorMsg("Publishing a question with a diagram requires diagram alternative text.");
+        return;
+      }
+      if (sourceType === "past_question" && !examYear.trim()) {
+        setErrorMsg("Publishing a past question requires its examination year.");
+        return;
+      }
+    }
+
     const payload = {
-      sourceType,sourceReference,rightsNote,imageAlt,
+      sourceType,
+      sourceReference: sourceReference.trim(),
+      rightsNote: effectiveRightsNote,
+      imageAlt: imageAlt.trim(),
       tags:tags.split("|").map(t=>t.trim()).filter(Boolean),
       reusePassageId: hasPassage ? reusePassageId : null,
       expectedRevision: questionId ? existingRes.data?.question.editorial_revision : undefined,

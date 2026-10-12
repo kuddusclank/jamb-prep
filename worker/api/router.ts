@@ -1892,7 +1892,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
 
       await dbCtx.runSerializableTransaction(async (tx) => {
         const subRows = await tx<Array<{ id: string }>>`
-          SELECT id FROM subjects WHERE code = ${item.subjectCode} AND (${item.status ?? 'draft'} <> 'published' OR is_active) LIMIT 1
+          SELECT id FROM subjects WHERE code = ${item.subjectCode} AND (${item.status ?? 'draft'} <> 'published' OR is_active) LIMIT 1 FOR UPDATE
         `;
         const subject = subRows[0];
         if (!subject) {
@@ -1908,7 +1908,6 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-|-$/g, '');
 
-        await tx`SELECT id FROM subjects WHERE id=${subject.id}::uuid FOR UPDATE`;
         let topicRows = await tx<Array<{ id: string }>>`
           SELECT id FROM topics WHERE subject_id=${subject.id}::uuid AND (${item.topicId??null}::uuid IS NULL OR id=${item.topicId??null}::uuid) AND (${item.topicId??null}::uuid IS NOT NULL OR slug=${topicSlug} OR title=${item.topicTitle} OR id IN (SELECT m.topic_id FROM curriculum_topic_mappings m WHERE EXISTS(SELECT 1 FROM jsonb_array_elements_text(m.aliases) a WHERE lower(a)=lower(${item.topicTitle})))) ORDER BY id LIMIT 2
         `;
@@ -2017,7 +2016,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
         if (existing[0].editorial_revision !== item.expectedRevision) throw new ApiError({status:409,code:'CONFLICT',message:'Another administrator changed this question. Your edits are retained; reload and compare before saving.'});
         await recordQuestionHistory(tx, questionId, ctx.actor!.userId, 'question.baseline');
         const subRows = await tx<Array<{ id: string }>>`
-          SELECT id FROM subjects WHERE code = ${item.subjectCode} AND (${item.status ?? 'draft'} <> 'published' OR is_active) LIMIT 1
+          SELECT id FROM subjects WHERE code = ${item.subjectCode} AND (${item.status ?? 'draft'} <> 'published' OR is_active) LIMIT 1 FOR UPDATE
         `;
         if (subRows.length === 0) {
           throw new ApiError({
@@ -2032,7 +2031,6 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-|-$/g, '');
-        await tx`SELECT id FROM subjects WHERE id=${subjectId}::uuid FOR UPDATE`;
         let topicRows = await tx<Array<{ id: string }>>`
           SELECT id FROM topics WHERE subject_id=${subjectId}::uuid AND (${item.topicId??null}::uuid IS NULL OR id=${item.topicId??null}::uuid) AND (${item.topicId??null}::uuid IS NOT NULL OR slug=${topicSlug} OR title=${item.topicTitle} OR id IN (SELECT m.topic_id FROM curriculum_topic_mappings m WHERE EXISTS(SELECT 1 FROM jsonb_array_elements_text(m.aliases) a WHERE lower(a)=lower(${item.topicTitle})))) ORDER BY id LIMIT 2
         `;
@@ -2065,25 +2063,28 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
           WHERE id = ${questionId}::uuid
         `;
 
-        for (const label of ['A', 'B', 'C', 'D'] as const) {
-          const content = item.options[label];
-          const isCorrect = item.correctOption === label;
-          const optRow = await tx<Array<{ id: string }>>`
-            SELECT id FROM question_options WHERE question_id = ${questionId}::uuid AND label = ${label} LIMIT 1
-          `;
-          if (optRow.length > 0) {
-            await tx`
-              UPDATE question_options
-              SET content = ${content}, is_correct = ${isCorrect}
-              WHERE id = ${optRow[0].id}::uuid
-            `;
-          } else {
-            await tx`
-              INSERT INTO question_options (question_id, label, content, is_correct)
-              VALUES (${questionId}::uuid, ${label}, ${content}, ${isCorrect})
-            `;
-          }
-        }
+        const options = ['A', 'B', 'C', 'D'].map((label) => ({
+          label,
+          content: item.options[label as 'A' | 'B' | 'C' | 'D'],
+          correct: item.correctOption === label,
+        }));
+        await tx`
+          WITH incoming AS (
+            SELECT x.label, x.content, x.correct
+            FROM jsonb_to_recordset(${JSON.stringify(options)}::text::jsonb) AS x(label text, content text, correct boolean)
+          ),
+          updated AS (
+            UPDATE question_options qo
+            SET content = i.content, is_correct = i.correct
+            FROM incoming i
+            WHERE qo.question_id = ${questionId}::uuid AND qo.label = i.label
+            RETURNING qo.label
+          )
+          INSERT INTO question_options (question_id, label, content, is_correct)
+          SELECT ${questionId}::uuid, i.label, i.content, i.correct
+          FROM incoming i
+          WHERE NOT EXISTS (SELECT 1 FROM updated u WHERE u.label = i.label)
+        `;
 
         await tx`
           INSERT INTO question_explanations (question_id, explanation, verified_by)
@@ -2118,7 +2119,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
       const dbCtx = ctx.getDb();
       const updated = await dbCtx.runSerializableTransaction(async tx => {
         if (body.status === 'published') {
-          const valid = await tx`SELECT q.id FROM questions q JOIN subjects s ON s.id=q.subject_id JOIN topics t ON t.id=q.topic_id AND t.subject_id=q.subject_id WHERE q.id=${questionId}::uuid AND s.is_active AND length(trim(q.stem))>=5 AND (SELECT count(*) FROM question_options o WHERE o.question_id=q.id)=4 AND (SELECT count(DISTINCT label) FROM question_options o WHERE o.question_id=q.id AND label IN ('A','B','C','D') AND length(trim(content))>0)=4 AND (SELECT count(*) FROM question_options o WHERE o.question_id=q.id AND o.is_correct)=1 AND EXISTS(SELECT 1 FROM question_editorial_metadata m WHERE m.question_id=q.id AND length(trim(m.source_reference))>0 AND length(trim(m.rights_note))>0 AND (q.image_url IS NULL OR length(trim(m.image_alt))>0)) AND NOT EXISTS(SELECT 1 FROM curriculum_topic_mappings cm WHERE cm.topic_id=q.topic_id AND cm.reviewed_at IS NULL) AND EXISTS(SELECT 1 FROM question_editorial_metadata pm WHERE pm.question_id=q.id AND (pm.source_type<>'past_question' OR (q.exam_year IS NOT NULL AND q.exam_year<=EXTRACT(YEAR FROM CURRENT_DATE)))) AND EXISTS(SELECT 1 FROM question_explanations e WHERE e.question_id=q.id AND length(trim(e.explanation))>=5) FOR UPDATE OF q`;
+          const valid = await tx`SELECT q.id FROM questions q JOIN subjects s ON s.id=q.subject_id JOIN topics t ON t.id=q.topic_id AND t.subject_id=q.subject_id WHERE q.id=${questionId}::uuid AND s.is_active AND length(trim(q.stem))>=5 AND (SELECT count(*) FROM question_options o WHERE o.question_id=q.id)=4 AND (SELECT count(DISTINCT label) FROM question_options o WHERE o.question_id=q.id AND label IN ('A','B','C','D') AND length(trim(content))>0)=4 AND (SELECT count(*) FROM question_options o WHERE o.question_id=q.id AND o.is_correct)=1 AND EXISTS(SELECT 1 FROM question_editorial_metadata m WHERE m.question_id=q.id AND length(trim(m.source_reference))>0 AND (length(trim(m.rights_note))>0 OR m.source_type='past_question') AND (q.image_url IS NULL OR length(trim(m.image_alt))>0)) AND NOT EXISTS(SELECT 1 FROM curriculum_topic_mappings cm WHERE cm.topic_id=q.topic_id AND cm.reviewed_at IS NULL) AND EXISTS(SELECT 1 FROM question_editorial_metadata pm WHERE pm.question_id=q.id AND (pm.source_type<>'past_question' OR (q.exam_year IS NOT NULL AND q.exam_year<=EXTRACT(YEAR FROM CURRENT_DATE)))) AND EXISTS(SELECT 1 FROM question_explanations e WHERE e.question_id=q.id AND length(trim(e.explanation))>=5) FOR UPDATE OF q`;
           if (!valid.length) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Publishing requires an active subject, matching topic, four options, one correct answer and an explanation.'});
         }
         const changed = await tx<Array<{ id: string; status: string }>>`

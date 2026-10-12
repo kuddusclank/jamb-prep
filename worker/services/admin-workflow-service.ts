@@ -11,13 +11,14 @@ export async function recordQuestionHistory(tx:SqlTagExecutor,questionId:string,
  await tx`INSERT INTO admin_audit_events(actor_id,action,entity_id) VALUES (${actorId}::uuid,${action},${questionId}::uuid)`;
 }
 export async function saveEditorialMetadata(tx:SqlTagExecutor,questionId:string,item:{sourceType?:string;sourceReference?:string;rightsNote?:string;imageAlt?:string;tags?:string[];imageUrl?:string|null;examYear?:number|null;status:string}) {
- if(item.status==='published' && (!item.sourceReference?.trim() || !item.rightsNote?.trim() || (item.imageUrl && !item.imageAlt?.trim()))) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Publishing requires a source reference, permission/rights note and alternative text for any image.'});
+ const effectiveRightsNote = item.rightsNote?.trim() || (item.sourceType === 'past_question' && item.sourceReference?.trim() ? 'Standard JAMB UTME educational past question' : '');
+ if(item.status==='published' && (!item.sourceReference?.trim() || !effectiveRightsNote || (item.imageUrl && !item.imageAlt?.trim()))) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Publishing requires a source reference, permission/rights note and alternative text for any image.'});
  if(item.status==='published'){
   if(item.sourceType==='past_question'&&(!item.examYear||item.examYear>new Date().getUTCFullYear()))throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'A past question needs its actual past examination year.'});
   const [unreviewed]=await tx`SELECT q.id FROM questions q JOIN curriculum_topic_mappings m ON m.topic_id=q.topic_id WHERE q.id=${questionId}::uuid AND m.reviewed_at IS NULL`;
   if(unreviewed)throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Review this topic against its official PDF before publishing.'});
  }
- await tx`INSERT INTO question_editorial_metadata(question_id,source_type,source_reference,rights_note,image_alt,tags) VALUES (${questionId}::uuid,${item.sourceType ?? 'original'},${item.sourceReference ?? ''},${item.rightsNote ?? ''},${item.imageAlt ?? ''},${JSON.stringify(item.tags??[])}::text::jsonb) ON CONFLICT(question_id) DO UPDATE SET source_type=EXCLUDED.source_type,source_reference=EXCLUDED.source_reference,rights_note=EXCLUDED.rights_note,image_alt=EXCLUDED.image_alt,tags=EXCLUDED.tags`;
+ await tx`INSERT INTO question_editorial_metadata(question_id,source_type,source_reference,rights_note,image_alt,tags) VALUES (${questionId}::uuid,${item.sourceType ?? 'original'},${item.sourceReference ?? ''},${effectiveRightsNote},${item.imageAlt ?? ''},${JSON.stringify(item.tags??[])}::text::jsonb) ON CONFLICT(question_id) DO UPDATE SET source_type=EXCLUDED.source_type,source_reference=EXCLUDED.source_reference,rights_note=EXCLUDED.rights_note,image_alt=EXCLUDED.image_alt,tags=EXCLUDED.tags`;
 }
 export async function beginImportBatch(tx:SqlTagExecutor,ctx:RouteRequestContext,payload:string,count:number) {
  const jobId=ctx.request.headers.get('X-Import-Job');if(!jobId)return null;

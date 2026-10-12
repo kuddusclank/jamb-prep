@@ -81,9 +81,24 @@ export function createAccountCoordinator(manager: BrowserSessionManager, api: Na
       const key = mutationKeys.get(hash) ?? `write-${crypto.randomUUID()}`;
       mutationKeys.set(hash, key);
       let result;
-      try {result = await api.request<T>(path, { method, body, idempotencyKey: key, headers });}
-      catch(error) {if(error && typeof error==='object' && 'code' in error && error.code==='PAYMENT_FAILED')mutationKeys.delete(hash);throw error;}
-      if (started !== actorGeneration || manager.getState().user?.id !== userId) throw new Error("Account changed. Please retry.");
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          result = await api.request<T>(path, { method, body, idempotencyKey: key, headers });
+          break;
+        } catch (error) {
+          if (error && typeof error === "object" && "code" in error && error.code === "PAYMENT_FAILED") {
+            mutationKeys.delete(hash);
+            throw error;
+          }
+          const isNetworkError = error instanceof TypeError && started === actorGeneration;
+          if (isNetworkError && attempt < 3) {
+            await new Promise((resolve) => setTimeout(resolve, 400 * attempt));
+            continue;
+          }
+          throw error;
+        }
+      }
+      if (!result || started !== actorGeneration || manager.getState().user?.id !== userId) throw new Error("Account changed. Please retry.");
       mutationKeys.delete(hash);
       invalidate();
       return result.data;
