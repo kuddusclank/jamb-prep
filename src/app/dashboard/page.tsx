@@ -53,12 +53,14 @@ interface StaticMockHistoryItem {
 }
 
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
-import { useBrowserAccount } from "@/components/browser-account-boundary";
+import StudyLoading from "@/components/study-loading";
+import { BrowserAccountBoundary, useBrowserAccount } from "@/components/browser-account-boundary";
 import type { DashboardData } from "@/lib/api/app-dtos";
 
 export default function DashboardPage() {
   const resource = useApiResource<DashboardData>('/api/v1/dashboard');
   const account = useBrowserAccount();
+  if (!resource.data && !resource.error) return <BrowserAccountBoundary><StudyLoading /></BrowserAccountBoundary>;
   if (!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry} /></StudyWorkspace>;
   const { subscription, coach, qualifiedReferrals, has50PercentReward } = resource.data;
   const isPremium = subscription.isPremium;

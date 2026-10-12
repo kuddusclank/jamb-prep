@@ -1,4 +1,5 @@
 "use client";
+import StudyLoading from "./study-loading";
 import { signOutAction } from "@/lib/client-actions";
 
 import { useEffect, useState, ReactNode } from 'react';
@@ -58,7 +59,7 @@ export function BrowserAccountBoundary({ children, mode = 'protected', returnPat
       </div>
     </section>
   </main>;
-  if (!identity || destination) return <main className="min-h-screen flex items-center justify-center px-5"><p role="status" className="rounded-2xl border border-slate-200 bg-white px-8 py-6 text-sm text-[#116149] shadow-sm">Loading your account…</p></main>;
+  if (!identity || destination) return <StudyLoading />;
   return <>{children}</>;
 }
 

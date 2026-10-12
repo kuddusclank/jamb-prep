@@ -267,10 +267,10 @@
   },
   "adminExpansionAllowance": {
     "limit": 100,
-    "used": 32,
+    "used": 42,
     "maxConcurrency": 3,
     "authorization": "User approved up to 100 requests for admin expansion audit, private backup, publishing and bounded production checks; no charges or signup accounts.",
-    "accounting": "Conservative twenty-request reservation for R2 provisioning and upcoming native API/Pages deploy operations; audits and HTTP checks counted separately."
+    "accounting": "Conservative twenty-request reservation for R2 provisioning and upcoming native API/Pages deploy operations; audits and HTTP checks counted separately. Ten further requests reserved for auth/loading Pages publication and minimal checks."
   },
   "activeVerificationBudget": "adminExpansionAllowance",
   "adminExpansionRelease": {

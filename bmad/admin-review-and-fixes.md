@@ -58,3 +58,10 @@ Verification: targeted regression suite and TypeScript pass; six real rollback-o
 Nine bounded production read checks passed: five admin page shells and health return 200; unauthenticated admin identity/import jobs return 401; an absent managed image returns 404 rather than a missing-binding 503. No signup accounts, charges or staff role elevation were created. Budget accounting: 32/100 reserved/used, including a conservative 20-request deployment/provisioning reservation.
 
 Still open: full leaf-level official syllabus mapping and annual subject/work review; new-subject activation remains gated. Persistent batch receipts are stored, but downloadable per-row job receipts/cancellation UI are not claimed. Detailed support investigation, retention/permission-tier policy, authenticated hosted editing, physical iPhone checks and CPU/load certification remain separate acceptance items. Fresh archive readability is verified; a restore rehearsal of that newest archive is not claimed. Earlier local-clone restore/migration tests do not replace that statement.
+
+
+## Auth layout and loading continuity — 12 October 2026
+
+Restored the original shared AuthShell for login and registration, including the large-screen editorial panel and compact mobile form. Replaced route/account/dashboard-data loading variants with a consistent full-screen LecternIQ cursive shimmer and progress indicator. The dashboard keeps authentication/redirect checks mounted while waiting for data; errors retain the existing retry/sign-out controls. Reduced-motion preferences disable both animations. A delayed-load retry remains available after ten seconds.
+
+Verification: production static build and TypeScript pass; 25 account-navigation/static-routing tests pass. Isolated Chrome checks both auth pages at 1440px and 390px (448px/350px form widths, no horizontal overflow), and authenticated dashboard-data waiting at both widths (one branded screen, no navigation/loading-card flash). Reduced-motion animation checks pass, with zero browser exceptions. No hosted login, signup or charge was created.
