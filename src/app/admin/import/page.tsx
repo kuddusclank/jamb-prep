@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState, useRef } from "react";
+import { NativeApiClientError } from "@/lib/api/native-client";
 import { useApiResource } from "@/lib/api/use-api-resource";
 import Link from "next/link";
 import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
@@ -200,18 +201,28 @@ function ImportContent() {
     if (parsedQuestions.length === 0) return;
     setBusy(true);
     setParseError("");
+    setValidationResults(null);
     setProgressMsg("Running preflight validation checks…");
 
     try {
       const allRows: ValidationRow[] = [];
       for (const {offset,rows} of buildImportBatches(parsedQuestions)) {
-        const res = await getAccountCoordinator().mutate<{rows:ValidationRow[]}>("/api/v1/admin/questions/import/dry-run", rows, "POST");
-        allRows.push(...res.rows.map(row => ({...row,row:row.row + offset})));
+        try {
+          const res = await getAccountCoordinator().mutate<{rows:ValidationRow[]}>("/api/v1/admin/questions/import/dry-run", rows, "POST");
+          allRows.push(...res.rows.map(row => ({...row,row:row.row + offset})));
+        } catch (error) {
+          const details = error instanceof NativeApiClientError ? error.details?.map(detail => {
+            const match = /^(\d+)\.(.+)$/.exec(detail.field ?? "");
+            return `${match ? `Row ${offset + Number(match[1]) + 1}, ${match[2]}` : detail.field ?? "CSV"}: ${detail.issue}`;
+          }).join("; ") : "";
+          throw new Error(`Rows ${offset + 1}–${offset + rows.length}: ${details || (error instanceof Error ? error.message : "Validation request failed.")}`);
+        }
       }
       setValidationResults(allRows);
       setProgressMsg(`Checked all ${allRows.length} rows: ${allRows.filter(row=>row.valid).length} valid.`);
     } catch (err) {
-      setParseError(err instanceof Error ? err.message : "Validation request failed.");
+      setProgressMsg("");
+      setParseError(`Preflight failed: ${err instanceof Error ? err.message : "Validation request failed."} No questions were imported.`);
     } finally {
       setBusy(false);
     }
@@ -351,7 +362,7 @@ function ImportContent() {
 
           {parseError && (
             <div role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
-              <strong>Parse Error:</strong> {parseError}
+              <strong>Import check:</strong> {parseError}
             </div>
           )}
 

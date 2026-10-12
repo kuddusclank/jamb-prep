@@ -2280,7 +2280,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
         WHERE id = ${reportId}::uuid
         RETURNING id, status
       `;
-      if(changed.length) await tx`INSERT INTO admin_audit_events(actor_id,action,entity_id,details) VALUES (${ctx.actor!.userId}::uuid,'report.moderated',${reportId}::uuid,${JSON.stringify({status:body.status})}::jsonb)`;
+      if(changed.length) await tx`INSERT INTO admin_audit_events(actor_id,action,entity_id,details) VALUES (${ctx.actor!.userId}::uuid,'report.moderated',${reportId}::uuid,${JSON.stringify({status:body.status})}::text::jsonb)`;
       return changed;
       });
 
@@ -2317,7 +2317,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
       const subjectRows = await dbCtx.sql<Array<{ code: string }>>`
         SELECT code FROM subjects
       `;
-      const topicRows = await dbCtx.sql<Array<{code:string;title:string;slug:string;aliases:string[];parent_slug:string|null;parent_title:string|null}>>`SELECT s.code,t.title,t.slug,COALESCE(m.aliases,'[]'::jsonb) AS aliases,(SELECT p.slug FROM topics p WHERE p.id=m.parent_topic_id) AS parent_slug,(SELECT p.title FROM topics p WHERE p.id=m.parent_topic_id) AS parent_title FROM topics t JOIN subjects s ON s.id=t.subject_id LEFT JOIN curriculum_topic_mappings m ON m.topic_id=t.id WHERE s.code=ANY(ARRAY(SELECT jsonb_array_elements_text(${JSON.stringify(items.map(i=>i.subjectCode))}::jsonb)))`;
+      const topicRows = await dbCtx.sql<Array<{code:string;title:string;slug:string;aliases:string[];parent_slug:string|null;parent_title:string|null}>>`SELECT s.code,t.title,t.slug,COALESCE(m.aliases,'[]'::jsonb) AS aliases,(SELECT p.slug FROM topics p WHERE p.id=m.parent_topic_id) AS parent_slug,(SELECT p.title FROM topics p WHERE p.id=m.parent_topic_id) AS parent_title FROM topics t JOIN subjects s ON s.id=t.subject_id LEFT JOIN curriculum_topic_mappings m ON m.topic_id=t.id WHERE s.code=ANY(ARRAY(SELECT jsonb_array_elements_text(${JSON.stringify(items.map(i=>i.subjectCode))}::text::jsonb)))`;
       const knownCodes = new Set(subjectRows.map((s) => s.code));
 
       const validationResults = items.map((item, index) => {

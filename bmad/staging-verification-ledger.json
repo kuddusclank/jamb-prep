@@ -222,6 +222,13 @@
       "status": "passed",
       "at": "2026-10-12T19:06:15.178Z",
       "completedAt": "2026-10-12T19:07:22.156Z"
+    },
+    {
+      "id": 32,
+      "action": "backup",
+      "status": "passed",
+      "at": "2026-10-12T19:58:52.166Z",
+      "completedAt": "2026-10-12T20:00:12.600Z"
     }
   ],
   "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",
@@ -267,10 +274,10 @@
   },
   "adminExpansionAllowance": {
     "limit": 100,
-    "used": 52,
+    "used": 78,
     "maxConcurrency": 3,
     "authorization": "User approved up to 100 requests for admin expansion audit, private backup, publishing and bounded production checks; no charges or signup accounts.",
-    "accounting": "Conservative twenty-request reservation for R2 provisioning and upcoming native API/Pages deploy operations; audits and HTTP checks counted separately. Ten further requests reserved for auth/loading Pages publication and minimal checks. Ten requests reserved for question-source cleanup Pages publication and minimal checks."
+    "accounting": "Conservative twenty-request reservation for R2 provisioning and upcoming native API/Pages deploy operations; audits and HTTP checks counted separately. Ten further requests reserved for auth/loading Pages publication and minimal checks. Ten requests reserved for question-source cleanup Pages publication and minimal checks. Twenty requests reserved for preflight repair native API and Pages publication."
   },
   "activeVerificationBudget": "adminExpansionAllowance",
   "adminExpansionRelease": {
@@ -299,5 +306,20 @@
     "filesRemoved": 18,
     "databaseMutations": 0,
     "checks": "Protected admin HTML shell 200; published importer JavaScript 200 with database topic reference and no bundled sample question. Two reads covered by ten-request reservation."
+  },
+  "csvPreflightRepair": {
+    "status": "published-and-checked",
+    "workerVersion": "2532fee6-ae57-4d2a-af9c-f6b2dcfa5bd7",
+    "pagesDeployment": "8924d5ae",
+    "migration": "0009_admin_json_parameter_repair.sql",
+    "regressionTests": 40,
+    "sourceCsvRowsCheckedLocally": 500,
+    "liveCatalogueComparison": {
+      "unknownOrAmbiguous": 488,
+      "parentMismatch": 12
+    },
+    "questionImports": 0,
+    "originalCsvModified": false,
+    "productionChecks": 3
   }
 }

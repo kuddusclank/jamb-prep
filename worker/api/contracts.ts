@@ -553,7 +553,7 @@ export const bulkQuestionImportSchema: SchemaValidator<SingleQuestionImport[]> =
         issues.push({ path: [i, 'options'], issue: 'Options A, B, C, and D are required' });
       }
       if (isPlainObject(opts) && Object.values(opts).some(value => typeof value !== 'string' || value.length > 10000)) issues.push({path:[i,'options'],issue:'Each option must be bounded text'});
-      for (const field of ['passageTitle','passageContent'] as const) if (item[field] !== undefined && (typeof item[field] !== 'string' || (item[field] as string).length > 20000)) issues.push({path:[i,field],issue:'Passage fields must be bounded text'});
+      for (const field of ['passageTitle','passageContent'] as const) if (item[field] !== undefined && item[field] !== null && (typeof item[field] !== 'string' || (item[field] as string).length > 20000)) issues.push({path:[i,field],issue:'Passage fields must be bounded text'});
       if (item.examYear !== undefined && item.examYear !== null && (!Number.isInteger(item.examYear) || Number(item.examYear)<1978 || Number(item.examYear)>2100)) issues.push({path:[i,'examYear'],issue:'Invalid exam year'});
       if (item.imageUrl) {
         try { const url=new URL(String(item.imageUrl)); if(url.protocol!=='https:' || url.username || url.password || !((url.hostname==='bqumnaoiiukifvanoonm.supabase.co' && url.pathname.startsWith('/storage/v1/object/public/')) || (url.hostname==='jambprep.lecterniq.com' && /^\/api\/v1\/media\/[a-f0-9]{64}\.(png|jpeg|webp)$/.test(url.pathname)))) throw new Error(); }

@@ -17,7 +17,7 @@ export async function saveEditorialMetadata(tx:SqlTagExecutor,questionId:string,
   const [unreviewed]=await tx`SELECT q.id FROM questions q JOIN curriculum_topic_mappings m ON m.topic_id=q.topic_id WHERE q.id=${questionId}::uuid AND m.reviewed_at IS NULL`;
   if(unreviewed)throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Review this topic against its official PDF before publishing.'});
  }
- await tx`INSERT INTO question_editorial_metadata(question_id,source_type,source_reference,rights_note,image_alt,tags) VALUES (${questionId}::uuid,${item.sourceType ?? 'original'},${item.sourceReference ?? ''},${item.rightsNote ?? ''},${item.imageAlt ?? ''},${JSON.stringify(item.tags??[])}::jsonb) ON CONFLICT(question_id) DO UPDATE SET source_type=EXCLUDED.source_type,source_reference=EXCLUDED.source_reference,rights_note=EXCLUDED.rights_note,image_alt=EXCLUDED.image_alt,tags=EXCLUDED.tags`;
+ await tx`INSERT INTO question_editorial_metadata(question_id,source_type,source_reference,rights_note,image_alt,tags) VALUES (${questionId}::uuid,${item.sourceType ?? 'original'},${item.sourceReference ?? ''},${item.rightsNote ?? ''},${item.imageAlt ?? ''},${JSON.stringify(item.tags??[])}::text::jsonb) ON CONFLICT(question_id) DO UPDATE SET source_type=EXCLUDED.source_type,source_reference=EXCLUDED.source_reference,rights_note=EXCLUDED.rights_note,image_alt=EXCLUDED.image_alt,tags=EXCLUDED.tags`;
 }
 export async function beginImportBatch(tx:SqlTagExecutor,ctx:RouteRequestContext,payload:string,count:number) {
  const jobId=ctx.request.headers.get('X-Import-Job');if(!jobId)return null;
@@ -33,7 +33,7 @@ export async function beginImportBatch(tx:SqlTagExecutor,ctx:RouteRequestContext
 export async function finishImportBatch(tx:SqlTagExecutor,batch:NonNullable<Awaited<ReturnType<typeof beginImportBatch>>>,actorId:string,skippedCount=0) {
  await tx`INSERT INTO admin_import_batches(job_id,batch_index,request_hash,imported_count,skipped_count) VALUES (${batch.jobId}::uuid,${batch.index},${batch.hash},${batch.count},${skippedCount})`;
  await tx`UPDATE admin_import_jobs SET completed_rows=completed_rows+${batch.count},completed_batches=completed_batches+1,status=CASE WHEN completed_rows+${batch.count}=total_rows THEN 'completed' ELSE 'in_progress' END,updated_at=now() WHERE id=${batch.jobId}::uuid`;
- await tx`INSERT INTO admin_audit_events(actor_id,action,entity_id,details) VALUES (${actorId}::uuid,'import.batch',${batch.jobId}::uuid,${JSON.stringify({index:batch.index,count:batch.count})}::jsonb)`;
+ await tx`INSERT INTO admin_audit_events(actor_id,action,entity_id,details) VALUES (${actorId}::uuid,'import.batch',${batch.jobId}::uuid,${JSON.stringify({index:batch.index,count:batch.count})}::text::jsonb)`;
 }
 export const ADMIN_WORKFLOW_ROUTES:RouteDefinition[]=[
  {id:'admin.import.jobs',method:'GET',pattern:'/api/v1/admin/import-jobs',auth:'admin',handler:async ctx=>({status:200,body:{jobs:await ctx.getDb().sql`SELECT id,file_hash,total_rows,completed_rows,completed_batches,status,created_at FROM admin_import_jobs WHERE actor_id=${ctx.actor!.userId}::uuid ORDER BY created_at DESC LIMIT 50`}})},

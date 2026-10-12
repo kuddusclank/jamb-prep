@@ -124,8 +124,10 @@ test('real PostgreSQL: import survives retries, stores receipts and prevents cha
  const db={sql:tx,isHyperdrive:false,runSerializableTransaction:fn=>tx.savepoint(fn),runCommittedTransaction:fn=>tx.savepoint(fn)};
  const invoke=(id,body,key,headers={})=>NATIVE_API_ROUTES.find(r=>r.id===id).handler({request:new Request('http://localhost',{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key,...headers},body:JSON.stringify(body)}),actor:{userId:uid},adminActor:{userId:uid},now:new Date(),getDb:()=>db});
  const manifest={fileHash:'a'.repeat(64),totalRows:12};const job=(await invoke('admin.import.start',manifest,'job-start')).body;
- const row=i=>({externalReference:`LOCAL-IMPORT-${i}`,subjectCode:'ENG',topicTitle:'import-fixture',stem:`[LOCAL DURABLE IMPORT] Question ${i}`,options:{A:'First',B:'Second',C:'Third',D:'Fourth'},correctOption:'A',explanation:'Local import explanation fixture',difficulty:'medium'});
+ const row=i=>({externalReference:`LOCAL-IMPORT-${i}`,subjectCode:'ENG',topicTitle:'import-fixture',stem:`[LOCAL DURABLE IMPORT] Question ${i}`,tags:['local-fixture'],options:{A:'First',B:'Second',C:'Third',D:'Fourth'},correctOption:'A',explanation:'Local import explanation fixture',difficulty:'medium'});
  const first=Array.from({length:10},(_,i)=>row(i));await invoke('admin.questions.import',first,'first-batch',{'X-Import-Job':job.id,'X-Import-Batch':'0'});
+ const [metadata]=await tx`SELECT m.tags FROM question_editorial_metadata m JOIN questions q ON q.id=m.question_id WHERE q.stem LIKE '[LOCAL DURABLE IMPORT]%' LIMIT 1`;assert.deepEqual(metadata.tags,['local-fixture']);
+ const [audit]=await tx`SELECT details FROM admin_audit_events WHERE actor_id=${uid}::uuid AND action='import.batch' LIMIT 1`;assert.equal(typeof audit.details,'object');assert.equal(audit.details.count,10);
  const resumed=(await invoke('admin.import.start',manifest,'job-reopen')).body;assert.equal(Number(resumed.completed_rows),10);assert.equal(Number(resumed.completed_batches),1);
  await invoke('admin.questions.import',first,'first-batch-after-reload',{'X-Import-Job':job.id,'X-Import-Batch':'0'});
  await assert.rejects(invoke('admin.questions.import',[...first.slice(0,9),row(99)],'changed-replay',{'X-Import-Job':job.id,'X-Import-Batch':'0'}),e=>e.status===409);
@@ -140,4 +142,18 @@ test('real PostgreSQL: import survives retries, stores receipts and prevents cha
  const [unchanged]=await tx`SELECT count(*)::int AS n FROM questions WHERE stem LIKE '[LOCAL DURABLE IMPORT]%'`;assert.equal(unchanged.n,12);
  throw rollback;
  }),e=>e===rollback);}finally{await sql.end();}
+});
+
+test('real PostgreSQL: preflight accepts JSON arrays and mapped aliases and returns row errors for unknown topics',{skip:!enabled,timeout:20000},async()=>{
+ const {NATIVE_API_ROUTES}=await import('../worker/api/router.ts');const url=fs.readFileSync(path.join(os.homedir(),'.codex/private-backups/jambprep/local-runtime.env'),'utf8').trim().slice('DATABASE_URL='.length);assert.equal(new URL(url).hostname,'127.0.0.1');
+ for(const prepare of [false,true]){const sql=postgres(url,{max:1,prepare});const rollback=new Error('PREFLIGHT_FIXTURE_ROLLBACK');try{await assert.rejects(sql.begin(async tx=>{
+ const uid=crypto.randomUUID();await tx`INSERT INTO auth.users(id,email) VALUES (${uid}::uuid,${`preflight-${uid}@example.invalid`})`;await tx`INSERT INTO profiles(id,email,display_name,role) VALUES (${uid}::uuid,${`preflight-${uid}@example.invalid`},'Preflight fixture','admin') ON CONFLICT(id) DO NOTHING`;
+ const db={sql:tx,runSerializableTransaction:fn=>tx.savepoint(fn),runCommittedTransaction:fn=>tx.savepoint(fn)};const slug='fixture-'+uid;const alias='Quoted alias: “meaning”';
+ const invoke=(id,body)=>NATIVE_API_ROUTES.find(r=>r.id===id).handler({request:new Request('http://localhost',{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':'fixture-'+crypto.randomUUID()},body:JSON.stringify(body)}),actor:{userId:uid},now:new Date(),getDb:()=>db});
+ await invoke('admin.curriculum.mapping.post',{subjectCode:'ENG',sourceSubject:'Use of English',title:'Local preflight fixture',slug,page:1,aliases:[alias],reviewed:false});
+ const [mapping]=await tx`SELECT aliases FROM curriculum_topic_mappings m JOIN topics t ON t.id=m.topic_id WHERE t.slug=${slug}`;assert.deepEqual(mapping.aliases,[alias]);
+ const row={passageTitle:null,passageContent:null,subjectCode:'ENG',topicTitle:alias,stem:'[LOCAL PREFLIGHT] Select a fixture option.',options:{A:'First',B:'Second',C:'Third',D:'Fourth'},correctOption:'A',explanation:'Synthetic regression placeholder.',difficulty:'medium',tags:['fixture']};
+ const result=await invoke('admin.questions.import.dry_run',[row,{...row,topicTitle:'unknown-'+uid}]);assert.equal(result.status,200);assert.equal(result.body.rows[0].valid,true);assert.equal(result.body.rows[1].valid,false);assert.match(result.body.rows[1].errors[0],/Unknown topic/);
+ throw rollback;
+ }),e=>e===rollback);}finally{await sql.end();}}
 });

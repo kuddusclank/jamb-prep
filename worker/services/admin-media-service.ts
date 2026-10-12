@@ -32,6 +32,6 @@ export const ADMIN_MEDIA_ROUTES:RouteDefinition[]=[{id:'admin.media.upload',meth
  if(!ctx.env.QUESTION_MEDIA)throw new ApiError({status:503,code:'SERVICE_CONFIG_UNAVAILABLE',message:'Diagram storage is unavailable.'});
  const digest=new Uint8Array(await crypto.subtle.digest('SHA-256',new Uint8Array(bytes).buffer));const key=Array.from(digest,b=>b.toString(16).padStart(2,'0')).join('')+'.'+String(input.mimeType).split('/')[1];
  await ctx.env.QUESTION_MEDIA.put(key,bytes,{httpMetadata:{contentType:String(input.mimeType)}});
- await ctx.getDb().sql`INSERT INTO admin_audit_events(actor_id,action,details) VALUES (${ctx.actor!.userId}::uuid,'media.upload',${JSON.stringify({key,bytes:bytes.length})}::jsonb)`;
+ await ctx.getDb().sql`INSERT INTO admin_audit_events(actor_id,action,details) VALUES (${ctx.actor!.userId}::uuid,'media.upload',${JSON.stringify({key,bytes:bytes.length})}::text::jsonb)`;
  const origin=ctx.env.PUBLIC_APP_ORIGIN??'https://jambprep.lecterniq.com';return {status:201,body:{url:`${origin}/api/v1/media/${key}`}};
 }}];
