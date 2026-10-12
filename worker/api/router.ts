@@ -452,22 +452,31 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
 
       const durableBatch = await beginImportBatch(tx, ctx, JSON.stringify(items), items.length);
       if (durableBatch?.replayed) return {skippedCount:durableBatch.skippedCount};
+      const subjectCache = new Map<string, string>();
+      const topicCache = new Map<string, string>();
+      const parentCache = new Set<string>();
+      const passageCache = new Map<string, { id: string; title: string | null; content: string }>();
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
 
-            const subRows = await tx<Array<{ id: string }>>`
-              SELECT id FROM subjects WHERE code = ${item.subjectCode}  LIMIT 1
-            `;
-            const subject = subRows[0];
-            if (!subject) {
-              throw new ApiError({
-                status: 422,
-                code: 'VALIDATION_FAILED',
-                message: `Subject code '${item.subjectCode}' not found.`,
-              });
+            let subjectId = subjectCache.get(item.subjectCode);
+            if (!subjectId) {
+              const subRows = await tx<Array<{ id: string }>>`
+                SELECT id FROM subjects WHERE code = ${item.subjectCode}  LIMIT 1
+              `;
+              const subject = subRows[0];
+              if (!subject) {
+                throw new ApiError({
+                  status: 422,
+                  code: 'VALIDATION_FAILED',
+                  message: `Subject code '${item.subjectCode}' not found.`,
+                });
+              }
+              await tx`SELECT id FROM subjects WHERE id=${subject.id}::uuid FOR UPDATE`;
+              subjectId = subject.id;
+              subjectCache.set(item.subjectCode, subjectId);
             }
-
-            await tx`SELECT id FROM subjects WHERE id=${subject.id}::uuid FOR UPDATE`;
+            const subject = { id: subjectId };
             const rowHash=await computeRequestHash('admin.import.row',JSON.stringify(item));
             if(item.externalReference){
               const [existing]=await tx`SELECT request_hash FROM question_import_references WHERE subject_id=${subject.id}::uuid AND external_reference=${item.externalReference}`;
@@ -479,22 +488,49 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
               .replace(/[^a-z0-9]+/g, '-')
               .replace(/^-|-$/g, '');
 
-            // Lock the subject to serialize slug discovery without assuming an absent unique index.
-            await tx`SELECT id FROM subjects WHERE id=${subject.id}::uuid FOR UPDATE`;
-            let topicRows = await tx<Array<{id:string}>>`SELECT id FROM topics WHERE subject_id=${subject.id}::uuid AND (slug=${topicSlug} OR title=${topicLabel} OR id IN (SELECT m.topic_id FROM curriculum_topic_mappings m WHERE EXISTS(SELECT 1 FROM jsonb_array_elements_text(m.aliases) a WHERE lower(a)=lower(${topicLabel})))) ORDER BY id LIMIT 2`;
-            if (!topicRows.length) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Unknown topic. Add its canonical mapping in Curriculum before importing.'});
-            if (topicRows.length>1) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Ambiguous topic. Use its unique canonical slug.'});
-        const topicId = topicRows[0].id;
-            if(item.subtopicSlug){const [parent]=await tx`SELECT m.topic_id FROM curriculum_topic_mappings m JOIN topics p ON p.id=m.parent_topic_id WHERE m.topic_id=${topicId}::uuid AND (p.slug=${item.topicTitle} OR p.title=${item.topicTitle})`;if(!parent)throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Subtopic must belong to the selected canonical topic.'});}
+            const topicCacheKey = `${subject.id}:${topicLabel.toLowerCase()}`;
+            let topicId = topicCache.get(topicCacheKey);
+            if (!topicId) {
+              const topicRows = await tx<Array<{id:string}>>`SELECT id FROM topics WHERE subject_id=${subject.id}::uuid AND (slug=${topicSlug} OR title=${topicLabel} OR id IN (SELECT m.topic_id FROM curriculum_topic_mappings m WHERE EXISTS(SELECT 1 FROM jsonb_array_elements_text(m.aliases) a WHERE lower(a)=lower(${topicLabel})))) ORDER BY id LIMIT 2`;
+              if (!topicRows.length) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Unknown topic. Add its canonical mapping in Curriculum before importing.'});
+              if (topicRows.length>1) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Ambiguous topic. Use its unique canonical slug.'});
+              topicId = topicRows[0].id;
+              topicCache.set(topicCacheKey, topicId);
+            }
+            if(item.subtopicSlug){
+              const parentKey = `${topicId}:${item.topicTitle}`;
+              if (!parentCache.has(parentKey)) {
+                const [parent]=await tx`SELECT m.topic_id FROM curriculum_topic_mappings m JOIN topics p ON p.id=m.parent_topic_id WHERE m.topic_id=${topicId}::uuid AND (p.slug=${item.topicTitle} OR p.title=${item.topicTitle})`;
+                if(!parent)throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Subtopic must belong to the selected canonical topic.'});
+                parentCache.add(parentKey);
+              }
+            }
 
             let passageId:string|null=null;
             if(item.passageReference){
-              const [existing]=await tx`SELECT p.id,p.title,p.content FROM passage_import_references r JOIN passages p ON p.id=r.passage_id WHERE r.subject_id=${subject.id}::uuid AND r.external_reference=${item.passageReference}`;
-              if(existing){if((item.passageContent&&existing.content!==item.passageContent)||(item.passageTitle&&existing.title!==item.passageTitle))throw new ApiError({status:409,code:'CONFLICT',message:'A passage reference already exists with different content.'});passageId=String(existing.id);}
+              const passageKey = `${subject.id}:${item.passageReference}`;
+              const cachedPassage = passageCache.get(passageKey);
+              if (cachedPassage) {
+                if ((item.passageContent && cachedPassage.content !== item.passageContent) || (item.passageTitle && cachedPassage.title !== item.passageTitle)) {
+                  throw new ApiError({status:409,code:'CONFLICT',message:'A passage reference already exists with different content.'});
+                }
+                passageId = cachedPassage.id;
+              } else {
+                const [existing]=await tx`SELECT p.id,p.title,p.content FROM passage_import_references r JOIN passages p ON p.id=r.passage_id WHERE r.subject_id=${subject.id}::uuid AND r.external_reference=${item.passageReference}`;
+                if(existing){
+                  if((item.passageContent&&existing.content!==item.passageContent)||(item.passageTitle&&existing.title!==item.passageTitle))throw new ApiError({status:409,code:'CONFLICT',message:'A passage reference already exists with different content.'});
+                  passageId=String(existing.id);
+                  passageCache.set(passageKey, { id: passageId, title: existing.title ? String(existing.title) : null, content: String(existing.content) });
+                }
+              }
             }
             if(!passageId&&item.passageContent?.trim()){
               const [created]=await tx`INSERT INTO passages(subject_id,title,content) VALUES (${subject.id}::uuid,${item.passageTitle??null},${item.passageContent}) RETURNING id`;
-              passageId=String(created.id);if(item.passageReference)await tx`INSERT INTO passage_import_references(subject_id,external_reference,passage_id) VALUES (${subject.id}::uuid,${item.passageReference},${passageId}::uuid)`;
+              passageId=String(created.id);
+              if(item.passageReference){
+                await tx`INSERT INTO passage_import_references(subject_id,external_reference,passage_id) VALUES (${subject.id}::uuid,${item.passageReference},${passageId}::uuid)`;
+                passageCache.set(`${subject.id}:${item.passageReference}`, { id: passageId, title: item.passageTitle ?? null, content: item.passageContent });
+              }
             }
             if(item.passageReference&&!passageId)throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'A new passage reference requires passage content.'});
 

@@ -197,6 +197,31 @@ function ImportContent() {
     }
   }
 
+  async function mutateWithRetry<T>(
+    path: string,
+    body: unknown,
+    method: "POST" | "PUT" | "PATCH" = "POST",
+    headers?: Record<string, string>,
+    maxAttempts = 4
+  ): Promise<T> {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        return await getAccountCoordinator().mutate<T>(path, body, method, headers);
+      } catch (error) {
+        const isRetryableHttp =
+          error instanceof NativeApiClientError &&
+          (error.status === 408 || error.status === 429 || error.status >= 500);
+        const isNetworkError = !(error instanceof NativeApiClientError);
+        if ((isRetryableHttp || isNetworkError) && attempt < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, 600 * attempt));
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw new Error("Request retry limit exceeded.");
+  }
+
   async function handleDryRunValidation() {
     if (parsedQuestions.length === 0) return;
     setBusy(true);
@@ -208,7 +233,7 @@ function ImportContent() {
       const allRows: ValidationRow[] = [];
       for (const {offset,rows} of buildImportBatches(parsedQuestions)) {
         try {
-          const res = await getAccountCoordinator().mutate<{rows:ValidationRow[]}>("/api/v1/admin/questions/import/dry-run", rows, "POST");
+          const res = await mutateWithRetry<{rows:ValidationRow[]}>("/api/v1/admin/questions/import/dry-run", rows, "POST");
           allRows.push(...res.rows.map(row => ({...row,row:row.row + offset})));
         } catch (error) {
           const details = error instanceof NativeApiClientError ? error.details?.map(detail => {
@@ -231,16 +256,16 @@ function ImportContent() {
   async function handleBatchImport() {
     if (parsedQuestions.length === 0) return;
     setBusy(true);
+    setParseError("");
     setReceiptMsg("");
 
     const batchSize = 10;
-    const totalBatches = Math.ceil(parsedQuestions.length / batchSize);
     let totalImported = Math.min(completedBatches.current * batchSize, parsedQuestions.length);
 
     try {
       const bytes = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawText.replace(/^\uFEFF/, "").replace(/\r\n/g,"\n").trim())));
       const fileHash = Array.from(bytes, b=>b.toString(16).padStart(2,"0")).join("");
-      const job = await getAccountCoordinator().mutate<{id:string;completed_rows:number;completed_batches:number;status:string}>("/api/v1/admin/import-jobs",{fileHash,totalRows:parsedQuestions.length});
+      const job = await mutateWithRetry<{id:string;completed_rows:number;completed_batches:number;status:string}>("/api/v1/admin/import-jobs",{fileHash,totalRows:parsedQuestions.length});
       completedBatches.current = Number(job.completed_batches);
       totalImported = Number(job.completed_rows);
       const pendingBatches=buildImportBatches(parsedQuestions.slice(totalImported));
@@ -254,7 +279,7 @@ function ImportContent() {
           )}%)...`
         );
 
-        const res = await getAccountCoordinator().mutate<{ importedCount: number; processedCount:number;skippedCount:number }>(
+        const res = await mutateWithRetry<{ importedCount: number; processedCount:number;skippedCount:number }>(
           "/api/v1/admin/questions/import",
           batch,
           "POST",
@@ -272,8 +297,10 @@ function ImportContent() {
       setParsedQuestions([]);
       setRawText("");
     } catch (err) {
+      setProgressMsg("");
+      jobs.retry();
       setParseError(
-        `${totalImported} rows committed. Re-select this same CSV after a reload to resume from the server receipt. ${err instanceof Error ? err.message : "Import failed."}`
+        `${totalImported} rows committed. Click "Import as Draft" again (or re-select this same CSV after a reload) to resume from the server receipt. ${err instanceof Error ? err.message : "Import failed."}`
       );
     } finally {
       setBusy(false);
