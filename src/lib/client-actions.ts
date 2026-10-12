@@ -17,6 +17,8 @@ import { getDefaultBrowserSessionManager } from "@/lib/auth/session-manager";
 import type { ExamQuestion } from "@/features/exam-engine/domain/types";
 
 export interface PracticeQuestionItem {
+  imageUrl?: string | null;
+  imageAlt?: string | null;
   id: string;
   subjectCode: string;
   subjectName: string;

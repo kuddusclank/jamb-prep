@@ -1,3 +1,7 @@
+import {computeRequestHash} from './idempotency';
+import {ADMIN_CURRICULUM_ROUTES} from '../services/admin-curriculum-service';
+import {ADMIN_MEDIA_ROUTES, type QuestionMediaBucket} from '../services/admin-media-service';
+import {ADMIN_WORKFLOW_ROUTES,beginImportBatch,finishImportBatch,recordQuestionHistory,saveEditorialMetadata} from '../services/admin-workflow-service';
 import { initializeCheckout, verifyOwnedPayment, cancelOwnedSubscription, configureVerifiedRenewal } from '../services/paystack-service';
 import { allocatePractice, checkIssuedPractice, startFrozenMock } from '../services/study-service';
 import { saveStudentOnboardingAtomic } from '../services/onboarding-service';
@@ -86,6 +90,7 @@ import {
 } from '../services/subscription-service';
 
 export interface NativeApiEnv extends DatabaseBindingEnv, AuthEnvConfig, CorsEnvConfig {
+  QUESTION_MEDIA?: QuestionMediaBucket;
   ENVIRONMENT?: string;
   PUBLIC_APP_ORIGIN?: string;
   EDGE_RATE_LIMIT?: {limit(options:{key:string}):Promise<{success:boolean}>};
@@ -442,13 +447,16 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
     rawText,
     async (ctx) => {
       const dbCtx = ctx.getDb();
-      await dbCtx.runSerializableTransaction(async tx => {
+      const receipt = await dbCtx.runSerializableTransaction(async tx => {
+      let skippedCount=0;
 
+      const durableBatch = await beginImportBatch(tx, ctx, JSON.stringify(items), items.length);
+      if (durableBatch?.replayed) return {skippedCount:durableBatch.skippedCount};
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
 
             const subRows = await tx<Array<{ id: string }>>`
-              SELECT id FROM subjects WHERE code = ${item.subjectCode} LIMIT 1
+              SELECT id FROM subjects WHERE code = ${item.subjectCode}  LIMIT 1
             `;
             const subject = subRows[0];
             if (!subject) {
@@ -459,26 +467,36 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
               });
             }
 
-            const topicSlug = item.topicTitle
+            await tx`SELECT id FROM subjects WHERE id=${subject.id}::uuid FOR UPDATE`;
+            const rowHash=await computeRequestHash('admin.import.row',JSON.stringify(item));
+            if(item.externalReference){
+              const [existing]=await tx`SELECT request_hash FROM question_import_references WHERE subject_id=${subject.id}::uuid AND external_reference=${item.externalReference}`;
+              if(existing){if(existing.request_hash!==rowHash)throw new ApiError({status:409,code:'CONFLICT',message:'An external reference already exists with different content. Edit its question explicitly.'});skippedCount++;continue;}
+            }
+            const topicLabel = item.subtopicSlug || item.topicTitle;
+            const topicSlug = topicLabel
               .toLowerCase()
               .replace(/[^a-z0-9]+/g, '-')
               .replace(/^-|-$/g, '');
 
             // Lock the subject to serialize slug discovery without assuming an absent unique index.
             await tx`SELECT id FROM subjects WHERE id=${subject.id}::uuid FOR UPDATE`;
-            let topicRows = await tx<Array<{id:string}>>`SELECT id FROM topics WHERE subject_id=${subject.id}::uuid AND slug=${topicSlug} ORDER BY id LIMIT 1`;
-            if (!topicRows.length) topicRows = await tx<Array<{id:string}>>`INSERT INTO topics(subject_id,title,slug) VALUES (${subject.id}::uuid,${item.topicTitle},${topicSlug}) RETURNING id`;
-            const topicId = topicRows[0].id;
+            let topicRows = await tx<Array<{id:string}>>`SELECT id FROM topics WHERE subject_id=${subject.id}::uuid AND (slug=${topicSlug} OR title=${topicLabel} OR id IN (SELECT m.topic_id FROM curriculum_topic_mappings m WHERE EXISTS(SELECT 1 FROM jsonb_array_elements_text(m.aliases) a WHERE lower(a)=lower(${topicLabel})))) ORDER BY id LIMIT 2`;
+            if (!topicRows.length) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Unknown topic. Add its canonical mapping in Curriculum before importing.'});
+            if (topicRows.length>1) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Ambiguous topic. Use its unique canonical slug.'});
+        const topicId = topicRows[0].id;
+            if(item.subtopicSlug){const [parent]=await tx`SELECT m.topic_id FROM curriculum_topic_mappings m JOIN topics p ON p.id=m.parent_topic_id WHERE m.topic_id=${topicId}::uuid AND (p.slug=${item.topicTitle} OR p.title=${item.topicTitle})`;if(!parent)throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Subtopic must belong to the selected canonical topic.'});}
 
-            let passageId: string | null = null;
-            if (item.passageContent && item.passageContent.trim().length > 0) {
-              const passageRows = await tx<Array<{ id: string }>>`
-                INSERT INTO passages (subject_id, title, content)
-                VALUES (${subject.id}::uuid, ${item.passageTitle ?? null}, ${item.passageContent})
-                RETURNING id
-              `;
-              passageId = passageRows[0].id;
+            let passageId:string|null=null;
+            if(item.passageReference){
+              const [existing]=await tx`SELECT p.id,p.title,p.content FROM passage_import_references r JOIN passages p ON p.id=r.passage_id WHERE r.subject_id=${subject.id}::uuid AND r.external_reference=${item.passageReference}`;
+              if(existing){if((item.passageContent&&existing.content!==item.passageContent)||(item.passageTitle&&existing.title!==item.passageTitle))throw new ApiError({status:409,code:'CONFLICT',message:'A passage reference already exists with different content.'});passageId=String(existing.id);}
             }
+            if(!passageId&&item.passageContent?.trim()){
+              const [created]=await tx`INSERT INTO passages(subject_id,title,content) VALUES (${subject.id}::uuid,${item.passageTitle??null},${item.passageContent}) RETURNING id`;
+              passageId=String(created.id);if(item.passageReference)await tx`INSERT INTO passage_import_references(subject_id,external_reference,passage_id) VALUES (${subject.id}::uuid,${item.passageReference},${passageId}::uuid)`;
+            }
+            if(item.passageReference&&!passageId)throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'A new passage reference requires passage content.'});
 
             const questionRows = await tx<Array<{ id: string }>>`
               INSERT INTO questions (
@@ -517,7 +535,12 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
               )
             `;
 
+        await saveEditorialMetadata(tx, questionId, {...item,status:'draft'});
+        await recordQuestionHistory(tx, questionId, ctx.actor!.userId, 'question.imported');
+        if(item.externalReference) await tx`INSERT INTO question_import_references(subject_id,external_reference,question_id,request_hash) VALUES (${subject.id}::uuid,${item.externalReference},${questionId}::uuid,${rowHash})`;
       }
+      if (durableBatch) await finishImportBatch(tx, durableBatch, ctx.actor!.userId, skippedCount);
+      return {skippedCount};
 
       });
 
@@ -525,7 +548,9 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
         status: 200,
         body: {
           success: true,
-          importedCount: items.length,
+          importedCount: items.length-receipt.skippedCount,
+          processedCount: items.length,
+          skippedCount: receipt.skippedCount,
           totalReceived: items.length,
           errors: [],
         },
@@ -542,6 +567,9 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
  */
 export const ENABLED_PRODUCTION_ROUTE_IDS: ReadonlySet<string> = new Set([
   'system.health',
+  ...ADMIN_CURRICULUM_ROUTES.map(route => route.id),
+  ...ADMIN_WORKFLOW_ROUTES.map(route => route.id),
+  ...ADMIN_MEDIA_ROUTES.map(route => route.id),
   'auth.bootstrap',
   'auth.session.get',
   'auth.admin.session.get',
@@ -588,6 +616,9 @@ export const ENABLED_PRODUCTION_ROUTE_IDS: ReadonlySet<string> = new Set([
  * Full Route Registry for `/api/v1/*` and legacy webhook/admin aliases (Plan Section 6.2).
  */
 export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
+  ...ADMIN_CURRICULUM_ROUTES,
+  ...ADMIN_WORKFLOW_ROUTES,
+  ...ADMIN_MEDIA_ROUTES,
   // 0. Health / Readiness (Public, zero DB allocation)
   {
     id: 'system.health',
@@ -1532,8 +1563,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
         draft_count: number;
         total_count: number;
       }> = [];
-      try {
-        subjectRows = await dbCtx.sql<typeof subjectRows>`
+      subjectRows = await dbCtx.sql<typeof subjectRows>`
           SELECT
             s.code,
             s.name,
@@ -1546,9 +1576,6 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
           GROUP BY s.id, s.code, s.name, s.is_compulsory, s.display_order
           ORDER BY s.display_order ASC, s.code ASC
         `;
-      } catch {
-        // Fallback for mocked test environments
-      }
 
       const m = rows[0] ?? {
         total_students: 0,
@@ -1752,6 +1779,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
       >`
         SELECT
           q.id, q.editorial_revision,
+          (SELECT to_jsonb(m) FROM question_editorial_metadata m WHERE m.question_id=q.id) AS editorial_metadata,
           q.subject_id,
           s.code AS subject_code,
           s.name AS subject_name,
@@ -1828,7 +1856,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
 
       await dbCtx.runSerializableTransaction(async (tx) => {
         const subRows = await tx<Array<{ id: string }>>`
-          SELECT id FROM subjects WHERE code = ${item.subjectCode} LIMIT 1
+          SELECT id FROM subjects WHERE code = ${item.subjectCode} AND (${item.status ?? 'draft'} <> 'published' OR is_active) LIMIT 1
         `;
         const subject = subRows[0];
         if (!subject) {
@@ -1846,17 +1874,18 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
 
         await tx`SELECT id FROM subjects WHERE id=${subject.id}::uuid FOR UPDATE`;
         let topicRows = await tx<Array<{ id: string }>>`
-          SELECT id FROM topics WHERE subject_id=${subject.id}::uuid AND slug=${topicSlug} ORDER BY id LIMIT 1
+          SELECT id FROM topics WHERE subject_id=${subject.id}::uuid AND (${item.topicId??null}::uuid IS NULL OR id=${item.topicId??null}::uuid) AND (${item.topicId??null}::uuid IS NOT NULL OR slug=${topicSlug} OR title=${item.topicTitle} OR id IN (SELECT m.topic_id FROM curriculum_topic_mappings m WHERE EXISTS(SELECT 1 FROM jsonb_array_elements_text(m.aliases) a WHERE lower(a)=lower(${item.topicTitle})))) ORDER BY id LIMIT 2
         `;
-        if (!topicRows.length) {
-          topicRows = await tx<Array<{ id: string }>>`
-            INSERT INTO topics(subject_id, title, slug) VALUES (${subject.id}::uuid, ${item.topicTitle}, ${topicSlug}) RETURNING id
-          `;
-        }
+        if (!topicRows.length) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Choose an existing canonical topic. Add new topics in Curriculum.'});
+        if (topicRows.length>1) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Ambiguous topic. Use its unique canonical slug.'});
         const topicId = topicRows[0].id;
 
         let passageId: string | null = null;
-        if (item.passageContent && item.passageContent.trim().length > 0) {
+        if (item.reusePassageId) {
+          const [passage] = await tx`SELECT id FROM passages WHERE id=${item.reusePassageId}::uuid AND subject_id=${subject.id}::uuid`;
+          if (!passage) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Choose a passage belonging to this subject.'});
+          passageId = String(passage.id);
+        } else if (item.passageContent && item.passageContent.trim().length > 0) {
           const passageRows = await tx<Array<{ id: string }>>`
             INSERT INTO passages (subject_id, title, content)
             VALUES (${subject.id}::uuid, ${item.passageTitle ?? null}, ${item.passageContent})
@@ -1909,6 +1938,8 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
             ${ctx.adminActor?.userId ?? null}::uuid
           )
         `;
+        await saveEditorialMetadata(tx, questionId, item);
+        await recordQuestionHistory(tx, questionId, ctx.actor!.userId, 'question.created');
       });
 
       return {
@@ -1948,8 +1979,9 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
 
         if (!item.expectedRevision) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Reload the question before saving.'});
         if (existing[0].editorial_revision !== item.expectedRevision) throw new ApiError({status:409,code:'CONFLICT',message:'Another administrator changed this question. Your edits are retained; reload and compare before saving.'});
+        await recordQuestionHistory(tx, questionId, ctx.actor!.userId, 'question.baseline');
         const subRows = await tx<Array<{ id: string }>>`
-          SELECT id FROM subjects WHERE code = ${item.subjectCode} LIMIT 1
+          SELECT id FROM subjects WHERE code = ${item.subjectCode} AND (${item.status ?? 'draft'} <> 'published' OR is_active) LIMIT 1
         `;
         if (subRows.length === 0) {
           throw new ApiError({
@@ -1966,17 +1998,18 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
           .replace(/^-|-$/g, '');
         await tx`SELECT id FROM subjects WHERE id=${subjectId}::uuid FOR UPDATE`;
         let topicRows = await tx<Array<{ id: string }>>`
-          SELECT id FROM topics WHERE subject_id=${subjectId}::uuid AND slug=${topicSlug} ORDER BY id LIMIT 1
+          SELECT id FROM topics WHERE subject_id=${subjectId}::uuid AND (${item.topicId??null}::uuid IS NULL OR id=${item.topicId??null}::uuid) AND (${item.topicId??null}::uuid IS NOT NULL OR slug=${topicSlug} OR title=${item.topicTitle} OR id IN (SELECT m.topic_id FROM curriculum_topic_mappings m WHERE EXISTS(SELECT 1 FROM jsonb_array_elements_text(m.aliases) a WHERE lower(a)=lower(${item.topicTitle})))) ORDER BY id LIMIT 2
         `;
-        if (!topicRows.length) {
-          topicRows = await tx<Array<{ id: string }>>`
-            INSERT INTO topics(subject_id, title, slug) VALUES (${subjectId}::uuid, ${item.topicTitle}, ${topicSlug}) RETURNING id
-          `;
-        }
+        if (!topicRows.length) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Choose an existing canonical topic. Add new topics in Curriculum.'});
+        if (topicRows.length>1) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Ambiguous topic. Use its unique canonical slug.'});
         const topicId = topicRows[0].id;
 
         let passageId: string | null = null;
-        if (item.passageContent?.trim()) {
+        if (item.reusePassageId) {
+          const [passage] = await tx`SELECT id FROM passages WHERE id=${item.reusePassageId}::uuid AND subject_id=${subjectId}::uuid`;
+          if (!passage) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Choose a passage belonging to this subject.'});
+          passageId = String(passage.id);
+        } else if (item.passageContent?.trim()) {
           const rows = await tx<Array<{id:string}>>`INSERT INTO passages(subject_id,title,content) VALUES (${subjectId}::uuid,${item.passageTitle ?? null},${item.passageContent}) RETURNING id`;
           passageId = rows[0].id;
         }
@@ -2022,6 +2055,8 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
           ON CONFLICT (question_id) DO UPDATE
           SET explanation = EXCLUDED.explanation, verified_by = EXCLUDED.verified_by
         `;
+        await saveEditorialMetadata(tx, questionId, item);
+        await recordQuestionHistory(tx, questionId, ctx.actor!.userId, 'question.edited');
       });
 
       return {
@@ -2047,15 +2082,17 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
       const dbCtx = ctx.getDb();
       const updated = await dbCtx.runSerializableTransaction(async tx => {
         if (body.status === 'published') {
-          const valid = await tx`SELECT q.id FROM questions q JOIN subjects s ON s.id=q.subject_id JOIN topics t ON t.id=q.topic_id AND t.subject_id=q.subject_id WHERE q.id=${questionId}::uuid AND s.is_active AND length(trim(q.stem))>=5 AND (SELECT count(*) FROM question_options o WHERE o.question_id=q.id)=4 AND (SELECT count(DISTINCT label) FROM question_options o WHERE o.question_id=q.id AND label IN ('A','B','C','D') AND length(trim(content))>0)=4 AND (SELECT count(*) FROM question_options o WHERE o.question_id=q.id AND o.is_correct)=1 AND EXISTS(SELECT 1 FROM question_explanations e WHERE e.question_id=q.id AND length(trim(e.explanation))>=5) FOR UPDATE OF q`;
+          const valid = await tx`SELECT q.id FROM questions q JOIN subjects s ON s.id=q.subject_id JOIN topics t ON t.id=q.topic_id AND t.subject_id=q.subject_id WHERE q.id=${questionId}::uuid AND s.is_active AND length(trim(q.stem))>=5 AND (SELECT count(*) FROM question_options o WHERE o.question_id=q.id)=4 AND (SELECT count(DISTINCT label) FROM question_options o WHERE o.question_id=q.id AND label IN ('A','B','C','D') AND length(trim(content))>0)=4 AND (SELECT count(*) FROM question_options o WHERE o.question_id=q.id AND o.is_correct)=1 AND EXISTS(SELECT 1 FROM question_editorial_metadata m WHERE m.question_id=q.id AND length(trim(m.source_reference))>0 AND length(trim(m.rights_note))>0 AND (q.image_url IS NULL OR length(trim(m.image_alt))>0)) AND NOT EXISTS(SELECT 1 FROM curriculum_topic_mappings cm WHERE cm.topic_id=q.topic_id AND cm.reviewed_at IS NULL) AND EXISTS(SELECT 1 FROM question_editorial_metadata pm WHERE pm.question_id=q.id AND (pm.source_type<>'past_question' OR (q.exam_year IS NOT NULL AND q.exam_year<=EXTRACT(YEAR FROM CURRENT_DATE)))) AND EXISTS(SELECT 1 FROM question_explanations e WHERE e.question_id=q.id AND length(trim(e.explanation))>=5) FOR UPDATE OF q`;
           if (!valid.length) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Publishing requires an active subject, matching topic, four options, one correct answer and an explanation.'});
         }
-        return await tx<Array<{ id: string; status: string }>>`
+        const changed = await tx<Array<{ id: string; status: string }>>`
         UPDATE questions
         SET status = ${body.status}::question_status, editorial_revision = editorial_revision + 1
         WHERE id = ${questionId}::uuid
         RETURNING id, status
       `;
+        if (changed.length) await recordQuestionHistory(tx, questionId, ctx.actor!.userId, 'question.status');
+        return changed;
       });
 
       if (updated.length === 0) {
@@ -2101,42 +2138,17 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
         published_questions: number;
       }> = [];
 
-      try {
-        subjectRows = await dbCtx.sql<typeof subjectRows>`
-          SELECT
-            s.id,
-            s.code,
-            s.name,
-            s.is_compulsory,
-            s.is_active,
-            s.display_order,
-            COALESCE(
-              (
-                SELECT jsonb_agg(
-                  jsonb_build_object(
-                    'id', t.id,
-                    'title', t.title,
-                    'slug', t.slug,
-                    'total_questions', (SELECT COUNT(*)::int FROM questions q WHERE q.topic_id = t.id),
-                    'published_questions', (SELECT COUNT(*)::int FROM questions q WHERE q.topic_id = t.id AND q.status = 'published'),
-                    'draft_questions', (SELECT COUNT(*)::int FROM questions q WHERE q.topic_id = t.id AND q.status = 'draft')
-                  ) ORDER BY t.title ASC
-                )
-                FROM topics t
-                WHERE t.subject_id = s.id
-              ),
-              '[]'::jsonb
-            ) AS topics,
-            COUNT(q.id)::int AS total_questions,
-            COUNT(CASE WHEN q.status = 'published' THEN 1 END)::int AS published_questions
-          FROM subjects s
-          LEFT JOIN questions q ON q.subject_id = s.id
-          GROUP BY s.id, s.code, s.name, s.is_compulsory, s.is_active, s.display_order
-          ORDER BY s.display_order ASC, s.code ASC
-        `;
-      } catch {
-        // Fallback for mocked test environments
-      }
+      subjectRows = await dbCtx.sql<typeof subjectRows>`
+        WITH topic_counts AS (
+          SELECT topic_id,COUNT(*)::int AS total,COUNT(*) FILTER(WHERE status='published')::int AS published,COUNT(*) FILTER(WHERE status='draft')::int AS draft FROM questions GROUP BY topic_id
+        ), subject_counts AS (
+          SELECT subject_id,COUNT(*)::int AS total,COUNT(*) FILTER(WHERE status='published')::int AS published FROM questions GROUP BY subject_id
+        )
+        SELECT s.id,s.code,s.name,s.is_compulsory,s.is_active,s.display_order,
+          COALESCE((SELECT jsonb_agg(jsonb_build_object('id',t.id,'title',t.title,'slug',t.slug,'total_questions',COALESCE(c.total,0),'published_questions',COALESCE(c.published,0),'draft_questions',COALESCE(c.draft,0)) ORDER BY t.display_order,t.title,t.id) FROM topics t LEFT JOIN topic_counts c ON c.topic_id=t.id WHERE t.subject_id=s.id),'[]'::jsonb) AS topics,
+          COALESCE(sc.total,0) AS total_questions,COALESCE(sc.published,0) AS published_questions
+        FROM subjects s LEFT JOIN subject_counts sc ON sc.subject_id=s.id ORDER BY s.display_order,s.code
+      `;
 
       return {
         status: 200,
@@ -2256,16 +2268,21 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
       });
 
       const dbCtx = ctx.getDb();
-      const updated = await dbCtx.sql<Array<{ id: string; status: string }>>`
+      const updated = await dbCtx.runSerializableTransaction(async tx => {
+      const changed = await tx<Array<{ id: string; status: string }>>`
         UPDATE question_reports
         SET
           status = ${body.status}::report_status,
           admin_notes = ${body.adminNotes ?? null},
-          resolved_by = ${ctx.adminActor!.userId}::uuid,
-          resolved_at = ${ctx.now}
+          resolved_by = ${['resolved','dismissed'].includes(body.status)?ctx.adminActor!.userId:null}::uuid,
+          resolved_at = ${['resolved','dismissed'].includes(body.status)?ctx.now.toISOString():null}::timestamptz,
+          updated_at = ${ctx.now.toISOString()}::timestamptz
         WHERE id = ${reportId}::uuid
         RETURNING id, status
       `;
+      if(changed.length) await tx`INSERT INTO admin_audit_events(actor_id,action,entity_id,details) VALUES (${ctx.actor!.userId}::uuid,'report.moderated',${reportId}::uuid,${JSON.stringify({status:body.status})}::jsonb)`;
+      return changed;
+      });
 
       if (updated.length === 0) {
         throw new ApiError({
@@ -2300,6 +2317,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
       const subjectRows = await dbCtx.sql<Array<{ code: string }>>`
         SELECT code FROM subjects
       `;
+      const topicRows = await dbCtx.sql<Array<{code:string;title:string;slug:string;aliases:string[];parent_slug:string|null;parent_title:string|null}>>`SELECT s.code,t.title,t.slug,COALESCE(m.aliases,'[]'::jsonb) AS aliases,(SELECT p.slug FROM topics p WHERE p.id=m.parent_topic_id) AS parent_slug,(SELECT p.title FROM topics p WHERE p.id=m.parent_topic_id) AS parent_title FROM topics t JOIN subjects s ON s.id=t.subject_id LEFT JOIN curriculum_topic_mappings m ON m.topic_id=t.id WHERE s.code=ANY(ARRAY(SELECT jsonb_array_elements_text(${JSON.stringify(items.map(i=>i.subjectCode))}::jsonb)))`;
       const knownCodes = new Set(subjectRows.map((s) => s.code));
 
       const validationResults = items.map((item, index) => {
@@ -2307,6 +2325,9 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
         if (!knownCodes.has(item.subjectCode)) {
           errors.push(`Unknown subject code: '${item.subjectCode}'`);
         }
+        const matches=topicRows.filter(t=>t.code===item.subjectCode && (t.slug===(item.subtopicSlug||item.topicTitle) || t.title===(item.subtopicSlug||item.topicTitle) || t.aliases?.some(a=>a.toLowerCase()===(item.subtopicSlug||item.topicTitle).toLowerCase())));
+        if(item.subtopicSlug&&matches.length===1&&matches[0].parent_slug!==item.topicTitle&&matches[0].parent_title!==item.topicTitle)errors.push('Subtopic belongs to a different canonical topic.');
+        if (matches.length!==1) errors.push(matches.length?'Ambiguous topic: use a unique canonical slug.':'Unknown topic: add its canonical mapping first.');
         return {
           row: index + 1,
           subjectCode: item.subjectCode,

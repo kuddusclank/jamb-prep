@@ -10,9 +10,10 @@ const lockPath=ledgerPath+'.lock';
 const lock=fs.openSync(lockPath,'wx',0o600);
 process.on('exit',()=>{fs.closeSync(lock);fs.unlinkSync(lockPath);});
 const ledger=fs.existsSync(ledgerPath)?JSON.parse(fs.readFileSync(ledgerPath,'utf8')):{budget:250,maxConcurrency:3,used:0,operations:[]};
-if(ledger.used>=ledger.budget) throw Error('Staging budget exhausted');
+const allowance=ledger.activeVerificationBudget ? ledger[ledger.activeVerificationBudget] : ledger;
+if(allowance.used >= (allowance.limit ?? allowance.budget)) throw Error('Verification budget exhausted');
 const id=ledger.operations.length+1;
-ledger.used++;ledger.operations.push({id,action,status:'reserved',at:new Date().toISOString()});
+allowance.used++;ledger.operations.push({id,action,status:'reserved',at:new Date().toISOString()});
 fs.writeFileSync(ledgerPath,JSON.stringify(ledger,null,2)+'\n');
 const values={};for(const line of fs.readFileSync('.env.local','utf8').split('\n')){const m=/^([A-Z_]+)=(.*)$/.exec(line);if(m)values[m[1]]=m[2].trim().replace(/^['"]|['"]$/g,'');}
 const url=new URL(values.DATABASE_URL);
@@ -31,4 +32,4 @@ fs.writeFileSync(path.join(directory,'approved-live-migrations.txt'),(result.std
 else {const file=path.join(directory,`pre-native-${Date.now()}.dump`);fs.closeSync(fs.openSync(file,'wx',0o600));result=spawnSync('/opt/homebrew/opt/libpq/bin/pg_dump',['--format=custom','--no-owner','--no-acl','--file',file],{env,encoding:'utf8',timeout:180000});if(fs.existsSync(file))fs.chmodSync(file,0o600);if(result.status===0){const check=spawnSync('/opt/homebrew/opt/libpq/bin/pg_restore',['--list',file],{encoding:'utf8'});if(check.status!==0)throw Error('Backup archive inspection failed');console.log('Private backup archive created and readable; restore rehearsal still required.');}}
 const latest=JSON.parse(fs.readFileSync(ledgerPath,'utf8'));const operation=latest.operations.find(item=>item.id===id);operation.status=result.status===0?'passed':'failed';operation.completedAt=new Date().toISOString();fs.writeFileSync(ledgerPath,JSON.stringify(latest,null,2)+'\n');
 // Credentials and raw connection diagnostics stay out of terminal output.
-if(result.status!==0){fs.writeFileSync(path.join(directory,`${action}-failure.txt`),result.stderr||String(result.error||'Failed'),{mode:0o600});console.log(`${action} failed; diagnostic stored privately.`);process.exitCode=1;}else console.log(`${action} passed; budget ${ledger.used}/${ledger.budget}.`);
+if(result.status!==0){fs.writeFileSync(path.join(directory,`${action}-failure.txt`),result.stderr||String(result.error||'Failed'),{mode:0o600});console.log(`${action} failed; diagnostic stored privately.`);process.exitCode=1;}else console.log(`${action} passed; budget ${allowance.used}/${allowance.limit ?? allowance.budget}.`);

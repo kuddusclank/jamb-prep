@@ -8,7 +8,7 @@
 
 ## Reviewer status — 12 October 2026
 
-**Partial implementation; original completed checkboxes below are the author’s claims, not full BMAD acceptance.** See admin-review-and-fixes.md for confirmed findings, corrections and remaining release gates. Persistent import jobs, provenance, editorial revision/audit, managed media and full syllabus mapping were not delivered. The report component was not mounted in student practice until this review. Production deployment/schema application have not been verified by these local checks.
+**Reviewed content-management software and workflow expansion published.** See `admin-review-and-fixes.md` for release evidence and remaining acceptance gates. Durable import jobs, provenance, editorial history/audit, managed media, reusable passages, canonical mapping tools and read-only support/system views now exist. Complete syllabus editorial mapping, additional subject activation, detailed support operations and physical-device/load acceptance remain open; the full A00–A10 proposal is not marked complete.
 
 ## Task Progress
 
@@ -66,3 +66,19 @@
   - [x] Stage and commit all changes in `jambprep`.
   - [x] Push `feat/admin-portal-expansion` to `origin`.
   - [x] Provide PR link and summary.
+
+
+## Reviewer expansion delivery — 12 October 2026
+
+- [x] Durable import jobs and batch replay receipts, cross-file reference deduplication, variable byte-bounded chunks and original v1 template compatibility.
+- [x] Source/rights/tags/diagram metadata and equivalent publishing safeguards in full editor and quick status action.
+- [x] Immutable editorial history, audit records, source-backed canonical topic/alias/hierarchy authoring.
+- [x] Managed diagram storage/rendering, reusable passage selection and library.
+- [x] Read-only student/payment support and recovery/configuration views.
+- [x] Responsive desktop sidebar/mobile menu, focus/touch targets and inline moderation errors.
+- [x] Additive production migrations, native API and Pages publication; bounded access-control/page/media checks.
+- [ ] Full official leaf taxonomy, annual required-work/subject availability review and controlled activation.
+- [ ] Extended support investigation, downloadable row-level import receipts/cancellation and staff tiers/retention policy.
+- [ ] Hosted authenticated authoring and real iPhone acceptance, newest-backup restore rehearsal and load/CPU certification.
+
+Release: API `8493bd46-8eb7-4286-a300-ae62b0c81421`; Pages `35922fa8`. No hosted signup or charge. The unrelated user-supplied question CSV was left untouched.

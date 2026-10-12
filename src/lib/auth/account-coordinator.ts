@@ -70,18 +70,18 @@ export function createAccountCoordinator(manager: BrowserSessionManager, api: Na
       if (path === '/api/v1/referrals') await loadIdentity();
       return load<T>(path, async () => (await api.request<T>(path)).data);
     },
-    async mutate<T>(path: string, body: unknown, method: "POST" | "PUT" | "PATCH" = "POST") {
+    async mutate<T>(path: string, body: unknown, method: "POST" | "PUT" | "PATCH" = "POST", headers?: Record<string,string>) {
       const userId = manager.getState().user?.id;
       if (!userId) throw new Error("Sign in to continue.");
       const started = actorGeneration;
-      const intent = JSON.stringify({ userId, path, method, body });
+      const intent = JSON.stringify({ userId, path, method, body, headers });
       const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(intent)));
       const hash = Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
       if (started !== actorGeneration) throw new Error("Account changed. Please retry.");
       const key = mutationKeys.get(hash) ?? `write-${crypto.randomUUID()}`;
       mutationKeys.set(hash, key);
       let result;
-      try {result = await api.request<T>(path, { method, body, idempotencyKey: key });}
+      try {result = await api.request<T>(path, { method, body, idempotencyKey: key, headers });}
       catch(error) {if(error && typeof error==='object' && 'code' in error && error.code==='PAYMENT_FAILED')mutationKeys.delete(hash);throw error;}
       if (started !== actorGeneration || manager.getState().user?.id !== userId) throw new Error("Account changed. Please retry.");
       mutationKeys.delete(hash);

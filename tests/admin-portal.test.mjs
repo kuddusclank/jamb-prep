@@ -449,7 +449,7 @@ test('4. Question Create & Update: Validates input, creates draft or published, 
         'Content-Type': 'application/json',
         'Idempotency-Key': 'admin-authoring-test',
       },
-      body: JSON.stringify({ ...validPayload, status: 'published', expectedRevision: 1 }),
+      body: JSON.stringify({ ...validPayload, status: 'published', expectedRevision: 1, sourceReference:'Test author', rightsNote:'Original test fixture' }),
     }),
     { SUPABASE_URL: TEST_SUPABASE_URL },
     { waitUntil() {} }
@@ -712,6 +712,7 @@ test('8. CSV Import Preflight: Validates batch items and flags invalid subjects'
   const db = createSimulatedAdminDb((queryText) => {
     if (queryText.includes('FROM profiles')) return [{ id: ADMIN_ID, role: 'admin' }];
     if (queryText.includes('SELECT code FROM subjects')) return [{ code: 'ENG' }, { code: 'MTH' }];
+    if (queryText.includes('FROM topics t JOIN subjects')) return [{code:'ENG',title:'Grammar',slug:'grammar',aliases:[]}];
     return [];
   });
 

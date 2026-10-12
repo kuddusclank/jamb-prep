@@ -1,15 +1,25 @@
 "use client";
 
 import { Suspense, useState, useRef } from "react";
+import { useApiResource } from "@/lib/api/use-api-resource";
 import Link from "next/link";
 import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
 
-import { parseRfcCsv, sanitizeCell } from "@/lib/admin-csv";
+import { parseRfcCsv, sanitizeCell, buildImportBatches, escapeCsvCell } from "@/lib/admin-csv";
 
-const CSV_HEADER = "subject_code,topic_slug,stem,option_a,option_b,option_c,option_d,correct_option,explanation,difficulty,exam_year,passage_title,passage_content,image_url";
-const SAMPLE_CSV_ROWS = [CSV_HEADER,'ENG,comprehension,"What is the opposite of hot?",Cold,Warm,Boiling,Heated,A,"Cold is the opposite of hot.",easy,,,,'].join("\r\n");
+const CSV_HEADER = "template_version,external_reference,subject_code,topic_slug,subtopic_slug,stem,option_a,option_b,option_c,option_d,correct_option,explanation,difficulty,exam_year,source_type,source_reference,rights_note,passage_reference,passage_title,passage_content,image_url,image_alt,tags";
+const SAMPLE_CSV_ROWS = [CSV_HEADER,'v1,ENG-ORIGINAL-001,ENG,reading-comprehension,,"In the passage, what colour is the sky?",Blue,Green,Red,Black,A,"The passage states that the sky is blue.",easy,,original,JAMBPrep original example,Original educational example,EXAMPLE-PASSAGE,Example passage,"The sky is blue on a clear day.",,,comprehension'].join("\r\n");
 
 interface ParsedQuestion {
+  templateVersion?:string;
+  subtopicSlug?:string;
+  passageReference?:string;
+  tags?:string[];
+  externalReference?:string;
+  sourceType?:"original"|"past_question"|"adapted";
+  sourceReference?:string;
+  rightsNote?:string;
+  imageAlt?:string;
   subjectCode: string;
   topicTitle: string;
   stem: string;
@@ -33,6 +43,7 @@ interface ValidationRow {
 }
 
 function ImportContent() {
+  const jobs = useApiResource<{jobs:Array<{id:string;status:string;completed_rows:number;total_rows:number}>}>("/api/v1/admin/import-jobs");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [rawText, setRawText] = useState("");
   const [parsedQuestions, setParsedQuestions] = useState<ParsedQuestion[]>([]);
@@ -44,6 +55,12 @@ function ImportContent() {
   const [progressMsg, setProgressMsg] = useState("");
   const [receiptMsg, setReceiptMsg] = useState("");
 
+  async function downloadTopicReference(){
+    try{const data=await getAccountCoordinator().loadResource<{activeSubjects:Array<{code:string;name:string;is_active:boolean;topics:Array<{slug:string;title:string}>}>}>("/api/v1/admin/curriculum");
+    const lines=["subject_code,subject_name,topic_slug,topic_title,student_subject_active"];
+    for(const subject of data.activeSubjects)for(const topic of subject.topics)lines.push([subject.code,subject.name,topic.slug,topic.title,subject.is_active].map(escapeCsvCell).join(","));downloadCsvFile("jambprep_topic_reference.csv",lines.join("\r\n"));
+    }catch(error){setParseError(error instanceof Error?error.message:"Unable to download topic reference.");}
+  }
   function downloadCsvFile(filename: string, content: string) {
     const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -144,7 +161,21 @@ function ImportContent() {
         const difficulty = (["easy", "medium", "hard"].includes(diffRaw) ? diffRaw : "medium") as "easy" | "medium" | "hard";
         const examYear = yearRaw ? parseInt(yearRaw, 10) || null : null;
 
+        const sourceType=header.includes("source_type") ? sanitizeCell(row[header.indexOf("source_type")]) || "original" : "original";
+        if(!["original","past_question","adapted"].includes(sourceType))throw new Error(`Row ${r+1}: invalid source_type.`);
+        const version=header.includes("template_version")?sanitizeCell(row[header.indexOf("template_version")]):undefined;
+        if(version!==undefined&&version!=="v1")throw new Error(`Row ${r+1}: template_version must be v1.`);
+        if(version&&!sanitizeCell(row[header.indexOf("external_reference")]??""))throw new Error(`Row ${r+1}: v1 needs an external_reference.`);
         questions.push({
+          templateVersion:version,
+          subtopicSlug:header.includes("subtopic_slug")?sanitizeCell(row[header.indexOf("subtopic_slug")]):"",
+          passageReference:header.includes("passage_reference")?sanitizeCell(row[header.indexOf("passage_reference")]):"",
+          tags:header.includes("tags")?sanitizeCell(row[header.indexOf("tags")]).split("|").map(t=>t.trim()).filter(Boolean):[],
+          externalReference:header.includes("external_reference")?sanitizeCell(row[header.indexOf("external_reference")]):"",
+          sourceType:sourceType as "original"|"past_question"|"adapted",
+          sourceReference:header.includes("source_reference")?sanitizeCell(row[header.indexOf("source_reference")]):"",
+          rightsNote:header.includes("rights_note")?sanitizeCell(row[header.indexOf("rights_note")]):"",
+          imageAlt:header.includes("image_alt")?sanitizeCell(row[header.indexOf("image_alt")]):"",
           subjectCode,
           topicTitle: topicTitle || "General",
           stem,
@@ -169,12 +200,13 @@ function ImportContent() {
   async function handleDryRunValidation() {
     if (parsedQuestions.length === 0) return;
     setBusy(true);
+    setParseError("");
     setProgressMsg("Running preflight validation checks…");
 
     try {
       const allRows: ValidationRow[] = [];
-      for (let offset = 0; offset < parsedQuestions.length; offset += 10) {
-        const res = await getAccountCoordinator().mutate<{rows:ValidationRow[]}>("/api/v1/admin/questions/import/dry-run", parsedQuestions.slice(offset, offset + 10), "POST");
+      for (const {offset,rows} of buildImportBatches(parsedQuestions)) {
+        const res = await getAccountCoordinator().mutate<{rows:ValidationRow[]}>("/api/v1/admin/questions/import/dry-run", rows, "POST");
         allRows.push(...res.rows.map(row => ({...row,row:row.row + offset})));
       }
       setValidationResults(allRows);
@@ -196,32 +228,42 @@ function ImportContent() {
     let totalImported = Math.min(completedBatches.current * batchSize, parsedQuestions.length);
 
     try {
-      for (let i = completedBatches.current; i < totalBatches; i++) {
-        const batch = parsedQuestions.slice(i * batchSize, (i + 1) * batchSize);
+      const bytes = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawText.replace(/^\uFEFF/, "").replace(/\r\n/g,"\n").trim())));
+      const fileHash = Array.from(bytes, b=>b.toString(16).padStart(2,"0")).join("");
+      const job = await getAccountCoordinator().mutate<{id:string;completed_rows:number;completed_batches:number;status:string}>("/api/v1/admin/import-jobs",{fileHash,totalRows:parsedQuestions.length});
+      completedBatches.current = Number(job.completed_batches);
+      totalImported = Number(job.completed_rows);
+      const pendingBatches=buildImportBatches(parsedQuestions.slice(totalImported));
+      const firstBatchIndex=completedBatches.current;
+      for (let pendingIndex=0;pendingIndex<pendingBatches.length;pendingIndex++) {
+        const i=firstBatchIndex+pendingIndex;
+        const batch=pendingBatches[pendingIndex].rows;
         setProgressMsg(
-          `Importing batch ${i + 1} of ${totalBatches} (${Math.round(
-            (i / totalBatches) * 100
+          `Importing batch ${i + 1} (${Math.round(
+            (totalImported / parsedQuestions.length) * 100
           )}%)...`
         );
 
-        const res = await getAccountCoordinator().mutate<{ importedCount: number }>(
+        const res = await getAccountCoordinator().mutate<{ importedCount: number; processedCount:number;skippedCount:number }>(
           "/api/v1/admin/questions/import",
           batch,
-          "POST"
+          "POST",
+          {"X-Import-Job":job.id,"X-Import-Batch":String(i)}
         );
-        totalImported += res.importedCount ?? batch.length;
+        totalImported += res.processedCount ?? batch.length;
         completedBatches.current = i + 1;
       }
 
+      jobs.retry();
       setReceiptMsg(
-        `Successfully imported draft ${totalImported} questions across ${totalBatches} batches into the question bank!`
+        `Job ${job.id}: successfully imported processed ${totalImported} rows across ${completedBatches.current} batches into the question bank!`
       );
       setProgressMsg("");
       setParsedQuestions([]);
       setRawText("");
     } catch (err) {
       setParseError(
-        `${totalImported} rows committed. Retry resumes at the next unfinished batch. ${err instanceof Error ? err.message : "Import failed."}`
+        `${totalImported} rows committed. Re-select this same CSV after a reload to resume from the server receipt. ${err instanceof Error ? err.message : "Import failed."}`
       );
     } finally {
       setBusy(false);
@@ -233,6 +275,7 @@ function ImportContent() {
 
 
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+        <section className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-950"><strong>Imports are recoverable.</strong> Upload the same file on any device signed into your admin account to resume; completed files will not import twice. {jobs.data?.jobs.map(job=><p key={job.id} className="mt-2 text-xs">{job.id.slice(0,8)} · {job.completed_rows}/{job.total_rows} rows · {job.status}</p>)}</section>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             CSV Template & Bulk Import Tool
@@ -269,7 +312,7 @@ function ImportContent() {
               className="mt-4 inline-flex items-center rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2 text-xs font-semibold text-[#116149] hover:bg-emerald-100"
             >
               📥 Download Sample CSV
-            </button>
+            </button><button type="button" onClick={()=>void downloadTopicReference()} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-emerald-800">Download subject/topic reference</button>
           </div>
         </div>
 

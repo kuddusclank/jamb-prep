@@ -98,6 +98,7 @@ test('real PostgreSQL: admin create replays once and editing a shared passage is
  try{await assert.rejects(sql.begin('isolation level serializable',async tx=>{
   const uid=crypto.randomUUID();await tx`INSERT INTO auth.users(id,email) VALUES (${uid}::uuid,${`admin-${uid}@example.invalid`})`;await tx`INSERT INTO profiles(id,email,display_name,role) VALUES (${uid}::uuid,${`admin-${uid}@example.invalid`},'Admin fixture','admin') ON CONFLICT(id) DO NOTHING`;
   const db={sql:tx,isHyperdrive:false,runSerializableTransaction:fn=>fn(tx),runCommittedTransaction:fn=>fn(tx)};
+  await tx`INSERT INTO topics(subject_id,title,slug) SELECT id,'Comprehension','comprehension' FROM subjects WHERE code='ENG' AND NOT EXISTS(SELECT 1 FROM topics t WHERE t.subject_id=subjects.id AND t.slug='comprehension')`;
   const payload={subjectCode:'ENG',topicTitle:'Comprehension',stem:'Local admin fixture question?',options:{A:'First',B:'Second',C:'Third',D:'Fourth'},correctOption:'B',explanation:'Local explanation fixture',difficulty:'medium',status:'draft',passageTitle:'Fixture',passageContent:'Original shared passage'};
   const invoke=(id,body,key,params={})=>NATIVE_API_ROUTES.find(r=>r.id===id).handler({request:new Request('http://localhost',{method:id.includes('update')?'PUT':'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key},body:JSON.stringify(body)}),actor:{userId:uid},adminActor:{userId:uid},now:new Date(),getDb:()=>db,params});
   const first=await invoke('admin.questions.create',payload,'create-first');const replay=await invoke('admin.questions.create',payload,'create-first');assert.equal(replay.body.questionId,first.body.questionId);
@@ -107,6 +108,36 @@ test('real PostgreSQL: admin create replays once and editing a shared passage is
   await assert.rejects(invoke('admin.questions.update',{...payload,expectedRevision:1,passageContent:'Stale edit'},'stale-edit',{questionId:first.body.questionId}),e=>e.status===409);
   const [other]=await tx`SELECT p.content FROM questions q JOIN passages p ON p.id=q.passage_id WHERE q.id=${second.body.questionId}::uuid`;assert.equal(other.content,'Original shared passage');
   await invoke('admin.questions.update',{...payload,expectedRevision:2,passageContent:null},'remove-passage',{questionId:first.body.questionId});const [removed]=await tx`SELECT passage_id FROM questions WHERE id=${first.body.questionId}::uuid`;assert.equal(removed.passage_id,null);
+  await tx`UPDATE question_editorial_metadata SET source_reference='Fixture author',rights_note='Original fixture',source_type='past_question' WHERE question_id=${first.body.questionId}::uuid`;
+  await assert.rejects(invoke('admin.questions.status.patch',{status:'published'},'publish-missing-year',{questionId:first.body.questionId}),e=>e.status===422);
+  await tx`UPDATE question_editorial_metadata SET source_type='original' WHERE question_id=${first.body.questionId}::uuid`;
+  const published=await invoke('admin.questions.status.patch',{status:'published'},'publish-valid',{questionId:first.body.questionId});assert.equal(published.body.status,'published');
   throw rollback;
+ }),e=>e===rollback);}finally{await sql.end();}
+});
+
+test('real PostgreSQL: import survives retries, stores receipts and prevents changed batch replay',{skip:!enabled,timeout:20000},async()=>{
+ const {NATIVE_API_ROUTES}=await import('../worker/api/router.ts');const url=fs.readFileSync(path.join(os.homedir(),'.codex/private-backups/jambprep/local-runtime.env'),'utf8').trim().slice('DATABASE_URL='.length);assert.equal(new URL(url).hostname,'127.0.0.1');const sql=postgres(url,{max:1,prepare:false});const rollback=new Error('DURABLE_IMPORT_FIXTURE_ROLLBACK');
+ try{await assert.rejects(sql.begin('isolation level serializable',async tx=>{
+ const uid=crypto.randomUUID();await tx`INSERT INTO auth.users(id,email) VALUES (${uid}::uuid,${`import-${uid}@example.invalid`})`;await tx`INSERT INTO profiles(id,email,display_name,role) VALUES (${uid}::uuid,${`import-${uid}@example.invalid`},'Import fixture','admin') ON CONFLICT(id) DO NOTHING`;
+ await tx`INSERT INTO topics(subject_id,title,slug) SELECT id,'Import fixture','import-fixture' FROM subjects WHERE code='ENG'`;
+ const db={sql:tx,isHyperdrive:false,runSerializableTransaction:fn=>tx.savepoint(fn),runCommittedTransaction:fn=>tx.savepoint(fn)};
+ const invoke=(id,body,key,headers={})=>NATIVE_API_ROUTES.find(r=>r.id===id).handler({request:new Request('http://localhost',{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key,...headers},body:JSON.stringify(body)}),actor:{userId:uid},adminActor:{userId:uid},now:new Date(),getDb:()=>db});
+ const manifest={fileHash:'a'.repeat(64),totalRows:12};const job=(await invoke('admin.import.start',manifest,'job-start')).body;
+ const row=i=>({externalReference:`LOCAL-IMPORT-${i}`,subjectCode:'ENG',topicTitle:'import-fixture',stem:`[LOCAL DURABLE IMPORT] Question ${i}`,options:{A:'First',B:'Second',C:'Third',D:'Fourth'},correctOption:'A',explanation:'Local import explanation fixture',difficulty:'medium'});
+ const first=Array.from({length:10},(_,i)=>row(i));await invoke('admin.questions.import',first,'first-batch',{'X-Import-Job':job.id,'X-Import-Batch':'0'});
+ const resumed=(await invoke('admin.import.start',manifest,'job-reopen')).body;assert.equal(Number(resumed.completed_rows),10);assert.equal(Number(resumed.completed_batches),1);
+ await invoke('admin.questions.import',first,'first-batch-after-reload',{'X-Import-Job':job.id,'X-Import-Batch':'0'});
+ await assert.rejects(invoke('admin.questions.import',[...first.slice(0,9),row(99)],'changed-replay',{'X-Import-Job':job.id,'X-Import-Batch':'0'}),e=>e.status===409);
+ await assert.rejects(invoke('admin.questions.import',[row(10),{...row(11),topicTitle:'unknown-topic'}],'second-invalid',{'X-Import-Job':job.id,'X-Import-Batch':'1'}),e=>e.status===422);
+ const [partial]=await tx`SELECT count(*)::int AS n FROM questions WHERE stem LIKE '[LOCAL DURABLE IMPORT]%'`;assert.equal(partial.n,10);
+ await invoke('admin.questions.import',[row(10),row(11)],'second-good',{'X-Import-Job':job.id,'X-Import-Batch':'1'});
+ const [complete]=await tx`SELECT * FROM admin_import_jobs WHERE id=${job.id}::uuid`;assert.equal(complete.status,'completed');assert.equal(Number(complete.completed_rows),12);
+ const [bank]=await tx`SELECT count(*)::int AS n FROM questions WHERE stem LIKE '[LOCAL DURABLE IMPORT]%'`;assert.equal(bank.n,12);
+ const [history]=await tx`SELECT count(*)::int AS n FROM question_editorial_history WHERE actor_id=${uid}::uuid`;assert.equal(history.n,12);
+ const otherJob=(await invoke('admin.import.start',{fileHash:'b'.repeat(64),totalRows:10},'second-manifest')).body;
+ const duplicates=(await invoke('admin.questions.import',first,'cross-file-batch',{'X-Import-Job':otherJob.id,'X-Import-Batch':'0'})).body;assert.equal(duplicates.skippedCount,10);assert.equal(duplicates.importedCount,0);
+ const [unchanged]=await tx`SELECT count(*)::int AS n FROM questions WHERE stem LIKE '[LOCAL DURABLE IMPORT]%'`;assert.equal(unchanged.n,12);
+ throw rollback;
  }),e=>e===rollback);}finally{await sql.end();}
 });

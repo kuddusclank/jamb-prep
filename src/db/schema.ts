@@ -322,3 +322,27 @@ export const paymentRenewalRequests=pgTable('payment_renewal_requests',{
  reference:text('reference').references(()=>paymentTransactions.reference).primaryKey(),userId:uuid('user_id').references(()=>profiles.id,{onDelete:'cascade'}).notNull(),
  status:text('status').notNull(),planCode:text('plan_code').notNull(),customerCode:text('customer_code').notNull(),authorizationCode:text('authorization_code').notNull(),subscriptionCode:text('subscription_code'),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
 },table=>[index('payment_renewal_user_idx').on(table.userId,table.status)]).enableRLS();
+
+export const adminImportJobs = pgTable('admin_import_jobs', {
+  id: uuid('id').defaultRandom().primaryKey(), actorId: uuid('actor_id').references(()=>profiles.id).notNull(),
+  fileHash: text('file_hash').notNull(), totalRows: integer('total_rows').notNull(), completedRows: integer('completed_rows').default(0).notNull(), completedBatches: integer('completed_batches').default(0).notNull(), status:text('status').default('in_progress').notNull(), createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(), updatedAt:timestamp('updated_at',{withTimezone:true}).defaultNow().notNull(),
+}, table=>[uniqueIndex('admin_import_jobs_actor_id_file_hash_key').on(table.actorId,table.fileHash)]).enableRLS();
+export const adminImportBatches=pgTable('admin_import_batches',{
+ jobId:uuid('job_id').references(()=>adminImportJobs.id,{onDelete:'cascade'}).notNull(),batchIndex:integer('batch_index').notNull(),requestHash:text('request_hash').notNull(),importedCount:integer('imported_count').notNull(),skippedCount:integer('skipped_count').default(0).notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},table=>[primaryKey({columns:[table.jobId,table.batchIndex]})]).enableRLS();
+export const questionEditorialMetadata=pgTable('question_editorial_metadata',{
+ questionId:uuid('question_id').primaryKey().references(()=>questions.id,{onDelete:'cascade'}),sourceType:text('source_type').default('original').notNull(),sourceReference:text('source_reference').default('').notNull(),rightsNote:text('rights_note').default('').notNull(),imageAlt:text('image_alt').default('').notNull(),tags:jsonb('tags').default([]).notNull(),
+}).enableRLS();
+export const questionEditorialHistory=pgTable('question_editorial_history',{
+ id:uuid('id').defaultRandom().primaryKey(),questionId:uuid('question_id').references(()=>questions.id).notNull(),revision:integer('revision').notNull(),actorId:uuid('actor_id').references(()=>profiles.id),action:text('action').notNull(),snapshot:jsonb('snapshot').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},table=>[uniqueIndex('question_editorial_history_question_id_revision_key').on(table.questionId,table.revision)]).enableRLS();
+export const adminAuditEvents=pgTable('admin_audit_events',{
+ id:uuid('id').defaultRandom().primaryKey(),actorId:uuid('actor_id').references(()=>profiles.id),action:text('action').notNull(),entityId:uuid('entity_id'),details:jsonb('details').default({}).notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},table=>[index('admin_audit_created_idx').on(table.createdAt,table.id)]).enableRLS();
+export const curriculumTopicMappings=pgTable('curriculum_topic_mappings',{
+ topicId:uuid('topic_id').primaryKey().references(()=>topics.id,{onDelete:'cascade'}),parentTopicId:uuid('parent_topic_id').references(()=>topics.id,{onDelete:'set null'}),sourceSubject:text('source_subject').notNull(),sourceUrl:text('source_url').notNull(),sourceHash:text('source_hash').notNull(),pageNumber:integer('page_number').notNull(),aliases:jsonb('aliases').default([]).notNull(),reviewedBy:uuid('reviewed_by').references(()=>profiles.id),reviewedAt:timestamp('reviewed_at',{withTimezone:true}),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+}).enableRLS();
+
+export const questionImportReferences=pgTable('question_import_references',{subjectId:uuid('subject_id').references(()=>subjects.id).notNull(),externalReference:text('external_reference').notNull(),questionId:uuid('question_id').references(()=>questions.id).notNull(),requestHash:text('request_hash').notNull()},table=>[primaryKey({columns:[table.subjectId,table.externalReference]})]).enableRLS();
+
+export const passageImportReferences=pgTable('passage_import_references',{subjectId:uuid('subject_id').references(()=>subjects.id).notNull(),externalReference:text('external_reference').notNull(),passageId:uuid('passage_id').references(()=>passages.id).notNull()},table=>[primaryKey({columns:[table.subjectId,table.externalReference]})]).enableRLS();

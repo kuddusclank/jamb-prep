@@ -32,12 +32,12 @@ Reviewed 12 October 2026 against admin-expansion-plan.md and commit a37532d. The
 
 ## Remaining original-plan work (not delivered by the other agent)
 
-- [ ] Durable server import jobs, receipts and deduplication across reloads/devices. Current retry recovery is tab-local; do not claim reload-safe jobs.
-- [ ] Source/provenance/licensing schema and publication checklist. Current native publishing validates existing content fields, not unimplemented rights records.
-- [ ] Full editorial version history and admin audit trail. Optimistic edit conflict detection is now implemented, but historical comparison/audit tooling is not.
+- [x] Durable server import jobs, per-batch receipts and external-reference deduplication across reloads/devices. Same-file progress is stored per administrator; imported content stays draft.
+- [x] Source/provenance/rights records, tags and publication checks, including diagram alternative text and actual past examination years.
+- [x] Immutable editorial versions and admin audit trail; latest 50 question versions and 100 activity records are viewable. Older stored records remain retained; extended pagination/export remains follow-up scope.
 - [ ] Complete official-topic mapping, controlled aliases/hierarchy, reviewed activation of all 25 subjects. Research outlines alone are not complete taxonomy.
-- [ ] Managed media upload, accessible image alt text and reusable passage library.
-- [ ] Student/attempt/payment support and audit/system-health tools.
+- [x] Managed PNG/JPEG/WebP diagram upload, content-addressed R2 storage/cache, accessible image alt text, student rendering and reusable subject passage library.
+- [x] Read-only student/payment support, completed-attempt and qualified-referral counts, audit and recovery/system configuration views. Detailed attempt investigation, referral case tools and staff permission tiers remain follow-up proposals.
 - [ ] Hosted schema inspection, private backup, controlled report migration/API/Pages publication, authenticated browser/mobile verification and CPU checks.
 
 These require their own implementation/release pass; the tasklist must not mark the full BMAD expansion accepted from the existing eight simulated tests.
@@ -45,3 +45,16 @@ These require their own implementation/release pass; the tasklist must not mark 
 ## Production publication — 12 October 2026
 
 User approved publication. Fresh private pg_dump archive created and inspected before applying drizzle/0005_question_reports.sql and 0006_question_editorial_revision.sql. Production database postcheck confirms authenticated browser INSERT privilege false and editorial_revision present. API version 675c43bf-00c4-4c07-bc49-e303ffd79c4b and Pages deployment 4d4793a5 published through the existing custom-domain router. /admin/questions/ and /admin/import/ return 200; unauthenticated native question-library and admin-session calls return 401. No hosted signup, charge or authenticated browser content-management action was performed. Browser/mobile visual QA and the undelivered original-plan features remain open. Earlier local-only evidence describes the state before this approved publication.
+
+
+## Admin workflow expansion publication — 12 October 2026
+
+Published native API version `8493bd46-8eb7-4286-a300-ae62b0c81421` and Pages deployment `35922fa8` at the existing custom domain. A fresh private backup was created and its archive inspected before additive migrations 0007/0008. Production postchecks show eight new RLS-protected tables and zero authenticated-browser INSERT grants. The R2 question-media bucket is bound. All ten newly configured research subjects are inactive. Existing student subject IDs and attempt snapshots are preserved.
+
+The original 23-column `v1` CSV template is supported, including external references, source and rights notes, subtopic slugs, passage references, image descriptions and tags. Imports validate all chunks, respect UTF-8 byte and row limits, resume from durable processed-row counts, replay matching receipts, reject changed batch content and skip identical external references across files. Unknown or ambiguous topics require canonical mapping rather than arbitrary topic creation. No question files were imported into production.
+
+Verification: targeted regression suite and TypeScript pass; six real rollback-only PostgreSQL integration tests pass, including invalid past-question publication and valid quick publishing; all 13 admin GET handlers execute against the real local clone. Static export succeeds. Native bundle is 586.78 KiB / gzip 123.20 KiB, with no Next/OpenNext/React runtime imports. Static output scan reports zero private credential matches. Isolated Chrome renders the actual static build with synthetic authenticated responses: question library/editor on desktop and import/support at 390px, with no horizontal overflow or browser exceptions. This is fixture-based UI verification, not a hosted staff or physical-iPhone acceptance test.
+
+Nine bounded production read checks passed: five admin page shells and health return 200; unauthenticated admin identity/import jobs return 401; an absent managed image returns 404 rather than a missing-binding 503. No signup accounts, charges or staff role elevation were created. Budget accounting: 32/100 reserved/used, including a conservative 20-request deployment/provisioning reservation.
+
+Still open: full leaf-level official syllabus mapping and annual subject/work review; new-subject activation remains gated. Persistent batch receipts are stored, but downloadable per-row job receipts/cancellation UI are not claimed. Detailed support investigation, retention/permission-tier policy, authenticated hosted editing, physical iPhone checks and CPU/load certification remain separate acceptance items. Fresh archive readability is verified; a restore rehearsal of that newest archive is not claimed. Earlier local-clone restore/migration tests do not replace that statement.

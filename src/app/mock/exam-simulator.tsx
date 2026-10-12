@@ -9,6 +9,7 @@ import { ExamQuestion } from "@/features/exam-engine/domain/types";
 import { syncExamAnswer, submitMockExam } from "@/lib/client-actions";
 import { buildCanonicalResultUrl } from "@/lib/routing/deep-links";
 import { ReportQuestionDialog } from "@/components/report-question-dialog";
+import { QuestionDiagram } from "@/components/question-diagram";
 import { MathRenderer } from "@/components/math-renderer";
 import { 
   Clock, 
@@ -329,6 +330,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
               <MathRenderer content={currentQ.stem} />
             </div>
 
+<QuestionDiagram url={currentQ.imageUrl} alt={currentQ.imageAlt} />
             {/* Options List A, B, C, D */}
             <div className="space-y-3 pt-2">
               {currentQ.options.map((opt) => {

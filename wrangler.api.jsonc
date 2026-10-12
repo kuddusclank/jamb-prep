@@ -45,5 +45,11 @@
         "period": 60
       }
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "QUESTION_MEDIA",
+      "bucket_name": "jambprep-question-media"
+    }
   ]
 }

@@ -99,7 +99,7 @@ export function handleCorsPreflight(
     headers: {
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': methods,
-      'Access-Control-Allow-Headers': 'Authorization, Content-Type, Idempotency-Key',
+      'Access-Control-Allow-Headers': 'Authorization, Content-Type, Idempotency-Key, X-Import-Job, X-Import-Batch',
       'Access-Control-Max-Age': '86400',
       'Cache-Control': 'no-store',
       'X-Request-Id': requestId,

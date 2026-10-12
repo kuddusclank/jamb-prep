@@ -22,6 +22,7 @@ interface QuestionDetailResponse {
   question: {
     id: string;
     editorial_revision: number;
+    editorial_metadata?: {source_type:"original"|"past_question"|"adapted";source_reference:string;rights_note:string;image_alt:string;tags?:string[]};
     subject_code: string;
     subject_name: string;
     topic_id: string;
@@ -54,6 +55,12 @@ function QuestionEditorContent() {
 
   const [subjectCode, setSubjectCode] = useState("ENG");
   const [topicMode, setTopicMode] = useState<"existing" | "custom">("existing");
+  const [sourceType,setSourceType]=useState<"original"|"past_question"|"adapted">("original");
+  const [sourceReference,setSourceReference]=useState("");
+  const [rightsNote,setRightsNote]=useState("");
+  const [tags,setTags]=useState("");
+  const [imageAlt,setImageAlt]=useState("");
+  const [topicId,setTopicId]=useState<string|undefined>();
   const [topicTitle, setTopicTitle] = useState("");
   const [stem, setStem] = useState("");
   const [optionA, setOptionA] = useState("");
@@ -64,7 +71,22 @@ function QuestionEditorContent() {
   const [explanation, setExplanation] = useState("");
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [examYear, setExamYear] = useState<string>("");
+  const [uploading,setUploading]=useState(false);
+  async function uploadDiagram(file:File) {
+    if (file.size > 5242880 || !["image/png","image/jpeg","image/webp"].includes(file.type)) {setErrorMsg("Choose a PNG, JPEG or WebP smaller than 5 MB.");return;}
+    setUploading(true);setErrorMsg("");
+    try {
+      const bitmap=await createImageBitmap(file);const canvas=document.createElement("canvas");const scale=Math.min(1,1600/Math.max(bitmap.width,bitmap.height));canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);canvas.getContext("2d")!.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();
+      let encoded=canvas.toDataURL("image/webp",0.8);
+      if(encoded.length>175000)encoded=canvas.toDataURL("image/webp",0.5);
+      if(encoded.length>175000)throw new Error("This diagram is too large. Reduce its dimensions and try again.");
+      const result=await getAccountCoordinator().mutate<{url:string}>("/api/v1/admin/media",{base64:encoded.split(",")[1],mimeType:encoded.slice(5,encoded.indexOf(";"))});setImageUrl(result.url);setDirty(true);
+    } catch(error) {setErrorMsg(error instanceof Error?error.message:"Diagram upload failed.");} finally {setUploading(false);}
+  }
   const [imageUrl, setImageUrl] = useState("");
+  const [reusePassageId,setReusePassageId]=useState<string|null>(null);
+  const [passagePage,setPassagePage]=useState(1);
+  const passageLibrary=useApiResource<{passages:Array<{id:string;title:string;content:string;subject_code:string}>}>(`/api/v1/admin/passages?subject=${encodeURIComponent(subjectCode)}&page=${passagePage}`);
   const [hasPassage, setHasPassage] = useState(false);
   const [passageTitle, setPassageTitle] = useState("");
   const [passageContent, setPassageContent] = useState("");
@@ -86,6 +108,13 @@ function QuestionEditorContent() {
       setSubjectCode(q.subject_code);
       setTopicTitle(q.topic_title);
       setTopicMode("custom"); // Preload topic title safely
+      setSourceType(q.editorial_metadata?.source_type ?? "original");
+      setSourceReference(q.editorial_metadata?.source_reference ?? "");
+      setRightsNote(q.editorial_metadata?.rights_note ?? "");
+      setImageAlt(q.editorial_metadata?.image_alt ?? "");
+      setTags((q.editorial_metadata?.tags??[]).join(" | "));
+      setReusePassageId(q.passage_id);
+      setTopicId(q.topic_id);
       setStem(q.stem);
 
       const a = q.options.find((o) => o.label === "A");
@@ -148,7 +177,11 @@ function QuestionEditorContent() {
     }
 
     const payload = {
+      sourceType,sourceReference,rightsNote,imageAlt,
+      tags:tags.split("|").map(t=>t.trim()).filter(Boolean),
+      reusePassageId: hasPassage ? reusePassageId : null,
       expectedRevision: questionId ? existingRes.data?.question.editorial_revision : undefined,
+      topicId,
       subjectCode,
       topicTitle: finalTopic,
       stem: stem.trim(),
@@ -205,6 +238,7 @@ function QuestionEditorContent() {
 
 
       <main onChange={() => setDirty(true)} className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+
         <div className="flex items-center justify-between border-b border-slate-200 pb-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
@@ -235,6 +269,18 @@ function QuestionEditorContent() {
           </div>
         )}
 
+        <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="font-semibold">Source and publication checks</h2><p className="mt-1 text-sm text-slate-500">Drafts may be reviewed before publication. Published questions need a source and permission note.</p>
+          <div className="mt-4 rounded-xl bg-slate-50 p-4"><label className="text-sm font-medium">Reuse a subject passage<select value={reusePassageId??""} onChange={e=>{const passage=passageLibrary.data?.passages.find(p=>p.id===e.target.value);setReusePassageId(passage?.id??null);if(passage){setHasPassage(true);setPassageTitle(passage.title??"");setPassageContent(passage.content);}}} className="mt-2 w-full rounded-xl border border-slate-200 bg-white p-3"><option value="">Write a new passage / no selection</option>{passageLibrary.data?.passages.map(p=><option key={p.id} value={p.id}>{p.title||'Untitled'} · {p.id.slice(0,8)}</option>)}</select></label><div className="mt-2 flex gap-3 text-xs"><button type="button" disabled={passagePage===1} onClick={()=>setPassagePage(p=>p-1)} className="disabled:opacity-40">Previous passages</button><span>Page {passagePage}</span><button type="button" disabled={(passageLibrary.data?.passages.length??0)<25} onClick={()=>setPassagePage(p=>p+1)} className="disabled:opacity-40">Next passages</button></div></div>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <label className="text-sm">Source type<select value={sourceType} onChange={e=>setSourceType(e.target.value as typeof sourceType)} className="mt-1 w-full rounded-xl border border-slate-200 p-3"><option value="original">Original practice question</option><option value="past_question">JAMB past question</option><option value="adapted">Adapted material</option></select></label>
+            <label className="text-sm">Tags (separate with |)<input value={tags} onChange={e=>setTags(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 p-3" /></label>
+            <label className="text-sm">Source reference<input value={sourceReference} onChange={e=>setSourceReference(e.target.value)} maxLength={2000} placeholder="Author, paper or source reference" className="mt-1 w-full rounded-xl border border-slate-200 p-3" /></label>
+            <label className="text-sm">Permission / rights note<textarea value={rightsNote} onChange={e=>setRightsNote(e.target.value)} maxLength={2000} className="mt-1 w-full rounded-xl border border-slate-200 p-3" /></label>
+            <label className="text-sm">Diagram alternative text<input value={imageAlt} onChange={e=>setImageAlt(e.target.value)} maxLength={2000} className="mt-1 w-full rounded-xl border border-slate-200 p-3" /></label>
+          </div>
+          {questionId && <Link href={`/admin/history/?questionId=${questionId}`} className="mt-4 inline-block font-semibold text-emerald-800 underline">View editorial history</Link>}
+        </section>
         <form onSubmit={(e) => e.preventDefault()} className="mt-6 space-y-6">
           {/* Section 1: Subject & Topic Hierarchy */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
@@ -250,6 +296,8 @@ function QuestionEditorContent() {
                   onChange={(e) => {
                     setSubjectCode(e.target.value);
                     setTopicTitle("");
+                    setTopicId(undefined);
+                    setReusePassageId(null);
                   }}
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-[#116149] focus:outline-hidden"
                 >
@@ -266,28 +314,19 @@ function QuestionEditorContent() {
                   <label htmlFor="question-topic" className="block text-xs font-semibold uppercase text-slate-500">
                     Topic *
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTopicMode(topicMode === "existing" ? "custom" : "existing");
-                      setTopicTitle("");
-                    }}
-                    className="text-xs text-[#116149] hover:underline"
-                  >
-                    {topicMode === "existing" ? "+ New Custom Topic" : "Select Existing Topic"}
-                  </button>
+                  <Link href="/admin/curriculum/mapping/" className="text-xs text-emerald-800 underline">Manage canonical topics</Link>
                 </div>
 
                 {topicMode === "existing" && subjectTopics.length > 0 ? (
                   <select
                     id="question-topic"
-                    value={topicTitle}
-                    onChange={(e) => setTopicTitle(e.target.value)}
+                    value={topicId??""}
+                    onChange={(e) => {setTopicId(e.target.value||undefined);setTopicTitle(subjectTopics.find(t=>t.id===e.target.value)?.title??"");}}
                     className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-[#116149] focus:outline-hidden"
                   >
                     <option value="">-- Choose a Topic --</option>
                     {subjectTopics.map((t) => (
-                      <option key={t.id} value={t.title}>
+                      <option key={t.id} value={t.id}>
                         {t.title}
                       </option>
                     ))}
@@ -296,7 +335,8 @@ function QuestionEditorContent() {
                   <input
                     type="text"
                     id="question-topic"
-                    placeholder="Enter topic title (e.g. Calculus, Periodic Table)..."
+                    placeholder="Add this subject’s topics in Curriculum first"
+                    disabled
                     value={topicTitle}
                     onChange={(e) => setTopicTitle(e.target.value)}
                     className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-[#116149] focus:outline-hidden"
@@ -337,7 +377,7 @@ function QuestionEditorContent() {
                     id="passage-title"
                     placeholder="e.g. Passage I: The Impact of Technology"
                     value={passageTitle}
-                    onChange={(e) => setPassageTitle(e.target.value)}
+                    onChange={(e) => {setPassageTitle(e.target.value);setReusePassageId(null);}}
                     className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-[#116149] focus:outline-hidden"
                   />
                 </div>
@@ -350,7 +390,7 @@ function QuestionEditorContent() {
                     rows={6}
                     placeholder="Paste the full passage text here..."
                     value={passageContent}
-                    onChange={(e) => setPassageContent(e.target.value)}
+                    onChange={(e) => {setPassageContent(e.target.value);setReusePassageId(null);}}
                     className="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm text-slate-800 leading-relaxed focus:border-[#116149] focus:outline-hidden"
                   />
                 </div>
@@ -540,6 +580,7 @@ function QuestionEditorContent() {
               </div>
             </div>
 
+            <label className="mt-4 block text-sm font-medium">Upload a diagram<input type="file" accept="image/png,image/jpeg,image/webp" disabled={uploading} onChange={e=>{const file=e.target.files?.[0];if(file)void uploadDiagram(file);}} className="mt-2 block w-full rounded-xl border border-slate-200 bg-white p-3" /><span className="mt-1 block text-xs text-slate-500">{uploading?"Uploading…":"Diagrams are public assets. Never upload student information or private answer documents."}</span></label>
             {imageUrl && (
               <div className="mt-4 border-t border-slate-100 pt-3">
                 <span className="text-xs text-slate-500">Image Preview:</span>
@@ -565,7 +606,7 @@ function QuestionEditorContent() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || uploading}
                 onClick={() => void handleSave("draft")}
                 className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-50"
               >
@@ -573,7 +614,7 @@ function QuestionEditorContent() {
               </button>
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || uploading}
                 onClick={() => void handleSave("published")}
                 className="rounded-xl bg-[#116149] px-6 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-[#0e4e3b] disabled:opacity-50"
               >

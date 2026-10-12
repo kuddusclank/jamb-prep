@@ -5,7 +5,7 @@ import { AdminNav } from "./admin-nav";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const access = useApiResource<{ authenticated: boolean }>("/api/v1/auth/admin-session");
-  return <div className="min-h-screen bg-slate-50 text-slate-900">
+  return <div className="min-h-screen bg-slate-50 text-slate-900 [&_button]:min-h-11 [&_input:not([type=checkbox])]:min-h-11 [&_select]:min-h-11 [&_button:focus-visible]:outline-2 [&_button:focus-visible]:outline-offset-2 [&_button:focus-visible]:outline-emerald-700">
     <AdminNav />
     <div className="lg:pl-64">
       {access.data ? children : <main className="mx-auto max-w-3xl p-6 sm:p-10"><h1 className="mb-4 text-2xl font-semibold">Administrator access</h1><ResourceStatus error={access.error} retry={access.retry} /></main>}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ReportQuestionDialog } from "@/components/report-question-dialog";
+import { QuestionDiagram } from "@/components/question-diagram";
 import { MathRenderer } from "@/components/math-renderer";
 import { 
   getPracticeQuestions, 
@@ -306,6 +307,7 @@ export function PracticeClient({
 
       <ReportQuestionDialog key={currentQ.id} questionId={currentQ.id} />
 
+<QuestionDiagram url={currentQ.imageUrl} alt={currentQ.imageAlt} />
       {/* Reading Passage (if present) */}
       {currentQ.passage && (
         <div className="rounded-3xl border border-emerald-950/10 bg-[#EDF2E9]/60 p-6 sm:p-8">

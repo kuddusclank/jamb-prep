@@ -556,9 +556,13 @@ export const bulkQuestionImportSchema: SchemaValidator<SingleQuestionImport[]> =
       for (const field of ['passageTitle','passageContent'] as const) if (item[field] !== undefined && (typeof item[field] !== 'string' || (item[field] as string).length > 20000)) issues.push({path:[i,field],issue:'Passage fields must be bounded text'});
       if (item.examYear !== undefined && item.examYear !== null && (!Number.isInteger(item.examYear) || Number(item.examYear)<1978 || Number(item.examYear)>2100)) issues.push({path:[i,'examYear'],issue:'Invalid exam year'});
       if (item.imageUrl) {
-        try { const url=new URL(String(item.imageUrl)); if(url.protocol!=='https:' || url.username || url.password || url.hostname!=='bqumnaoiiukifvanoonm.supabase.co' || !url.pathname.startsWith('/storage/v1/object/public/')) throw new Error(); }
+        try { const url=new URL(String(item.imageUrl)); if(url.protocol!=='https:' || url.username || url.password || !((url.hostname==='bqumnaoiiukifvanoonm.supabase.co' && url.pathname.startsWith('/storage/v1/object/public/')) || (url.hostname==='jambprep.lecterniq.com' && /^\/api\/v1\/media\/[a-f0-9]{64}\.(png|jpeg|webp)$/.test(url.pathname)))) throw new Error(); }
         catch { issues.push({path:[i,'imageUrl'],issue:'Only HTTPS public media from the configured project is allowed'}); }
       }
+      for(const field of ['externalReference','subtopicSlug','passageReference','sourceReference','rightsNote','imageAlt'] as const) if(item[field]!==undefined && (typeof item[field]!=='string'||String(item[field]).length>(['externalReference','subtopicSlug','passageReference'].includes(field)?200:2000))) issues.push({path:[i,field],issue:'Invalid or oversized text'});
+      if(item.sourceType!==undefined&&!['original','past_question','adapted'].includes(String(item.sourceType))) issues.push({path:[i,'sourceType'],issue:'Invalid source type'});
+      if(item.templateVersion!==undefined&&item.templateVersion!=='v1') issues.push({path:[i,'templateVersion'],issue:'Only CSV template v1 is supported'});
+      if(item.tags!==undefined&&(!Array.isArray(item.tags)||item.tags.length>20||item.tags.some(t=>typeof t!=='string'||t.length>100))) issues.push({path:[i,'tags'],issue:'Use up to 20 short tags'});
       const correctOption = item.correctOption;
       if (
         correctOption !== 'A' &&
@@ -578,6 +582,14 @@ export const bulkQuestionImportSchema: SchemaValidator<SingleQuestionImport[]> =
 
       if (issues.length === 0) {
         results.push({
+          subtopicSlug: typeof item.subtopicSlug==='string'?item.subtopicSlug.trim():'',
+          passageReference: typeof item.passageReference==='string'?item.passageReference.trim():'',
+          tags: Array.isArray(item.tags)?Array.from(new Set(item.tags.map(t=>String(t).trim()).filter(Boolean))).sort():[],
+          externalReference: typeof item.externalReference==='string'?item.externalReference.trim():'',
+          sourceType: (item.sourceType??'original') as 'original'|'past_question'|'adapted',
+          sourceReference: typeof item.sourceReference==='string'?item.sourceReference.trim():'',
+          rightsNote: typeof item.rightsNote==='string'?item.rightsNote.trim():'',
+          imageAlt: typeof item.imageAlt==='string'?item.imageAlt.trim():'',
           subjectCode,
           topicTitle,
           stem,
@@ -604,6 +616,13 @@ export const bulkQuestionImportSchema: SchemaValidator<SingleQuestionImport[]> =
 };
 
 export interface QuestionUpsertRequest {
+  topicId?:string;
+  tags?: string[];
+  reusePassageId?: string | null;
+  sourceType?: 'original' | 'past_question' | 'adapted';
+  sourceReference?: string;
+  rightsNote?: string;
+  imageAlt?: string;
   expectedRevision?: number;
   id?: string;
   subjectCode: string;
@@ -666,6 +685,11 @@ export const questionUpsertSchema: SchemaValidator<QuestionUpsertRequest> = {
       issues.push({ path: ['correctOption'], issue: 'correctOption must be A, B, C, or D' });
     }
     if (input.expectedRevision !== undefined && (!Number.isSafeInteger(input.expectedRevision) || Number(input.expectedRevision) < 1)) issues.push({path:['expectedRevision'],issue:'Invalid editorial revision'});
+    for (const field of ['sourceReference','rightsNote','imageAlt'] as const) if (input[field] !== undefined && (typeof input[field] !== 'string' || String(input[field]).length > 2000)) issues.push({path:[field],issue:'Text must be at most 2,000 characters'});
+    if (input.sourceType !== undefined && !['original','past_question','adapted'].includes(String(input.sourceType))) issues.push({path:['sourceType'],issue:'Invalid source type'});
+    if (input.reusePassageId !== undefined && input.reusePassageId !== null && (typeof input.reusePassageId !== 'string' || !UUID_V1_TO_V5_REGEX.test(input.reusePassageId))) issues.push({path:['reusePassageId'],issue:'Invalid passage ID'});
+    if(input.tags!==undefined&&(!Array.isArray(input.tags)||input.tags.length>20||input.tags.some(t=>typeof t!=='string'||t.length>100)))issues.push({path:['tags'],issue:'Use up to 20 short tags'});
+    if(input.topicId!==undefined&&(typeof input.topicId!=='string'||!UUID_V1_TO_V5_REGEX.test(input.topicId)))issues.push({path:['topicId'],issue:'Invalid topic ID'});
     const explanation = typeof input.explanation === 'string' ? input.explanation.trim() : '';
     if (explanation.length < 5 || explanation.length > 20000) {
       issues.push({ path: ['explanation'], issue: 'Detailed explanation is required' });
@@ -676,7 +700,7 @@ export const questionUpsertSchema: SchemaValidator<QuestionUpsertRequest> = {
     if (input.imageUrl) {
       try {
         const url = new URL(String(input.imageUrl));
-        if (url.protocol !== 'https:' || url.username || url.password || url.hostname !== 'bqumnaoiiukifvanoonm.supabase.co' || !url.pathname.startsWith('/storage/v1/object/public/')) throw new Error();
+        if (url.protocol !== 'https:' || url.username || url.password || !((url.hostname === 'bqumnaoiiukifvanoonm.supabase.co' && url.pathname.startsWith('/storage/v1/object/public/')) || (url.hostname === 'jambprep.lecterniq.com' && /^\/api\/v1\/media\/[a-f0-9]{64}\.(png|jpeg|webp)$/.test(url.pathname)))) throw new Error();
       } catch {
         issues.push({ path: ['imageUrl'], issue: 'imageUrl must be a valid HTTPS URL' });
       }
@@ -694,6 +718,13 @@ export const questionUpsertSchema: SchemaValidator<QuestionUpsertRequest> = {
       data: {
         id: typeof input.id === 'string' ? input.id.toLowerCase() : undefined,
         expectedRevision: typeof input.expectedRevision === 'number' ? input.expectedRevision : undefined,
+        sourceType: (input.sourceType ?? 'original') as 'original' | 'past_question' | 'adapted',
+        sourceReference: typeof input.sourceReference === 'string' ? input.sourceReference.trim() : '',
+        rightsNote: typeof input.rightsNote === 'string' ? input.rightsNote.trim() : '',
+        imageAlt: typeof input.imageAlt === 'string' ? input.imageAlt.trim() : '',
+        reusePassageId: typeof input.reusePassageId === 'string' ? input.reusePassageId : null,
+        tags:Array.isArray(input.tags)?Array.from(new Set(input.tags.map(t=>String(t).trim()).filter(Boolean))).sort():[],
+        topicId:typeof input.topicId==='string'?input.topicId:undefined,
         subjectCode,
         topicTitle,
         stem,

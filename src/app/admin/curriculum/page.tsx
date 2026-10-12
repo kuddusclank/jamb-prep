@@ -72,7 +72,8 @@ function CurriculumContent() {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            <Link href="/admin/curriculum/mapping/" className="mb-4 inline-block rounded-xl bg-emerald-800 px-5 py-3 text-sm font-semibold text-white">Manage source-backed topic mapping</Link>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
               Curriculum & Syllabus Research
             </h1>
             <p className="mt-1 text-sm text-slate-500">
@@ -196,7 +197,7 @@ function CurriculumContent() {
 
                       {sub.topics.length === 0 ? (
                         <p className="py-4 text-center text-xs text-slate-400">
-                          No topics added for this subject yet. Topics are auto-mapped during authoring or import.
+                          No canonical topics yet. Add source-backed topics in Curriculum Mapping before authoring or importing.
                         </p>
                       ) : (
                         <ul className="divide-y divide-slate-100">

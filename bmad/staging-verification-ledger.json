@@ -208,6 +208,20 @@
       "status": "passed",
       "at": "2026-10-12T13:48:20.009Z",
       "completedAt": "2026-10-12T13:49:35.747Z"
+    },
+    {
+      "id": 30,
+      "action": "backup",
+      "status": "passed",
+      "at": "2026-10-12T14:44:40.332Z",
+      "completedAt": "2026-10-12T14:45:55.649Z"
+    },
+    {
+      "id": 31,
+      "action": "backup",
+      "status": "passed",
+      "at": "2026-10-12T19:06:15.178Z",
+      "completedAt": "2026-10-12T19:07:22.156Z"
     }
   ],
   "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",
@@ -250,5 +264,26 @@
     ],
     "checks": "Two admin page shells 200; two unauthenticated APIs 401",
     "status": "published"
+  },
+  "adminExpansionAllowance": {
+    "limit": 100,
+    "used": 32,
+    "maxConcurrency": 3,
+    "authorization": "User approved up to 100 requests for admin expansion audit, private backup, publishing and bounded production checks; no charges or signup accounts.",
+    "accounting": "Conservative twenty-request reservation for R2 provisioning and upcoming native API/Pages deploy operations; audits and HTTP checks counted separately."
+  },
+  "activeVerificationBudget": "adminExpansionAllowance",
+  "adminExpansionRelease": {
+    "status": "published-and-checked",
+    "workerVersion": "8493bd46-8eb7-4286-a300-ae62b0c81421",
+    "pagesDeployment": "35922fa8",
+    "migrations": [
+      "0007_admin_workflows.sql",
+      "0008_curriculum_review.sql"
+    ],
+    "productionChecks": 9,
+    "hostedSignupChecks": 0,
+    "chargesCreated": 0,
+    "browserVerification": "Isolated Chrome, synthetic responses, desktop and 390px mobile; no overflow or exceptions. Does not certify real iPhone or authenticated hosted editing."
   }
 }

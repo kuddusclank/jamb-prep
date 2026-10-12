@@ -1,3 +1,4 @@
+import {serveQuestionMedia} from '../services/admin-media-service';
 /**
  * Native Cloudflare Worker Entry Point for Production-Candidate API Foundation (T03)
  *
@@ -28,6 +29,8 @@ export function createNativeApiHandler(options?: NativeApiHandlerOptions) {
       env: NativeApiEnv,
       ctx: WorkerExecutionContext
     ): Promise<Response> {
+      const media = await serveQuestionMedia(request, env, ctx);
+      if (media) return media;
       const lazyDb = createLazyDbHolder(env, options?.dbFactory);
 
       try {

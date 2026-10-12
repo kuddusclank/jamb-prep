@@ -291,7 +291,7 @@ test('1. CORS & Origin policy: allows reviewed origins without credentials heade
   assert.equal(preflightRes.headers.get('access-control-allow-credentials'), null);
   assert.equal(
     preflightRes.headers.get('access-control-allow-headers'),
-    'Authorization, Content-Type, Idempotency-Key'
+    'Authorization, Content-Type, Idempotency-Key, X-Import-Job, X-Import-Batch'
   );
   assert.equal(preflightRes.headers.get('access-control-max-age'), '86400');
   assert.equal(preflightRes.headers.get('vary'), 'Origin');

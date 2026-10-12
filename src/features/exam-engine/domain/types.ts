@@ -20,6 +20,8 @@ export interface ExamOption {
 }
 
 export interface ExamQuestion {
+  imageUrl?: string | null;
+  imageAlt?: string | null;
   id: string;
   position: number; // 1 to 180
   subjectCode: string;

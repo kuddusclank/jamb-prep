@@ -19,7 +19,7 @@ export async function lockStudent(tx: SqlTagExecutor, userId: string) {
 export async function selectPublishedQuestions(tx: SqlTagExecutor, userId: string, subjectId: string, count: number, topicSlug: string | null = null, practice = false) {
   return tx<Array<{ id: string; subject_id: string; topic_id: string; snapshot: Record<string, unknown>; correct_option_id: string; explanation: string | null }>>`
     SELECT q.id, q.subject_id, q.topic_id, correct.id AS correct_option_id, qe.explanation,
-      jsonb_build_object('id', q.id, 'subjectId', s.id, 'subjectCode', s.code, 'subjectName', s.name, 'topicId', t.id, 'topicTitle', t.title, 'stem', q.stem, 'difficulty', q.difficulty, 'examYear', q.exam_year, 'imageUrl', q.image_url,
+      jsonb_build_object('id', q.id, 'subjectId', s.id, 'subjectCode', s.code, 'subjectName', s.name, 'topicId', t.id, 'topicTitle', t.title, 'stem', q.stem, 'difficulty', q.difficulty, 'examYear', q.exam_year, 'imageUrl', q.image_url, 'imageAlt', (SELECT m.image_alt FROM question_editorial_metadata m WHERE m.question_id=q.id),
         'passage', CASE WHEN p.id IS NULL THEN NULL ELSE jsonb_build_object('title',p.title,'content',p.content) END,
         'options', opts.items) AS snapshot
     FROM questions q JOIN subjects s ON s.id=q.subject_id JOIN topics t ON t.id=q.topic_id AND t.subject_id=q.subject_id
@@ -95,7 +95,7 @@ export async function startFrozenMock(tx: SqlTagExecutor, userId: string, input:
       SELECT e.*,q.id AS question_id,q.topic_id,q.correct_option_id,q.explanation,q.snapshot,q.random_order
       FROM enrolled e CROSS JOIN LATERAL (
         SELECT q.id,q.topic_id,correct.id AS correct_option_id,qe.explanation,RANDOM() AS random_order,
-          jsonb_build_object('id',q.id,'subjectId',e.id,'subjectCode',e.code,'subjectName',s.name,'topicId',t.id,'topicTitle',t.title,'stem',q.stem,'difficulty',q.difficulty,'examYear',q.exam_year,'imageUrl',q.image_url,
+          jsonb_build_object('id',q.id,'subjectId',e.id,'subjectCode',e.code,'subjectName',s.name,'topicId',t.id,'topicTitle',t.title,'stem',q.stem,'difficulty',q.difficulty,'examYear',q.exam_year,'imageUrl',q.image_url,'imageAlt',(SELECT m.image_alt FROM question_editorial_metadata m WHERE m.question_id=q.id),
             'passage',CASE WHEN p.id IS NULL THEN NULL ELSE jsonb_build_object('title',p.title,'content',p.content) END,'options',opts.items) AS snapshot
         FROM questions q JOIN subjects s ON s.id=q.subject_id JOIN topics t ON t.id=q.topic_id AND t.subject_id=q.subject_id
         LEFT JOIN passages p ON p.id=q.passage_id LEFT JOIN question_explanations qe ON qe.question_id=q.id

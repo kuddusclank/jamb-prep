@@ -25,5 +25,5 @@ export function useApiResource<T>(path: string) {
     retry: () => { getAccountCoordinator().clear(); setRevision((current) => current + 1); } };
 }
 export function ResourceStatus({ error, retry }: { error: string | null; retry: () => void }) {
-  return <section role={error ? 'alert' : 'status'} className="shell section-space"><div className="rounded-2xl border border-slate-200 bg-white p-6"><p>{error ?? 'Loading your study data…'}</p>{error && <button type="button" onClick={retry} className="mt-4 rounded-full bg-[#116149] px-5 py-3 text-white">Retry</button>}</div></section>;
+  return <section role={error ? 'alert' : 'status'} className="shell section-space"><div className="rounded-2xl border border-slate-200 bg-white p-6"><p>{error ?? 'Loading data…'}</p>{error && <button type="button" onClick={retry} className="mt-4 rounded-full bg-[#116149] px-5 py-3 text-white">Retry</button>}</div></section>;
 }

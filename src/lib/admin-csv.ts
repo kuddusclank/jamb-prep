@@ -65,3 +65,16 @@ export function parseRfcCsv(text: string): string[][] {
 // Preserve mathematical operators in imported plain text; spreadsheet exports need separate escaping.
 export function sanitizeCell(value: string): string { return value.trim(); }
 
+
+/** Keep import requests below the server body limit without changing source row order. */
+export function buildImportBatches<T>(rows:T[],maxRows=10,maxBytes=60000):Array<{offset:number;rows:T[]}> {
+ const batches:Array<{offset:number;rows:T[]}>=[];let current:T[]=[];let offset=0;
+ for(let index=0;index<rows.length;index++){
+  if(new TextEncoder().encode(JSON.stringify([rows[index]])).length>maxBytes)throw new Error(`Row ${index+1} exceeds the safe request size.`);
+  const candidate=[...current,rows[index]];
+  if(current.length&&(candidate.length>maxRows||new TextEncoder().encode(JSON.stringify(candidate)).length>maxBytes)){batches.push({offset,rows:current});offset=index;current=[rows[index]];}else current=candidate;
+ }
+ if(current.length)batches.push({offset,rows:current});return batches;
+}
+
+export function escapeCsvCell(value:unknown):string {let text=String(value??'');if(/^[=+\-@\t\r]/.test(text))text="'"+text;return '"'+text.replaceAll('"','""')+'"';}

@@ -8,12 +8,20 @@ export const questionOptionSchema = z.object({
 });
 
 export const singleQuestionImportSchema = z.object({
+  subtopicSlug: z.string().max(200).optional(),
+  passageReference: z.string().max(200).optional(),
+  tags: z.array(z.string().max(100)).max(20).optional(),
+  externalReference: z.string().max(200).optional(),
+  sourceType: z.enum(['original','past_question','adapted']).optional(),
+  sourceReference: z.string().max(2000).optional(),
+  rightsNote: z.string().max(2000).optional(),
+  imageAlt: z.string().max(2000).optional(),
   subjectCode: z.string().min(2).max(6).toUpperCase(), // e.g. 'ENG', 'MTH', 'PHY', 'CHM', 'BIO'
   topicTitle: z.string().min(2, "Topic title must be at least 2 characters"),
   stem: z.string().min(5, "Question stem must be at least 5 characters"),
   imageUrl: z.string().url().optional().nullable(),
   difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
-  examYear: z.number().int().min(1980).max(2026).optional().nullable(),
+  examYear: z.number().int().min(1978).max(2100).optional().nullable(),
   options: questionOptionSchema,
   correctOption: z.enum(["A", "B", "C", "D"]),
   explanation: z.string().min(5, "Detailed explanation is required"),

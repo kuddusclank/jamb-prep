@@ -52,6 +52,7 @@ function ReportsContent() {
   const currentSubject = searchParams.get("subject") || "";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
 
+  const [actionError,setActionError]=useState<string|null>(null);
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({});
   const [updating, setUpdating] = useState<Record<string, boolean>>({});
 
@@ -86,6 +87,7 @@ function ReportsContent() {
     nextStatus: ReportItem["status"],
     adminNotes?: string
   ) {
+    setActionError(null);
     setUpdating((prev) => ({ ...prev, [reportId]: true }));
     try {
       await getAccountCoordinator().mutate(
@@ -98,7 +100,7 @@ function ReportsContent() {
       );
       reportsRes.retry();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to update report.");
+      setActionError(err instanceof Error ? err.message : "Failed to update report.");
     } finally {
       setUpdating((prev) => ({ ...prev, [reportId]: false }));
     }
@@ -109,6 +111,7 @@ function ReportsContent() {
 
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+        {actionError&&<p role="alert" className="mb-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{actionError}</p>}
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
