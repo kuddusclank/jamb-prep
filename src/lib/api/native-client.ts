@@ -376,7 +376,7 @@ export function createNativeApiClient(options?: NativeApiClientOptions): NativeA
   async function request<T = unknown>(path: string, reqOptions?: NativeApiRequestOptions): Promise<{ status: number; data: T; replayed: boolean; requestId: string | null }> {
     const controller = new AbortController();
     const cleanups: Array<() => void> = [];
-    const timeoutMs = options?.requestTimeoutMs ?? 15000;
+    const timeoutMs = options?.requestTimeoutMs ?? 30000;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const deadline = new Promise<never>((_, reject) => {
       timer = setTimeout(() => {

@@ -1,3 +1,5 @@
+import { ASSESSMENT_ADMIN_ROUTES } from '../services/assessment-admin-routes';
+import { PRACTICE_ROUTES } from '../services/practice-routes';
 import {computeRequestHash} from './idempotency';
 import {ADMIN_CURRICULUM_ROUTES} from '../services/admin-curriculum-service';
 import {ADMIN_MEDIA_ROUTES, type QuestionMediaBucket} from '../services/admin-media-service';
@@ -447,137 +449,329 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
     rawText,
     async (ctx) => {
       const dbCtx = ctx.getDb();
-      const receipt = await dbCtx.runSerializableTransaction(async tx => {
-      let skippedCount=0;
+      const receipt = await dbCtx.runSerializableTransaction(async (tx) => {
+        let skippedCount = 0;
 
-      const durableBatch = await beginImportBatch(tx, ctx, JSON.stringify(items), items.length);
-      if (durableBatch?.replayed) return {skippedCount:durableBatch.skippedCount};
-      const subjectCache = new Map<string, string>();
-      const topicCache = new Map<string, string>();
-      const parentCache = new Set<string>();
-      const passageCache = new Map<string, { id: string; title: string | null; content: string }>();
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
+        const durableBatch = await beginImportBatch(tx, ctx, JSON.stringify(items), items.length);
+        if (durableBatch?.replayed) return { skippedCount: durableBatch.skippedCount };
 
-            let subjectId = subjectCache.get(item.subjectCode);
-            if (!subjectId) {
-              const subRows = await tx<Array<{ id: string }>>`
-                SELECT id FROM subjects WHERE code = ${item.subjectCode}  LIMIT 1
-              `;
-              const subject = subRows[0];
-              if (!subject) {
+        // 1. Batch preload unique subjects
+        const uniqueCodes = [...new Set(items.map((i) => i.subjectCode))];
+        const subRows = await tx<Array<{ id: string; code: string }>>`
+          SELECT id, code FROM subjects WHERE code = ANY(${uniqueCodes})
+        `;
+        const subjectMap = new Map<string, string>();
+        for (const s of subRows) subjectMap.set(s.code, s.id);
+        for (const code of uniqueCodes) {
+          if (!subjectMap.has(code)) {
+            throw new ApiError({
+              status: 422,
+              code: 'VALIDATION_FAILED',
+              message: `Subject code '${code}' not found.`,
+            });
+          }
+        }
+
+        // 2. Batch preload topics for all relevant subjects
+        const subjectIds = [...new Set([...subjectMap.values()])];
+        const topicRows = await tx<Array<{
+          id: string;
+          subject_id: string;
+          slug: string;
+          title: string;
+          aliases: string[];
+          parent_slug: string | null;
+          parent_title: string | null;
+        }>>`
+          SELECT t.id, t.subject_id, t.slug, t.title,
+                 COALESCE(m.aliases, '[]'::jsonb) AS aliases,
+                 (SELECT p.slug FROM topics p WHERE p.id = m.parent_topic_id) AS parent_slug,
+                 (SELECT p.title FROM topics p WHERE p.id = m.parent_topic_id) AS parent_title
+          FROM topics t
+          LEFT JOIN curriculum_topic_mappings m ON m.topic_id = t.id
+          WHERE t.subject_id = ANY(${subjectIds}::uuid[])
+        `;
+
+        function resolveTopic(subjectId: string, label: string) {
+          const lower = label.toLowerCase();
+          const slug = lower.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+          const matches = topicRows.filter((t) =>
+            t.subject_id === subjectId && (
+              t.slug === slug ||
+              t.title.toLowerCase() === lower ||
+              (Array.isArray(t.aliases) && t.aliases.some((a) => String(a).toLowerCase() === lower))
+            )
+          );
+          if (!matches.length) {
+            throw new ApiError({
+              status: 422,
+              code: 'VALIDATION_FAILED',
+              message: 'Unknown topic. Add its canonical mapping in Curriculum before importing.',
+            });
+          }
+          if (matches.length > 1) {
+            throw new ApiError({
+              status: 422,
+              code: 'VALIDATION_FAILED',
+              message: 'Ambiguous topic. Use its unique canonical slug.',
+            });
+          }
+          return matches[0];
+        }
+
+        // 3. Batch check existing external references
+        const extRefs = items.map((i) => i.externalReference).filter(Boolean) as string[];
+        const existingRefMap = new Map<string, string>();
+        if (extRefs.length) {
+          const existingRefs = await tx<Array<{ subject_id: string; external_reference: string; request_hash: string }>>`
+            SELECT subject_id, external_reference, request_hash
+            FROM question_import_references
+            WHERE external_reference = ANY(${extRefs}) AND subject_id = ANY(${subjectIds}::uuid[])
+          `;
+          for (const r of existingRefs) {
+            existingRefMap.set(`${r.subject_id}:${r.external_reference}`, r.request_hash);
+          }
+        }
+
+        // 4. Passages resolution
+        const passageCache = new Map<string, { id: string; title: string | null; content: string }>();
+        const passageRefs = items.map((i) => i.passageReference).filter(Boolean) as string[];
+        if (passageRefs.length) {
+          const existingPassages = await tx<Array<{ external_reference: string; subject_id: string; id: string; title: string | null; content: string }>>`
+            SELECT r.external_reference, r.subject_id, p.id, p.title, p.content
+            FROM passage_import_references r
+            JOIN passages p ON p.id = r.passage_id
+            WHERE r.external_reference = ANY(${passageRefs}) AND r.subject_id = ANY(${subjectIds}::uuid[])
+          `;
+          for (const p of existingPassages) {
+            passageCache.set(`${p.subject_id}:${p.external_reference}`, { id: p.id, title: p.title, content: p.content });
+          }
+        }
+
+        const itemPassageIds = new Map<typeof items[number], string | null>();
+        for (const item of items) {
+          const subjectId = subjectMap.get(item.subjectCode)!;
+          let passageId: string | null = null;
+          if (item.passageReference) {
+            const passageKey = `${subjectId}:${item.passageReference}`;
+            const cachedPassage = passageCache.get(passageKey);
+            if (cachedPassage) {
+              if (
+                (item.passageContent && cachedPassage.content !== item.passageContent) ||
+                (item.passageTitle && cachedPassage.title !== item.passageTitle)
+              ) {
                 throw new ApiError({
-                  status: 422,
-                  code: 'VALIDATION_FAILED',
-                  message: `Subject code '${item.subjectCode}' not found.`,
+                  status: 409,
+                  code: 'CONFLICT',
+                  message: 'A passage reference already exists with different content.',
                 });
               }
-              await tx`SELECT id FROM subjects WHERE id=${subject.id}::uuid FOR UPDATE`;
-              subjectId = subject.id;
-              subjectCache.set(item.subjectCode, subjectId);
+              passageId = cachedPassage.id;
             }
-            const subject = { id: subjectId };
-            const rowHash=await computeRequestHash('admin.import.row',JSON.stringify(item));
-            if(item.externalReference){
-              const [existing]=await tx`SELECT request_hash FROM question_import_references WHERE subject_id=${subject.id}::uuid AND external_reference=${item.externalReference}`;
-              if(existing){if(existing.request_hash!==rowHash)throw new ApiError({status:409,code:'CONFLICT',message:'An external reference already exists with different content. Edit its question explicitly.'});skippedCount++;continue;}
-            }
-            const topicLabel = item.subtopicSlug || item.topicTitle;
-            const topicSlug = topicLabel
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, '-')
-              .replace(/^-|-$/g, '');
-
-            const topicCacheKey = `${subject.id}:${topicLabel.toLowerCase()}`;
-            let topicId = topicCache.get(topicCacheKey);
-            if (!topicId) {
-              const topicRows = await tx<Array<{id:string}>>`SELECT id FROM topics WHERE subject_id=${subject.id}::uuid AND (slug=${topicSlug} OR title=${topicLabel} OR id IN (SELECT m.topic_id FROM curriculum_topic_mappings m WHERE EXISTS(SELECT 1 FROM jsonb_array_elements_text(m.aliases) a WHERE lower(a)=lower(${topicLabel})))) ORDER BY id LIMIT 2`;
-              if (!topicRows.length) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Unknown topic. Add its canonical mapping in Curriculum before importing.'});
-              if (topicRows.length>1) throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Ambiguous topic. Use its unique canonical slug.'});
-              topicId = topicRows[0].id;
-              topicCache.set(topicCacheKey, topicId);
-            }
-            if(item.subtopicSlug){
-              const parentKey = `${topicId}:${item.topicTitle}`;
-              if (!parentCache.has(parentKey)) {
-                const [parent]=await tx`SELECT m.topic_id FROM curriculum_topic_mappings m JOIN topics p ON p.id=m.parent_topic_id WHERE m.topic_id=${topicId}::uuid AND (p.slug=${item.topicTitle} OR p.title=${item.topicTitle})`;
-                if(!parent)throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Subtopic must belong to the selected canonical topic.'});
-                parentCache.add(parentKey);
-              }
-            }
-
-            let passageId:string|null=null;
-            if(item.passageReference){
-              const passageKey = `${subject.id}:${item.passageReference}`;
-              const cachedPassage = passageCache.get(passageKey);
-              if (cachedPassage) {
-                if ((item.passageContent && cachedPassage.content !== item.passageContent) || (item.passageTitle && cachedPassage.title !== item.passageTitle)) {
-                  throw new ApiError({status:409,code:'CONFLICT',message:'A passage reference already exists with different content.'});
-                }
-                passageId = cachedPassage.id;
-              } else {
-                const [existing]=await tx`SELECT p.id,p.title,p.content FROM passage_import_references r JOIN passages p ON p.id=r.passage_id WHERE r.subject_id=${subject.id}::uuid AND r.external_reference=${item.passageReference}`;
-                if(existing){
-                  if((item.passageContent&&existing.content!==item.passageContent)||(item.passageTitle&&existing.title!==item.passageTitle))throw new ApiError({status:409,code:'CONFLICT',message:'A passage reference already exists with different content.'});
-                  passageId=String(existing.id);
-                  passageCache.set(passageKey, { id: passageId, title: existing.title ? String(existing.title) : null, content: String(existing.content) });
-                }
-              }
-            }
-            if(!passageId&&item.passageContent?.trim()){
-              const [created]=await tx`INSERT INTO passages(subject_id,title,content) VALUES (${subject.id}::uuid,${item.passageTitle??null},${item.passageContent}) RETURNING id`;
-              passageId=String(created.id);
-              if(item.passageReference){
-                await tx`INSERT INTO passage_import_references(subject_id,external_reference,passage_id) VALUES (${subject.id}::uuid,${item.passageReference},${passageId}::uuid)`;
-                passageCache.set(`${subject.id}:${item.passageReference}`, { id: passageId, title: item.passageTitle ?? null, content: item.passageContent });
-              }
-            }
-            if(item.passageReference&&!passageId)throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'A new passage reference requires passage content.'});
-
-            const questionRows = await tx<Array<{ id: string }>>`
-              INSERT INTO questions (
-                subject_id,
-                topic_id,
-                passage_id,
-                stem,
-                image_url,
-                difficulty,
-                exam_year,
-                status
-              )
-              VALUES (
-                ${subject.id}::uuid,
-                ${topicId}::uuid,
-                ${passageId}::uuid,
-                ${item.stem},
-                ${item.imageUrl ?? null},
-                ${item.difficulty},
-                ${item.examYear ?? null},
-                'draft'
-              )
+          }
+          if (!passageId && item.passageContent?.trim()) {
+            const [created] = await tx<Array<{ id: string }>>`
+              INSERT INTO passages(subject_id, title, content)
+              VALUES (${subjectId}::uuid, ${item.passageTitle ?? null}, ${item.passageContent})
               RETURNING id
             `;
-            const questionId = questionRows[0].id;
+            passageId = String(created.id);
+            if (item.passageReference) {
+              await tx`
+                INSERT INTO passage_import_references(subject_id, external_reference, passage_id)
+                VALUES (${subjectId}::uuid, ${item.passageReference}, ${passageId}::uuid)
+              `;
+              passageCache.set(`${subjectId}:${item.passageReference}`, {
+                id: passageId,
+                title: item.passageTitle ?? null,
+                content: item.passageContent,
+              });
+            }
+          }
+          if (item.passageReference && !passageId) {
+            throw new ApiError({
+              status: 422,
+              code: 'VALIDATION_FAILED',
+              message: 'A new passage reference requires passage content.',
+            });
+          }
+          itemPassageIds.set(item, passageId);
+        }
 
-            const options = ['A','B','C','D'].map(label=>({label,content:item.options[label as 'A'|'B'|'C'|'D'],correct:item.correctOption===label}));
-            await tx`INSERT INTO question_options(question_id,label,content,is_correct) SELECT ${questionId}::uuid,x.label,x.content,x.correct FROM jsonb_to_recordset(${JSON.stringify(options)}::text::jsonb) AS x(label text,content text,correct boolean)`;
+        // 5. Filter items for duplicates and validate subtopics
+        const itemsToInsert: Array<{
+          item: typeof items[number];
+          subjectId: string;
+          topicId: string;
+          passageId: string | null;
+          rowHash: string;
+        }> = [];
 
+        for (const item of items) {
+          const subjectId = subjectMap.get(item.subjectCode)!;
+          const rowHash = await computeRequestHash('admin.import.row', JSON.stringify(item));
+          if (item.externalReference) {
+            const existingHash = existingRefMap.get(`${subjectId}:${item.externalReference}`);
+            if (existingHash) {
+              if (existingHash !== rowHash) {
+                throw new ApiError({
+                  status: 409,
+                  code: 'CONFLICT',
+                  message: 'An external reference already exists with different content. Edit its question explicitly.',
+                });
+              }
+              skippedCount++;
+              continue;
+            }
+          }
+          const topicLabel = item.subtopicSlug || item.topicTitle;
+          const topic = resolveTopic(subjectId, topicLabel);
+          if (item.subtopicSlug) {
+            if (topic.parent_slug !== item.topicTitle && topic.parent_title !== item.topicTitle) {
+              throw new ApiError({
+                status: 422,
+                code: 'VALIDATION_FAILED',
+                message: 'Subtopic must belong to the selected canonical topic.',
+              });
+            }
+          }
+          itemsToInsert.push({
+            item,
+            subjectId,
+            topicId: topic.id,
+            passageId: itemPassageIds.get(item) ?? null,
+            rowHash,
+          });
+        }
+
+        // 6. Bulk insert questions and related records
+        if (itemsToInsert.length > 0) {
+          const insertedQuestions = await tx<Array<{ id: string }>>`
+            INSERT INTO questions (
+              subject_id,
+              topic_id,
+              passage_id,
+              stem,
+              image_url,
+              difficulty,
+              exam_year,
+              status
+            )
+            SELECT x.subject_id::uuid, x.topic_id::uuid, x.passage_id::uuid, x.stem, x.image_url, x.difficulty::difficulty_level, x.exam_year, 'draft'
+            FROM jsonb_to_recordset(${JSON.stringify(
+              itemsToInsert.map((entry) => ({
+                subject_id: entry.subjectId,
+                topic_id: entry.topicId,
+                passage_id: entry.passageId,
+                stem: entry.item.stem,
+                image_url: entry.item.imageUrl ?? null,
+                difficulty: entry.item.difficulty,
+                exam_year: entry.item.examYear ?? null,
+              }))
+            )}::text::jsonb) AS x(subject_id text, topic_id text, passage_id text, stem text, image_url text, difficulty text, exam_year int)
+            RETURNING id
+          `;
+
+          const allOptions: Array<{ question_id: string; label: string; content: string; is_correct: boolean }> = [];
+          const allExplanations: Array<{ question_id: string; explanation: string; verified_by: string | null }> = [];
+          const allMetadata: Array<{ question_id: string; source_type: string; source_reference: string; rights_note: string; image_alt: string; tags: string[] }> = [];
+          const allRefs: Array<{ subject_id: string; external_reference: string; question_id: string; request_hash: string }> = [];
+
+          for (let idx = 0; idx < itemsToInsert.length; idx++) {
+            const qId = insertedQuestions[idx].id;
+            const { item, subjectId, rowHash } = itemsToInsert[idx];
+
+            for (const label of ['A', 'B', 'C', 'D'] as const) {
+              allOptions.push({
+                question_id: qId,
+                label,
+                content: item.options[label],
+                is_correct: item.correctOption === label,
+              });
+            }
+
+            allExplanations.push({
+              question_id: qId,
+              explanation: item.explanation,
+              verified_by: ctx.adminActor?.userId ?? null,
+            });
+
+            const effectiveRights =
+              item.rightsNote?.trim() ||
+              (item.sourceType === 'past_question' && item.sourceReference?.trim()
+                ? 'Standard JAMB UTME educational past question'
+                : '');
+
+            allMetadata.push({
+              question_id: qId,
+              source_type: item.sourceType ?? 'original',
+              source_reference: item.sourceReference ?? '',
+              rights_note: effectiveRights,
+              image_alt: item.imageAlt ?? '',
+              tags: item.tags ?? [],
+            });
+
+            if (item.externalReference) {
+              allRefs.push({
+                subject_id: subjectId,
+                external_reference: item.externalReference,
+                question_id: qId,
+                request_hash: rowHash,
+              });
+            }
+          }
+
+          await tx`
+            INSERT INTO question_options (question_id, label, content, is_correct)
+            SELECT x.question_id::uuid, x.label, x.content, x.is_correct
+            FROM jsonb_to_recordset(${JSON.stringify(allOptions)}::text::jsonb) AS x(question_id text, label text, content text, is_correct boolean)
+          `;
+
+          await tx`
+            INSERT INTO question_explanations (question_id, explanation, verified_by)
+            SELECT x.question_id::uuid, x.explanation, x.verified_by::uuid
+            FROM jsonb_to_recordset(${JSON.stringify(allExplanations)}::text::jsonb) AS x(question_id text, explanation text, verified_by text)
+          `;
+
+          await tx`
+            INSERT INTO question_editorial_metadata (question_id, source_type, source_reference, rights_note, image_alt, tags)
+            SELECT x.question_id::uuid, x.source_type, x.source_reference, x.rights_note, x.image_alt, x.tags
+            FROM jsonb_to_recordset(${JSON.stringify(allMetadata)}::text::jsonb) AS x(question_id text, source_type text, source_reference text, rights_note text, image_alt text, tags jsonb)
+          `;
+
+          const qIds = insertedQuestions.map((q) => q.id);
+          await tx`
+            INSERT INTO question_editorial_history (question_id, revision, actor_id, action, snapshot)
+            SELECT q.id, q.editorial_revision, ${ctx.actor!.userId}::uuid, 'question.imported',
+                   jsonb_build_object(
+                     'question', to_jsonb(q),
+                     'metadata', (SELECT to_jsonb(m) FROM question_editorial_metadata m WHERE m.question_id = q.id),
+                     'options', (SELECT jsonb_agg(to_jsonb(o) ORDER BY o.label) FROM question_options o WHERE o.question_id = q.id),
+                     'explanation', (SELECT explanation FROM question_explanations e WHERE e.question_id = q.id),
+                     'passage', (SELECT to_jsonb(p) FROM passages p WHERE p.id = q.passage_id)
+                   )
+            FROM questions q
+            WHERE q.id = ANY(${qIds}::uuid[])
+            ON CONFLICT (question_id, revision) DO NOTHING
+          `;
+
+          await tx`
+            INSERT INTO admin_audit_events (actor_id, action, entity_id)
+            SELECT ${ctx.actor!.userId}::uuid, 'question.imported', id::uuid
+            FROM unnest(${qIds}::uuid[]) AS id
+          `;
+
+          if (allRefs.length > 0) {
             await tx`
-              INSERT INTO question_explanations (question_id, explanation, verified_by)
-              VALUES (
-                ${questionId}::uuid,
-                ${item.explanation},
-                ${ctx.adminActor?.userId ?? null}::uuid
-              )
+              INSERT INTO question_import_references (subject_id, external_reference, question_id, request_hash)
+              SELECT x.subject_id::uuid, x.external_reference, x.question_id::uuid, x.request_hash
+              FROM jsonb_to_recordset(${JSON.stringify(allRefs)}::text::jsonb) AS x(subject_id text, external_reference text, question_id text, request_hash text)
             `;
+          }
+        }
 
-        await saveEditorialMetadata(tx, questionId, {...item,status:'draft'});
-        await recordQuestionHistory(tx, questionId, ctx.actor!.userId, 'question.imported');
-        if(item.externalReference) await tx`INSERT INTO question_import_references(subject_id,external_reference,question_id,request_hash) VALUES (${subject.id}::uuid,${item.externalReference},${questionId}::uuid,${rowHash})`;
-      }
-      if (durableBatch) await finishImportBatch(tx, durableBatch, ctx.actor!.userId, skippedCount);
-      return {skippedCount};
-
+        if (durableBatch) await finishImportBatch(tx, durableBatch, ctx.actor!.userId, skippedCount);
+        return { skippedCount };
       });
 
       return {
@@ -602,6 +796,8 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
  * `hooks.allowUnreviewedProductRoutes` is injected in local tests.
  */
 export const ENABLED_PRODUCTION_ROUTE_IDS: ReadonlySet<string> = new Set([
+  ...ASSESSMENT_ADMIN_ROUTES.map(route=>route.id),
+  ...PRACTICE_ROUTES.map(route=>route.id),
   'system.health',
   ...ADMIN_CURRICULUM_ROUTES.map(route => route.id),
   ...ADMIN_WORKFLOW_ROUTES.map(route => route.id),
@@ -652,6 +848,8 @@ export const ENABLED_PRODUCTION_ROUTE_IDS: ReadonlySet<string> = new Set([
  * Full Route Registry for `/api/v1/*` and legacy webhook/admin aliases (Plan Section 6.2).
  */
 export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
+  ...ASSESSMENT_ADMIN_ROUTES,
+  ...PRACTICE_ROUTES,
   ...ADMIN_CURRICULUM_ROUTES,
   ...ADMIN_WORKFLOW_ROUTES,
   ...ADMIN_MEDIA_ROUTES,
@@ -1205,7 +1403,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
         userId: actor.userId,
       });
 
-      const rawJson = `{"examConditions":${payload.examConditions},"serverNow":${ctx.now.getTime()},"attemptId":${JSON.stringify(payload.attemptId)},"status":${JSON.stringify(payload.status)},"startedAt":${JSON.stringify(payload.startedAt)},"expiresAt":${JSON.stringify(payload.expiresAt)},"totalQuestions":${payload.totalQuestions},"questions":${payload.questionsJson}}`;
+      const rawJson = `{"examConditions":${payload.examConditions},"serverNow":${ctx.now.getTime()},"attemptId":${JSON.stringify(payload.attemptId)},"status":${JSON.stringify(payload.status)},"startedAt":${JSON.stringify(payload.startedAt)},"expiresAt":${JSON.stringify(payload.expiresAt)},"totalQuestions":${payload.totalQuestions},"selectionWarnings":${JSON.stringify(payload.selectionWarnings)},"questions":${payload.questionsJson}}`;
 
       return {
         status: 200,

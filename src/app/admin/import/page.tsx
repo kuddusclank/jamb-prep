@@ -202,7 +202,7 @@ function ImportContent() {
     body: unknown,
     method: "POST" | "PUT" | "PATCH" = "POST",
     headers?: Record<string, string>,
-    maxAttempts = 4
+    maxAttempts = 5
   ): Promise<T> {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
@@ -213,7 +213,8 @@ function ImportContent() {
           (error.status === 408 || error.status === 429 || error.status >= 500);
         const isNetworkError = !(error instanceof NativeApiClientError);
         if ((isRetryableHttp || isNetworkError) && attempt < maxAttempts) {
-          await new Promise((resolve) => setTimeout(resolve, 600 * attempt));
+          const backoff = Math.min(1000 * Math.pow(2, attempt - 1), 6000);
+          await new Promise((resolve) => setTimeout(resolve, backoff));
           continue;
         }
         throw error;
@@ -287,6 +288,10 @@ function ImportContent() {
         );
         totalImported += res.processedCount ?? batch.length;
         completedBatches.current = i + 1;
+
+        if (pendingIndex < pendingBatches.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        }
       }
 
       jobs.retry();
