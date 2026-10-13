@@ -355,6 +355,39 @@
       "status": "passed",
       "at": "2026-10-13T20:36:03.755Z",
       "completedAt": "2026-10-13T20:36:04.769Z"
+    },
+    {
+      "id": "coverage-66339026-13f5-4c52-a63f-0fe924f83439",
+      "action": "Requested read-only aggregate blueprint coverage audit; no question text export",
+      "budget": "adminExpansionAllowance",
+      "count": 1,
+      "status": "failed",
+      "at": "2026-10-13T20:48:17.714Z"
+    },
+    {
+      "id": "authorized-question-export-8f77c59d-6d6f-49f7-87ad-03d8875486d2",
+      "action": "User explicitly authorised full question-content export to private local backup folder for blueprint-fit review",
+      "count": 1,
+      "budget": "adminExpansionAllowance",
+      "status": "passed",
+      "at": "2026-10-13T20:49:35.860Z"
+    },
+    {
+      "id": "coverage-ca138428-0e52-48c6-86fd-7f4ac7a7d348",
+      "action": "Requested read-only aggregate blueprint coverage audit; no question text export",
+      "budget": "adminExpansionAllowance",
+      "count": 1,
+      "status": "passed",
+      "at": "2026-10-13T20:50:14.840Z"
+    },
+    {
+      "id": "blueprint-activation-release-0540a26d-f420-4801-a828-3c3e634f7943",
+      "action": "User-authorised configuration backup, current-bank revalidation and atomic activation (2 DB operations), native API publication (10 conservatively reserved provider calls), two production checks",
+      "count": 14,
+      "budget": "adminExpansionAllowance",
+      "status": "passed",
+      "at": "2026-10-13T21:09:11.460531+00:00",
+      "workerVersion": "4b39688b-0aec-4d97-8d44-d97a60491f44"
     }
   ],
   "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",
@@ -400,7 +433,7 @@
   },
   "adminExpansionAllowance": {
     "limit": 100,
-    "used": 80,
+    "used": 97,
     "maxConcurrency": 3,
     "authorization": "User approved up to 100 requests for admin expansion audit, private backup, publishing and bounded production checks; no charges or signup accounts.",
     "accounting": "Conservative twenty-request reservation for R2 provisioning and upcoming native API/Pages deploy operations; audits and HTTP checks counted separately. Ten further requests reserved for auth/loading Pages publication and minimal checks. Ten requests reserved for question-source cleanup Pages publication and minimal checks. Twenty requests reserved for preflight repair native API and Pages publication."

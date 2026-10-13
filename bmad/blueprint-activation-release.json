@@ -1,0 +1,154 @@
+{
+  "at": "2026-10-13T21:11:23.179Z",
+  "backup": "/Users/akanbiabdulquddus/.codex/private-backups/jambprep/assessment-config-before-2026-10-13T21-10-39.655Z.json",
+  "subjects": [
+    {
+      "subject": "BIO",
+      "blueprintId": "a9ecffb4-5b3a-43fe-a3a5-d23401132ec1",
+      "classified": 457,
+      "selected": 40,
+      "warnings": [
+        "section-1: difficulty preference relaxed to preserve complete content.",
+        "section-2: difficulty preference relaxed to preserve complete content.",
+        "section-3: difficulty preference relaxed to preserve complete content.",
+        "section-4: difficulty preference relaxed to preserve complete content.",
+        "section-5: difficulty preference relaxed to preserve complete content."
+      ],
+      "cells": [
+        {
+          "title": "Variety of organisms",
+          "required": 6
+        },
+        {
+          "title": "Form and function",
+          "required": 16
+        },
+        {
+          "title": "Ecology",
+          "required": 10
+        },
+        {
+          "title": "Heredity and variation",
+          "required": 4
+        },
+        {
+          "title": "Evolution",
+          "required": 4
+        }
+      ]
+    },
+    {
+      "subject": "CHM",
+      "blueprintId": "7041b47d-56cb-439d-bd95-a93f755b4c46",
+      "classified": 455,
+      "selected": 40,
+      "warnings": [
+        "section-3: difficulty preference relaxed to preserve complete content.",
+        "section-4: difficulty preference relaxed to preserve complete content."
+      ],
+      "cells": [
+        {
+          "title": "Foundations",
+          "required": 8
+        },
+        {
+          "title": "Physical chemistry",
+          "required": 12
+        },
+        {
+          "title": "Inorganic / environmental",
+          "required": 8
+        },
+        {
+          "title": "Organic",
+          "required": 12
+        }
+      ]
+    },
+    {
+      "subject": "ENG",
+      "blueprintId": "00cb7d81-975c-48f9-8ec6-f57536f7ae2a",
+      "classified": 580,
+      "selected": 60,
+      "warnings": [
+        "section-3: difficulty preference relaxed to preserve complete content.",
+        "section-6: difficulty preference relaxed to preserve complete content.",
+        "section-7: difficulty preference relaxed to preserve complete content."
+      ],
+      "cells": [
+        {
+          "title": "comprehension",
+          "required": 5
+        },
+        {
+          "title": "cloze",
+          "required": 10
+        },
+        {
+          "title": "reading-text",
+          "required": 10
+        },
+        {
+          "title": "interpretation",
+          "required": 5
+        },
+        {
+          "title": "antonyms",
+          "required": 5
+        },
+        {
+          "title": "synonyms",
+          "required": 5
+        },
+        {
+          "title": "completion",
+          "required": 10
+        },
+        {
+          "title": "oral-forms",
+          "required": 10
+        }
+      ]
+    },
+    {
+      "subject": "PHY",
+      "blueprintId": "e56e568b-f76b-4173-ae88-a8ac9c309b05",
+      "classified": 406,
+      "selected": 40,
+      "warnings": [
+        "section-1: difficulty preference relaxed to preserve complete content.",
+        "section-2: difficulty preference relaxed to preserve complete content.",
+        "section-3: difficulty preference relaxed to preserve complete content.",
+        "section-4: difficulty preference relaxed to preserve complete content.",
+        "section-5: difficulty preference relaxed to preserve complete content."
+      ],
+      "cells": [
+        {
+          "title": "Mechanics / measurements",
+          "required": 12
+        },
+        {
+          "title": "Thermal / gas laws",
+          "required": 6
+        },
+        {
+          "title": "Waves / optics",
+          "required": 8
+        },
+        {
+          "title": "Electricity / magnetism",
+          "required": 10
+        },
+        {
+          "title": "Modern physics / electronics",
+          "required": 4
+        }
+      ]
+    }
+  ],
+  "total": 180,
+  "heldFromSnapshot": 152,
+  "extraExcluded": [],
+  "changedQuestionContent": 0,
+  "studentWrites": 0
+}

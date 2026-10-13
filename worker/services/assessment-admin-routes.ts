@@ -53,9 +53,9 @@ export const ASSESSMENT_ADMIN_ROUTES:RouteDefinition[]=[
    }else if(operation==='blueprint.create'){
     const subject=assertValidUuid(data.subjectId);const cycle=year(data.cycleYear);const templateId=text(data.templateId);
     await tx`SELECT id FROM subjects WHERE id=${subject}::uuid FOR UPDATE`;
-    const [template]=await tx`SELECT * FROM assessment_blueprint_templates WHERE id=${templateId}`;if(!template)return invalid('Choose a reviewed template.');if(template.cycle_year&&Number(template.cycle_year)!==cycle)return invalid('This source template is verified for a different exam year.');
+    const [template]=await tx`SELECT * FROM assessment_blueprint_templates WHERE id=${templateId}`;if(!template)return invalid('Choose a reviewed template.');
     const reading=data.readingTextId?assertValidUuid(data.readingTextId):null;
-    if(reading){const [r]=await tx`SELECT id FROM assessment_reading_texts WHERE id=${reading}::uuid AND cycle_year=${cycle}`;if(!r)return invalid('Reading text must match the exam year.');}
+    if(reading){const [r]=await tx`SELECT id FROM assessment_reading_texts WHERE id=${reading}::uuid`;if(!r)return invalid('Choose an existing reading text.');}
     const [next]=await tx`SELECT COALESCE(max(version),0)+1 AS n FROM assessment_blueprints WHERE subject_id=${subject}::uuid AND cycle_year=${cycle}`;
     const [bp]=await tx`INSERT INTO assessment_blueprints(subject_id,cycle_year,title,version,total_questions,duration_minutes,reading_text_id,source_url) VALUES(${subject}::uuid,${cycle},${text(data.title)},${Number(next.n)},${Number(template.total_questions)},120,${reading}::uuid,${String(template.source_url)}) RETURNING id`;entityId=String(bp.id);
     const cells=template.cells as Array<{code:string;title:string;kind:string;count:number}>;for(let i=0;i<cells.length;i++)await tx`INSERT INTO assessment_cells(blueprint_id,code,title,kind,required_count,position) VALUES(${entityId}::uuid,${cells[i].code},${cells[i].title},${cells[i].kind},${cells[i].count},${i})`;
@@ -68,7 +68,7 @@ export const ASSESSMENT_ADMIN_ROUTES:RouteDefinition[]=[
      if(bp.status==='retired')throw new ApiError({status:409,code:'CONFLICT',message:'A retired blueprint cannot be reactivated. Create a new reviewed version.'});
      const [subject]=await tx`SELECT is_compulsory FROM subjects WHERE id=${String(bp.subject_id)}::uuid FOR UPDATE`;if(Number(bp.total_questions)!==(subject.is_compulsory?60:40))return invalid('Blueprint must match the full mock subject structure.');
      const pools=await loadAssessmentPools(tx,String(bp.subject_id),Number(bp.cycle_year),ctx.actor!.userId,'activation-readiness',id);selectAssessmentForm(pools.blueprint,pools.cells,pools.candidates);
-     await tx`UPDATE assessment_blueprints SET status='retired' WHERE subject_id=${String(bp.subject_id)}::uuid AND cycle_year=${Number(bp.cycle_year)} AND status='active' AND id<>${id}::uuid`;await tx`UPDATE assessment_blueprints SET status='active' WHERE id=${id}::uuid`;
+     await tx`UPDATE assessment_blueprints SET status='retired' WHERE subject_id=${String(bp.subject_id)}::uuid AND status='active' AND id<>${id}::uuid`;await tx`UPDATE assessment_blueprints SET status='active' WHERE id=${id}::uuid`;
     }else{
      if(bp.status!=='draft')throw new ApiError({status:409,code:'CONFLICT',message:'Create a new blueprint version before editing an activated form.'});
      if(operation==='blueprint.preferences'){
@@ -91,7 +91,7 @@ export const ASSESSMENT_ADMIN_ROUTES:RouteDefinition[]=[
        else{if(!Array.isArray(data.questionIds)||data.questionIds.length<1||data.questionIds.length>50)return invalid('Choose 1–50 questions.');ids=Array.from(new Set(data.questionIds.map(v=>assertValidUuid(v))));}
       }
       if(!ids.length||ids.length>2000)return invalid('No eligible content or too many items in this operation.');
-      if(cell.kind==='reading_text'){const [r]=await tx`SELECT id FROM assessment_reading_texts WHERE id=${bp.reading_text_id}::uuid AND reviewed AND cycle_year=${Number(bp.cycle_year)}`;if(!r)return invalid('Review and bind the correct annual reading text first.');}
+      if(cell.kind==='reading_text'){const [r]=await tx`SELECT id FROM assessment_reading_texts WHERE id=${bp.reading_text_id}::uuid AND reviewed`;if(!r)return invalid('Review and bind the selected reading text first.');}
       const rows=await tx`SELECT q.id,md5(regexp_replace(lower(trim(q.stem)),'\\s+',' ','g')||COALESCE((SELECT regexp_replace(lower(trim(p.content)),'\\s+',' ','g') FROM passages p WHERE p.id=q.passage_id),'')||(SELECT string_agg(lower(trim(content)),'|' ORDER BY lower(trim(content))) FROM question_options o WHERE o.question_id=q.id)) AS family
        FROM questions q JOIN study_question_pool pool ON pool.id=q.id JOIN question_editorial_metadata m ON m.question_id=q.id WHERE q.subject_id=${String(bp.subject_id)}::uuid AND q.id IN(SELECT jsonb_array_elements_text(${JSON.stringify(ids)}::text::jsonb)::uuid) AND length(trim(m.source_reference))>0 AND length(trim(m.rights_note))>0 AND (q.image_url IS NULL OR length(trim(m.image_alt))>0)`;
       if(rows.length!==ids.length)return invalid('Every classified item needs valid published content, provenance and diagram alternative text.');

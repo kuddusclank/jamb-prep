@@ -16,7 +16,7 @@ export function selectAssessmentForm(blueprint:AssessmentBlueprint,cells:Assessm
    options.sort((a,b)=>a.filter(q=>q.previous).length-b.filter(q=>q.previous).length||a.reduce((n,q)=>n+Number(q.seen),0)-b.reduce((n,q)=>n+Number(q.seen),0)||(a[0].rank<b[0].rank?-1:a[0].rank>b[0].rank?1:0));
    if(options.length){chosen=cell.kind==='cloze'?options[0].sort((a,b)=>Number(a.group_position)-Number(b.group_position)):options[0].sort(byExposure).slice(0,cell.required_count);groups.add(chosen[0].group_id!);}
   }else{
-   const pool=eligible.filter(q=>cell.kind!=='reading_text'||(blueprint.reading_reviewed&&blueprint.reading_cycle===blueprint.cycle_year&&q.reading_text_id===blueprint.reading_text_id&&blueprint.reading_text_id));
+   const pool=eligible.filter(q=>cell.kind!=='reading_text'||(blueprint.reading_reviewed&&q.reading_text_id===blueprint.reading_text_id&&blueprint.reading_text_id));
    // Round-robin topic/chapter coverage, prioritising less exposed items inside each domain.
    const domains=new Map<string,AssessmentCandidate[]>();for(const q of pool.sort(byExposure)){const key=cell.kind==='reading_text'?(q.chapter||'unclassified'):q.topic_id;const list=domains.get(key)??[];list.push(q);domains.set(key,list);}
    const queues=[...domains.values()].sort((a,b)=>byExposure(a[0],b[0]));const localFamilies=new Set<string>();
@@ -36,9 +36,9 @@ export function selectAssessmentForm(blueprint:AssessmentBlueprint,cells:Assessm
  const overlap=selected.filter(q=>q.previous).length;if(overlap>previousBudget)warnings.push('Previous-form overlap preference could not be met with the available classified pool.');
  return {selected,warnings,overlap};
 }
-export async function loadAssessmentPools(sql:SqlTagExecutor,subjectId:string,cycleYear:number,userId:string,seed:string,blueprintId:string|null=null) {
- const [blueprint]=await sql<Array<AssessmentBlueprint>>`SELECT b.*,r.reviewed AS reading_reviewed,r.cycle_year AS reading_cycle FROM assessment_blueprints b LEFT JOIN assessment_reading_texts r ON r.id=b.reading_text_id WHERE b.subject_id=${subjectId}::uuid AND b.cycle_year=${cycleYear} AND ((${blueprintId}::uuid IS NULL AND b.status='active') OR b.id=${blueprintId}::uuid)`;
- if(!blueprint)throw new ApiError({status:409,code:'CONFLICT',message:'This subject has no approved mock blueprint for your exam year. No diagnostic allowance has been consumed.'});
+export async function loadAssessmentPools(sql:SqlTagExecutor,subjectId:string,_cycleYear:number,userId:string,seed:string,blueprintId:string|null=null) {
+ const [blueprint]=await sql<Array<AssessmentBlueprint>>`SELECT b.*,r.reviewed AS reading_reviewed,r.cycle_year AS reading_cycle FROM assessment_blueprints b LEFT JOIN assessment_reading_texts r ON r.id=b.reading_text_id WHERE b.subject_id=${subjectId}::uuid AND ((${blueprintId}::uuid IS NULL AND b.status='active') OR b.id=${blueprintId}::uuid) ORDER BY b.created_at DESC,b.version DESC,b.id DESC LIMIT 1`;
+ if(!blueprint)throw new ApiError({status:409,code:'CONFLICT',message:'This subject has no approved mock blueprint. No diagnostic allowance has been consumed.'});
  const cells=await sql<AssessmentCell[]>`SELECT * FROM assessment_cells WHERE blueprint_id=${blueprint.id}::uuid ORDER BY position`;
  const candidates=await sql<AssessmentCandidate[]>`WITH previous_attempt AS(SELECT id FROM attempts WHERE user_id=${userId}::uuid AND mode='mock' ORDER BY started_at DESC,id DESC LIMIT 1),
  raw AS (

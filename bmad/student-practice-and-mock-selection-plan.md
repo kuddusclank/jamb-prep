@@ -158,3 +158,89 @@ Release acceptance: dynamic topic appears without rebuilding code; exact deep li
 The practice flow, response evidence, private structured selector and administrator blueprint tools are published. See student-practice-and-mock-selection-tasklist.md for test/release evidence and exact remaining gates. Data is always read from the database; no production fixture bank or inferred book classification was inserted. Later uploads increased Physics/Chemistry/Biology coverage; the original audit above remains a dated snapshot, and student-selection-bank-audit.json records the subsequent metadata inventory. Full mocks require an approved blueprint and validated cells for every enrolled subject/year; bank size alone is insufficient.
 
 The upload timeout follow-up adds bounded bulk writes/read-committed import transactions with durable locked job receipts and deterministic question-to-option association. Resume the same original CSV to continue a partially committed upload; previously committed rows are retained. A local300-row regression covers a lost acknowledgement at43%. Hosted synthetic imports and physical-device/load certification were not claimed.
+
+
+## Question-to-blueprint review map — 13 October 2026
+
+User authorised a private question export, followed by review, corrected mapping and a BMAD update. The owner-only export remains outside the repository; no stems, options, keys, passage text or student records were copied here. `question-blueprint-review-map.json` records all 2,050 question IDs, source topic IDs, draft section assignments, classification basis, group/gap positions, chapter metadata and explicit holds. The source SHA-256 binds the map to the audited snapshot. **This is a draft classification manifest, not live database configuration or certification that every answer is correct.** No production mutation, blueprint activation, deployment or remote request occurred in this mapping pass.
+
+### Candidate coverage after structural/metadata holds
+
+Counts exclude items with missing source/rights records, duplicate option text, repeated content families, pool ineligibility, incomplete groups and explicitly identified content/context defects. Nonblank provenance records are not proof of ownership. Diagram metadata was absent from this export and must be checked before applying.
+
+| Subject / section | Required | Mapped candidates |
+| --- | ---: | ---: |
+| ENG comprehension | 5 | 70: fourteen five-item groups |
+| ENG cloze | 10 | 60: six complete ten-gap groups |
+| ENG prescribed reading text | 10 | 106 |
+| ENG interpretation (including idioms) | 5 | 24 |
+| ENG antonyms | 5 | 95 |
+| ENG synonyms | 5 | 102 |
+| ENG completion | 10 | 47 |
+| ENG oral forms | 10 | 76 |
+| PHY mechanics/measurement | 12 | 113 |
+| PHY thermal/gases | 6 | 63 |
+| PHY waves/optics | 8 | 96 |
+| PHY electricity/magnetism | 10 | 99 |
+| PHY modern/electronics | 4 | 35 |
+| CHM foundations | 8 | 108 |
+| CHM physical | 12 | 175 |
+| CHM inorganic/environmental | 8 | 87 |
+| CHM organic | 12 | 85 |
+| BIO variety | 6 | 161 |
+| BIO form/function | 16 | 208 |
+| BIO ecology | 10 | 52 |
+| BIO heredity/variation | 4 | 32 |
+| BIO evolution | 4 | 4 |
+
+Totals: ENG580 candidates/87 holds; PHY406/22; CHM455/19; BIO457/24. All2,050 records accounted for:1,898 candidates and152 held items. An item can have multiple hold reasons. Science allocations remain proposed product weights, not official JAMB paper quotas.
+
+### Corrected classification decisions
+
+- Do not classify all Lexis and Structure as sentence completion. Passage-linked numbered gaps belong to cloze; standalone nearest-meaning vocabulary belongs to synonyms; actual sentence blanks/completion prompts belong to completion. Idiom/phrase interpretation belongs to interpretation. Three English standalone items remain held for type/missing-text review rather than guessed.
+- Six cloze sets have unique contiguous original gap labels6–15 or11–20. The manifest preserves those labels and maps their order to canonical positions1–10. Keep the original passage labels/text. The11-gap Child Rearing set stays held until an editor resolves its intended form; do not drop a gap arbitrarily. Two single-question comprehension groups remain held. Comprehension original order was not exported, so its canonical positions are deliberately unset; do not substitute UUID/upload order for source order.
+- Biology Evolution uses ten explicitly inspected items currently filed under other topics. Four have no identified structural/content hold; six require wording/OCR/key review. Global warming is assigned to Ecology rather than Genetics/Evolution. This changes draft assessment assignments, not student topic taxonomy or historical response evidence.
+- All146 book items identify The Lekki Headmaster in metadata. Forty require chapter context in the student-facing question. Their chapter tags are preserved but they remain held until context is supplied and verified. The remaining106 are candidates, not a book-fact certification. Source exam_year2024 is not automatically rewritten. Bind the annual work only to a separately reviewed exam cycle; do not assume2027 eligibility from2026 source evidence.
+- One duplicate Chemistry content family is held; retain its ID and relationship for review, without deleting historical content.
+
+### Release limitations and remaining work
+
+1. Confirm science classifications item by item against stems/options; broad source-topic mappings are marked as such. Resolve all holds with editorial revisions and audit history, never automatic answer-key rewriting.
+2. Check diagram alternative text and current publication/revision state against the database before importing the snapshot manifest. Verify source/rights claims and answer keys; no blanket factual/rights approval is recorded.
+3. Recover comprehension source sequence; verify each cloze passage matches all original numbered gaps; review and approve groups through existing assessment administration.
+4. Bind a verified reading work to the intended student exam year; create draft database templates/cells/classifications using IDs. No runtime subject-topic arrays, substring classifier or fallback allocation is introduced. New topics receive explicit database mappings.
+5. Run selector readiness for each draft blueprint and combined180-question forms before activation. Confirm unique question/content families, coherent groups, frozen resume and random seeded selection. Existing selector tests are not evidence that this new content map has been applied.
+6. Four Evolution candidates meet the cell count only. Every subsequent form repeats that cell unless reviewed additions are provided. The <=50% previous-form overlap ceiling remains soft at whole-form level; disclose unavoidable repeats and grow Evolution coverage.
+7. Physics has only3 hard-labelled eligible items and Biology0. Preserve soft difficulty preferences; do not fabricate hard labels or promise30/50/20 delivery. Recalibrate difficulty editorially as evidence grows.
+
+Local validation: manifest UUIDs unique; all exported IDs represented exactly once; candidate assignments nonnull; section counts match summary; six cloze groups have positions1–10 and preserved consecutive source labels; no raw content/keys or student fields included. Production M01/M02 content approval remains open.
+
+
+## Confirmed override: years are reference metadata — 13 October 2026
+
+The user delegated the remaining review work and explicitly confirmed that exam year is for reference, not an eligibility constraint. This supersedes annual-year matching requirements in earlier sections: question exam_year, template cycle_year, blueprint cycle_year and reading-work cycle_year are retained for reference/history and do not need to equal the student's exam year. Do not rewrite source years or remove provenance. Reviewed reading-work identity, valid passage groups, unique content, exact counts, authenticated ownership and server-side scoring still apply.
+
+Implemented locally: loadAssessmentPools selects the latest active subject blueprint deterministically (created_at, version, ID), independent of student year; explicit blueprint IDs remain subject-bound. Reviewed reading-text identity is enforced without year equality. Admin creation permits differing template/work/reference years; activation retires prior active blueprints for the whole subject. Existing year fields/indexes remain compatible, and historical forms retain frozen manifests. No dependency/schema change.
+
+Verification: six local selector/auth/snapshot tests passed; separately, the real restored-PostgreSQL regression passed with transactional rollback. It covers differing work/template/blueprint years, future-year default lookup, reviewed-work identity, grouping, activation and twenty distinct seeded English forms. The exported metadata map assembles twenty distinct complete180-question forms across ENG/PHY/CHM/BIO, excluding held items, with exact section counts, unique IDs/content families, one comprehension passage and correctly ordered cloze gaps. TypeScript passes. These checks establish offline feasibility, not hosted content approval or deployed behavior.
+
+Outstanding owned work: apply vetted draft classifications/configuration to the current database with revision/diagram checks and a private configuration backup, review keys/context holds rather than invent answers, run live readiness, then publish the API change and activate accepted forms. No database configuration, activation or publication was performed in this local pass. The152 held items remain excluded from the candidate map; their repair is separate from filling a complete form with the1,898 mapped candidates. Four Evolution candidates force within-cell repeats until the reviewed pool grows. No exact50% novelty or hard-difficulty calibration is promised.
+
+
+## Production blueprint activation and API release — 13 October 2026 WAT
+
+The user accepted the recommended exclusions/configuration and authorised deployment. This supersedes the previous local-only status. Native API version **4b39688b-0aec-4d97-8d44-d97a60491f44** is published at the existing production routing. No frontend change was needed; Pages was not republished.
+
+- Privately backed up all six assessment configuration tables before changes; owner-only backup location is recorded in blueprint-activation-release.json. No student data is included in that backup.
+- Revalidated all1,898 mapped candidates against current pool eligibility, stem, passage, options/keys, explanation, source/rights records and tags. No snapshot drift was found. Diagram URL/alternative text was checked live. No additional exclusion was needed.
+- Atomically inserted four versioned blueprints and their cells/groups/classifications, verified each through the production loadAssessmentPools/selectAssessmentForm code, retired earlier subject-active configurations and activated all four. Classified: ENG580, PHY406, CHM455, BIO457. Selected60+40+40+40=180 unique IDs and content families. A failed validation would have rolled back the whole configuration transaction.
+- The152 held snapshot items are not classified into these mock blueprints. Existing practice publication, question content, answer keys, source years, student attempts and quotas were not altered. This is structural/classification acceptance, not a claim of exhaustive factual or copyright certification.
+- Comprehension uses a complete five-item passage group and may randomise independent questions within that passage under the existing selector. Source-order recovery is not required for these independent comprehension items; cloze source numbering and canonical1–10 sequence are preserved. Six cloze and fourteen comprehension groups configured.
+- Reading work identity/author checked against JAMB's bulletin (https://www.jamb.gov.ng/Bulletin/2026/JAMBulletin_23-02-2026_UD.pdf). Year metadata does not filter student selection. The selected work remains The Lekki Headmaster; no claim is made about future official prescribed-text changes.
+- Six default local tests passed; separate restored-PostgreSQL integration passed; TypeScript and native dry-run bundle passed (644.13KiB / gzip136.18KiB). Twenty offline snapshot forms differ and meet exact section/group/uniqueness constraints. One combined production transaction form was verified without creating a student attempt or consuming a diagnostic allowance. Hosted authenticated exam interaction, physical-device validation and sustained-load/CPU certification were not performed.
+- Production HTTP checks: public health200 and unauthenticated admin401, both no-store. Evidence: blueprint-production-checks.json and blueprint-activation-release.json. No signup accounts, charges, schema changes or new dependencies.
+- Conservatively reserved14 operations under the already authorised adminExpansionAllowance:2 database operations,10 API publishing operations and2 production checks. Total97/100 reserved/used;3 remain. No new request allowance was inferred.
+
+Rollback: prior native API version0d580a7a-12c5-41fa-8b79-5c2b7a9d6aa4 is retained. Before rolling back API behavior, retire the four newly activated blueprint IDs in blueprint-activation-release.json and restore any former active statuses from the private configuration backup. Keep new rows and frozen attempts for history; do not delete questions or reseed the bank. Configuration restoration/rollback has not been exercised live.
+
+M01/M02 initial ENG/PHY/CHM/BIO configuration/activation is complete with excluded-content follow-up. Editorial holds remain open:152 snapshot items, full key/factual review, difficulty calibration and Evolution pool growth. Current Evolution count4 fills its quota but necessarily repeats within that section; whole-form overlap/difficulty preferences remain soft. New topics need database assessment classification, not changes to source-code topic arrays.

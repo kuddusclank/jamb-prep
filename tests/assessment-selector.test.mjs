@@ -11,11 +11,13 @@ test('selector keeps full cloze groups in gap order and rejects incomplete or wr
  const cell={...single,kind:'cloze'};const pool=Array.from({length:10},(_,i)=>candidate(i,{group_id:'group',group_kind:'cloze',group_reviewed:true,passage_id:'passage',group_passage_id:'passage',group_position:i+1}));const form=selectAssessmentForm(blueprint,[cell],pool.reverse());assert.deepEqual(form.selected.map(q=>q.group_position),[1,2,3,4,5,6,7,8,9,10]);
  for(const rows of [pool.slice(1),pool.map(q=>({...q,passage_id:'wrong'})),pool.map(q=>({...q,group_reviewed:false}))])assert.throws(()=>selectAssessmentForm(blueprint,[cell],rows),e=>e.status===409);
 });
-test('reading-text cells enforce reviewed work and exam-cycle bindings',()=>{
+test('reading-text cells enforce reviewed work identity while treating years as reference metadata',()=>{
  const cell={...single,kind:'reading_text'};const pool=Array.from({length:10},(_,i)=>candidate(i,{reading_text_id:'book',chapter:'Chapter '+i%3}));
  assert.throws(()=>selectAssessmentForm(blueprint,[cell],pool),e=>e.status===409);
  const bound={...blueprint,reading_text_id:'book',reading_reviewed:true,reading_cycle:2026};assert.equal(selectAssessmentForm(bound,[cell],pool).selected.length,10);
- assert.throws(()=>selectAssessmentForm({...bound,reading_cycle:2027},[cell],pool),e=>e.status===409);
+ assert.equal(selectAssessmentForm({...bound,reading_cycle:2027},[cell],pool).selected.length,10);
+ assert.throws(()=>selectAssessmentForm({...bound,reading_reviewed:false},[cell],pool),e=>e.status===409);
+ assert.throws(()=>selectAssessmentForm({...bound,reading_text_id:'different-book'},[cell],pool),e=>e.status===409);
 });
 test('short pools do not duplicate content and declare unavoidable overlap and difficulty fallback',()=>{
  assert.throws(()=>selectAssessmentForm(blueprint,[single],Array.from({length:9},(_,i)=>candidate(i))),e=>e.status===409);

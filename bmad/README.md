@@ -52,3 +52,7 @@ Read [Mock exam conditions](mock-exam-conditions.md) for approved behaviour, imp
 ## Admin expansion planning — 11 October 2026
 
 User requested planning and then a hold. Read [admin expansion plan](admin-expansion-plan.md), [JAMB syllabus topic research](jamb-syllabus-topic-catalogue.md) and [official-source manifest](jamb-syllabus-sources.json). The plan contains confirmed requirements, proposed defaults and A00–A10 acceptance tasks. All 25 portal PDFs were inspected; complete leaf-topic/editorial mapping remains an explicit implementation gate. No implementation is authorised by these documents.
+
+## Current question mapping — 13 October 2026
+
+Read the question-to-blueprint review section in [student selection plan](student-practice-and-mock-selection-plan.md) and the metadata-only [draft classification manifest](question-blueprint-review-map.json). Mapped candidates are now applied and the four production blueprints are active. Editorial holds remain excluded; see blueprint-activation-release.json for release evidence.

@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-13T21:12:25.720Z",
+  "checks": [
+    {
+      "path": "/api/v1/health",
+      "status": 200,
+      "cacheControl": "no-store",
+      "service": "jambprep-native-api"
+    },
+    {
+      "path": "/api/v1/admin/assessment",
+      "status": 401,
+      "cacheControl": "no-store",
+      "service": null
+    }
+  ],
+  "signupAccountsCreated": 0,
+  "attemptsCreated": 0,
+  "chargesCreated": 0
+}
