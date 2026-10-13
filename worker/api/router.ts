@@ -207,7 +207,8 @@ async function runWithIdempotency<T>(
   required: boolean,
   canonicalPayload: string,
   execute: (context: RouteRequestContext) => Promise<{ status?: 200 | 201; body: T }>,
-  prepare?: Parameters<typeof executeTransactionalIdempotentMutation>[0]['prepare']
+  prepare?: Parameters<typeof executeTransactionalIdempotentMutation>[0]['prepare'],
+  options?: { isolationLevel?: 'serializable' | 'read_committed' }
 ): Promise<RouteHandlerResult> {
   const idempotencyKey = extractIdempotencyKey(ctx.request, { required });
   if (!idempotencyKey) {
@@ -238,7 +239,7 @@ async function runWithIdempotency<T>(
   const outcome = ctx.hooks?.idempotencyStore
     ? await executeIdempotentMutation({ ...input, store: ctx.hooks.idempotencyStore, execute: () => execute(ctx) })
     : await executeTransactionalIdempotentMutation({
-      ...input, db: ctx.getDb(), prepare,
+      ...input, db: ctx.getDb(), prepare, isolationLevel: options?.isolationLevel,
       execute: async (tx) => {
         const scopedDb: RequestDbContext = {
           sql: tx, isHyperdrive: ctx.getDb().isHyperdrive,
@@ -786,7 +787,9 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
           errors: [],
         },
       };
-    }
+    },
+    undefined,
+    { isolationLevel: 'read_committed' }
   );
 }
 

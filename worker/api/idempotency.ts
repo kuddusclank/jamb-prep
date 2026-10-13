@@ -413,10 +413,15 @@ export async function executeTransactionalIdempotentMutation<T>(params: {
   idempotencyKey: string;
   canonicalPayload: string;
   nowIso?: string;
+  isolationLevel?: 'serializable' | 'read_committed';
   prepare?: (tx: SqlTagExecutor) => Promise<void>;
   execute: (tx: SqlTagExecutor) => Promise<{ status?: ApiHttpStatus; body: T }>;
 }): Promise<IdempotentExecutionResult<T>> {
-  return params.db.runSerializableTransaction(async (tx) => {
+  const runTx =
+    params.isolationLevel === 'read_committed' && params.db.runCommittedTransaction
+      ? params.db.runCommittedTransaction.bind(params.db)
+      : params.db.runSerializableTransaction.bind(params.db);
+  return runTx(async (tx) => {
     if (params.prepare) {
       // Check prerequisites before preparing a new account; all work still rolls back together.
       try { await tx`SELECT user_id, operation, idempotency_key, request_hash, status, response_status, response_body, created_at, expires_at FROM api_idempotency_keys LIMIT 0`; }
