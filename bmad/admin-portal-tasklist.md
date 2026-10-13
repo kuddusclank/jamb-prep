@@ -82,3 +82,8 @@
 - [ ] Hosted authenticated authoring and real iPhone acceptance, newest-backup restore rehearsal and load/CPU certification.
 
 Release: API `8493bd46-8eb7-4286-a300-ae62b0c81421`; Pages `35922fa8`. No hosted signup or charge. The unrelated user-supplied question CSV was left untouched.
+
+
+## Student selection planning handoff — 13 October 2026
+
+See `student-practice-and-mock-selection-plan.md` and `student-practice-and-mock-selection-tasklist.md` for the new dynamic practice flow, real-evidence confidence work and database-driven structured mock blueprints. User confirmed one Free practice session per WAT day with 5/10/15 questions; this is a planned replacement for the deployed cumulative allowance, not an implemented entitlement change. New content-role/group/reading-work admin tooling and reviewed cycle mappings are dependencies of structured mocks. Read-only audit now finds 667 published ENG items (666 pass options/explanation checks); elective banks remain too small for 40-item sections. No question, student entitlement or production code was changed by this planning pass.

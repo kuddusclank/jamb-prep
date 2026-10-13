@@ -274,7 +274,7 @@
   },
   "adminExpansionAllowance": {
     "limit": 100,
-    "used": 78,
+    "used": 80,
     "maxConcurrency": 3,
     "authorization": "User approved up to 100 requests for admin expansion audit, private backup, publishing and bounded production checks; no charges or signup accounts.",
     "accounting": "Conservative twenty-request reservation for R2 provisioning and upcoming native API/Pages deploy operations; audits and HTTP checks counted separately. Ten further requests reserved for auth/loading Pages publication and minimal checks. Ten requests reserved for question-source cleanup Pages publication and minimal checks. Twenty requests reserved for preflight repair native API and Pages publication."
@@ -321,5 +321,17 @@
     "questionImports": 0,
     "originalCsvModified": false,
     "productionChecks": 3
+  },
+  "studentSelectionPlanningAudit": {
+    "date": "2026-10-13",
+    "scope": "Read-only bank/mastery aggregates and one public practice URL inspection; no student writes or deployment",
+    "englishPublished": 667,
+    "englishOptionsExplanationEligible": 666,
+    "englishBookMetadataCandidates": 146,
+    "chemistryLinkedTopicEligible": 1,
+    "masteryRows": 95,
+    "masteryAttemptsAggregate": 138,
+    "masteryCorrectAggregate": 48,
+    "providerOperationsReserved": 2
   }
 }
