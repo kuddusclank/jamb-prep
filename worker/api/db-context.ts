@@ -95,11 +95,11 @@ export function createRequestDbContext(env: DatabaseBindingEnv): RequestDbContex
   const sql = postgres(connectionString, {
     max: 1,
     idle_timeout: 10,
-    connect_timeout: 5,
+    connect_timeout: 10,
     prepare: isHyperdrive ? true : false,
     fetch_types: false,
     ...(isHyperdrive ? {} : { ssl: { rejectUnauthorized: true } }),
-    connection: { statement_timeout: 10000, lock_timeout: 3000 },
+    connection: { statement_timeout: 25000, lock_timeout: 10000 },
   });
 
   let db: RequestDbContext['db'] | undefined;

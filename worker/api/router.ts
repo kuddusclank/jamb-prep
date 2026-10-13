@@ -449,7 +449,8 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
     rawText,
     async (ctx) => {
       const dbCtx = ctx.getDb();
-      const receipt = await dbCtx.runSerializableTransaction(async (tx) => {
+      const runTx = dbCtx.runCommittedTransaction ? dbCtx.runCommittedTransaction.bind(dbCtx) : dbCtx.runSerializableTransaction.bind(dbCtx);
+      const receipt = await runTx(async (tx) => {
         let skippedCount = 0;
 
         const durableBatch = await beginImportBatch(tx, ctx, JSON.stringify(items), items.length);
