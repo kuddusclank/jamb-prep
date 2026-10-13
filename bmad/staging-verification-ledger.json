@@ -315,6 +315,46 @@
       "status": "captured-no-invocations",
       "at": "2026-10-13T20:14:44.715Z",
       "completedAt": "2026-10-13T20:17:40.681Z"
+    },
+    {
+      "id": "student-selection-4fa2a68a-1133-4f1f-97cd-7e2ecafe6d3e",
+      "action": "stale-audit",
+      "count": 1,
+      "status": "passed",
+      "at": "2026-10-13T20:28:26.855Z",
+      "completedAt": "2026-10-13T20:28:29.093Z"
+    },
+    {
+      "id": "student-selection-5d437f93-3da2-4493-bd12-164627fcc2b3",
+      "action": "Practice completion and legacy-session hotfix native API publication",
+      "count": 6,
+      "status": "passed",
+      "at": "2026-10-13T20:31:42.551Z",
+      "completedAt": "2026-10-13T20:34:01.173Z"
+    },
+    {
+      "id": "student-selection-fe056a3d-4e86-4efb-997f-a53e84273a59",
+      "action": "Requested read-only mock readiness and classification audit",
+      "count": 1,
+      "status": "passed",
+      "at": "2026-10-13T20:33:24.941Z",
+      "completedAt": "2026-10-13T20:33:29.489Z"
+    },
+    {
+      "id": "student-selection-4f74e1f4-b0a8-457c-94bc-b7182aa4623c",
+      "action": "Publish practice dropdown labels and completed-session recovery static hotfix",
+      "count": 6,
+      "status": "passed",
+      "at": "2026-10-13T20:34:01.212Z",
+      "completedAt": "2026-10-13T20:36:03.678Z"
+    },
+    {
+      "id": "student-selection-83131bbf-e884-48d8-93de-00eff8bd1e31",
+      "action": "Verify published practice hotfix asset matches the tested build",
+      "count": 1,
+      "status": "passed",
+      "at": "2026-10-13T20:36:03.755Z",
+      "completedAt": "2026-10-13T20:36:04.769Z"
     }
   ],
   "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",
@@ -422,7 +462,7 @@
   },
   "studentSelectionAllowance": {
     "limit": 60,
-    "used": 45,
+    "used": 60,
     "maxConcurrency": 3,
     "approvedAt": "2026-10-13",
     "scope": "Fresh private backup, migration rehearsal, student practice/assessment publishing and bounded production verification; no signup accounts or charges."

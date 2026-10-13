@@ -31,7 +31,7 @@ export const PRACTICE_ROUTES: RouteDefinition[] = [
       CASE WHEN aa.selected_option_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM attempts m JOIN attempt_questions mq ON mq.attempt_id=m.id WHERE m.user_id=${ctx.actor!.userId}::uuid AND m.mode='mock' AND m.status='in_progress' AND mq.question_id=aq.question_id)
       THEN jsonb_build_object('isCorrect',aa.selected_option_id=aq.correct_option_id,'correctOption',(SELECT o->>'label' FROM jsonb_array_elements(aq.snapshot->'options') o WHERE o->>'id'=aq.correct_option_id::text),'explanation',aq.frozen_explanation) ELSE NULL END AS feedback
       FROM attempt_questions aq LEFT JOIN attempt_answers aa ON aa.attempt_id=aq.attempt_id AND aa.question_id=aq.question_id WHERE aq.attempt_id=${id}::uuid AND aq.snapshot IS NOT NULL ORDER BY aq.position`;
-    return {status:200,body:{sessionId:id,status:session.status,expiresAt:session.expires_at,questions:rows.map(r=>r.question),answers:rows.map(r=>({questionId:(r.question as {id:string}).id,selectedOptionId:r.selected_option_id??null,feedback:r.feedback??null}))}};
+    return {status:200,body:{sessionId:id,status:session.status==='in_progress'&&rows.length>0&&rows.every(r=>r.selected_option_id)?'completed':session.status,expiresAt:session.expires_at,questions:rows.map(r=>r.question),answers:rows.map(r=>({questionId:(r.question as {id:string}).id,selectedOptionId:r.selected_option_id??null,feedback:r.feedback??null}))}};
   }},
   {id:'practice.session.finish',method:'POST',pattern:'/api/v1/practice/sessions/:sessionId/finish',auth:'student_live_session',idempotency:'required',handler:async ctx=>{
     const id=assertValidUuid(ctx.params.sessionId);const {data,rawText}=await readBoundedJsonBody(ctx.request);

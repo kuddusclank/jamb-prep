@@ -59,3 +59,11 @@
 - Metadata-only bank and hosted-check records: student-selection-bank-audit.json and student-selection-release-checks.json. Provider reservations are recorded under the user-approved additional60-request allowance; no account creation, payment or billing change.
 
 - Short production log capture received zero invocations/CPU samples; it provides no CPU-limit or sustained-load certification. R01 remains open.
+
+## Practice follow-up and requested mock audit — 13 October 2026
+
+The user reported the saved-session banner persisting even after ending a session and requested removal of bank counts from the topic dropdown. One read-only aggregate audit found two legacy unexpired practice attempts still marked in_progress, one fully answered. These older records lack practice_requested_count; the previous UI never closed them. Both the allocation blocker and catalogue now consider only resumable sessions created by the new protocol with unanswered frozen questions. Old snapshots/evidence are retained. The final checked answer now completes a new practice attempt transactionally; checked-answer replays on a completed owned attempt remain safe and do not duplicate evidence. Owned reads recognise already-answered legacy sessions as completed. Browser review remains available after completion/expiry. Dropdown options retain topic/performance labels and omit bank totals.
+
+Verification: three restored-PostgreSQL practice tests and22 local unit tests passed; regressions include complete/unfinished legacy attempts, automatic last-answer completion and safe replay. TypeScript and production static export passed. Published native API0d580a7a-12c5-41fa-8b79-5c2b7a9d6aa4 and Pages32e7aa55. Public practice asset verification is recorded in the provider ledger.
+
+Requested live mock audit (mock-readiness-audit.json): ENG667 published/664 eligible; PHY428/427; CHM474/474; BIO481/481; MTH18/18. All five have zero classifications and zero active blueprints. There are no blueprint records, no reviewed annual reading work, and no reviewed comprehension/cloze groups. The latest screenshot selects ENG/PHY/CHM/BIO, so the immediate blocker is missing configuration, not Mathematics or raw question quantity. M01/M02 editorial activation remains unfinished; no content was auto-classified or activated during this read-only audit.

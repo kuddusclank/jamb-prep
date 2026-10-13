@@ -1,0 +1,52 @@
+{
+  "at": "2026-10-13T20:33:29.445Z",
+  "scope": "Read-only production metadata; no student identifiers, question text or writes",
+  "subjects": [
+    {
+      "code": "BIO",
+      "total": 481,
+      "published": 481,
+      "eligible": 481,
+      "classified": 0,
+      "active_blueprints": 0
+    },
+    {
+      "code": "CHM",
+      "total": 474,
+      "published": 474,
+      "eligible": 474,
+      "classified": 0,
+      "active_blueprints": 0
+    },
+    {
+      "code": "ENG",
+      "total": 667,
+      "published": 667,
+      "eligible": 664,
+      "classified": 0,
+      "active_blueprints": 0
+    },
+    {
+      "code": "MTH",
+      "total": 18,
+      "published": 18,
+      "eligible": 18,
+      "classified": 0,
+      "active_blueprints": 0
+    },
+    {
+      "code": "PHY",
+      "total": 428,
+      "published": 428,
+      "eligible": 427,
+      "classified": 0,
+      "active_blueprints": 0
+    }
+  ],
+  "blueprints": [],
+  "editorial": {
+    "reviewed_annual_reading_texts": 0,
+    "reviewed_comprehension_groups": 0,
+    "reviewed_cloze_groups": 0
+  }
+}

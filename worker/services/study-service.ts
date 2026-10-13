@@ -43,7 +43,7 @@ export async function allocatePractice(tx: SqlTagExecutor, userId: string, input
   const subjects = await tx<Array<{id:string}>>`SELECT s.id FROM subjects s JOIN student_subjects ss ON ss.subject_id=s.id WHERE ss.user_id=${userId}::uuid AND s.code=${data.subjectCode} AND s.is_active`;
   if(subjects.length!==1) throw new ApiError({status:403,code:'FORBIDDEN',message:'Choose one of your active enrolled subjects.'});
   const topicId=await resolvePracticeTopic(tx,subjects[0].id,data.topicSlug);
-  const [active]=await tx`SELECT id FROM attempts WHERE user_id=${userId}::uuid AND mode='practice' AND status='in_progress' AND expires_at>${now.toISOString()}::timestamptz AND EXISTS(SELECT 1 FROM attempt_questions aq WHERE aq.attempt_id=attempts.id AND aq.snapshot IS NOT NULL) ORDER BY started_at DESC,id DESC LIMIT 1`;
+  const [active]=await tx`SELECT id FROM attempts WHERE user_id=${userId}::uuid AND mode='practice' AND status='in_progress' AND expires_at>${now.toISOString()}::timestamptz AND practice_requested_count IN(5,10,15) AND EXISTS(SELECT 1 FROM attempt_questions aq WHERE aq.attempt_id=attempts.id AND aq.snapshot IS NOT NULL AND NOT EXISTS(SELECT 1 FROM attempt_answers aa WHERE aa.attempt_id=aq.attempt_id AND aa.question_id=aq.question_id AND aa.selected_option_id IS NOT NULL)) ORDER BY started_at DESC,id DESC LIMIT 1`;
   if(active) throw new ApiError({status:409,code:'CONFLICT',message:'Resume or end your current practice session before starting another.'});
   const [used]=await tx`SELECT user_id FROM daily_practice_sessions WHERE user_id=${userId}::uuid AND practice_date_wat=${watDate(now)}::date`;
   if(!subscription.isPremium && used) throw new ApiError({status:429,code:'RATE_LIMITED',message:'Your daily free practice session has been used. Resume your saved session or come back after midnight WAT.'});
@@ -65,7 +65,7 @@ export async function checkIssuedPractice(tx: SqlTagExecutor, userId: string, in
   await lockStudent(tx, userId);
   const rows = await tx<Array<{ snapshot: { options: { id: string; label: string }[] }; correct_option_id: string; frozen_explanation: string | null; subject_id: string; topic_id: string }>>`
     SELECT aq.snapshot,aq.correct_option_id,aq.frozen_explanation,aq.subject_id,aq.topic_id FROM attempts a JOIN attempt_questions aq ON aq.attempt_id=a.id
-    WHERE a.id=${input.sessionId}::uuid AND a.user_id=${userId}::uuid AND a.mode='practice' AND a.status='in_progress' AND a.expires_at>${now.toISOString()}::timestamptz AND aq.question_id=${input.questionId}::uuid FOR UPDATE OF a`;
+    WHERE a.id=${input.sessionId}::uuid AND a.user_id=${userId}::uuid AND a.mode='practice' AND ((a.status='in_progress' AND a.expires_at>${now.toISOString()}::timestamptz) OR (a.status='completed' AND EXISTS(SELECT 1 FROM attempt_answers checked WHERE checked.attempt_id=a.id AND checked.question_id=${input.questionId}::uuid AND checked.selected_option_id IS NOT NULL))) AND aq.question_id=${input.questionId}::uuid FOR UPDATE OF a`;
   if (!rows.length) throw new ApiError({ status: 404, code: 'NOT_FOUND', message: 'This question is not in an active practice session owned by you.' });
   const restricted = await tx`SELECT a.id FROM attempts a JOIN attempt_questions aq ON aq.attempt_id=a.id WHERE a.user_id=${userId}::uuid AND a.mode='mock' AND a.status='in_progress' AND aq.question_id=${input.questionId}::uuid LIMIT 1`;
   if (restricted.length) throw new ApiError({ status: 403, code: 'FORBIDDEN', message: 'Feedback is unavailable while this question is in your active mock.' });
@@ -77,6 +77,7 @@ export async function checkIssuedPractice(tx: SqlTagExecutor, userId: string, in
   const isCorrect = existing[0]?.selected_option_id === row.correct_option_id;
   if (answers.length) await tx`INSERT INTO scored_response_events(attempt_id,question_id,user_id,subject_id,topic_id,mode,answered,is_correct,difficulty,scored_at,editorial_revision) SELECT ${input.sessionId}::uuid,aq.question_id,${userId}::uuid,aq.subject_id,aq.topic_id,'practice',true,${isCorrect},COALESCE(aq.snapshot->>'difficulty','medium'),${now.toISOString()}::timestamptz,COALESCE((aq.snapshot->>'editorialRevision')::int,1) FROM attempt_questions aq WHERE aq.attempt_id=${input.sessionId}::uuid AND aq.question_id=${input.questionId}::uuid ON CONFLICT DO NOTHING`;
   if (answers.length) await recordTopicMasteryBatch(tx, userId, [{ subjectId: row.subject_id, topicId: row.topic_id, isCorrect }], now);
+  if(answers.length)await tx`UPDATE attempts a SET status='completed',completed_at=${now.toISOString()}::timestamptz WHERE a.id=${input.sessionId}::uuid AND a.user_id=${userId}::uuid AND a.status='in_progress' AND NOT EXISTS(SELECT 1 FROM attempt_questions aq WHERE aq.attempt_id=a.id AND NOT EXISTS(SELECT 1 FROM attempt_answers aa WHERE aa.attempt_id=aq.attempt_id AND aa.question_id=aq.question_id AND aa.selected_option_id IS NOT NULL))`;
   return { isCorrect, correctOption: correct.label, explanation: row.frozen_explanation ?? 'An explanation has not been supplied.' };
 }
 export async function startFrozenMock(tx: SqlTagExecutor, userId: string, input: { examConditions: boolean }, now: Date) {
