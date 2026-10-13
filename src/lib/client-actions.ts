@@ -44,6 +44,7 @@ export interface PracticeAnswerResult {
 }
 
 export interface ExamSessionPayload {
+  selectionWarnings?:string[];
   attemptId: string;
   examConditions: boolean;
   startedAt: string;
@@ -183,20 +184,21 @@ export async function saveOnboardingAction(
 /**
  * Metered practice issue bridge.
  */
-const issuedPractice = new Map<string, string>();
-import { registerPrivateCacheClearer } from '@/lib/auth/storage-cleanup';
-registerPrivateCacheClearer(() => issuedPractice.clear());
-export async function getPracticeQuestions(subjectCode: string, topicSlug?: string, count = 5): Promise<PracticeQuestionItem[]> {
-  const result = await getAccountCoordinator().mutate<{sessionId:string;questions:PracticeQuestionItem[]}>('/api/v1/practice/session', {subjectCode,topicSlug:topicSlug??null,count});
-  for(const question of result.questions) issuedPractice.set(question.id,result.sessionId);
-  return result.questions;
+export interface PracticeSession {sessionId:string;questions:PracticeQuestionItem[];status?:string;expiresAt?:string;answers?:{questionId:string;selectedOptionId:string|null;feedback:PracticeAnswerResult|null}[];}
+export async function getPracticeQuestions(subjectCode:string,topicSlug?:string,count=5):Promise<PracticeSession> {
+ return getAccountCoordinator().mutate<PracticeSession>('/api/v1/practice/session',{subjectCode,topicSlug:topicSlug??null,count});
 }
-export async function checkPracticeAnswer(questionId:string,selectedOption:string):Promise<PracticeAnswerResult> {
-  const sessionId=issuedPractice.get(questionId); if(!sessionId) throw new Error('Reload your practice session before checking this answer.');
-  return getAccountCoordinator().mutate<PracticeAnswerResult>('/api/v1/practice/check',{sessionId,questionId,selectedOption});
+export async function resumePracticeSession(sessionId:string):Promise<PracticeSession> {
+ return getAccountCoordinator().loadResource<PracticeSession>(`/api/v1/practice/sessions/${sessionId}`);
+}
+export async function finishPracticeSession(sessionId:string,abandon=false) {
+ return getAccountCoordinator().mutate(`/api/v1/practice/sessions/${sessionId}/finish`,{abandon});
+}
+export async function checkPracticeAnswer(sessionId:string,questionId:string,selectedOption:string):Promise<PracticeAnswerResult> {
+ return getAccountCoordinator().mutate<PracticeAnswerResult>('/api/v1/practice/check',{sessionId,questionId,selectedOption});
 }
 export async function getMockPayload(attemptId:string):Promise<ExamSessionPayload & {initialRevisions:Record<string,number>;serverNow:number;status:string}> {
-  const result = (await getAccountCoordinator().api.request<{attemptId:string;examConditions:boolean;startedAt:string;expiresAt:string;serverNow:number;status:string;questions:(ExamQuestion & {selectedOptionId?:string;revision:number})[]}>(`/api/v1/exams/attempts/${attemptId}`)).data;
+  const result = (await getAccountCoordinator().api.request<{attemptId:string;selectionWarnings?:string[];examConditions:boolean;startedAt:string;expiresAt:string;serverNow:number;status:string;questions:(ExamQuestion & {selectedOptionId?:string;revision:number})[]}>(`/api/v1/exams/attempts/${attemptId}`)).data;
   const initialAnswers:Record<string,string>={},initialLabels:Record<string,'A'|'B'|'C'|'D'>={},initialRevisions:Record<string,number>={};
   for(const question of result.questions) { initialRevisions[question.id]=question.revision; if(question.selectedOptionId){initialAnswers[question.id]=question.selectedOptionId; const label=question.options.find((option)=>option.id===question.selectedOptionId)?.label;if(label) initialLabels[question.id]=label;} }
   return {...result,expiresAtTimestamp:Date.now()+Math.max(0,new Date(result.expiresAt).getTime()-result.serverNow),initialAnswers,initialLabels,initialRevisions};

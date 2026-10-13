@@ -451,7 +451,7 @@ export function ProfileClient({
                 Standard Diagnostic Allowance
               </h3>
               <p className="text-xs text-slate-600 mt-1 max-w-md leading-relaxed">
-                You have 15 practice questions per day. Upgrade to Premium for unlimited CBT simulations, tailored weak-topic revision, and study coach analytics.
+                You can start one practice session of 5, 10 or 15 questions per day. Upgrade to Premium for unlimited CBT simulations, tailored weak-topic revision, and study coach analytics.
               </p>
             </div>
 

@@ -27,6 +27,7 @@ import {
 
 interface ExamSimulatorProps {
   initialPayload: {
+    selectionWarnings?:string[];
     examConditions: boolean;
     attemptId: string;
     questions: ExamQuestion[];
@@ -244,6 +245,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
         </div>
       </header>
 
+      {initialPayload.selectionWarnings?.length ? <details className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-950"><summary className="cursor-pointer font-semibold">About this question selection</summary><ul className="mt-2 space-y-1">{initialPayload.selectionWarnings.map(w=><li key={w}>{w}</li>)}</ul></details> : null}
       {submitError && <div role="alert" className="bg-red-50 p-4 text-red-800"><p>{submitError}</p><button type="button" disabled={isPending} onClick={handleFinalSubmit}>Retry submission</button></div>}
       {flagError && <p role="status" className="rounded-xl bg-amber-50 p-3 text-amber-900">{flagError}</p>}
       <ExamConditions attemptId={initialPayload.attemptId} enabled={initialPayload.examConditions} active={!isPending && status !== "expired"} />

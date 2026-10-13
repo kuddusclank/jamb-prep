@@ -23,7 +23,7 @@ const faq = [
   ['Do I need an account to practise or take an exam?', 'Yes. You must create an account and sign in before starting any practice questions, diagnostic mock or exam, including free sessions. Registration is open.'],
   ['Will it work on my phone?', 'The platform is optimized for phones, tablets and computers. The mock interface includes touch-friendly question navigation as well as desktop keyboard controls.'],
   ['What happens if my internet disconnects?', 'The exam engine automatically saves answers on your device and syncs them continuously. You can continue answering questions without interruption.'],
-  ['What will the free plan include?', 'One full diagnostic mock, a detailed score breakdown, and 15 topic-practice questions each day with comprehensive step-by-step explanations. The daily allowance resets at midnight West Africa Time.'],
+  ['What will the free plan include?', 'One full diagnostic mock, a detailed score breakdown, and one topic-practice session of 5, 10 or 15 questions each day with comprehensive step-by-step explanations. The daily allowance resets at midnight West Africa Time.'],
   ['How does Premium access work?', 'Premium access is ₦1,000 for 30 days via Paystack, granting unlimited CBT mocks, unlimited practice questions, full answer explanations, and advanced study coach analytics. If you refer 2 verified friends, you unlock 50% off (₦500).'],
 ];
 
@@ -101,7 +101,7 @@ export default function Home() {
                   Ready for your<br/>next study <span className="serif-accent text-[#116149]">session?</span>
                 </h1>
                 <p className="entrance delay-2 mt-7 max-w-lg text-lg leading-relaxed text-slate-600">
-                  Pick up right where you left off. Jump into your 15 daily topic-practice questions, test your timing in a full CBT simulation, or review weak topics with your coach.
+                  Pick up right where you left off. Jump into your daily topic-practice session, test your timing in a full CBT simulation, or review weak topics with your coach.
                 </p>
                 <div className="entrance delay-3 mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
                   <Link href="/dashboard" className={button}>
@@ -112,7 +112,7 @@ export default function Home() {
                   </Link>
                 </div>
                 <p className="entrance delay-3 mt-5 text-xs text-slate-500">
-                  Signed in as <strong className="text-slate-700 font-semibold">{user.email}</strong> · {isPremium ? "Premium Active (Unlimited CBT Mocks)" : "Free Tier Active (15 questions/day)"}
+                  Signed in as <strong className="text-slate-700 font-semibold">{user.email}</strong> · {isPremium ? "Premium Active (Unlimited CBT Mocks)" : "Free Tier Active (one session/day)"}
                 </p>
               </>
             ) : (
@@ -262,7 +262,7 @@ export default function Home() {
                         </span>
                         <div>
                           <p className="text-sm font-bold">Daily Topic Practice</p>
-                          <p className="text-xs text-slate-500">15 questions/day with detailed explanations</p>
+                          <p className="text-xs text-slate-500">One daily 5, 10 or 15-question session with explanations</p>
                         </div>
                       </div>
                       <ArrowRight size={16} className="text-[#116149]"/>
@@ -441,7 +441,7 @@ export default function Home() {
                 desc: 'Find your starting point and build a daily revision habit.',
                 features: [
                   'One full diagnostic mock exam',
-                  '15 topic questions per day',
+                  'One daily session: 5, 10 or 15 questions',
                   'Explanations during topic practice',
                   'Score breakdown and weak-topic feedback'
                 ],

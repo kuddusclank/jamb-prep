@@ -6,22 +6,25 @@ import { StudyWorkspace } from "@/components/study-workspace";
 import { PracticeClient } from "./practice-client";
 
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
-import type { EnrolledData, DashboardData } from "@/lib/api/app-dtos";
+import type { PracticeCatalogue } from "@/lib/api/practice-dtos";
 
 function PracticePageContent() {
   const searchParams = useSearchParams();
-  const enrollment=useApiResource<EnrolledData>("/api/v1/practice/subjects");
-  const dashboard=useApiResource<DashboardData>("/api/v1/dashboard");
-  if(!enrollment.data||!dashboard.data) return <ResourceStatus error={enrollment.error??dashboard.error} retry={()=>{enrollment.retry();dashboard.retry();}}/>;
+  const catalogue=useApiResource<PracticeCatalogue>("/api/v1/practice/catalogue");
+  if(!catalogue.data) return <ResourceStatus error={catalogue.error} retry={catalogue.retry}/>;
   const initialSubjectCode = searchParams.get("subject") || undefined;
   const initialTopicSlug = searchParams.get("topic") || undefined;
 
   return (
     <PracticeClient
-      enrolledSubjects={enrollment.data.subjects.map((subject)=>({code:subject.subject_code,name:subject.subject_name,isCompulsory:subject.is_compulsory}))}
+      enrolledSubjects={catalogue.data.subjects}
+      dailySessionUsed={catalogue.data.dailySessionUsed}
+      activeSessionId={catalogue.data.activeSessionId}
+      initialSessionId={searchParams.get("session")??undefined}
+      refreshCatalogue={catalogue.retry}
       initialSubjectCode={initialSubjectCode}
       initialTopicSlug={initialTopicSlug}
-      isPremium={dashboard.data.subscription.isPremium}
+      isPremium={catalogue.data.isPremium}
     />
   );
 }

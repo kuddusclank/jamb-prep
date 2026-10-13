@@ -1,0 +1,94 @@
+{
+  "at": "2026-10-13T20:14:23.170Z",
+  "scope": "Bounded existing-test-account reads; no hosted practice allocation, question import, signup or payment.",
+  "results": [
+    {
+      "path": "/api/v1/health",
+      "status": 200,
+      "milliseconds": 745
+    },
+    {
+      "path": "/api/v1/auth/session",
+      "status": 200,
+      "milliseconds": 1087
+    },
+    {
+      "path": "/api/v1/practice/catalogue",
+      "status": 200,
+      "milliseconds": 1049
+    },
+    {
+      "path": "/api/v1/mock/readiness",
+      "status": 200,
+      "milliseconds": 929
+    },
+    {
+      "path": "/api/v1/admin/assessment",
+      "status": 401,
+      "milliseconds": 169
+    },
+    {
+      "path": "/api/v1/health",
+      "status": 403,
+      "milliseconds": 452
+    },
+    {
+      "path": "/api/v1/practice/catalogue",
+      "status": 204,
+      "milliseconds": 167
+    },
+    {
+      "path": "/practice/",
+      "status": 200,
+      "milliseconds": 346
+    },
+    {
+      "path": "/admin/assessment/",
+      "status": 200,
+      "milliseconds": 346
+    },
+    {
+      "path": "/admin/import/",
+      "status": 200,
+      "milliseconds": 359
+    },
+    {
+      "path": "/_next/static/css/9b905e6afb791ae9.css",
+      "status": 200,
+      "milliseconds": 474
+    }
+  ],
+  "catalogue": {
+    "sizes": [
+      5,
+      10,
+      15
+    ],
+    "subjects": [
+      {
+        "code": "ENG",
+        "available": 664,
+        "topics": 20
+      },
+      {
+        "code": "MTH",
+        "available": 18,
+        "topics": 16
+      },
+      {
+        "code": "PHY",
+        "available": 427,
+        "topics": 24
+      },
+      {
+        "code": "CHM",
+        "available": 474,
+        "topics": 17
+      }
+    ]
+  },
+  "mock": {
+    "ready": false,
+    "existingAttempt": false
+  }
+}

@@ -36,7 +36,7 @@ interface StaticSubjectSummary {
   questionsAttempted: number;
   questionsCorrect: number;
   accuracyPercent: number;
-  estimatedScore: number;
+  estimatedScore: number | null;
   weakTopicsCount: number;
   masteredTopicsCount: number;
 }
@@ -165,7 +165,7 @@ export default function DashboardPage() {
               <div className="shrink-0 flex flex-col sm:flex-row xl:flex-col gap-3">
                 {coachRecommendation.suggestedTopicSlug ? (
                   <Link
-                    href={`/practice?subject=${coachRecommendation.suggestedSubjectCode}&topic=${coachRecommendation.suggestedTopicSlug}`}
+                    href={`/practice?${new URLSearchParams({subject:coachRecommendation.suggestedSubjectCode,...(coachRecommendation.suggestedTopicSlug?{topic:coachRecommendation.suggestedTopicSlug}:{})})}`}
                     className="min-h-12 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-7 text-sm font-semibold text-white hover:bg-[#0b4936] transition-all hover:-translate-y-0.5 shadow-md shadow-[#116149]/20"
                   >
                     Practice Weak Topic Now <ArrowRight size={16} />
@@ -203,15 +203,15 @@ export default function DashboardPage() {
                   )}
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Topics where targeted practice yields the highest score gain.
+                  Topics where your recorded answers suggest more practice would help.
                 </p>
               </div>
 
               <Link
-                href={isPremium ? "/analytics" : "/pricing"}
+                href="/practice/"
                 className="text-xs font-semibold text-[#116149] hover:underline flex items-center gap-1"
               >
-                View all topics {!isPremium && <Lock size={12} className="text-amber-700" />} <ArrowRight size={12} />
+                Choose a practice topic <ArrowRight size={12} />
               </Link>
             </div>
 
@@ -279,7 +279,7 @@ export default function DashboardPage() {
                   <p className="text-sm text-slate-600">
                     {totalMocksCompleted === 0
                       ? "Complete your first diagnostic mock exam or topic practice session to generate your weak-topic breakdown."
-                      : "🎉 Great job! No critical weak topics identified. Keep reviewing and taking full mocks!"}
+                      : "🎉 Great job! More distinct answers across sessions are needed to establish reliable topic strengths."}
                   </p>
                   <Link
                     href="/mock"
@@ -328,7 +328,7 @@ export default function DashboardPage() {
 
                   <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
                     <span className="text-slate-400 font-medium">Est. Score</span>
-                    <span className="font-bold text-[#092E28]">{sub.estimatedScore} / 100</span>
+                    <span className="font-bold text-[#092E28]">{sub.estimatedScore===null?"No mock score":`${sub.estimatedScore} / 100`}</span>
                   </div>
 
                   <Link

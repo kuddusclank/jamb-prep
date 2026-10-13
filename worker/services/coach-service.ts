@@ -27,7 +27,7 @@ export interface SubjectMasterySummary {
   subjectCode: string;
   subjectName: string;
   isCompulsory: boolean;
-  estimatedScore: number;
+  estimatedScore: number | null;
   accuracyPercent: number;
   questionsAttempted: number;
   weakTopicsCount: number;
@@ -92,7 +92,7 @@ export function getDefaultCoachInsights(targetScore: number = 280): CoachInsight
       explanation:
         "You haven't completed a full CBT simulation yet. Take a 180-question mock exam to uncover your starting scores across English and electives so your coach can generate your revision plan.",
       suggestedSubjectCode: 'ENG',
-      potentialGainPoints: 45,
+      potentialGainPoints: 0,
     },
   };
 }
@@ -196,6 +196,7 @@ export async function getStudentCoachInsights(
         created_at: string | Date;
       };
   type MasteryRow = {
+        strength:string;
         topic_id: string;
         topic_title: string;
         topic_slug: string;
@@ -233,23 +234,18 @@ export async function getStudentCoachInsights(
       WHERE user_id = ${userId}::uuid
       ORDER BY created_at DESC
       LIMIT 10),
-    mastery_rows AS (WITH sampled AS (SELECT *,ROW_NUMBER() OVER(PARTITION BY (accuracy_percent<65) ORDER BY accuracy_percent,topic_id) AS sample_rank FROM student_topic_mastery WHERE user_id=${userId}::uuid)
-      SELECT
-        stm.topic_id,
-        t.title AS topic_title,
-        t.slug AS topic_slug,
-        s.code AS subject_code,
-        s.name AS subject_name,
-        stm.subject_id,
-        stm.accuracy_percent,
-        stm.total_attempted,
-        stm.total_correct
-      FROM sampled stm
-      INNER JOIN topics t ON t.id = stm.topic_id
-      INNER JOIN subjects s ON s.id = stm.subject_id
-      WHERE (stm.accuracy_percent<65 AND stm.sample_rank<=5) OR (stm.accuracy_percent>=75 AND stm.sample_rank<=20)
-      ORDER BY stm.accuracy_percent ASC),
-    aggregate_rows AS (SELECT subject_id,SUM(total_attempted)::int AS total_attempted,SUM(total_correct)::int AS total_correct,COUNT(*) FILTER(WHERE accuracy_percent<65)::int AS weak,COUNT(*) FILTER(WHERE accuracy_percent>=75)::int AS mastered FROM student_topic_mastery WHERE user_id=${userId}::uuid GROUP BY subject_id)
+    mastery_rows AS (
+      SELECT e.topic_id,t.title AS topic_title,t.slug AS topic_slug,s.code AS subject_code,s.name AS subject_name,e.subject_id,
+      CASE WHEN e.accuracy<p.weak_below THEN 'weak' ELSE 'strong' END AS strength,e.accuracy AS accuracy_percent,e.sample_size AS total_attempted,e.correct AS total_correct
+      FROM study_topic_evidence e JOIN topics t ON t.id=e.topic_id JOIN subjects s ON s.id=e.subject_id CROSS JOIN study_evidence_policy p
+      WHERE e.user_id=${userId}::uuid AND e.sample_size>=p.confident_sample AND e.sessions>=p.confident_sessions AND (e.accuracy<p.weak_below OR e.accuracy>=p.strong_at)
+      ORDER BY e.accuracy,t.id LIMIT 25
+    ), aggregate_rows AS (
+      SELECT subject_id,SUM(sample_size)::int AS total_attempted,SUM(correct)::int AS total_correct,
+      COUNT(*) FILTER(WHERE sample_size>=p.confident_sample AND sessions>=p.confident_sessions AND accuracy<p.weak_below)::int AS weak,
+      COUNT(*) FILTER(WHERE sample_size>=p.confident_sample AND sessions>=p.confident_sessions AND accuracy>=p.strong_at)::int AS mastered
+      FROM study_topic_evidence CROSS JOIN study_evidence_policy p WHERE user_id=${userId}::uuid GROUP BY subject_id
+    )
     SELECT
       COALESCE((SELECT jsonb_agg(to_jsonb(r)) FROM pref_rows r),'[]'::jsonb) AS pref_rows,
       COALESCE((SELECT jsonb_agg(to_jsonb(r)) FROM enrolled_rows r),'[]'::jsonb) AS enrolled_rows,
@@ -272,7 +268,7 @@ export async function getStudentCoachInsights(
     latestScore !== null ? Math.max(0, targetScore - latestScore) : targetScore;
 
   const weakestTopics: WeakTopicItem[] = masteryRows
-    .filter((m) => m.accuracy_percent < 65)
+    .filter((m) => m.strength === 'weak')
     .slice(0, 5)
     .map((m) => ({
       topicId: m.topic_id,
@@ -287,7 +283,7 @@ export async function getStudentCoachInsights(
     }));
 
   const masteredTopics = masteryRows
-    .filter((m) => m.accuracy_percent >= 75)
+    .filter((m) => m.strength === 'strong')
     .map((m) => ({
       topicTitle: m.topic_title,
       subjectCode: m.subject_code,
@@ -315,7 +311,7 @@ export async function getStudentCoachInsights(
       subjectCode: sub.code,
       subjectName: sub.name,
       isCompulsory: sub.is_compulsory,
-      estimatedScore: scores.length > 0 ? avgSubjectScore : accuracy,
+      estimatedScore: scores.length > 0 ? avgSubjectScore : null,
       accuracyPercent: accuracy,
       questionsAttempted: totalAttempted,
       weakTopicsCount: Number(aggregate?.weak??0),
@@ -331,13 +327,13 @@ export async function getStudentCoachInsights(
     explanation:
       "You haven't completed a full CBT simulation yet. Take a 180-question mock exam to uncover your starting scores across English and electives so your coach can generate your revision plan.",
     suggestedSubjectCode: enrolledSubs[0]?.code || 'ENG',
-    potentialGainPoints: 45,
+    potentialGainPoints: 0,
   };
 
   if (weakestTopics.length > 0) {
     const primaryWeak = weakestTopics[0];
     const secondaryWeak = weakestTopics[1];
-    const estGain = Math.min(60, Math.round((100 - primaryWeak.accuracyPercent) * 0.4) + 15);
+
 
     coachRecommendation = {
       badge:
@@ -345,20 +341,20 @@ export async function getStudentCoachInsights(
           ? 'HIGH LEVERAGE OPPORTUNITY'
           : 'RECOMMENDED REVISION',
       headline: `Target ${primaryWeak.topicTitle} in ${primaryWeak.subjectName}.`,
-      explanation: `Your accuracy is currently ${primaryWeak.accuracyPercent}% (${primaryWeak.totalCorrect}/${primaryWeak.totalAttempted} correct). Focusing on ${primaryWeak.topicTitle}${secondaryWeak ? ` and ${secondaryWeak.topicTitle}` : ''} before your next full mock will recover an estimated +${estGain} aggregate marks toward your ${targetScore} goal.`,
+      explanation: `Your accuracy is currently ${primaryWeak.accuracyPercent}% (${primaryWeak.totalCorrect}/${primaryWeak.totalAttempted} correct). Focusing on ${primaryWeak.topicTitle}${secondaryWeak ? ` and ${secondaryWeak.topicTitle}` : ''} can help you practise the areas where your saved answers show room for improvement.`,
       suggestedSubjectCode: primaryWeak.subjectCode,
       suggestedTopicSlug: primaryWeak.topicSlug,
       suggestedTopicTitle: primaryWeak.topicTitle,
-      potentialGainPoints: estGain,
+      potentialGainPoints: 0,
     };
   } else if (hasActivity) {
     coachRecommendation = {
       badge: 'EXCELLENT MOMENTUM',
-      headline: 'Solid foundation! Take another timed simulation.',
+      headline: 'Keep building your practice evidence.',
       explanation:
-        'You have reviewed your initial topics. Now take another full 120-minute CBT simulation to test your timing and pacing under real exam hall conditions.',
+        'Your saved answers are available. More distinct questions across multiple sessions help identify reliable strengths and revision priorities.',
       suggestedSubjectCode: enrolledSubs[0]?.code || 'ENG',
-      potentialGainPoints: 20,
+      potentialGainPoints: 0,
     };
   }
 

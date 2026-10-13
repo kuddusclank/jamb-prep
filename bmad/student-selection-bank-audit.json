@@ -1,0 +1,162 @@
+{
+  "at": "2026-10-13T20:12:27.385Z",
+  "scope": "production metadata only",
+  "subjects": [
+    {
+      "code": "ACC",
+      "total": 15,
+      "published": 15,
+      "eligible": 15
+    },
+    {
+      "code": "AGR",
+      "total": 15,
+      "published": 15,
+      "eligible": 15
+    },
+    {
+      "code": "ARB",
+      "total": 0,
+      "published": 0,
+      "eligible": 0
+    },
+    {
+      "code": "ART",
+      "total": 0,
+      "published": 0,
+      "eligible": 0
+    },
+    {
+      "code": "BIO",
+      "total": 329,
+      "published": 329,
+      "eligible": 329
+    },
+    {
+      "code": "CHM",
+      "total": 474,
+      "published": 474,
+      "eligible": 474
+    },
+    {
+      "code": "CMP",
+      "total": 0,
+      "published": 0,
+      "eligible": 0
+    },
+    {
+      "code": "COM",
+      "total": 15,
+      "published": 15,
+      "eligible": 15
+    },
+    {
+      "code": "CRK",
+      "total": 15,
+      "published": 15,
+      "eligible": 15
+    },
+    {
+      "code": "ECN",
+      "total": 15,
+      "published": 15,
+      "eligible": 15
+    },
+    {
+      "code": "ENG",
+      "total": 667,
+      "published": 667,
+      "eligible": 664
+    },
+    {
+      "code": "FRN",
+      "total": 0,
+      "published": 0,
+      "eligible": 0
+    },
+    {
+      "code": "GEO",
+      "total": 15,
+      "published": 15,
+      "eligible": 15
+    },
+    {
+      "code": "GOV",
+      "total": 15,
+      "published": 15,
+      "eligible": 15
+    },
+    {
+      "code": "HAU",
+      "total": 0,
+      "published": 0,
+      "eligible": 0
+    },
+    {
+      "code": "HEC",
+      "total": 0,
+      "published": 0,
+      "eligible": 0
+    },
+    {
+      "code": "HIS",
+      "total": 15,
+      "published": 15,
+      "eligible": 15
+    },
+    {
+      "code": "IGB",
+      "total": 0,
+      "published": 0,
+      "eligible": 0
+    },
+    {
+      "code": "IRS",
+      "total": 15,
+      "published": 15,
+      "eligible": 15
+    },
+    {
+      "code": "LIT",
+      "total": 15,
+      "published": 15,
+      "eligible": 15
+    },
+    {
+      "code": "MTH",
+      "total": 18,
+      "published": 18,
+      "eligible": 18
+    },
+    {
+      "code": "MUS",
+      "total": 0,
+      "published": 0,
+      "eligible": 0
+    },
+    {
+      "code": "PHE",
+      "total": 0,
+      "published": 0,
+      "eligible": 0
+    },
+    {
+      "code": "PHY",
+      "total": 428,
+      "published": 428,
+      "eligible": 427
+    },
+    {
+      "code": "YOR",
+      "total": 0,
+      "published": 0,
+      "eligible": 0
+    }
+  ],
+  "counts": {
+    "attempts": 15,
+    "evidence_events": 64,
+    "active_blueprints": 0,
+    "excluded": 2
+  }
+}

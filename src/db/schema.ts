@@ -1,5 +1,5 @@
 import {
-  pgTable, uuid, text, timestamp, boolean, integer,
+  pgTable, uuid, text, timestamp, boolean, numeric, integer,
   pgEnum, jsonb, index, uniqueIndex, date, primaryKey
 } from 'drizzle-orm/pg-core';
 
@@ -82,6 +82,7 @@ export const passages = pgTable('passages', {
 // 3. Question Bank & Solutions
 // ==========================================
 export const questions = pgTable('questions', {
+  assessmentEnabled: boolean('assessment_enabled').default(true).notNull(),
   id: uuid('id').defaultRandom().primaryKey(),
   subjectId: uuid('subject_id').references(() => subjects.id, { onDelete: 'cascade' }).notNull(),
   topicId: uuid('topic_id').references(() => topics.id, { onDelete: 'cascade' }).notNull(),
@@ -142,10 +143,14 @@ export const attempts = pgTable('attempts', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
   examConditions: boolean('exam_conditions').default(false).notNull(),
+  practiceSubjectId: uuid('practice_subject_id').references(()=>subjects.id),
+  practiceTopicId: uuid('practice_topic_id').references(()=>topics.id),
+  practiceRequestedCount: integer('practice_requested_count'),
   mode: attemptModeEnum('mode').notNull(), // 'practice' or 'mock'
   status: attemptStatusEnum('status').default('in_progress').notNull(),
   startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  blueprintManifest: jsonb('blueprint_manifest'),
   completedAt: timestamp('completed_at', { withTimezone: true }),
 }, (table) => [
   index('attempt_user_idx').on(table.userId),
@@ -346,3 +351,15 @@ export const curriculumTopicMappings=pgTable('curriculum_topic_mappings',{
 export const questionImportReferences=pgTable('question_import_references',{subjectId:uuid('subject_id').references(()=>subjects.id).notNull(),externalReference:text('external_reference').notNull(),questionId:uuid('question_id').references(()=>questions.id).notNull(),requestHash:text('request_hash').notNull()},table=>[primaryKey({columns:[table.subjectId,table.externalReference]})]).enableRLS();
 
 export const passageImportReferences=pgTable('passage_import_references',{subjectId:uuid('subject_id').references(()=>subjects.id).notNull(),externalReference:text('external_reference').notNull(),passageId:uuid('passage_id').references(()=>passages.id).notNull()},table=>[primaryKey({columns:[table.subjectId,table.externalReference]})]).enableRLS();
+
+export const dailyPracticeSessions=pgTable('daily_practice_sessions',{userId:uuid('user_id').references(()=>profiles.id).notNull(),practiceDateWat:date('practice_date_wat').notNull(),attemptId:uuid('attempt_id').references(()=>attempts.id),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull()},t=>[primaryKey({columns:[t.userId,t.practiceDateWat]})]).enableRLS();
+export const scoredResponseEvents=pgTable('scored_response_events',{attemptId:uuid('attempt_id').references(()=>attempts.id).notNull(),questionId:uuid('question_id').references(()=>questions.id).notNull(),userId:uuid('user_id').references(()=>profiles.id).notNull(),subjectId:uuid('subject_id').references(()=>subjects.id).notNull(),topicId:uuid('topic_id').references(()=>topics.id).notNull(),mode:attemptModeEnum('mode').notNull(),answered:boolean('answered').notNull(),isCorrect:boolean('is_correct').notNull(),difficulty:text('difficulty').notNull(),editorialRevision:integer('editorial_revision').default(1).notNull(),scoredAt:timestamp('scored_at',{withTimezone:true}).defaultNow().notNull()},t=>[primaryKey({columns:[t.attemptId,t.questionId]})]).enableRLS();
+
+export const assessmentReadingTexts=pgTable('assessment_reading_texts',{id:uuid('id').defaultRandom().primaryKey(),cycleYear:integer('cycle_year').notNull(),title:text('title').notNull(),author:text('author').notNull(),sourceUrl:text('source_url').notNull(),reviewed:boolean('reviewed').default(false).notNull()},t=>[uniqueIndex('reading_cycle_title').on(t.cycleYear,t.title)]).enableRLS();
+export const assessmentBlueprints=pgTable('assessment_blueprints',{id:uuid('id').defaultRandom().primaryKey(),subjectId:uuid('subject_id').references(()=>subjects.id).notNull(),cycleYear:integer('cycle_year').notNull(),title:text('title').notNull(),version:integer('version').default(1).notNull(),status:text('status').default('draft').notNull(),totalQuestions:integer('total_questions').notNull(),durationMinutes:integer('duration_minutes').notNull(),readingTextId:uuid('reading_text_id').references(()=>assessmentReadingTexts.id),sourceUrl:text('source_url').notNull(),overlapLimit:numeric('overlap_limit').default('0.5').notNull(),difficultyTargets:jsonb('difficulty_targets').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull()},t=>[uniqueIndex('blueprint_subject_cycle_version').on(t.subjectId,t.cycleYear,t.version)]).enableRLS();
+export const assessmentCells=pgTable('assessment_cells',{id:uuid('id').defaultRandom().primaryKey(),blueprintId:uuid('blueprint_id').references(()=>assessmentBlueprints.id).notNull(),code:text('code').notNull(),title:text('title').notNull(),kind:text('kind').notNull(),requiredCount:integer('required_count').notNull(),position:integer('position').notNull()},t=>[uniqueIndex('cell_blueprint_code').on(t.blueprintId,t.code)]).enableRLS();
+export const assessmentGroups=pgTable('assessment_groups',{id:uuid('id').defaultRandom().primaryKey(),subjectId:uuid('subject_id').references(()=>subjects.id).notNull(),passageId:uuid('passage_id').references(()=>passages.id).notNull(),kind:text('kind').notNull(),title:text('title').notNull(),reviewed:boolean('reviewed').default(false).notNull()}).enableRLS();
+export const questionAssessmentClassifications=pgTable('question_assessment_classifications',{blueprintId:uuid('blueprint_id').references(()=>assessmentBlueprints.id).notNull(),questionId:uuid('question_id').references(()=>questions.id).notNull(),cellId:uuid('cell_id').references(()=>assessmentCells.id).notNull(),groupId:uuid('group_id').references(()=>assessmentGroups.id),groupPosition:integer('group_position'),readingTextId:uuid('reading_text_id').references(()=>assessmentReadingTexts.id),chapter:text('chapter'),contentFamily:text('content_family').notNull()},t=>[primaryKey({columns:[t.blueprintId,t.questionId]})]).enableRLS();
+export const assessmentBlueprintTemplates=pgTable('assessment_blueprint_templates',{id:text('id').primaryKey(),title:text('title').notNull(),totalQuestions:integer('total_questions').notNull(),cycleYear:integer('cycle_year'),sourceUrl:text('source_url').notNull(),cells:jsonb('cells').notNull()}).enableRLS();
+
+export const studyEvidencePolicy=pgTable('study_evidence_policy',{id:boolean('id').primaryKey().default(true),earlySample:integer('early_sample').default(5).notNull(),confidentSample:integer('confident_sample').default(10).notNull(),confidentSessions:integer('confident_sessions').default(2).notNull(),weakBelow:integer('weak_below').default(65).notNull(),strongAt:integer('strong_at').default(75).notNull()}).enableRLS();

@@ -12,7 +12,7 @@ const enabled=process.env.RUN_LOCAL_POSTGRES==='1';
 test('real PostgreSQL: bootstrap provisions a fresh profile before the idempotency foreign key and replays safely',{skip:!enabled,timeout:15000},async()=>{
  const {NATIVE_API_ROUTES}=await import('../worker/api/router.ts');
  const {runDatabaseTransaction}=await import('../worker/api/db-context.ts');
- const file=path.join(os.homedir(),'.codex/private-backups/jambprep/local-runtime.env');
+ const file=process.env.LOCAL_TEST_DATABASE_FILE??path.join(os.homedir(),'.codex/private-backups/jambprep/local-runtime.env');
  const url=fs.readFileSync(file,'utf8').trim().slice('DATABASE_URL='.length);assert.equal(new URL(url).hostname,'127.0.0.1');
  const sql=postgres(url,{max:1,prepare:false});const uid=crypto.randomUUID();const email=`local-signup-${uid}@example.invalid`;
  const db={sql,isHyperdrive:false,runSerializableTransaction:fn=>runDatabaseTransaction(()=>sql.begin('isolation level serializable',fn)),runCommittedTransaction:fn=>sql.begin(fn)};
@@ -29,7 +29,7 @@ test('real PostgreSQL: bootstrap provisions a fresh profile before the idempoten
  } finally {await sql`DELETE FROM auth.users WHERE id=${uid}::uuid`;await sql.end();}
 });
 test('real PostgreSQL 17: restore, metered practice, bank preflight, frozen answers and atomic scoring',{skip:!enabled},async()=>{
- const file=path.join(os.homedir(),'.codex/private-backups/jambprep/local-runtime.env');
+ const file=process.env.LOCAL_TEST_DATABASE_FILE??path.join(os.homedir(),'.codex/private-backups/jambprep/local-runtime.env');
  const url=fs.readFileSync(file,'utf8').trim().slice('DATABASE_URL='.length);
  assert.equal(new URL(url).hostname,'127.0.0.1');
  const sql=postgres(url,{max:1,prepare:false});const rollback=new Error('LOCAL_FIXTURE_ROLLBACK');
@@ -39,7 +39,7 @@ test('real PostgreSQL 17: restore, metered practice, bank preflight, frozen answ
   await tx`INSERT INTO student_subjects (user_id,subject_id) SELECT ${uid}::uuid,id FROM subjects WHERE code IN ('ENG','MTH','PHY','CHM')`;
   const now=new Date();const saved=await saveStudentOnboardingAtomic(tx,uid,{electives:['Mathematics','Physics','Chemistry'],targetScore:280},now);assert.equal(saved.saved,true);
   const prefs=await tx`SELECT target_score FROM student_preferences WHERE user_id=${uid}::uuid`;assert.equal(prefs[0].target_score,280);
-  const issued=await allocatePractice(tx,uid,{subjectCode:'ENG',count:5},now);assert.equal(issued.questions.length,5);assert.equal(issued.remaining,10);
+  const issued=await allocatePractice(tx,uid,{subjectCode:'ENG',count:5},now);assert.equal(issued.questions.length,5);assert.equal(issued.remaining,0);
   assert.doesNotMatch(JSON.stringify(issued),/correct_option|is_correct|explanation/);
   const feedback=await checkIssuedPractice(tx,uid,{sessionId:issued.sessionId,questionId:issued.questions[0].id,selectedOption:'A'},now);assert.equal(typeof feedback.isCorrect,'boolean');
   await assert.rejects(startFrozenMock(tx,uid,{examConditions:false},now),/No diagnostic allowance/);
@@ -47,6 +47,13 @@ test('real PostgreSQL 17: restore, metered practice, bank preflight, frozen answ
   // Isolated, rolled-back SQL fixtures exercise the complete-bank path. They never enter the app bank.
   for(const code of ['ENG','MTH','PHY','CHM']) {
    await tx`WITH template AS (SELECT q.* FROM questions q JOIN subjects s ON s.id=q.subject_id WHERE s.code=${code} AND q.status='published' AND (SELECT count(*) FROM question_options o WHERE o.question_id=q.id)=4 AND (SELECT count(*) FROM question_options o WHERE o.question_id=q.id AND o.is_correct)=1 LIMIT 1), clones AS (INSERT INTO questions SELECT (jsonb_populate_record(NULL::questions,to_jsonb(t)||jsonb_build_object('id',gen_random_uuid(),'stem','[LOCAL SQL FIXTURE]'))).* FROM template t CROSS JOIN generate_series(1,60) RETURNING id) INSERT INTO question_options SELECT (jsonb_populate_record(NULL::question_options,to_jsonb(o)||jsonb_build_object('id',gen_random_uuid(),'question_id',c.id))).* FROM clones c CROSS JOIN template t JOIN question_options o ON o.question_id=t.id`;
+  }
+  // Approved metadata-only fixture blueprints exercise scoring separately from the official English cells.
+  await tx`INSERT INTO question_explanations(question_id,explanation) SELECT id,'[LOCAL SQL FIXTURE] explanatory text' FROM questions WHERE stem='[LOCAL SQL FIXTURE]' ON CONFLICT(question_id) DO NOTHING`;
+  for(const code of ['ENG','MTH','PHY','CHM']){const [subject]=await tx`SELECT id,is_compulsory FROM subjects WHERE code=${code}`;const required=subject.is_compulsory?60:40;
+   const [bp]=await tx`INSERT INTO assessment_blueprints(subject_id,cycle_year,title,version,status,total_questions,duration_minutes,source_url) VALUES(${subject.id}::uuid,2026,'Local scoring fixture',999999,'active',${required},120,'https://example.invalid/fixture') RETURNING id`;
+   const [cell]=await tx`INSERT INTO assessment_cells(blueprint_id,code,title,kind,required_count,position) VALUES(${bp.id}::uuid,'fixture','Fixture coverage','single',${required},0) RETURNING id`;
+   await tx`INSERT INTO question_assessment_classifications(blueprint_id,question_id,cell_id,content_family) SELECT ${bp.id}::uuid,id,${cell.id}::uuid,id::text FROM study_question_pool WHERE subject_id=${subject.id}::uuid`;
   }
   const started=await startFrozenMock(tx,uid,{examConditions:false},now);assert.equal(started.resumed,false);
   const payload=await getOwnedAttemptPayloadJson(tx,{attemptId:started.attemptId,userId:uid});
@@ -62,7 +69,7 @@ test('real PostgreSQL 17: restore, metered practice, bank preflight, frozen answ
 
 test('real PostgreSQL: simultaneous preference updates retry whole rolled-back transactions without losing either save',{skip:!enabled,timeout:15000},async()=>{
  const {runDatabaseTransaction}=await import('../worker/api/db-context.ts');
- const file=path.join(os.homedir(),'.codex/private-backups/jambprep/local-runtime.env');
+ const file=process.env.LOCAL_TEST_DATABASE_FILE??path.join(os.homedir(),'.codex/private-backups/jambprep/local-runtime.env');
  const url=fs.readFileSync(file,'utf8').trim().slice('DATABASE_URL='.length);assert.equal(new URL(url).hostname,'127.0.0.1');
  const sql=postgres(url,{max:2,prepare:false,connection:{statement_timeout:3000,lock_timeout:2000}});
  const uid=crypto.randomUUID();let release;const ready=new Promise(resolve=>{release=resolve;});let arrivals=0;const counts=[0,0];
@@ -79,7 +86,7 @@ test('real PostgreSQL: simultaneous preference updates retry whole rolled-back t
 });
 
  test('real PostgreSQL: two onboarded referrals earn one reward without any completed mock',{skip:!enabled,timeout:15000},async()=>{
- const file=path.join(os.homedir(),'.codex/private-backups/jambprep/local-runtime.env');const url=fs.readFileSync(file,'utf8').trim().slice('DATABASE_URL='.length);assert.equal(new URL(url).hostname,'127.0.0.1');const sql=postgres(url,{max:1,prepare:false});const rollback=new Error('REFERRAL_FIXTURE_ROLLBACK');
+ const file=process.env.LOCAL_TEST_DATABASE_FILE??path.join(os.homedir(),'.codex/private-backups/jambprep/local-runtime.env');const url=fs.readFileSync(file,'utf8').trim().slice('DATABASE_URL='.length);assert.equal(new URL(url).hostname,'127.0.0.1');const sql=postgres(url,{max:1,prepare:false});const rollback=new Error('REFERRAL_FIXTURE_ROLLBACK');
  try {await assert.rejects(sql.begin('isolation level serializable',async tx=>{
  const ids=[crypto.randomUUID(),crypto.randomUUID(),crypto.randomUUID()];
  for(const uid of ids){await tx`INSERT INTO auth.users(id,email) VALUES (${uid}::uuid,${`local-referral-${uid}@example.invalid`})`;await tx`INSERT INTO profiles(id,email,display_name,role) VALUES (${uid}::uuid,${`local-referral-${uid}@example.invalid`},'Referral fixture','student') ON CONFLICT(id) DO NOTHING`;}

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { startMockAttempt } from "@/lib/client-actions";
 import { buildCanonicalExamUrl } from "@/lib/routing/deep-links";
 
-export function MockStartButton() {
+export function MockStartButton({canStart=true,activeAttemptId=null}:{canStart?:boolean;activeAttemptId?:string|null}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [conditions, setConditions] = useState(false);
@@ -19,6 +19,8 @@ export function MockStartButton() {
 
   function handleStart() {
     setError("");
+    if(activeAttemptId){router.push(buildCanonicalExamUrl(activeAttemptId));return;}
+    if(!canStart)return;
     // Invoke synchronously from the click to preserve browser user activation.
     const fullscreen = conditions
       ? document.fullscreenEnabled && document.documentElement.requestFullscreen
@@ -58,8 +60,8 @@ export function MockStartButton() {
       <p className="text-sm text-slate-600">Close unrelated tabs and applications and complete the mock independently. We cannot check your other tabs. No microphone or camera is used. The timer continues during interruptions.</p>
       <label className="flex items-start gap-3 text-sm"><input type="checkbox" checked={accepted} onChange={e => setAccepted(e.target.checked)} disabled={isPending} className="mt-1" />I understand these rules. Interruptions alone do not establish malpractice.</label>
       {error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-800">{error}</p>}
-      <button type="button" onClick={handleStart} disabled={isPending || !accepted} className="w-full min-h-12 rounded-full bg-[#116149] px-6 py-3 font-semibold text-white disabled:opacity-50">
-        {isPending ? "Preparing your mock…" : "Start or resume mock"}
+      <button type="button" onClick={handleStart} disabled={isPending || (!activeAttemptId&&(!accepted||!canStart))} className="w-full min-h-12 rounded-full bg-[#116149] px-6 py-3 font-semibold text-white disabled:opacity-50">
+        {isPending ? "Preparing your mock…" : activeAttemptId?"Resume saved mock":canStart?"Start mock":"Mock bank not ready"}
       </button>
       <p className="text-xs text-slate-500">An existing active mock resumes with its original mode and timer.</p>
     </div>

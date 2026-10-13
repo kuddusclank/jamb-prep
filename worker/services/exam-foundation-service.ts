@@ -51,6 +51,7 @@ export interface OwnedExamPayloadResult {
   totalQuestions: number;
   examConditions: boolean;
   questionsJson: string;
+  selectionWarnings: string[];
 }
 
 /**
@@ -74,10 +75,11 @@ export async function getOwnedAttemptPayloadJson(
       total_questions: number | string;
       exam_conditions?: boolean;
       questions_json: string;
+      selection_warnings?:string[];
     }>
   >`
     WITH target_attempt AS (
-      SELECT id,user_id,status,started_at,expires_at,exam_conditions FROM attempts
+      SELECT id,user_id,status,started_at,expires_at,exam_conditions,blueprint_manifest FROM attempts
       WHERE id=${params.attemptId}::uuid AND user_id=${params.userId}::uuid AND mode='mock'
     ), ordered_questions AS (
       SELECT aq.position, aq.snapshot || jsonb_build_object('isFlagged',aq.is_flagged,'selectedOptionId',aa.selected_option_id,'revision',COALESCE(aa.revision,0)) AS payload
@@ -85,6 +87,7 @@ export async function getOwnedAttemptPayloadJson(
       LEFT JOIN attempt_answers aa ON aa.attempt_id=ta.id AND aa.question_id=aq.question_id
       WHERE aq.snapshot IS NOT NULL
     ) SELECT ta.id AS attempt_id,ta.user_id,ta.status,ta.started_at,ta.expires_at,ta.exam_conditions,
+      COALESCE((SELECT jsonb_agg(DISTINCT warning) FROM jsonb_array_elements(COALESCE(ta.blueprint_manifest->'subjects','[]'::jsonb)) subject CROSS JOIN LATERAL jsonb_array_elements_text(COALESCE(subject->'warnings','[]'::jsonb)) warning),'[]'::jsonb) AS selection_warnings,
       (SELECT COUNT(*)::int FROM ordered_questions) AS total_questions,
       COALESCE((SELECT jsonb_agg(payload ORDER BY position)::text FROM ordered_questions),'[]') AS questions_json FROM target_attempt ta
   `;
@@ -109,7 +112,7 @@ export async function getOwnedAttemptPayloadJson(
     expiresAt: new Date(row.expires_at).toISOString(),
     totalQuestions: Number(row.total_questions),
     examConditions: Boolean(row.exam_conditions),
-    questionsJson: row.questions_json,
+    questionsJson: row.questions_json,selectionWarnings:row.selection_warnings??[],
   };
 }
 
@@ -412,6 +415,16 @@ export async function submitAndScoreExamAttemptAtomic(
         CROSS JOIN aggregated_scores ag
         ON CONFLICT (attempt_id) DO NOTHING
         RETURNING id
+      ),
+      recorded_evidence AS (
+        INSERT INTO scored_response_events(attempt_id,question_id,user_id,subject_id,topic_id,mode,answered,is_correct,difficulty,scored_at,editorial_revision)
+        SELECT aq.attempt_id,aq.question_id,ao.user_id,aq.subject_id,aq.topic_id,'mock',
+        aa.selected_option_id IS NOT NULL AND aa.answered_at<=ao.expires_at,
+        COALESCE(aa.selected_option_id=aq.correct_option_id AND aa.answered_at<=ao.expires_at,false),
+        COALESCE(aq.snapshot->>'difficulty','medium'),${serverSubmittedAt}::timestamptz,COALESCE((aq.snapshot->>'editorialRevision')::int,1)
+        FROM active_owned ao JOIN attempt_questions aq ON aq.attempt_id=ao.id
+        LEFT JOIN attempt_answers aa ON aa.attempt_id=aq.attempt_id AND aa.question_id=aq.question_id CROSS JOIN inserted_result ir
+        WHERE aq.topic_id IS NOT NULL ON CONFLICT DO NOTHING RETURNING question_id
       ),
       updated_mastery AS (
         INSERT INTO student_topic_mastery (user_id,subject_id,topic_id,total_attempted,total_correct,accuracy_percent,last_practiced_at)

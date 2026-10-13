@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { getAccountCoordinator } from '../auth/account-coordinator';
 import { useBrowserAccount } from '../../components/browser-account-boundary';
-export function useApiResource<T>(path: string) {
+export function useApiResource<T>(path: string | null) {
   const { session } = useBrowserAccount();
   const [value, setValue] = useState<{ userId: string; path: string; data: T } | null>(null);
   const [failure, setFailure] = useState<{ userId: string; path: string; message: string } | null>(null);
@@ -11,7 +11,7 @@ export function useApiResource<T>(path: string) {
   useEffect(() => {
     let active = true;
     setValue(null); setFailure(null);
-    if (session.status === 'authenticated' && userId) {
+    if (path && session.status === 'authenticated' && userId) {
       void getAccountCoordinator().loadResource<T>(path).then((data) => {
         if (active) setValue({ userId, path, data });
       }).catch((error: unknown) => {

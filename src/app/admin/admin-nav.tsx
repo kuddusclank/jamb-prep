@@ -25,6 +25,7 @@ export function AdminNav() {
     { label: "Question Library", href: "/admin/questions/" },
     { label: "New Question", href: "/admin/questions/edit/" },
     { label: "CSV Import", href: "/admin/import/" },
+    { label: "Mock blueprints", href: "/admin/assessment/" },
     { label: "Curriculum", href: "/admin/curriculum/" },
     { label: "Passages", href: "/admin/passages/" },
     { label: "Support", href: "/admin/support/" },

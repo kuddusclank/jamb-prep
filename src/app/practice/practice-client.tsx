@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ReportQuestionDialog } from "@/components/report-question-dialog";
 import { QuestionDiagram } from "@/components/question-diagram";
 import { MathRenderer } from "@/components/math-renderer";
 import { 
+  resumePracticeSession,
+  finishPracticeSession,
   getPracticeQuestions, 
   checkPracticeAnswer, 
   PracticeQuestionItem, 
@@ -25,29 +27,39 @@ import {
 } from "lucide-react";
 import Link from "@/components/pending-link";
 
-interface SubjectOption {
-  code: string;
-  name: string;
-  isCompulsory: boolean;
-}
+import { useRouter } from "next/navigation";
+import type { PracticeSubject, PracticeTopic } from "@/lib/api/practice-dtos";
+type SubjectOption = PracticeSubject;
+function evidenceLabel(value:{sampleSize:number;accuracy:number|null;strength:string}) {return value.strength==='unassessed'?'Not assessed':value.strength==='early'?`Early evidence · ${value.sampleSize} answered`:`${value.accuracy}% · ${value.sampleSize} answered · ${value.strength}`;}
+function topicOrder(a:PracticeTopic,b:PracticeTopic){const ranks:Record<string,number>={weak:0,developing:1,strong:2,provisional:3,early:4,unassessed:5};return ranks[a.strength]-ranks[b.strength]||a.title.localeCompare(b.title);}
+
 
 interface PracticeClientProps {
   enrolledSubjects: SubjectOption[];
   initialSubjectCode?: string;
   initialTopicSlug?: string;
   isPremium?: boolean;
+  dailySessionUsed:boolean;
+  activeSessionId:string|null;
+  initialSessionId?:string;
+  refreshCatalogue:()=>void;
 }
 
 export function PracticeClient({ 
   enrolledSubjects, 
   initialSubjectCode,
   initialTopicSlug,
-  isPremium = false
+  isPremium = false, dailySessionUsed, activeSessionId, initialSessionId, refreshCatalogue
 }: PracticeClientProps) {
 
-  const initialSub = enrolledSubjects.find((s) => s.code === initialSubjectCode)?.code || enrolledSubjects[0]?.code || "ENG";
+  const initialSub = enrolledSubjects.find((s) => s.code === initialSubjectCode)?.code || enrolledSubjects[0]?.code || "";
+  const router=useRouter();
+  const currentSessionRef=useRef<string|null>(null);
+  const [sessionId,setSessionId]=useState<string|null>(null);
+  const [savedFeedback,setSavedFeedback]=useState<Record<string,PracticeAnswerResult>>({});
   const [selectedSubject, setSelectedSubject] = useState<string>(initialSub);
   const [selectedTopicSlug, setSelectedTopicSlug] = useState<string | undefined>(initialTopicSlug);
+  const [topicSearch,setTopicSearch]=useState("");
   const [questionCount, setQuestionCount] = useState<number>(5);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [questions, setQuestions] = useState<PracticeQuestionItem[]>([]);
@@ -59,31 +71,26 @@ export function PracticeClient({
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const startPractice = async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
-    try {
-      const qList = await getPracticeQuestions(selectedSubject, selectedTopicSlug, questionCount);
-      if (qList.length === 0) {
-        setErrorMessage("No questions available for this selection yet. Try all topics for this subject.");
-        setIsLoading(false);
-        return;
-      }
-      setQuestions(qList);
-      setCurrentIndex(0);
-      setSelectedOption(null);
-      setAnswerResult(null);
-      setScore(0);
-      setIsCompleted(false);
-    } catch (err: unknown) {
-      setErrorMessage(err instanceof Error ? err.message : "Failed to load practice questions.");
-    } finally {
-      setIsLoading(false);
-    }
+  const subject=enrolledSubjects.find(s=>s.code===selectedSubject);
+  const selectedTopic=subject?.topics.find(t=>t.slug===selectedTopicSlug||t.aliases.some(a=>a.toLowerCase()===selectedTopicSlug?.toLowerCase()));
+  const available=selectedTopicSlug ? selectedTopic?.available??0 : subject?.available??0;
+  const invalidSelection=!subject || Boolean(selectedTopicSlug&&!selectedTopic);
+  function writeUrl(nextSubject:string,nextTopic?:string,nextSession?:string){const params=new URLSearchParams({subject:nextSubject});if(nextTopic)params.set('topic',nextTopic);if(nextSession)params.set('session',nextSession);router.replace('/practice/?'+params.toString(),{scroll:false});}
+  useEffect(()=>{setSelectedSubject(initialSubjectCode?.toUpperCase()??enrolledSubjects[0]?.code??'');setSelectedTopicSlug(initialTopicSlug);},[initialSubjectCode,initialTopicSlug,enrolledSubjects]);
+  useEffect(()=>{
+    if(!initialSessionId||initialSessionId===currentSessionRef.current)return;
+    let active=true;setIsLoading(true);setErrorMessage(null);
+    void resumePracticeSession(initialSessionId).then(result=>{if(!active)return;currentSessionRef.current=result.sessionId;setSessionId(result.sessionId);setQuestions(result.questions);const feedback=Object.fromEntries((result.answers??[]).filter(a=>a.feedback).map(a=>[a.questionId,a.feedback!]));setSavedFeedback(feedback);setScore(Object.values(feedback).filter(f=>f.isCorrect).length);const first=result.questions.findIndex(q=>!feedback[q.id]);setCurrentIndex(first<0?Math.max(0,result.questions.length-1):first);setIsCompleted(result.status==='completed');setAnswerResult(first<0?feedback[result.questions[result.questions.length-1]?.id]??null:null);setSelectedOption(null);if(result.status==='expired'||(result.expiresAt&&new Date(result.expiresAt).getTime()<=Date.now())){setQuestions([]);setErrorMessage('This practice session has ended. Choose a new session when your allowance permits.');}}).catch(error=>{if(active)setErrorMessage(error instanceof Error?error.message:'Unable to resume practice.');}).finally(()=>{if(active)setIsLoading(false);});return()=>{active=false;};
+  },[initialSessionId]);
+  const startPractice=async()=>{
+    setIsLoading(true);setErrorMessage(null);
+    try{const result=await getPracticeQuestions(selectedSubject,selectedTopic?.slug,questionCount);currentSessionRef.current=result.sessionId;setSessionId(result.sessionId);setQuestions(result.questions);setCurrentIndex(0);setSavedFeedback({});setSelectedOption(null);setAnswerResult(null);setScore(0);setIsCompleted(false);writeUrl(selectedSubject,selectedTopic?.slug,result.sessionId);}
+    catch(error){setErrorMessage(error instanceof Error?error.message:'Unable to issue practice.');}finally{setIsLoading(false);}
   };
+  async function endPractice(){if(!sessionId)return;setIsSubmitting(true);try{await finishPracticeSession(sessionId,true);setQuestions([]);currentSessionRef.current=null;setSessionId(null);writeUrl(selectedSubject,selectedTopic?.slug);refreshCatalogue();}catch(error){setErrorMessage(error instanceof Error?error.message:'Unable to end practice.');}finally{setIsSubmitting(false);}}
 
   const handleSelectOption = (label: string) => {
-    if (answerResult) return; // Prevent changing after answer is revealed
+    if (answerResult || savedFeedback[questions[currentIndex]?.id]) return; // Prevent changing after answer is revealed
     setSelectedOption(label);
   };
 
@@ -93,7 +100,9 @@ export function PracticeClient({
     setIsSubmitting(true);
     try {
       const currentQ = questions[currentIndex];
-      const result = await checkPracticeAnswer(currentQ.id, selectedOption);
+      if(!sessionId) throw new Error("Resume your practice session first.");
+      const result = await checkPracticeAnswer(sessionId,currentQ.id, selectedOption);
+      setSavedFeedback(values=>({...values,[currentQ.id]:result}));
       setAnswerResult(result);
       if (result.isCorrect) {
         setScore((prev) => prev + 1);
@@ -105,14 +114,9 @@ export function PracticeClient({
     }
   };
 
-  const handleNextQuestion = () => {
-    if (currentIndex + 1 < questions.length) {
-      setCurrentIndex((prev) => prev + 1);
-      setSelectedOption(null);
-      setAnswerResult(null);
-    } else {
-      setIsCompleted(true);
-    }
+  const handleNextQuestion=async()=>{
+    if(currentIndex+1<questions.length){const next=currentIndex+1;setCurrentIndex(next);setSelectedOption(null);setAnswerResult(savedFeedback[questions[next].id]??null);}
+    else if(sessionId){setIsSubmitting(true);try{await finishPracticeSession(sessionId);setIsCompleted(true);}catch(error){setErrorMessage(error instanceof Error?error.message:'Unable to complete this session.');}finally{setIsSubmitting(false);}}
   };
 
   const currentQ = questions[currentIndex];
@@ -161,6 +165,9 @@ export function PracticeClient({
               onClick={() => {
                 setQuestions([]);
                 setIsCompleted(false);
+                currentSessionRef.current=null;setSessionId(null);
+                writeUrl(selectedSubject,selectedTopic?.slug);
+                refreshCatalogue();
               }}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
             >
@@ -211,7 +218,7 @@ export function PracticeClient({
                   <button
                     key={sub.code}
                     type="button"
-                    onClick={() => setSelectedSubject(sub.code)}
+                    onClick={() => {setSelectedSubject(sub.code);setSelectedTopicSlug(undefined);writeUrl(sub.code);}}
                     className={`flex items-center justify-between p-4 rounded-2xl border text-left text-sm font-medium transition-all cursor-pointer ${
                       isSelected
                         ? "border-[#116149] bg-emerald-50 text-[#092E28] ring-1 ring-[#116149]"
@@ -222,7 +229,7 @@ export function PracticeClient({
                       <span className="font-semibold block">{sub.name}</span>
                       <small className="text-xs text-slate-500">
                         {sub.isCompulsory ? "Compulsory" : "Elective"} ({sub.code})
-                      </small>
+                      </small><span className="mt-1 block text-xs text-slate-500">{evidenceLabel(sub)}</span>
                     </div>
                     {isSelected && (
                       <span className="flex size-6 items-center justify-center rounded-full bg-[#116149] text-white">
@@ -235,18 +242,31 @@ export function PracticeClient({
             </div>
           </div>
 
+          <div>
+            <label htmlFor="practice-topic" className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-700">2. Choose topic</label>
+            <p className="mb-3 text-xs text-slate-500">Strength uses distinct answered questions across sessions. Repeated reviews and skipped questions are counted separately.</p><input type="search" aria-label="Search topics" value={topicSearch} onChange={e=>setTopicSearch(e.target.value)} placeholder="Find a topic…" className="mb-2 min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm"/>
+            <select id="practice-topic" value={selectedTopic?.slug??selectedTopicSlug??''} onChange={e=>{const value=e.target.value||undefined;setSelectedTopicSlug(value);writeUrl(selectedSubject,value);}} className="min-h-12 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm">
+              <option value="">All topics · {subject?.available??0} available</option>
+              {selectedTopicSlug&&!selectedTopic&&<option value={selectedTopicSlug}>Requested topic unavailable — choose another</option>}
+              {[...(subject?.topics??[])].filter(t=>t.id===selectedTopic?.id||t.title.toLowerCase().includes(topicSearch.toLowerCase())).sort(topicOrder).map(t=><option key={t.id} value={t.slug}>{t.title} · {evidenceLabel(t)} · {t.available} questions</option>)}
+            </select>
+            <p className="mt-2 text-xs text-slate-500">Strength comes from your saved answers. Topics without evidence appear last.</p>
+            {invalidSelection&&<p role="alert" className="mt-2 text-sm text-red-700">This link does not match an active enrolled subject and topic. Choose a valid selection.</p>}
+            {available<5&&!invalidSelection&&<p role="status" className="mt-2 text-sm text-amber-800">Only {available} question{available===1?'':'s'} available here; at least 5 are needed. No free session will be consumed.</p>}
+          </div>
           {/* Question Count */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2.5">
-              2. Number of Questions
+              3. Number of Questions
             </label>
             <div className="flex gap-3">
               {[5, 10, 15].map((cnt) => (
                 <button
                   key={cnt}
+                  disabled={available<cnt}
                   type="button"
                   onClick={() => setQuestionCount(cnt)}
-                  className={`flex-1 py-3 rounded-2xl border text-sm font-semibold transition-all cursor-pointer ${
+                  className={`flex-1 py-3 rounded-2xl border text-sm font-semibold transition-all cursor-pointer disabled:opacity-40 ${
                     questionCount === cnt
                       ? "border-[#116149] bg-[#116149] text-white"
                       : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
@@ -257,15 +277,16 @@ export function PracticeClient({
               ))}
             </div>
             <p className="mt-2 text-xs text-slate-500">
-              Free plan includes 15 diagnostic practice questions every day (resets midnight WAT).
+              {isPremium ? "Pro includes unlimited practice sessions." : dailySessionUsed ? "Your daily free session has been used. Resume it or return after midnight WAT." : "Free includes one session daily: choose 5, 10 or 15 questions. Resets midnight WAT."}
             </p>
           </div>
 
+          {activeSessionId&&<div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-sm">You have a saved practice session.</p><div className="mt-3 flex gap-3"><button disabled={isLoading} onClick={()=>{writeUrl(selectedSubject,selectedTopic?.slug,activeSessionId);}} className="rounded-full bg-emerald-800 px-5 py-3 text-sm text-white">Resume session</button><button disabled={isLoading} onClick={async()=>{setIsLoading(true);try{await finishPracticeSession(activeSessionId,true);refreshCatalogue();}catch(error){setErrorMessage(error instanceof Error?error.message:'Unable to end session.');}finally{setIsLoading(false);}}} className="rounded-full border px-5 py-3 text-sm">End session</button></div></div>}
           {/* Launch Button */}
           <button
             type="button"
             onClick={startPractice}
-            disabled={isLoading}
+            disabled={isLoading||invalidSelection||available<questionCount||(!isPremium&&dailySessionUsed)||Boolean(activeSessionId)}
             className="w-full flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 py-4 text-sm font-semibold text-white shadow-sm hover:bg-[#0e523e] transition-all cursor-pointer disabled:opacity-50"
           >
             {isLoading ? (
@@ -286,6 +307,7 @@ export function PracticeClient({
   // 2. ACTIVE QUESTION SCREEN
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      {errorMessage&&<p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{errorMessage}</p>}
       {/* Top Header / Progress */}
       <div className="flex items-center justify-between text-xs text-slate-600 bg-white p-4 rounded-2xl border border-slate-200/80">
         <div className="flex items-center gap-2">
@@ -404,10 +426,7 @@ export function PracticeClient({
         <div className="pt-4 flex items-center justify-between border-t border-slate-100">
           <button
             type="button"
-            onClick={() => {
-              setQuestions([]);
-              setIsCompleted(false);
-            }}
+            disabled={isSubmitting} onClick={() => { void endPractice(); }}
             className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
           >
             Quit Practice
@@ -431,7 +450,7 @@ export function PracticeClient({
           ) : (
             <button
               type="button"
-              onClick={handleNextQuestion}
+              disabled={isSubmitting} onClick={()=>void handleNextQuestion()}
               className="inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-7 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#0e523e] transition-all cursor-pointer"
             >
               {currentIndex + 1 < questions.length ? (

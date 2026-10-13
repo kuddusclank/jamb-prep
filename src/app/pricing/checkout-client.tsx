@@ -107,7 +107,7 @@ export function CheckoutClient({ pricing }: CheckoutClientProps) {
             <ul className="mt-6 space-y-3 text-xs text-slate-600">
               <li className="flex items-center gap-2.5">
                 <Check size={15} className="text-[#116149] shrink-0" />
-                <span><strong>15 practice questions</strong> per day</span>
+                <span><strong>One daily practice session</strong> of 5, 10 or 15 questions</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Check size={15} className="text-[#116149] shrink-0" />
@@ -179,7 +179,7 @@ export function CheckoutClient({ pricing }: CheckoutClientProps) {
             <ul className="mt-6 space-y-3 text-xs text-slate-600">
               <li className="flex items-center gap-2.5">
                 <Check size={15} className="text-[#116149] shrink-0" />
-                <span><strong>Unlimited daily practice</strong> across all 15 subjects</span>
+                <span><strong>Unlimited daily practice</strong> across your enrolled subjects</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Check size={15} className="text-[#116149] shrink-0" />

@@ -26,7 +26,7 @@ interface StaticSubjectSummary {
   questionsAttempted: number;
   questionsCorrect: number;
   accuracyPercent: number;
-  estimatedScore: number;
+  estimatedScore: number | null;
   weakTopicsCount: number;
   masteredTopicsCount: number;
 }
@@ -104,7 +104,7 @@ export default function AnalyticsPage() {
                 {weakestTopics.length}
               </div>
               <p className="text-[11px] text-slate-500 mt-1">
-                High gain opportunity
+                Topics to revisit
               </p>
             </div>
           </div>
@@ -125,7 +125,7 @@ export default function AnalyticsPage() {
 
             {coachRecommendation.suggestedTopicSlug ? (
               <Link
-                href={`/practice?subject=${coachRecommendation.suggestedSubjectCode}&topic=${coachRecommendation.suggestedTopicSlug}`}
+                href={`/practice?${new URLSearchParams({subject:coachRecommendation.suggestedSubjectCode,...(coachRecommendation.suggestedTopicSlug?{topic:coachRecommendation.suggestedTopicSlug}:{})})}`}
                 className="shrink-0 min-h-12 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 text-sm font-semibold text-white hover:bg-[#0b4936] transition-all"
               >
                 Practice Weak Topic Now <ArrowRight size={15} />
@@ -160,7 +160,7 @@ export default function AnalyticsPage() {
                       <strong className="text-base font-semibold text-[#092E28]">{sub.subjectName}</strong>
                     </div>
                     <span className="text-xs font-bold text-[#116149]">
-                      Est. {sub.estimatedScore} / 100
+                      {sub.estimatedScore===null?"No mock score":`Mock average ${sub.estimatedScore} / 100`}
                     </span>
                   </div>
 
@@ -168,12 +168,12 @@ export default function AnalyticsPage() {
                   <div>
                     <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
                       <span>Subject Accuracy</span>
-                      <span className="font-semibold text-slate-700">{sub.accuracyPercent}%</span>
+                      <span className="font-semibold text-slate-700">{sub.questionsAttempted?`${sub.accuracyPercent}% · ${sub.questionsAttempted} answered`:"Not assessed"}</span>
                     </div>
                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-[#116149] rounded-full transition-all"
-                        style={{ width: `${sub.accuracyPercent}%` }}
+                        style={{ width: `${sub.questionsAttempted?`${sub.accuracyPercent}% · ${sub.questionsAttempted} answered`:"Not assessed"}` }}
                       />
                     </div>
                   </div>

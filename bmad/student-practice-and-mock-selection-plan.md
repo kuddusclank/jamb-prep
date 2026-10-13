@@ -14,7 +14,7 @@ Date: 13 October 2026. Status: researched plan, awaiting implementation. Compani
 - English mocks need coherent comprehension/cloze passage sets, ten questions from the prescribed general reading text, and a balanced 60-question structure. The general English reading text is distinct from the elective Literature-in-English subject.
 - Selection must be random within configured constraints and adapt to new database topics without changes to subject/topic arrays in JavaScript.
 - Preserve server-owned scores, answer-key confidentiality, frozen questions, retry idempotency, historical attempts and existing payment/referral rules. Free full-diagnostic entitlement remains unchanged unless separately approved.
-- This request authorises research/planning first. The tasklist describes the practice fixes and mock implementation; no migration/publication is claimed here.
+- The initial request authorised research/planning. The subsequent “go ahead with the tasklist” authorised implementation. Release evidence and remaining editorial/manual gates are recorded in the companion tasklist.
 
 ## 2. Verified current state
 
@@ -152,3 +152,9 @@ Keep separate transport regression: reproduce Safari/mobile preflight/practice n
 Rollout is gated: additive backup/restore rehearsal and migrations, clean content mappings, local unit + real PostgreSQL tests, bounded staging checks, manual owner/student/iPhone flows, measured CPU/latency, explicit production publication scope and remaining provider allowance. Current bank is not ready for full 180-question mocks; no synthetic fillers or lower-count disguised exams. No new dependencies, billing upgrade or change to existing completed scores implied.
 
 Release acceptance: dynamic topic appears without rebuilding code; exact deep link works; stale topic cleared on subject change; sparse topic cannot consume quota; Free's two concurrent different start keys create at most one daily session; resume/account switch/new day are safe; Pro repetitions aren't product-capped; first answers/idempotent finalisation produce one evidence event; cold-start topics remain unknown; full English cell counts and coherent groups are exact; wrong-cycle books/unmapped items never enter mocks; chosen IDs are unique; answer keys remain private; new attempts vary while resume stays identical; impossible overlap/difficulty cases produce declared fallbacks; all eligible content writes and snapshots preserve historical integrity.
+
+## Implementation and release update — 13 October 2026
+
+The practice flow, response evidence, private structured selector and administrator blueprint tools are published. See student-practice-and-mock-selection-tasklist.md for test/release evidence and exact remaining gates. Data is always read from the database; no production fixture bank or inferred book classification was inserted. Later uploads increased Physics/Chemistry/Biology coverage; the original audit above remains a dated snapshot, and student-selection-bank-audit.json records the subsequent metadata inventory. Full mocks require an approved blueprint and validated cells for every enrolled subject/year; bank size alone is insufficient.
+
+The upload timeout follow-up adds bounded bulk writes/read-committed import transactions with durable locked job receipts and deterministic question-to-option association. Resume the same original CSV to continue a partially committed upload; previously committed rows are retained. A local300-row regression covers a lost acknowledgement at43%. Hosted synthetic imports and physical-device/load certification were not claimed.

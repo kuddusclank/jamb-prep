@@ -14,7 +14,7 @@ import {
 import { MockStartButton } from "./mock-start-button";
 
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
-import type { EnrolledData } from "@/lib/api/app-dtos";
+interface MockReadiness {ready:boolean;isPremium:boolean;activeAttemptId:string|null;message:string;subjects:{code:string;name:string;isCompulsory:boolean;required:number;available:number;ready:boolean;message:string}[];}
 
 function MockRedirectNotice() {
   const searchParams = useSearchParams();
@@ -40,11 +40,11 @@ function MockRedirectNotice() {
 }
 
 export default function MockLobbyPage() {
-  const resource=useApiResource<EnrolledData>("/api/v1/practice/subjects");
+  const resource=useApiResource<MockReadiness>("/api/v1/mock/readiness");
   if(!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry}/></StudyWorkspace>;
-  const enrolledSubjects=resource.data.subjects.map((subject)=>({code:subject.subject_code,name:subject.subject_name,isCompulsory:subject.is_compulsory}));
+  const enrolledSubjects=resource.data.subjects;
   return (
-    <StudyWorkspace isPremium={false}>
+    <StudyWorkspace isPremium={resource.data.isPremium}>
       <main className="shell section-space">
         <div className="max-w-3xl mx-auto">
           <Suspense fallback={null}>
@@ -149,12 +149,13 @@ export default function MockLobbyPage() {
               </p>
             </div>
 
+            {!resource.data.ready&&!resource.data.activeAttemptId&&<div role="status" className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"><p className="font-semibold">{resource.data.message}</p><ul className="mt-3 space-y-2">{resource.data.subjects.filter(s=>!s.ready).map(s=><li key={s.code}>{s.message}</li>)}</ul><a href="/practice/" className="mt-4 inline-block font-semibold underline">Practise a topic instead</a></div>}
             {/* Launch CTA */}
             <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-xs text-slate-500">
                 Ready? Ensure you have 2 uninterrupted hours before starting.
               </div>
-              <MockStartButton />
+              <MockStartButton canStart={resource.data.ready} activeAttemptId={resource.data.activeAttemptId} />
             </div>
           </div>
         </div>

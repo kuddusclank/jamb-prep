@@ -1103,7 +1103,7 @@ test('10. SQL Idempotency Store & Portable Coach Service: executes atomic ON CON
         return [{ idempotency_key: values[4] }];
       }
       if (queryText.includes('AS pref_rows') && queryText.includes('AS aggregate_rows')) {
-        return [{pref_rows:[{target_score:300,target_institution:'UI',target_course:'Medicine'}],enrolled_rows:[{id:'sub-1',name:'Use of English',code:'ENG',is_compulsory:true}],completed_results:[{total_count:1,historical_best:260,total_score:260,topic_breakdown:[],created_at:NOW_DATE.toISOString(),attempt_id:ATTEMPT_ID}],mastery_rows:[{topic_id:'top-1',topic_title:'Concord & Lexis',topic_slug:'concord-lexis',subject_code:'ENG',subject_name:'Use of English',subject_id:'sub-1',accuracy_percent:40,total_attempted:10,total_correct:4}],aggregate_rows:[{subject_id:'sub-1',total_attempted:10,total_correct:4,weak:1,mastered:0}]}];
+        return [{pref_rows:[{target_score:300,target_institution:'UI',target_course:'Medicine'}],enrolled_rows:[{id:'sub-1',name:'Use of English',code:'ENG',is_compulsory:true}],completed_results:[{total_count:1,historical_best:260,total_score:260,topic_breakdown:[],created_at:NOW_DATE.toISOString(),attempt_id:ATTEMPT_ID}],mastery_rows:[{strength:'weak',topic_id:'top-1',topic_title:'Concord & Lexis',topic_slug:'concord-lexis',subject_code:'ENG',subject_name:'Use of English',subject_id:'sub-1',accuracy_percent:40,total_attempted:10,total_correct:4}],aggregate_rows:[{subject_id:'sub-1',total_attempted:10,total_correct:4,weak:1,mastered:0}]}];
       }
       if (queryText.includes('FROM student_preferences')) {
         return [{ target_score: 300, target_institution: 'UI', target_course: 'Medicine' }];

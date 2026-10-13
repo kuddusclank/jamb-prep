@@ -550,6 +550,7 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
           }
         }
 
+        const passagesToInsert:Array<{id:string;subject_id:string;title:string|null;content:string;external_reference:string|null}>=[];
         const itemPassageIds = new Map<typeof items[number], string | null>();
         for (const item of items) {
           const subjectId = subjectMap.get(item.subjectCode)!;
@@ -572,17 +573,9 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
             }
           }
           if (!passageId && item.passageContent?.trim()) {
-            const [created] = await tx<Array<{ id: string }>>`
-              INSERT INTO passages(subject_id, title, content)
-              VALUES (${subjectId}::uuid, ${item.passageTitle ?? null}, ${item.passageContent})
-              RETURNING id
-            `;
-            passageId = String(created.id);
+            passageId=crypto.randomUUID();
+            passagesToInsert.push({id:passageId,subject_id:subjectId,title:item.passageTitle??null,content:item.passageContent,external_reference:item.passageReference??null});
             if (item.passageReference) {
-              await tx`
-                INSERT INTO passage_import_references(subject_id, external_reference, passage_id)
-                VALUES (${subjectId}::uuid, ${item.passageReference}, ${passageId}::uuid)
-              `;
               passageCache.set(`${subjectId}:${item.passageReference}`, {
                 id: passageId,
                 title: item.passageTitle ?? null,
@@ -600,6 +593,12 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
           itemPassageIds.set(item, passageId);
         }
 
+        if(passagesToInsert.length){
+          const payload=JSON.stringify(passagesToInsert);
+          await tx`INSERT INTO passages(id,subject_id,title,content) SELECT id,subject_id,title,content FROM jsonb_to_recordset(${payload}::text::jsonb) x(id uuid,subject_id uuid,title text,content text,external_reference text)`;
+          await tx`INSERT INTO passage_import_references(subject_id,external_reference,passage_id) SELECT subject_id,external_reference,id FROM jsonb_to_recordset(${payload}::text::jsonb) x(id uuid,subject_id uuid,external_reference text) WHERE external_reference IS NOT NULL`;
+        }
+
         // 5. Filter items for duplicates and validate subtopics
         const itemsToInsert: Array<{
           item: typeof items[number];
@@ -607,6 +606,7 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
           topicId: string;
           passageId: string | null;
           rowHash: string;
+          questionId:string;
         }> = [];
 
         for (const item of items) {
@@ -637,8 +637,9 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
               });
             }
           }
+          if(item.externalReference)existingRefMap.set(`${subjectId}:${item.externalReference}`,rowHash);
           itemsToInsert.push({
-            item,
+            questionId:crypto.randomUUID(),item,
             subjectId,
             topicId: topic.id,
             passageId: itemPassageIds.get(item) ?? null,
@@ -650,7 +651,7 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
         if (itemsToInsert.length > 0) {
           const insertedQuestions = await tx<Array<{ id: string }>>`
             INSERT INTO questions (
-              subject_id,
+              id,subject_id,
               topic_id,
               passage_id,
               stem,
@@ -659,10 +660,10 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
               exam_year,
               status
             )
-            SELECT x.subject_id::uuid, x.topic_id::uuid, x.passage_id::uuid, x.stem, x.image_url, x.difficulty::difficulty_level, x.exam_year, 'draft'
+            SELECT x.id::uuid,x.subject_id::uuid, x.topic_id::uuid, x.passage_id::uuid, x.stem, x.image_url, x.difficulty::difficulty_level, x.exam_year, 'draft'
             FROM jsonb_to_recordset(${JSON.stringify(
               itemsToInsert.map((entry) => ({
-                subject_id: entry.subjectId,
+                id:entry.questionId,subject_id: entry.subjectId,
                 topic_id: entry.topicId,
                 passage_id: entry.passageId,
                 stem: entry.item.stem,
@@ -670,7 +671,7 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
                 difficulty: entry.item.difficulty,
                 exam_year: entry.item.examYear ?? null,
               }))
-            )}::text::jsonb) AS x(subject_id text, topic_id text, passage_id text, stem text, image_url text, difficulty text, exam_year int)
+            )}::text::jsonb) AS x(id text,subject_id text, topic_id text, passage_id text, stem text, image_url text, difficulty text, exam_year int)
             RETURNING id
           `;
 
@@ -680,7 +681,7 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
           const allRefs: Array<{ subject_id: string; external_reference: string; question_id: string; request_hash: string }> = [];
 
           for (let idx = 0; idx < itemsToInsert.length; idx++) {
-            const qId = insertedQuestions[idx].id;
+            const qId = itemsToInsert[idx].questionId;
             const { item, subjectId, rowHash } = itemsToInsert[idx];
 
             for (const label of ['A', 'B', 'C', 'D'] as const) {

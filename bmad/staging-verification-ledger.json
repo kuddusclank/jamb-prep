@@ -229,6 +229,92 @@
       "status": "passed",
       "at": "2026-10-12T19:58:52.166Z",
       "completedAt": "2026-10-12T20:00:12.600Z"
+    },
+    {
+      "id": 33,
+      "action": "backup",
+      "status": "passed",
+      "at": "2026-10-13T15:55:42.447Z",
+      "completedAt": "2026-10-13T15:57:14.914Z"
+    },
+    {
+      "id": 34,
+      "action": "backup",
+      "status": "passed",
+      "at": "2026-10-13T20:05:42.713Z",
+      "completedAt": "2026-10-13T20:07:14.379Z"
+    },
+    {
+      "id": "student-selection-7fe6c0df-5231-4be8-b7c2-89db5ee7d395",
+      "action": "Capture current native API deployment for rollback",
+      "count": 2,
+      "status": "passed",
+      "at": "2026-10-13T20:09:07.819Z",
+      "completedAt": "2026-10-13T20:10:59.540Z"
+    },
+    {
+      "id": "student-selection-45da4861-6648-40c3-ad4c-60012d9f50cd",
+      "action": "Additional conservative rollback inventory requests",
+      "count": 2,
+      "status": "passed",
+      "at": "2026-10-13T20:09:40.792Z",
+      "completedAt": "2026-10-13T20:10:59.580Z"
+    },
+    {
+      "id": "student-selection-8979ef25-0cbf-4e8e-bfbf-5a88b7e404d4",
+      "action": "migrate",
+      "count": 1,
+      "status": "passed",
+      "at": "2026-10-13T20:10:59.626Z",
+      "completedAt": "2026-10-13T20:11:42.102Z"
+    },
+    {
+      "id": "student-selection-92c6be05-3756-4355-8e37-bc9da579aa4b",
+      "action": "Publish reviewed native API including practice, assessment and import fixes",
+      "count": 10,
+      "status": "passed",
+      "at": "2026-10-13T20:11:39.975Z",
+      "completedAt": "2026-10-13T20:12:45.159Z"
+    },
+    {
+      "id": "student-selection-5c566252-e77e-4a79-9e67-2c43f64f8f4e",
+      "action": "audit-live",
+      "count": 1,
+      "status": "passed",
+      "at": "2026-10-13T20:12:25.146Z",
+      "completedAt": "2026-10-13T20:12:27.386Z"
+    },
+    {
+      "id": "student-selection-8dbcfcc8-ac97-4ce3-9d72-15f5756a01ea",
+      "action": "Existing test-account authentication for read-only production checks",
+      "count": 1,
+      "status": "passed",
+      "at": "2026-10-13T20:12:27.586Z",
+      "completedAt": "2026-10-13T20:12:29.959Z"
+    },
+    {
+      "id": "student-selection-69d1de5a-4128-4191-9390-d996c067ea00",
+      "action": "Publish isolated static Pages artifact with practice and admin enhancements",
+      "count": 10,
+      "status": "passed",
+      "at": "2026-10-13T20:12:45.198Z",
+      "completedAt": "2026-10-13T20:14:16.949Z"
+    },
+    {
+      "id": "student-selection-4ec0785c-3725-42a4-a179-df8462e9d6cc",
+      "action": "Bounded production HTTP/auth/CORS and static asset verification",
+      "count": 14,
+      "status": "passed",
+      "at": "2026-10-13T20:14:17.039Z",
+      "completedAt": "2026-10-13T20:14:23.227Z"
+    },
+    {
+      "id": "student-selection-98ed15a2-b15f-44d8-a5aa-bbb17be9a2ce",
+      "action": "Short production Worker log capture for release errors",
+      "count": 2,
+      "status": "captured-no-invocations",
+      "at": "2026-10-13T20:14:44.715Z",
+      "completedAt": "2026-10-13T20:17:40.681Z"
     }
   ],
   "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",
@@ -279,7 +365,7 @@
     "authorization": "User approved up to 100 requests for admin expansion audit, private backup, publishing and bounded production checks; no charges or signup accounts.",
     "accounting": "Conservative twenty-request reservation for R2 provisioning and upcoming native API/Pages deploy operations; audits and HTTP checks counted separately. Ten further requests reserved for auth/loading Pages publication and minimal checks. Ten requests reserved for question-source cleanup Pages publication and minimal checks. Twenty requests reserved for preflight repair native API and Pages publication."
   },
-  "activeVerificationBudget": "adminExpansionAllowance",
+  "activeVerificationBudget": "studentSelectionAllowance",
   "adminExpansionRelease": {
     "status": "published-and-checked",
     "workerVersion": "8493bd46-8eb7-4286-a300-ae62b0c81421",
@@ -333,5 +419,12 @@
     "masteryAttemptsAggregate": 138,
     "masteryCorrectAggregate": 48,
     "providerOperationsReserved": 2
+  },
+  "studentSelectionAllowance": {
+    "limit": 60,
+    "used": 45,
+    "maxConcurrency": 3,
+    "approvedAt": "2026-10-13",
+    "scope": "Fresh private backup, migration rehearsal, student practice/assessment publishing and bounded production verification; no signup accounts or charges."
   }
 }
