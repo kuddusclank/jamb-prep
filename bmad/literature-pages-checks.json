@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-14T15:00:02.631Z",
+  "deployment": "9fc7bc1d",
+  "results": [
+    {
+      "path": "/mock/",
+      "status": 200,
+      "htmlBytes": 7299,
+      "staticAssetsReferenced": true
+    },
+    {
+      "path": "/practice/",
+      "status": 200,
+      "htmlBytes": 7472,
+      "staticAssetsReferenced": true
+    }
+  ]
+}

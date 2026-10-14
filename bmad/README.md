@@ -63,4 +63,4 @@ Read the question-to-blueprint review section in [student selection plan](studen
 
 ## Literature blueprint — 14 October 2026
 
-[Literature-in-English mock specification](literature-mock-blueprint.md) defines40 questions and records the current535-item aggregate inventory. Linked unseen extracts and reviewed work/classification coverage remain activation gates.
+[Literature-in-English mock specification](literature-mock-blueprint.md) defines40 questions and records the current535-item aggregate inventory. Literature is now active with494 classified candidates and a recovered appreciation group; see the release section for evidence and remaining editorial/device gates.

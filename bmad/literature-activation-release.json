@@ -1,0 +1,48 @@
+{
+  "at": "2026-10-14T14:54:27.149Z",
+  "backup": "/Users/akanbiabdulquddus/.codex/private-backups/jambprep/literature-before-activation-2026-10-14T14-53-19.392Z.json",
+  "blueprintId": "959120c3-908e-4963-9842-83a7302a4282",
+  "classified": 494,
+  "held": 44,
+  "uploadedReviewed": 535,
+  "originalEditorialAdded": 3,
+  "existingExtractItemsRecovered": 2,
+  "passageId": "af4907c9-a447-4c0a-a7d8-abac19c8ca03",
+  "groupId": "73a7366c-085a-4a19-b90f-4d4cf27d697a",
+  "total": 40,
+  "combinedTotal": 180,
+  "cells": [
+    {
+      "code": "drama",
+      "title": "Drama",
+      "required": 10
+    },
+    {
+      "code": "prose",
+      "title": "Prose",
+      "required": 10
+    },
+    {
+      "code": "poetry",
+      "title": "Poetry",
+      "required": 10
+    },
+    {
+      "code": "principles",
+      "title": "General literary principles",
+      "required": 5
+    },
+    {
+      "code": "appreciation",
+      "title": "Unseen literary appreciation",
+      "required": 5
+    }
+  ],
+  "warnings": [
+    "drama: difficulty preference relaxed to preserve complete content.",
+    "prose: difficulty preference relaxed to preserve complete content.",
+    "poetry: difficulty preference relaxed to preserve complete content.",
+    "principles: difficulty preference relaxed to preserve complete content."
+  ],
+  "studentAttemptsCreated": 0
+}

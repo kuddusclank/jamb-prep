@@ -169,3 +169,7 @@ GOV/ECN/CRK/IRS now active following topic and content repair.211/122/61/49 cand
 ## Literature specification generated — 14 October 2026
 
 See literature-mock-blueprint.md for L01–L06. L01 complete: five proposed cells total40; live aggregate535 structurally eligible questions, no linked passage groups. L02–L06 remain open; no Literature blueprint was silently activated or English reading-text questions reused. One read-only operation used under newSubjectAllowance.
+
+## Literature built and released — 14 October 2026
+
+L02–L06 initial acceptance complete.494 candidates,44 held; recovered Macbeth group and3 explicitly original additions. Exact40-item and combined180-item real-selector checks passed;20 offline forms vary; incomplete appreciation rejects. Static build passed via existing webpack fallback,33 pages; published Pages9fc7bc1d. L07 keeps full factual/key/rights review, extra extracts and hosted-device testing open. Evidence in literature-mock-blueprint.md and release/check JSON artifacts.

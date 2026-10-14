@@ -424,6 +424,34 @@
       "count": 1,
       "status": "passed",
       "action": "Read-only Literature topic/group inventory for requested blueprint design"
+    },
+    {
+      "id": "literature-content-audit",
+      "budget": "newSubjectAllowance",
+      "count": 1,
+      "status": "passed",
+      "action": "Private Literature content audit for authorised build/deployment"
+    },
+    {
+      "id": "literature-backup-activation",
+      "budget": "newSubjectAllowance",
+      "count": 2,
+      "status": "passed",
+      "action": "Private backup, Literature topic repairs/quarantine, recovered extract and three original editorial questions, atomic blueprint activation"
+    },
+    {
+      "id": "literature-production-checks",
+      "budget": "newSubjectAllowance",
+      "count": 3,
+      "status": "passed",
+      "action": "Committed Literature database-readiness check and production public health/anonymous admin checks"
+    },
+    {
+      "id": "literature-pages-publication",
+      "budget": "newSubjectAllowance",
+      "count": 12,
+      "status": "passed",
+      "action": "Publish verified static build to existing Pages project (10 reserved provider calls), then check production mock/practice pages (2 calls)"
     }
   ],
   "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",
@@ -538,7 +566,7 @@
   },
   "newSubjectAllowance": {
     "limit": 40,
-    "used": 7,
+    "used": 25,
     "maxConcurrency": 3,
     "approvedAt": "2026-10-14",
     "scope": "New-bank audit, private backup, topic repair, blueprint activation and bounded checks; no accounts or charges"

@@ -1,6 +1,6 @@
 # Literature-in-English mock blueprint
 
-Date: 14 October 2026. Subject code: LIT. Status: specification generated; not activated. This is the elective Literature-in-English subject, separate from compulsory English's selected reading-text questions.
+Date: 14 October 2026. Subject code: LIT. Status: active in production following the authorised build/deploy. This is the elective Literature-in-English subject, separate from compulsory English's selected reading-text questions.
 
 ## Structure: 40 questions
 
@@ -51,10 +51,30 @@ Fail readiness before issuing an attempt or consuming a Free diagnostic if any m
 ## Execution and acceptance tasks
 
 - [x] L01: Generate the five-cell specification, source evidence and40-question total; audit aggregate inventory.
-- [ ] L02: Inspect actual stems/options/keys/explanations and original metadata; recover correct genre, work and objective assignments. Hold fragments, merged OCR questions, duplicates, unresolved references and ambiguous items. Verify actual African/non-African work coverage.
-- [ ] L03: Recover or authorise complete unseen extracts and link at least one reviewed five-item appreciation group; prefer several across the three genres. No file-based question-bank fallback.
-- [ ] L04: Create draft database blueprint/cells and reviewed classifications; verify work-aware stratification where required. Source years do not restrict selection.
-- [ ] L05: Test exact40 counts, group coherence, multiple seeds, duplicate rejection, immutable resume and no entitlement consumption on shortages. Combine with English and two other active electives for180.
-- [ ] L06: Back up configuration, activate only after all five cells pass, then perform bounded hosted checks using the approved remaining provider budget. No activation/database write/deployment was performed by L01.
+- [x] L02: Inspect actual stems/options/keys/explanations and original metadata; recover correct genre, work and objective assignments. Hold fragments, merged OCR questions, duplicates, unresolved references and ambiguous items. Verify actual African/non-African work coverage.
+- [x] L03: Recover or authorise complete unseen extracts and link at least one reviewed five-item appreciation group; prefer several across the three genres. No file-based question-bank fallback.
+- [x] L04: Create draft database blueprint/cells and reviewed classifications; verify work-aware stratification where required. Source years do not restrict selection.
+- [x] L05: Test exact40 counts, group coherence, multiple seeds, duplicate rejection, immutable resume and no entitlement consumption on shortages. Combine with English and two other active electives for180.
+- [x] L06: Back up configuration, activate only after all five cells pass, then perform bounded hosted checks using the approved remaining provider budget. No activation/database write/deployment was performed by L01.
 
 The535-item count is sufficient inventory for investigation, not permission to silently skip the appreciation or work-identity gates. Detailed factual review and assessment readiness remain distinct.
+
+
+## Production release — 14 October 2026
+
+User explicitly requested “build and deploy”. Literature blueprint959120c3-908e-4963-9842-83a7302a4282 is active. Cloudflare Pages static build9fc7bc1d is published to the existing production project/domain; the current native API already supports this database configuration and needed no code redeployment.
+
+- Privately inspected535 uploaded records, original work prefixes, topics, options, keys, explanations and source records. Assigned work-specific drama/prose/poetry items to work topics, with separate genre-theory/general-principles topics. Work-prefix mapping is based on the supplied content; exhaustive book-fact/key and rights verification is not claimed.
+-25 duplicate content-family copies (no conflicting keyed content detected),15 missing-provenance items and4 questions with absent extract context are held:44 total. They are assessment-disabled without deletion. Remaining491 uploaded items and3 new original editorial items provide494 classified candidates: drama124,prose186,poetry80,principles99,appreciation5.
+- Recovered the existing Macbeth1.4 public-domain quotation from two uploaded questions; checked its scene/context against [Folger's primary text](https://www.folger.edu/explore/shakespeares-works/macbeth/read/1/4/). Stored one shared passage, an original contextual note and reviewed group. Removed repeated quote text from the two question stems; their options/keys remain unchanged. Added three explicitly original JAMBPrep questions on word meaning, inner thoughts and the stated trust, with source_type=original and appropriate provenance. They are not labelled official past questions. No question/extract text or private answer bank was committed to repository files.
+- One transaction checked the bank against the review snapshot and current diagram accessibility metadata, recorded editorial before/after history, repaired topics, quarantined holds, created the passage/group/cells/classifications and verified readiness before activation. A private configuration/content backup precedes all changes. Historical attempt snapshots/answers/scores and entitlements were not rewritten. No accounts, student attempts or charges created.
+- The real production selector assembled exact10/10/10/5/5=40 unique items and one appreciation group. Combining English,Literature,Government,CRK produced180 unique IDs/content families. Post-commit reads confirm494 eligible/classified,5 appreciation items and3 tagged original additions. No hosted student attempt was issued to perform these checks.
+- Five local selector/snapshot tests passed, including20 distinct seeded40-item forms and rejection of an incomplete appreciation group. This is selection/shape verification, not exhaustive editorial review. Static production build and TypeScript passed with existing webpack fallback:33 prerendered pages. Default Turbopack CSS processing could not bind its sandbox IPC port, even after an attempted permission override; no source/dependency change was needed for the successful fallback.
+- Production API health200 and anonymous admin401 are no-store. Published mock/practice page checks are recorded separately. No hosted authenticated student interaction, physical-device or sustained-load certification is claimed.
+- Evidence: literature-review-map.json,literature-activation-release.json,literature-production-checks.json,literature-http-checks.json,literature-pages-checks.json. Owner-only pre-change backup path is recorded in the activation receipt. New allowance40 now has25 conservatively reserved/used and15 remaining; Literature consumed19 including its initial inventory and this build/release. No new allowance was inferred.
+
+Limits: only one appreciation group exists, so its five items recur. Work/topic spread is a preference, not a guarantee that every available book/poem or region appears per form. Imported difficulty labels are not calibrated; soft difficulty mix relaxes to keep forms complete. The syllabus listing is not a claim about a future official prescribed-work list; years remain reference-only.
+
+Rollback: retire this blueprint, restore former active status if any, and restore previous Literature topics/eligibility/content from the private backup with new editorial history. Archive the three original additions if necessary; preserve them if used by frozen attempts. Keep frozen snapshots and all student history intact. Previous Pages32e7aa55 remains the recorded rollback artifact; verify the selected prior Pages version before rollback because other release records may supersede it. No live rollback exercise.
+
+- [ ] L07: Complete factual/key/rights review of uploaded work items, repair44 held records, refine author/region/work metadata and add additional reviewed extract groups. Validate hosted student start/resume on real devices. L02–L06 acceptance is the initial operational release, not closure of these ongoing editorial/performance gates.

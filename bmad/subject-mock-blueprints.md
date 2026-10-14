@@ -191,4 +191,4 @@ Rollback: use the owner-only pre-repair backup path in new-subject-activation-re
 
 ## Literature addition — 14 October 2026
 
-[Literature blueprint](literature-mock-blueprint.md): proposed40 = drama10 + prose10 + poetry10 + principles5 + unseen appreciation5.535 structurally eligible items; zero linked extract groups. Generated specification only; Literature is not activated by this task. The other eight subjects retain their current configurations.
+[Literature blueprint](literature-mock-blueprint.md): proposed40 = drama10 + prose10 + poetry10 + principles5 + unseen appreciation5.535 structurally eligible items; zero linked extract groups. The subsequent authorised release activated Literature with494 classified candidates and one five-item extract group; see its release section. The other eight subjects retain their current configurations.

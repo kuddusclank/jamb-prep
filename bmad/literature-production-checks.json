@@ -1,0 +1,28 @@
+{
+  "at": "2026-10-14T14:55:48.228Z",
+  "data": {
+    "eligible": 494,
+    "classified": 494,
+    "active_blueprint": {
+      "id": "959120c3-908e-4963-9842-83a7302a4282",
+      "title": "Literature: drama, prose, poetry and appreciation",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-14T14:53:27.230999+00:00",
+      "cycle_year": 2026,
+      "source_url": "https://ibass.jamb.gov.ng/static/media/Literature.f24a00818658eb8ecbd0.pdf",
+      "subject_id": "7c23c8a8-107a-4f69-9aa6-87d7b9b42ad7",
+      "overlap_limit": 0.5,
+      "reading_text_id": null,
+      "total_questions": 40,
+      "duration_minutes": 120,
+      "difficulty_targets": {
+        "easy": 30,
+        "hard": 20,
+        "medium": 50
+      }
+    },
+    "appreciation_items": 5,
+    "original_editorial_items": 3
+  }
+}
