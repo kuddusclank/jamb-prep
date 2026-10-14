@@ -388,6 +388,35 @@
       "status": "passed",
       "at": "2026-10-13T21:09:11.460531+00:00",
       "workerVersion": "4b39688b-0aec-4d97-8d44-d97a60491f44"
+    },
+    {
+      "id": "authorized-question-export-032b3203-3802-480c-90fe-e3233825a7ea",
+      "action": "Read-only new subject topic coverage audit authorised by implementation request",
+      "count": 1,
+      "budget": "adminExpansionAllowance",
+      "status": "passed",
+      "at": "2026-10-14T13:32:06.907Z"
+    },
+    {
+      "id": "new-subject-content-audit",
+      "budget": "newSubjectAllowance",
+      "count": 1,
+      "status": "passed",
+      "action": "Read new-bank content and original topic tags to owner-only review export"
+    },
+    {
+      "id": "new-subject-backup-activation",
+      "budget": "newSubjectAllowance",
+      "count": 2,
+      "status": "passed",
+      "action": "Private backup and atomic topic/content repairs, held-content quarantine and four subject blueprint activation"
+    },
+    {
+      "id": "new-subject-post-commit-verification",
+      "budget": "newSubjectAllowance",
+      "count": 3,
+      "status": "passed",
+      "action": "Read committed active blueprints/topic counts and import receipts; public health and anonymous admin denial"
     }
   ],
   "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",
@@ -433,7 +462,7 @@
   },
   "adminExpansionAllowance": {
     "limit": 100,
-    "used": 97,
+    "used": 98,
     "maxConcurrency": 3,
     "authorization": "User approved up to 100 requests for admin expansion audit, private backup, publishing and bounded production checks; no charges or signup accounts.",
     "accounting": "Conservative twenty-request reservation for R2 provisioning and upcoming native API/Pages deploy operations; audits and HTTP checks counted separately. Ten further requests reserved for auth/loading Pages publication and minimal checks. Ten requests reserved for question-source cleanup Pages publication and minimal checks. Twenty requests reserved for preflight repair native API and Pages publication."
@@ -499,5 +528,12 @@
     "maxConcurrency": 3,
     "approvedAt": "2026-10-13",
     "scope": "Fresh private backup, migration rehearsal, student practice/assessment publishing and bounded production verification; no signup accounts or charges."
+  },
+  "newSubjectAllowance": {
+    "limit": 40,
+    "used": 6,
+    "maxConcurrency": 3,
+    "approvedAt": "2026-10-14",
+    "scope": "New-bank audit, private backup, topic repair, blueprint activation and bounded checks; no accounts or charges"
   }
 }

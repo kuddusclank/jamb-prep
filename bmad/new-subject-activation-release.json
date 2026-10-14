@@ -1,0 +1,173 @@
+{
+  "at": "2026-10-14T13:45:17.901Z",
+  "backup": "/Users/akanbiabdulquddus/.codex/private-backups/jambprep/new-banks-before-repair-2026-10-14T13-43-33.289Z.json",
+  "blueprints": [
+    {
+      "subject": "CRK",
+      "id": "2359de32-d076-446c-a166-472239c539e7",
+      "classified": 61,
+      "selected": 40,
+      "cells": [
+        {
+          "code": "foundations",
+          "title": "Old Testament Foundations and Leadership",
+          "required": 10
+        },
+        {
+          "code": "prophets",
+          "title": "Kingdom Prophets and Exile",
+          "required": 8
+        },
+        {
+          "code": "jesus",
+          "title": "Jesus Life and Teachings",
+          "required": 12
+        },
+        {
+          "code": "church",
+          "title": "Acts and the Early Church",
+          "required": 4
+        },
+        {
+          "code": "epistles",
+          "title": "Epistles and Christian Living",
+          "required": 6
+        }
+      ],
+      "warnings": [
+        "foundations: difficulty preference relaxed to preserve complete content.",
+        "prophets: difficulty preference relaxed to preserve complete content.",
+        "jesus: difficulty preference relaxed to preserve complete content.",
+        "church: difficulty preference relaxed to preserve complete content.",
+        "epistles: difficulty preference relaxed to preserve complete content."
+      ]
+    },
+    {
+      "subject": "ECN",
+      "id": "d1711b11-091e-4471-81b7-f9dce9b9821e",
+      "classified": 122,
+      "selected": 40,
+      "cells": [
+        {
+          "code": "foundations",
+          "title": "Economic Foundations and Analytical Tools",
+          "required": 6
+        },
+        {
+          "code": "micro",
+          "title": "Microeconomics",
+          "required": 12
+        },
+        {
+          "code": "macro",
+          "title": "National Income and Macroeconomic Activity",
+          "required": 8
+        },
+        {
+          "code": "finance",
+          "title": "Finance and Public Policy",
+          "required": 6
+        },
+        {
+          "code": "development",
+          "title": "Economic Development and Nigeria Economy",
+          "required": 4
+        },
+        {
+          "code": "international",
+          "title": "International Trade and Economic Organisations",
+          "required": 4
+        }
+      ],
+      "warnings": [
+        "foundations: difficulty preference relaxed to preserve complete content.",
+        "micro: difficulty preference relaxed to preserve complete content.",
+        "macro: difficulty preference relaxed to preserve complete content.",
+        "finance: difficulty preference relaxed to preserve complete content.",
+        "development: difficulty preference relaxed to preserve complete content.",
+        "international: difficulty preference relaxed to preserve complete content."
+      ]
+    },
+    {
+      "subject": "GOV",
+      "id": "70113bad-e65c-4c72-83f6-15e0aeaecff0",
+      "classified": 211,
+      "selected": 40,
+      "cells": [
+        {
+          "code": "principles",
+          "title": "Government Principles and Processes",
+          "required": 16
+        },
+        {
+          "code": "nigeria",
+          "title": "Nigerian Political Development and Institutions",
+          "required": 16
+        },
+        {
+          "code": "foreign",
+          "title": "Foreign Policy and External Relations",
+          "required": 4
+        },
+        {
+          "code": "organisations",
+          "title": "International and Regional Organisations",
+          "required": 4
+        }
+      ],
+      "warnings": [
+        "principles: difficulty preference relaxed to preserve complete content.",
+        "nigeria: difficulty preference relaxed to preserve complete content.",
+        "foreign: difficulty preference relaxed to preserve complete content.",
+        "organisations: difficulty preference relaxed to preserve complete content."
+      ]
+    },
+    {
+      "subject": "IRS",
+      "id": "186b21b3-5994-49e9-bd99-a7dd2a7b039b",
+      "classified": 49,
+      "selected": 40,
+      "cells": [
+        {
+          "code": "quran",
+          "title": "Quran Studies",
+          "required": 10
+        },
+        {
+          "code": "hadith",
+          "title": "Hadith Studies",
+          "required": 6
+        },
+        {
+          "code": "faith",
+          "title": "Tawhid and Articles of Faith",
+          "required": 6
+        },
+        {
+          "code": "fiqh",
+          "title": "Fiqh and Islamic Principles",
+          "required": 10
+        },
+        {
+          "code": "history",
+          "title": "Islamic History and Civilisation",
+          "required": 8
+        }
+      ],
+      "warnings": [
+        "quran: difficulty preference relaxed to preserve complete content.",
+        "hadith: difficulty preference relaxed to preserve complete content.",
+        "faith: difficulty preference relaxed to preserve complete content.",
+        "fiqh: difficulty preference relaxed to preserve complete content.",
+        "history: difficulty preference relaxed to preserve complete content."
+      ]
+    }
+  ],
+  "questionCount": 968,
+  "topicRepairs": 443,
+  "held": 525,
+  "contentRepairs": 7,
+  "keyCorrections": 4,
+  "combinedFormsVerified": 4,
+  "studentAttemptsCreated": 0
+}

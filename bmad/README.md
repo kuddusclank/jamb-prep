@@ -56,3 +56,7 @@ User requested planning and then a hold. Read [admin expansion plan](admin-expan
 ## Current question mapping — 13 October 2026
 
 Read the question-to-blueprint review section in [student selection plan](student-practice-and-mock-selection-plan.md) and the metadata-only [draft classification manifest](question-blueprint-review-map.json). Mapped candidates are now applied and the four production blueprints are active. Editorial holds remain excluded; see blueprint-activation-release.json for release evidence.
+
+## Expanded subject blueprint specifications — 14 October 2026
+
+[Subject mock blueprints](subject-mock-blueprints.md) consolidates the four active subject structures and proposes GOV/ECN/CRK/IRS allocations. All eight blueprints are now active. The new-bank repair section records independently verified candidate counts, quarantines, corrected mappings and remaining review work.

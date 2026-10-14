@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-14T13:47:12.674Z",
+  "results": [
+    {
+      "path": "/api/v1/health",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/api/v1/admin/assessment",
+      "status": 401,
+      "cacheControl": "no-store"
+    }
+  ]
+}

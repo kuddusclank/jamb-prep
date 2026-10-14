@@ -1,0 +1,115 @@
+{
+  "at": "2026-10-14T13:46:30.378Z",
+  "data": {
+    "banks": [
+      {
+        "code": "CRK",
+        "eligible": 61,
+        "published": 184,
+        "practice_topics": 5
+      },
+      {
+        "code": "ECN",
+        "eligible": 122,
+        "published": 295,
+        "practice_topics": 6
+      },
+      {
+        "code": "GOV",
+        "eligible": 211,
+        "published": 345,
+        "practice_topics": 4
+      },
+      {
+        "code": "IRS",
+        "eligible": 49,
+        "published": 144,
+        "practice_topics": 5
+      }
+    ],
+    "blueprints": [
+      {
+        "id": "2359de32-d076-446c-a166-472239c539e7",
+        "code": "CRK",
+        "classified": 61,
+        "total_questions": 40
+      },
+      {
+        "id": "d1711b11-091e-4471-81b7-f9dce9b9821e",
+        "code": "ECN",
+        "classified": 122,
+        "total_questions": 40
+      },
+      {
+        "id": "70113bad-e65c-4c72-83f6-15e0aeaecff0",
+        "code": "GOV",
+        "classified": 211,
+        "total_questions": 40
+      },
+      {
+        "id": "186b21b3-5994-49e9-bd99-a7dd2a7b039b",
+        "code": "IRS",
+        "classified": 49,
+        "total_questions": 40
+      }
+    ],
+    "import_jobs": [
+      {
+        "id": "5cd5a5b9-f339-4054-874c-6b8a543243a4",
+        "status": "completed",
+        "skipped": 0,
+        "imported": 360,
+        "total_rows": 360,
+        "completed_rows": 280
+      },
+      {
+        "id": "ed04b126-36e9-4433-83e7-909464f23b06",
+        "status": "completed",
+        "skipped": 0,
+        "imported": 300,
+        "total_rows": 300,
+        "completed_rows": 50
+      },
+      {
+        "id": "8edc51eb-766d-4c48-8d05-0eb2db168fb5",
+        "status": "completed",
+        "skipped": 0,
+        "imported": 131,
+        "total_rows": 131,
+        "completed_rows": 129
+      },
+      {
+        "id": "0d5bfb12-ea46-4ad9-87ef-d5426dff4456",
+        "status": "completed",
+        "skipped": 0,
+        "imported": 183,
+        "total_rows": 183,
+        "completed_rows": 169
+      },
+      {
+        "id": "c401d411-70b3-47b9-9732-963d05596c4d",
+        "status": "completed",
+        "skipped": 0,
+        "imported": 330,
+        "total_rows": 330,
+        "completed_rows": 310
+      },
+      {
+        "id": "8a3d79d0-3b2b-4ca2-ba72-fddb3617fafd",
+        "status": "in_progress",
+        "skipped": 0,
+        "imported": 0,
+        "total_rows": 330,
+        "completed_rows": 0
+      },
+      {
+        "id": "49bea16b-7b0b-4b61-8c88-fda9031e0bd5",
+        "status": "in_progress",
+        "skipped": 0,
+        "imported": 100,
+        "total_rows": 300,
+        "completed_rows": 50
+      }
+    ]
+  }
+}

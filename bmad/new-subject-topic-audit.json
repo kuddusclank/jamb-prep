@@ -1,0 +1,486 @@
+{
+  "at": "2026-10-14T13:32:10.603Z",
+  "scope": "Aggregate new-bank topic audit; no question content or student data",
+  "topics": [
+    {
+      "code": "CRK",
+      "topic_id": "3599eac7-02a9-49d2-a7b1-8a869917ccbf",
+      "title": "Christian Living: Love (Agape)",
+      "slug": "christian-living-love-agape-",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "CRK",
+      "topic_id": "3baebea0-7819-4e60-94c0-a400c327017a",
+      "title": "Creation Story and The Fall",
+      "slug": "creation-story-and-the-fall",
+      "published": 170,
+      "eligible": 170
+    },
+    {
+      "code": "CRK",
+      "topic_id": "8e12cbdd-32a5-4955-a69f-f45757f51815",
+      "title": "Justification by Faith",
+      "slug": "justification-by-faith",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "CRK",
+      "topic_id": "6b408117-aab1-4d8e-b0d3-f4cbfabaa32f",
+      "title": "Kingship in Israel: David and Solomon",
+      "slug": "kingship-in-israel-david-and-solomon",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "CRK",
+      "topic_id": "fbe4ef44-5129-4ec2-ae55-75c14e3c992e",
+      "title": "Paul's Missionary Ministry",
+      "slug": "paul-s-missionary-ministry",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "CRK",
+      "topic_id": "238ee750-e1a8-4e52-817d-002922c99a45",
+      "title": "Religious Reform: Elijah on Mount Carmel",
+      "slug": "religious-reform-elijah-on-mount-carmel",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "CRK",
+      "topic_id": "4e9e63ca-51a1-49b8-8a76-1087730c8d30",
+      "title": "The Birth and Baptism of Jesus",
+      "slug": "the-birth-and-baptism-of-jesus",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "CRK",
+      "topic_id": "3c72d8ad-888d-49c5-bfc7-72afadf0c1a3",
+      "title": "The Call of Abraham and Covenant",
+      "slug": "the-call-of-abraham-and-covenant",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "CRK",
+      "topic_id": "b04e814a-5eea-4406-91f9-0c90772b6a88",
+      "title": "The Early Church and Day of Pentecost",
+      "slug": "the-early-church-and-day-of-pentecost",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "CRK",
+      "topic_id": "c56178b9-d3d2-4d31-9157-7ea92d1588fc",
+      "title": "The Exodus and Passover",
+      "slug": "the-exodus-and-passover",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "CRK",
+      "topic_id": "12cb456f-c6df-4e20-bbc7-fceee1480b70",
+      "title": "The Parables of Jesus",
+      "slug": "the-parables-of-jesus",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "CRK",
+      "topic_id": "949b7ec3-57ce-42e3-ab84-bd8e7a7ff39c",
+      "title": "The Passion and Crucifixion of Christ",
+      "slug": "the-passion-and-crucifixion-of-christ",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "CRK",
+      "topic_id": "cb6f35c2-fd59-43da-b7f3-39228f14efb9",
+      "title": "The Sermon on the Mount: The Beatitudes",
+      "slug": "the-sermon-on-the-mount-the-beatitudes",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "CRK",
+      "topic_id": "edbbc589-ab3c-4477-bf61-7f4af854063d",
+      "title": "The Temptations of Jesus",
+      "slug": "the-temptations-of-jesus",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "CRK",
+      "topic_id": "14299a70-6e05-4283-a3fe-24202dde4ed1",
+      "title": "The Ten Commandments",
+      "slug": "the-ten-commandments",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "ECN",
+      "topic_id": "eb233658-e6cd-45d1-a6aa-57f07b24d252",
+      "title": "Balance of Payments",
+      "slug": "balance-of-payments",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "ECN",
+      "topic_id": "f98ff6ac-197a-4f55-a093-3ae56d1610e4",
+      "title": "Basic Economic Concepts",
+      "slug": "basic-economic-concepts",
+      "published": 213,
+      "eligible": 208
+    },
+    {
+      "code": "ECN",
+      "topic_id": "5acd2f75-65ed-43b5-88a4-8729ab8ead13",
+      "title": "Economic Systems",
+      "slug": "economic-systems",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "ECN",
+      "topic_id": "4dea6669-4e5e-4bd0-aa9f-b77ac94e35dd",
+      "title": "Inflation",
+      "slug": "inflation",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "ECN",
+      "topic_id": "9b359087-a8bf-472a-9de2-8aeb143e5325",
+      "title": "International Trade",
+      "slug": "international-trade",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "ECN",
+      "topic_id": "b99d3c0d-e1d0-45df-8471-56b06d29fa17",
+      "title": "Labor Market and Wages",
+      "slug": "labor-market-and-wages",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "ECN",
+      "topic_id": "8bee97cb-0711-491c-9fd9-b79923fdb2b7",
+      "title": "Market Structures",
+      "slug": "market-structures",
+      "published": 24,
+      "eligible": 24
+    },
+    {
+      "code": "ECN",
+      "topic_id": "d213ae73-bd62-4ac4-b992-54a4c69d44f1",
+      "title": "Money and Banking",
+      "slug": "money-and-banking",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "ECN",
+      "topic_id": "f39670c7-7ef7-41e5-b71d-bd1643ed2c33",
+      "title": "Monopoly and Monopoly Power",
+      "slug": "monopoly-and-monopoly-power",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "ECN",
+      "topic_id": "153d7ccd-fc4b-42b2-850d-bd638db7a1a3",
+      "title": "National Income Accounting",
+      "slug": "national-income-accounting",
+      "published": 14,
+      "eligible": 14
+    },
+    {
+      "code": "ECN",
+      "topic_id": "0700653e-f1b2-406e-800d-8cfddb5e350d",
+      "title": "Population Economics",
+      "slug": "population-economics",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "ECN",
+      "topic_id": "d09a0eba-0d47-4e5d-9e92-2885da1609b8",
+      "title": "Price Elasticity of Demand",
+      "slug": "price-elasticity-of-demand",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "ECN",
+      "topic_id": "31005de9-6a39-4fff-8d5f-e664b04c2f53",
+      "title": "Production Possibility Curve",
+      "slug": "production-possibility-curve",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "ECN",
+      "topic_id": "3414b21f-b9c3-4fb2-9f57-944027d1585a",
+      "title": "Public Finance and Taxation",
+      "slug": "public-finance-and-taxation",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "ECN",
+      "topic_id": "fdb2e419-32d9-439e-8334-a58ec27bb423",
+      "title": "Theory of Demand and Supply",
+      "slug": "theory-of-demand-and-supply",
+      "published": 33,
+      "eligible": 32
+    },
+    {
+      "code": "GOV",
+      "topic_id": "669c152c-78f2-4116-bc40-f87751dee130",
+      "title": "1979 Constitution of Nigeria",
+      "slug": "1979-constitution-of-nigeria",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "GOV",
+      "topic_id": "26101f87-3fb3-48f0-b216-0083c757d5c2",
+      "title": "Basic Concepts: Sovereignty",
+      "slug": "basic-concepts-sovereignty",
+      "published": 331,
+      "eligible": 327
+    },
+    {
+      "code": "GOV",
+      "topic_id": "e2de0125-3495-4519-848a-c9b23d4efce2",
+      "title": "Citizenship and Fundamental Rights",
+      "slug": "citizenship-and-fundamental-rights",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "GOV",
+      "topic_id": "edab8284-a289-4cf4-9c91-e332612fe33c",
+      "title": "Colonial Administration: Indirect Rule",
+      "slug": "colonial-administration-indirect-rule",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "GOV",
+      "topic_id": "e5a3d7d8-e5fa-412f-a75e-61f983f7fbb9",
+      "title": "Constitutional Developments in Nigeria",
+      "slug": "constitutional-developments-in-nigeria",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "GOV",
+      "topic_id": "484432c7-46f7-4055-af04-ca5ea8b94809",
+      "title": "Electoral Systems and Franchise",
+      "slug": "electoral-systems-and-franchise",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "GOV",
+      "topic_id": "a5634aa2-4379-4dc6-8d94-f66768d087d4",
+      "title": "Forms of Government: Federalism",
+      "slug": "forms-of-government-federalism",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "GOV",
+      "topic_id": "6a6b450a-39f6-4cd3-9960-5f6b17867035",
+      "title": "International Organizations: ECOWAS",
+      "slug": "international-organizations-ecowas",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "GOV",
+      "topic_id": "27816c1f-9c66-4470-805d-a8a0b59cd463",
+      "title": "Judicial Independence and Review",
+      "slug": "judicial-independence-and-review",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "GOV",
+      "topic_id": "d00f18f3-2f6b-4733-92bd-481c025d549f",
+      "title": "Local Government Administration",
+      "slug": "local-government-administration",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "GOV",
+      "topic_id": "43fe71bc-c2dc-425a-8774-9976341abb1a",
+      "title": "Nigeria's Foreign Policy",
+      "slug": "nigeria-s-foreign-policy",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "GOV",
+      "topic_id": "5173c13e-3b22-4e56-b49e-0a6a4d585c26",
+      "title": "Pressure Groups and Political Parties",
+      "slug": "pressure-groups-and-political-parties",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "GOV",
+      "topic_id": "58b44d3a-87cd-4c4e-8fca-55248c2bb14a",
+      "title": "Public Corporations and Civil Service",
+      "slug": "public-corporations-and-civil-service",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "GOV",
+      "topic_id": "be34a9af-2e8c-4aad-90ab-413d483da5db",
+      "title": "Rule of Law",
+      "slug": "rule-of-law",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "GOV",
+      "topic_id": "201623af-742a-4495-a3cb-63a26b85a657",
+      "title": "Separation of Powers and Checks",
+      "slug": "separation-of-powers-and-checks",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "IRS",
+      "topic_id": "90ebc1a6-8dbb-45db-8993-7b64ec574fa5",
+      "title": "Hadith and Hadith Sciences",
+      "slug": "hadith-and-hadith-sciences",
+      "published": 21,
+      "eligible": 21
+    },
+    {
+      "code": "IRS",
+      "topic_id": "0c7b886c-aa2a-47a0-9cba-5cee074f3379",
+      "title": "Hadith Compilers",
+      "slug": "hadith-compilers",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "IRS",
+      "topic_id": "734d161c-005f-4acd-9077-dc2e55238733",
+      "title": "Hajj (Pilgrimage to Makkah)",
+      "slug": "hajj-pilgrimage-to-makkah-",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "IRS",
+      "topic_id": "6d395447-cb0c-4f22-9fb8-682eb0e6edee",
+      "title": "Islamic Commercial Ethics: Riba",
+      "slug": "islamic-commercial-ethics-riba",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "IRS",
+      "topic_id": "66e95242-05dd-4952-b654-f9a63fbbc4d5",
+      "title": "Islamic Ethics (Akhlaq)",
+      "slug": "islamic-ethics-akhlaq-",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "IRS",
+      "topic_id": "46cfc18d-eb27-4513-9b76-e3e3ea2394d8",
+      "title": "Islamic Family Law (Nikah)",
+      "slug": "islamic-family-law-nikah-",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "IRS",
+      "topic_id": "412018d4-640d-449d-a865-f5bca0c8765f",
+      "title": "Revelation of the Holy Qur'an",
+      "slug": "revelation-of-the-holy-qur-an",
+      "published": 110,
+      "eligible": 110
+    },
+    {
+      "code": "IRS",
+      "topic_id": "442afeff-feef-4747-bc99-51b71eb7c08e",
+      "title": "Salat (Daily Prayers)",
+      "slug": "salat-daily-prayers-",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "IRS",
+      "topic_id": "57dc5902-9e93-495c-8827-f3eba7c0f03e",
+      "title": "Sawm (Fasting) in Ramadan",
+      "slug": "sawm-fasting-in-ramadan",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "IRS",
+      "topic_id": "c21541e7-c602-4f5c-b528-6d18afd780f8",
+      "title": "Shirk and Major Sins",
+      "slug": "shirk-and-major-sins",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "IRS",
+      "topic_id": "0e4c41de-7ed3-4704-b056-21cb805469c1",
+      "title": "Sirah: The Hijrah to Madinah",
+      "slug": "sirah-the-hijrah-to-madinah",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "IRS",
+      "topic_id": "29f2217d-b048-4e12-b852-be1f66588a4c",
+      "title": "Taharah (Purification) and Wudu",
+      "slug": "taharah-purification-and-wudu",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "IRS",
+      "topic_id": "2c273a12-1641-488a-aa36-166956c120aa",
+      "title": "Tawhid and Articles of Faith",
+      "slug": "tawhid-and-articles-of-faith",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "IRS",
+      "topic_id": "592f9b42-a80e-4172-b2b2-b0000a1d60de",
+      "title": "The Rightly Guided Caliphs",
+      "slug": "the-rightly-guided-caliphs",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "IRS",
+      "topic_id": "a1baf65d-01ea-44de-8314-da7a8cbc7abd",
+      "title": "Zakat (Obligatory Charity)",
+      "slug": "zakat-obligatory-charity-",
+      "published": 1,
+      "eligible": 1
+    }
+  ]
+}

@@ -157,3 +157,11 @@ M01/M02 initial ENG/PHY/CHM/BIO configuration/activation is complete with exclud
 ## Remaining editorial task
 
 - [ ] M05: Repair/review the152 held snapshot items, expand Biology Evolution, and calibrate difficulty labels. M01/M02 initial acceptance covers the four activated ENG/PHY/CHM/BIO banks; other subject banks require their own reviewed configuration before full-mock participation. No held item was silently approved.
+
+## Expanded-bank blueprint documentation — 14 October 2026
+
+Created subject-mock-blueprints.md with eight subject structures, research sources, totals, mapping boundaries and B01–B06 acceptance work. ENG/PHY/CHM/BIO remain active as previously released. GOV/ECN/CRK/IRS are proposed40-item specifications; imported quantities are reported by another agent and do not establish classified readiness. No provider calls, database mutations, content imports or deployment in this documentation task. Leave other agents' untracked importer scripts untouched.
+
+## Expanded banks activated — 14 October 2026
+
+GOV/ECN/CRK/IRS now active following topic and content repair.211/122/61/49 candidates;525 held records assessment-disabled;443 topic repairs,7 question repairs and4 key corrections. Detailed evidence and remaining gates in subject-mock-blueprints.md. No frontend/API redeployment required. Historical receipt reconciliation and full factual/key review remain open.
