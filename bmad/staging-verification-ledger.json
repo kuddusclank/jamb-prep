@@ -417,6 +417,13 @@
       "count": 3,
       "status": "passed",
       "action": "Read committed active blueprints/topic counts and import receipts; public health and anonymous admin denial"
+    },
+    {
+      "id": "literature-blueprint-inventory",
+      "budget": "newSubjectAllowance",
+      "count": 1,
+      "status": "passed",
+      "action": "Read-only Literature topic/group inventory for requested blueprint design"
     }
   ],
   "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",
@@ -531,7 +538,7 @@
   },
   "newSubjectAllowance": {
     "limit": 40,
-    "used": 6,
+    "used": 7,
     "maxConcurrency": 3,
     "approvedAt": "2026-10-14",
     "scope": "New-bank audit, private backup, topic repair, blueprint activation and bounded checks; no accounts or charges"

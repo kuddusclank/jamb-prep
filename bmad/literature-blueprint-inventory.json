@@ -1,0 +1,141 @@
+{
+  "at": "2026-10-14T14:39:57.986Z",
+  "topics": [
+    {
+      "code": "LIT",
+      "topic_id": "3adf7b2b-9316-4f01-91e6-e9fc254d90d0",
+      "title": "African Drama Themes",
+      "slug": "african-drama-themes",
+      "published": 76,
+      "eligible": 76,
+      "passage_linked": 0
+    },
+    {
+      "code": "LIT",
+      "topic_id": "8d4fe1f4-ecf9-458a-9c66-9b6c5d653e6a",
+      "title": "African Prose: Narrative Themes",
+      "slug": "african-prose-narrative-themes",
+      "published": 101,
+      "eligible": 101,
+      "passage_linked": 0
+    },
+    {
+      "code": "LIT",
+      "topic_id": "a8a19981-c2ec-43e0-a6b3-2c404f7fbe54",
+      "title": "Drama Conventions: Dramatic Irony",
+      "slug": "drama-conventions-dramatic-irony",
+      "published": 25,
+      "eligible": 25,
+      "passage_linked": 0
+    },
+    {
+      "code": "LIT",
+      "topic_id": "d86397ea-c932-4174-b8e8-dc5180af5db5",
+      "title": "Drama: Soliloquy",
+      "slug": "drama-soliloquy",
+      "published": 7,
+      "eligible": 7,
+      "passage_linked": 0
+    },
+    {
+      "code": "LIT",
+      "topic_id": "20a67e6f-dbaf-44f7-bf36-cef603ae8562",
+      "title": "Drama: The Comic Relief",
+      "slug": "drama-the-comic-relief",
+      "published": 7,
+      "eligible": 7,
+      "passage_linked": 0
+    },
+    {
+      "code": "LIT",
+      "topic_id": "e802e926-fdc1-49a5-95af-6d5126dcf446",
+      "title": "Figures of Association: Synecdoche",
+      "slug": "figures-of-association-synecdoche",
+      "published": 7,
+      "eligible": 7,
+      "passage_linked": 0
+    },
+    {
+      "code": "LIT",
+      "topic_id": "c2bde002-c5bd-4016-a009-e3782c0996ec",
+      "title": "Figures of Sound: Onomatopoeia",
+      "slug": "figures-of-sound-onomatopoeia",
+      "published": 4,
+      "eligible": 4,
+      "passage_linked": 0
+    },
+    {
+      "code": "LIT",
+      "topic_id": "4a65e68a-1b21-40b8-9aa4-ae94c3f4e03d",
+      "title": "Figures of Speech: Oxymoron",
+      "slug": "figures-of-speech-oxymoron",
+      "published": 8,
+      "eligible": 8,
+      "passage_linked": 0
+    },
+    {
+      "code": "LIT",
+      "topic_id": "bde34441-e30c-4b97-bd04-0fae8857527b",
+      "title": "Literary Devices: Figures of Speech",
+      "slug": "literary-devices-figures-of-speech",
+      "published": 78,
+      "eligible": 78,
+      "passage_linked": 0
+    },
+    {
+      "code": "LIT",
+      "topic_id": "1fdec4ed-7d66-45c4-964d-22a797a355a8",
+      "title": "Literary Satire",
+      "slug": "literary-satire",
+      "published": 12,
+      "eligible": 12,
+      "passage_linked": 0
+    },
+    {
+      "code": "LIT",
+      "topic_id": "79bd374f-9b13-4304-b7e8-7ee2b1dfca60",
+      "title": "Poetic Forms: Elegy and Dirge",
+      "slug": "poetic-forms-elegy-and-dirge",
+      "published": 7,
+      "eligible": 7,
+      "passage_linked": 0
+    },
+    {
+      "code": "LIT",
+      "topic_id": "193215e9-eaf3-4747-982b-68a995435b5b",
+      "title": "Poetic Forms: The Sonnet",
+      "slug": "poetic-forms-the-sonnet",
+      "published": 75,
+      "eligible": 75,
+      "passage_linked": 0
+    },
+    {
+      "code": "LIT",
+      "topic_id": "b073adab-9351-4597-9f94-d5eb867ed57c",
+      "title": "Prose Fiction: Point of View",
+      "slug": "prose-fiction-point-of-view",
+      "published": 87,
+      "eligible": 87,
+      "passage_linked": 0
+    },
+    {
+      "code": "LIT",
+      "topic_id": "2d6b00b9-519b-466f-a89b-cbf5e6d32d5e",
+      "title": "Tragedy and Catharsis",
+      "slug": "tragedy-and-catharsis",
+      "published": 38,
+      "eligible": 38,
+      "passage_linked": 0
+    },
+    {
+      "code": "LIT",
+      "topic_id": "6af985bd-83d0-4fc0-bb5f-2ca9fd290c6f",
+      "title": "Tragic Flaw: Hamartia",
+      "slug": "tragic-flaw-hamartia",
+      "published": 3,
+      "eligible": 3,
+      "passage_linked": 0
+    }
+  ],
+  "groups": []
+}

@@ -60,3 +60,7 @@ Read the question-to-blueprint review section in [student selection plan](studen
 ## Expanded subject blueprint specifications — 14 October 2026
 
 [Subject mock blueprints](subject-mock-blueprints.md) consolidates the four active subject structures and proposes GOV/ECN/CRK/IRS allocations. All eight blueprints are now active. The new-bank repair section records independently verified candidate counts, quarantines, corrected mappings and remaining review work.
+
+## Literature blueprint — 14 October 2026
+
+[Literature-in-English mock specification](literature-mock-blueprint.md) defines40 questions and records the current535-item aggregate inventory. Linked unseen extracts and reviewed work/classification coverage remain activation gates.

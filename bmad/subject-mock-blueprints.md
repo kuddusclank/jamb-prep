@@ -188,3 +188,7 @@ Small-pool limits remain explicit: CRK's early Church cell has four corrected ca
 Rollback: use the owner-only pre-repair backup path in new-subject-activation-release.json. Retire these four new blueprint IDs; restore prior topic IDs/assessment flags and question content using saved before-images with new editorial revisions, then restore former active configuration if present. Preserve frozen attempts and evidence; never delete attempted questions or overwrite historical snapshots. No live rollback exercised. Outstanding: historical import-receipt reconciliation,525 held-row repair/factual review, fine-grained topic refinement, pool growth and hosted student/device checks.
 
 - [ ] B07: Continue full factual/key review and repair525 quarantined rows against original scans/reliable sources; broaden small section pools and verify hosted student interactions. Screening/targeted corrections do not certify every remaining answer.
+
+## Literature addition — 14 October 2026
+
+[Literature blueprint](literature-mock-blueprint.md): proposed40 = drama10 + prose10 + poetry10 + principles5 + unseen appreciation5.535 structurally eligible items; zero linked extract groups. Generated specification only; Literature is not activated by this task. The other eight subjects retain their current configurations.

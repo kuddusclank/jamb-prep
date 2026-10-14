@@ -165,3 +165,7 @@ Created subject-mock-blueprints.md with eight subject structures, research sourc
 ## Expanded banks activated — 14 October 2026
 
 GOV/ECN/CRK/IRS now active following topic and content repair.211/122/61/49 candidates;525 held records assessment-disabled;443 topic repairs,7 question repairs and4 key corrections. Detailed evidence and remaining gates in subject-mock-blueprints.md. No frontend/API redeployment required. Historical receipt reconciliation and full factual/key review remain open.
+
+## Literature specification generated — 14 October 2026
+
+See literature-mock-blueprint.md for L01–L06. L01 complete: five proposed cells total40; live aggregate535 structurally eligible questions, no linked passage groups. L02–L06 remain open; no Literature blueprint was silently activated or English reading-text questions reused. One read-only operation used under newSubjectAllowance.
