@@ -1,3 +1,4 @@
+import { BrandMark } from "@/components/brand-mark";
 import { BrowserAccountNavigation } from "@/components/browser-account-boundary";
 import Link from "@/components/pending-link";
 import { 
@@ -42,7 +43,7 @@ export default function Home() {
         <div className="shell flex h-20 items-center justify-between gap-4">
           <Link href={user ? "/dashboard" : "/"} aria-label="JambPrep home" className="flex items-center gap-2 text-xl font-bold tracking-tight">
             <span className="flex size-9 items-center justify-center rounded-xl bg-[#116149] text-white">
-              <BookOpen size={20}/>
+              <BrandMark size={36}/>
             </span>
             <span>jambprep<span className="text-[#116149]">.</span></span>
           </Link>

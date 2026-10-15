@@ -1,4 +1,5 @@
 "use client";
+import { BrandMark } from "@/components/brand-mark";
 import { subjectPalette } from "@/lib/exam-palette";
 
 import { ExamCalculator } from "./exam-calculator";
@@ -12,16 +13,16 @@ import { buildCanonicalResultUrl } from "@/lib/routing/deep-links";
 import { ReportQuestionDialog } from "@/components/report-question-dialog";
 import { QuestionDiagram } from "@/components/question-diagram";
 import { MathRenderer } from "@/components/math-renderer";
-import { 
-  Clock, 
-  Flag, 
-  ArrowLeft, 
-  ArrowRight, 
-  RotateCcw, 
-  AlertTriangle, 
-  Send, 
+import {
+  Clock,
+  Flag,
+  ArrowLeft,
+  ArrowRight,
+  RotateCcw,
+  AlertTriangle,
+  Send,
   Loader2,
-  BookOpen,
+
   Wifi,
   WifiOff
 } from "lucide-react";
@@ -195,7 +196,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
       <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 sm:px-8 py-3.5 flex flex-wrap gap-3 items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="flex size-8 items-center justify-center rounded-xl bg-[#116149] text-white">
-            <BookOpen size={16} />
+            <BrandMark size={32}/>
           </span>
           <div>
             <div className="text-xs font-bold tracking-wider text-[#116149] uppercase">

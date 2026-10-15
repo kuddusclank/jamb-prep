@@ -1,8 +1,9 @@
 "use client";
 
+import { BrandMark } from "@/components/brand-mark";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BookOpen, ArrowLeft, Compass, Loader2 } from "lucide-react";
+import { ArrowLeft, Compass, Loader2 } from "lucide-react";
 import { resolveLegacyDeepLinkRedirect } from "@/lib/routing/deep-links";
 
 export default function NotFoundPage() {
@@ -44,7 +45,7 @@ export default function NotFoundPage() {
       <header className="shell py-6 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
           <span className="flex size-9 items-center justify-center rounded-xl bg-[#116149] text-white">
-            <BookOpen size={18} />
+            <BrandMark size={36}/>
           </span>
           <span className="text-lg font-bold tracking-tight">
             jamb<span className="text-[#116149]">prep</span>.

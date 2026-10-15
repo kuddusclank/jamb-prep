@@ -77,3 +77,7 @@ Validation:
 Email delivery is now user-confirmed. Inbox placement and a real password-change round trip after the fix remain unverified. Do not ask the user to reuse a consumed email link.
 
 Recovery fix deployed to Pages `497f7977` (previous rollback `608e8f1a`). Two production checks passed, including updated reset-page markup; see `recovery-fix-release-checks.json`. Eleven operations remain under the extended allowance. No Worker/database changes in this follow-up.
+
+### Header logo correction
+
+Replaced branding-only BookOpen icons with the shared LecternIQ mark in public, student, administration, onboarding, pricing, 404 and CBT headers. Auth branding now uses the same shared component. Study-content book icons remain semantic content icons. Static build/TypeScript passed; exported homepage verified with the mark and no book logo. The immediate production check still returned the previous header; propagation is not yet confirmed. Pages deployment `06057307` (rollback `497f7977`). No API/database changes. Eleven remaining approved operations conservatively used for publishing and one production check; allowance exhausted.

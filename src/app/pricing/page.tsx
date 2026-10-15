@@ -1,4 +1,5 @@
 "use client";
+import { BrandMark } from "@/components/brand-mark";
 import type { CheckoutPricing } from "@/lib/client-actions";
 import { StudyWorkspace } from "@/components/study-workspace";
 import { HelpCircle, BookOpen } from "lucide-react";
@@ -86,7 +87,7 @@ export default function PricingPage() {
       <header className="shell flex items-center justify-between py-6">
         <Link href="/" className="flex items-center gap-2 text-xl font-bold tracking-tight">
           <span className="flex size-8 items-center justify-center rounded-xl bg-[#116149] text-white">
-            <BookOpen size={18} />
+            <BrandMark size={32}/>
           </span>
           <span>jambprep<span className="text-[#116149]">.</span></span>
         </Link>

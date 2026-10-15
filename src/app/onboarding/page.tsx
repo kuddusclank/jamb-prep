@@ -1,5 +1,5 @@
+import { BrandMark } from "@/components/brand-mark";
 import { BrowserAccountBoundary } from "@/components/browser-account-boundary";
-import { BookOpen } from "lucide-react";
 import { OnboardingWizard } from "./onboarding-wizard";
 
 export const metadata = {
@@ -13,7 +13,7 @@ export default function OnboardingPage() {
       <header className="max-w-3xl w-full mx-auto pt-4 flex items-center justify-between">
         <div className="flex items-center gap-2 text-xl font-bold tracking-tight">
           <span className="flex size-8 items-center justify-center rounded-xl bg-[#116149] text-white">
-            <BookOpen size={18} />
+            <BrandMark size={32}/>
           </span>
           <span>jambprep<span className="text-[#116149]">.</span></span>
         </div>

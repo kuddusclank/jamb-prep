@@ -1,9 +1,10 @@
 "use client";
 
+import { BrandMark } from "@/components/brand-mark";
 import type { ReactNode } from "react";
 import Link from "@/components/pending-link";
 import { usePathname } from "next/navigation";
-import { BookOpen, LayoutDashboard, Layers, Clock, ChartNoAxesCombined, Users, UserRound, CreditCard, LogOut } from "lucide-react";
+import { LayoutDashboard, Layers, Clock, ChartNoAxesCombined, Users, UserRound, CreditCard, LogOut } from "lucide-react";
 import { signOutAction } from "@/lib/client-actions";
 import styles from "./study-workspace.module.css";
 
@@ -24,7 +25,7 @@ export function StudyWorkspaceClient({ children, isPremium }: { children: ReactN
   return <div className={styles.workspace}>
     <a href="#study-content" className="skip-link">Skip to study content</a>
     <header className={styles.header}>
-      <Link href="/dashboard" className={styles.brand}><BookOpen size={24} aria-hidden="true" /> jambprep.</Link>
+      <Link href="/dashboard" className={styles.brand}><BrandMark size={32}/> jambprep.</Link>
       <span className={styles.context}>{current?.label || 'Your study space'}</span>
       <Link href="/profile" className={styles.account}><UserRound size={18} aria-hidden="true" /><span>Account</span></Link>
       <form action={signOutAction} className={styles.mobileSignout}><button type="submit" aria-label="Sign out" title="Sign out"><LogOut size={18} aria-hidden="true" /></button></form>

@@ -1,6 +1,7 @@
 "use client";
 
-import {BookOpen,Menu,X} from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
+import {Menu,X} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -38,7 +39,7 @@ export function AdminNav() {
     <header className="border-b border-slate-200 bg-white lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-64 lg:flex-col lg:border-b-0 lg:border-r">
       <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-5 lg:flex-col lg:items-start lg:px-6">
         <div className="flex items-center gap-3">
-          <BookOpen className="h-7 w-7 text-emerald-800" aria-hidden="true" />
+          <BrandMark size={32}/>
           <Link href="/admin/" className="flex flex-wrap items-center gap-2">
             <span className="text-xl font-bold tracking-tight text-[#116149]">
               JAMBPrep

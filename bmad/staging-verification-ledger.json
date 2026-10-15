@@ -500,6 +500,22 @@
       "budget": "seoSharingRecoveryAllowance",
       "status": "passed",
       "at": "2026-10-15T11:26:35.065Z"
+    },
+    {
+      "id": "seo-release-1792063951145",
+      "action": "Publish requested LecternIQ logo replacement across headers and navigation",
+      "count": 10,
+      "budget": "seoSharingRecoveryAllowance",
+      "status": "published-conservative-reservation",
+      "at": "2026-10-15T11:32:31.145Z"
+    },
+    {
+      "id": "seo-release-1792063969898",
+      "action": "Verify production homepage header uses LecternIQ mark",
+      "count": 1,
+      "budget": "seoSharingRecoveryAllowance",
+      "status": "failed-previous-header-served",
+      "at": "2026-10-15T11:32:49.898Z"
     }
   ],
   "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",
@@ -621,7 +637,7 @@
   },
   "seoSharingRecoveryAllowance": {
     "limit": 55,
-    "used": 44,
+    "used": 55,
     "maxConcurrency": 3,
     "approvedAt": "2026-10-15",
     "scope": "Recovery redirect audit, publishing and bounded production checks. No charges or new accounts.",
@@ -635,7 +651,7 @@
   },
   "seoSharingRecoveryRelease": {
     "workerVersion": "8d1af1a9-bc09-451e-8cb2-6f481f27b77d",
-    "pagesDeployment": "497f7977",
+    "pagesDeployment": "06057307",
     "productionChecks": 10,
     "recoveryDeliveryVerified": false,
     "pending": "User must request fresh link and confirm real password-change round trip",

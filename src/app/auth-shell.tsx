@@ -1,12 +1,13 @@
+import { BrandMark } from "@/components/brand-mark";
 import Link from "@/components/pending-link";
-import { ArrowLeft, ArrowUpRight, BookOpen, Check, Target } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Check, Target } from "lucide-react";
 import type { ReactNode } from "react";
 
 export function AuthShell({ mode, children }: { mode: "login" | "register"; children: ReactNode }) {
   const registering = mode === "register";
   return <div className="min-h-screen bg-[#fafbf7]">
     <header className="shell flex min-h-24 items-center justify-between gap-4 py-4">
-      <Link href="/" aria-label="JAMBPrep home" className="flex items-center gap-2 text-xl font-bold tracking-tight"><span className="flex size-9 items-center justify-center rounded-xl bg-[#116149] text-white"><img src="/lecterniq-mark.svg" alt="" width={28} height={28}/></span>jambprep.</Link>
+      <Link href="/" aria-label="JAMBPrep home" className="flex items-center gap-2 text-xl font-bold tracking-tight"><span className="flex size-9 items-center justify-center rounded-xl bg-[#116149] text-white"><BrandMark size={36}/></span>jambprep.</Link>
       <Link href={registering ? '/login' : '/register'} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-emerald-950/15 px-4 text-sm font-semibold">{registering ? 'Sign in' : 'Create account'}<ArrowUpRight size={15}/></Link>
     </header>
     <main className="shell grid items-start gap-10 pb-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-20">
