@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
+import { recoverySessionTracker } from '@/lib/auth/recovery-session';
 
 let cachedBrowserClient: ReturnType<typeof createBrowserClient> | null = null;
 let cachedConfigKey = '';
@@ -63,6 +64,8 @@ export function createClient() {
 
   const client = lockDownBrowserDatabaseAccess(createBrowserClient(url, anonKey));
   if (typeof window !== 'undefined') {
+    // Register before returning: recovery can finish before a React effect subscribes.
+    client.auth.onAuthStateChange((event,session)=>recoverySessionTracker.observe(event,session));
     cachedBrowserClient = client;
     cachedConfigKey = configKey;
   }

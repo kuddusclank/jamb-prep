@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-15T11:26:36.427Z",
+  "checks": [
+    {
+      "path": "/forgot-password/",
+      "status": 200,
+      "cache": "private, no-store",
+      "updatedMarkup": false
+    },
+    {
+      "path": "/reset-password/",
+      "status": 200,
+      "cache": "private, no-store",
+      "updatedMarkup": true
+    }
+  ],
+  "realRecoveryRoundTrip": false
+}

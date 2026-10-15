@@ -16,7 +16,7 @@ Ten user requests: route SEO; minimal loading; native invite sharing; practice/m
 - [x] Full-width mock mode form, explicit neutral borders/selected state; independent mock wording. White results summary with saved subject names, score breakdown, sharing and collapsible answer review.
 - [x] Remove student-facing selection diagnostics; retain frozen payload compatibility and server/admin diagnostics.
 - [x] Original LecternIQ vector monogram and wordmark, favicon, Apple/app icons, shared 1200×630 OG card and manifest. No external stock assets or generated question data.
-- [ ] Connect and verify Resend SMTP in Supabase (user is creating the provider).
+- [x] Connect Resend SMTP in Supabase; user received recovery email (in spam).
 - [ ] Confirm recovery redirect allowlist and perform one explicitly authorized recovery email round trip after SMTP setup.
 - [x] Publish Worker + Pages and record production checks below.
 
@@ -54,3 +54,26 @@ Public SEO content reflects available features and does not claim official JAMB 
 ## Remaining dependency
 
 User confirmed they can create a Resend account. SMTP integration and exact recovery redirect allowlist still need to be configured and verified. No management credential was available to inspect or change Supabase Auth settings in this release. Keep this item open; do not describe email recovery as production-verified until an authorized round trip succeeds.
+
+### SMTP setup follow-up
+
+User reported saving SMTP/recovery configuration on 15 October 2026. Both hosted recovery routes return HTTP 200 with noindex and private/no-store headers. This does not verify Supabase settings or delivery. A user-driven reset-email round trip remains pending. Two additional approved operations used; 8 remain.
+
+### Recovery callback timing fix — 15 October 2026
+
+User received an email (in spam), then corrected Supabase's localhost Site URL and added the exact production recovery redirect (confirmed by screenshot). A subsequent reset page reached production but did not show password inputs.
+
+The component had relied exclusively on receiving `PASSWORD_RECOVERY` after its effect subscribed. The installed SDK can complete automatic PKCE verification before a component subscriber is registered. Added an in-memory recovery tracker subscribed immediately when the shared browser client is created. The reset form reconciles `getSession()` and later initial-session events against that verified recovery proof. Normal sign-ins do not create proof; the tracker expires after 15 minutes and is invalidated on sign-out/account switch. Password mutation verifies the same actor with Supabase and rechecks unexpired proof. No URL flag or local-storage marker authorizes a reset. Reloading after the one-time callback requires a fresh link.
+
+Also separated the recovery and login links into individual rows and handled rejected session-initialization promises.
+
+Validation:
+
+- `node --import tsx --test tests/password-recovery.test.mjs tests/t04-session-provisioning.test.mjs`: 15 passed, 0 failed. Covers missed-event replay, ordinary sign-in rejection, absent/other actor, expiry, logout and account switch.
+- `npx next build --webpack`: successful static export and TypeScript verification.
+- Actual local Chrome + installed Supabase SDK: simulated recover request, PKCE code exchange, visible password fields, password update and sign-out all passed. Every provider request intercepted locally; no real email, account or password changes. Evidence temporarily at `/tmp/jamb-recovery-browser-evidence.json`.
+- User approved 15 additional provider operations for publishing/checks; allowance now 55 total. Final production deployment/check evidence recorded below.
+
+Email delivery is now user-confirmed. Inbox placement and a real password-change round trip after the fix remain unverified. Do not ask the user to reuse a consumed email link.
+
+Recovery fix deployed to Pages `497f7977` (previous rollback `608e8f1a`). Two production checks passed, including updated reset-page markup; see `recovery-fix-release-checks.json`. Eleven operations remain under the extended allowance. No Worker/database changes in this follow-up.

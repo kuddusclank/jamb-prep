@@ -476,6 +476,30 @@
       "budget": "seoSharingRecoveryAllowance",
       "status": "passed",
       "at": "2026-10-15T10:23:16.469Z"
+    },
+    {
+      "id": "recovery-public-check-1792062874646",
+      "action": "Recovery page and auth health checks after user-confirmed SMTP setup",
+      "count": 2,
+      "budget": "seoSharingRecoveryAllowance",
+      "status": "passed",
+      "at": "2026-10-15T11:14:34.646Z"
+    },
+    {
+      "id": "seo-release-1792063560006",
+      "action": "Pages publishing for verified recovery event timing fix",
+      "count": 10,
+      "budget": "seoSharingRecoveryAllowance",
+      "status": "published-conservative-reservation",
+      "at": "2026-10-15T11:26:00.006Z"
+    },
+    {
+      "id": "seo-release-1792063595065",
+      "action": "Production forgot/reset page checks after recovery callback fix",
+      "count": 2,
+      "budget": "seoSharingRecoveryAllowance",
+      "status": "passed",
+      "at": "2026-10-15T11:26:35.065Z"
     }
   ],
   "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",
@@ -596,17 +620,26 @@
     "scope": "New-bank audit, private backup, topic repair, blueprint activation and bounded checks; no accounts or charges"
   },
   "seoSharingRecoveryAllowance": {
-    "limit": 40,
-    "used": 30,
+    "limit": 55,
+    "used": 44,
     "maxConcurrency": 3,
     "approvedAt": "2026-10-15",
-    "scope": "Recovery redirect audit, publishing and bounded production checks. No charges or new accounts."
+    "scope": "Recovery redirect audit, publishing and bounded production checks. No charges or new accounts.",
+    "extensions": [
+      {
+        "additional": 15,
+        "approvedAt": "2026-10-15T11:25:59.977Z",
+        "scope": "Publish tested recovery callback fix and bounded checks; no email, accounts or charges"
+      }
+    ]
   },
   "seoSharingRecoveryRelease": {
     "workerVersion": "8d1af1a9-bc09-451e-8cb2-6f481f27b77d",
-    "pagesDeployment": "608e8f1a",
+    "pagesDeployment": "497f7977",
     "productionChecks": 10,
     "recoveryDeliveryVerified": false,
-    "pending": "User configuring Resend SMTP; recovery redirect allowlist unverified"
+    "pending": "User must request fresh link and confirm real password-change round trip",
+    "smtpDelivery": "User-confirmed; email received in spam",
+    "recoveryTimingFixPublished": true
   }
 }
