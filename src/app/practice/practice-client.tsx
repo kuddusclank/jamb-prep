@@ -248,12 +248,12 @@ export function PracticeClient({
           <div>
             <label htmlFor="practice-topic" className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-700">2. Choose topic</label>
             <p className="mb-3 text-xs text-slate-500">Strength uses distinct answered questions across sessions. Repeated reviews and skipped questions are counted separately.</p><input type="search" aria-label="Search topics" value={topicSearch} onChange={e=>setTopicSearch(e.target.value)} placeholder="Find a topic…" className="mb-2 min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm"/>
-            <select id="practice-topic" value={selectedTopic?.slug??selectedTopicSlug??''} onChange={e=>{const value=e.target.value||undefined;setSelectedTopicSlug(value);writeUrl(selectedSubject,value);}} className="min-h-12 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm">
+            <select id="practice-topic" aria-describedby="practice-topic-evidence" value={selectedTopic?.slug??selectedTopicSlug??''} onChange={e=>{const value=e.target.value||undefined;setSelectedTopicSlug(value);writeUrl(selectedSubject,value);}} className="min-h-12 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm">
               <option value="">All topics</option>
               {selectedTopicSlug&&!selectedTopic&&<option value={selectedTopicSlug}>Requested topic unavailable — choose another</option>}
               {[...(subject?.topics??[])].filter(t=>t.id===selectedTopic?.id||t.title.toLowerCase().includes(topicSearch.toLowerCase())).sort(topicOrder).map(t=><option key={t.id} value={t.slug}>{t.title} · {evidenceLabel(t)}</option>)}
             </select>
-            <p className="mt-2 text-xs text-slate-500">Strength comes from your saved answers. Topics without evidence appear last.</p>
+            <p id="practice-topic-evidence" className="mt-2 text-xs leading-relaxed text-slate-500">{selectedTopic ? <><span className="font-medium text-slate-700">{selectedTopic.title}</span>{" · "}{evidenceLabel(selectedTopic)}</> : "Strength comes from your saved answers. Topics without evidence appear last."}</p>
             {invalidSelection&&<p role="alert" className="mt-2 text-sm text-red-700">This link does not match an active enrolled subject and topic. Choose a valid selection.</p>}
             {available<5&&!invalidSelection&&<p role="status" className="mt-2 text-sm text-amber-800">Only {available} question{available===1?'':'s'} available here; at least 5 are needed. No free session will be consumed.</p>}
           </div>

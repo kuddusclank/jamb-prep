@@ -579,6 +579,20 @@
       "count": 3,
       "budget": "navigationAuthFixAllowance",
       "status": "passed-after-pages-propagation"
+    },
+    {
+      "id": "dropdown-logo-pages-1792102280951",
+      "action": "Pages publishing for shared dropdown styling and logo-only loading animation",
+      "count": 15,
+      "budget": "dropdownLogoFixAllowance",
+      "status": "published-conservative-reservation"
+    },
+    {
+      "id": "dropdown-logo-production-1792102374634",
+      "action": "Production global CSS, dropdown arrow and logo-only loading page checks",
+      "count": 3,
+      "budget": "dropdownLogoFixAllowance",
+      "status": "passed"
     }
   ],
   "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",
@@ -761,5 +775,22 @@
     "simulatedBrowserFullPageAuthRoutes": 2,
     "productionChecks": "Initial old HTML observed; revalidated login page and exact published navigation bundle verified after propagation",
     "serverChanges": false
+  },
+  "dropdownLogoFixAllowance": {
+    "limit": 20,
+    "used": 18,
+    "maxConcurrency": 3,
+    "approvedAt": "2026-10-15T22:11:20.951Z",
+    "scope": "Publish approved Safari dropdown styling and user-requested logo-only loading animation, with bounded checks; no real account/student/email/payment writes"
+  },
+  "dropdownLogoFixRelease": {
+    "pagesDeployment": "e22361b1",
+    "previousDeployment": "23bcc6b8",
+    "regressionTests": 9,
+    "productionChecks": 3,
+    "logoGrayColorLoopVerified": true,
+    "reducedMotionVerified": true,
+    "safariAutomation": "Session creation timed out; manual Safari check pending",
+    "studentWrites": 0
   }
 }
