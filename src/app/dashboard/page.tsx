@@ -72,7 +72,7 @@ export default function DashboardPage() {
   const scorePercent = latestScore ? Math.min(100, Math.round((latestScore / targetScore) * 100)) : 0;
 
   return (
-    <StudyWorkspace isPremium={isPremium}>
+    <StudyWorkspace>
       {/* Navigation Header */}
 
 

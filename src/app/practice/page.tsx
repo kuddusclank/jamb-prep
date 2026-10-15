@@ -31,7 +31,7 @@ function PracticePageContent() {
 
 export default function PracticePage() {
   return (
-    <StudyWorkspace isPremium={false}>
+    <StudyWorkspace>
       <main className="shell section-space">
         <Suspense
           fallback={

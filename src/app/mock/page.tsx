@@ -44,7 +44,7 @@ export default function MockLobbyPage() {
   if(!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry}/></StudyWorkspace>;
   const enrolledSubjects=resource.data.subjects;
   return (
-    <StudyWorkspace isPremium={resource.data.isPremium}>
+    <StudyWorkspace>
       <main className="shell section-space">
         <div className="max-w-3xl mx-auto">
           <Suspense fallback={null}>

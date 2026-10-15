@@ -565,6 +565,20 @@
       "count": 2,
       "budget": "subjectCombinationFixAllowance",
       "status": "passed"
+    },
+    {
+      "id": "nav-auth-pages-1792101813890",
+      "action": "Pages publishing for shared paid navigation and full-page auth loading",
+      "count": 15,
+      "budget": "navigationAuthFixAllowance",
+      "status": "published-conservative-reservation"
+    },
+    {
+      "id": "nav-auth-production-1792101848492",
+      "action": "Production login/register full-page loading markup and exact navigation client asset checks",
+      "count": 3,
+      "budget": "navigationAuthFixAllowance",
+      "status": "passed-after-pages-propagation"
     }
   ],
   "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",
@@ -730,5 +744,22 @@
     "localTests": 31,
     "simulatedBrowserFlowPassed": true,
     "productionChecks": 2
+  },
+  "navigationAuthFixAllowance": {
+    "limit": 20,
+    "used": 18,
+    "maxConcurrency": 3,
+    "approvedAt": "2026-10-15T22:03:33.889Z",
+    "scope": "Publish shared paid navigation/full-page auth loading fixes and bounded checks; no real account/email/payment/student writes"
+  },
+  "navigationAuthFixRelease": {
+    "pagesDeployment": "23bcc6b8",
+    "previousDeployment": "6972361c",
+    "regressionTests": 42,
+    "simulatedBrowserPaidRoutes": 3,
+    "simulatedBrowserFreeLinksVisible": true,
+    "simulatedBrowserFullPageAuthRoutes": 2,
+    "productionChecks": "Initial old HTML observed; revalidated login page and exact published navigation bundle verified after propagation",
+    "serverChanges": false
   }
 }

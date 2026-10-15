@@ -93,3 +93,17 @@ Verification: 31 account-navigation/session tests passed; static export and Type
 User approved 20 provider operations for publishing and bounded production checks. Fifteen conservatively reserved for Pages publishing; no Worker/database release required. Final deployment/check evidence follows.
 
 Published Pages deployment `6972361c` (rollback `06057307`). Production edit route returned HTTP 200/noindex, and the updated client bundle with the shared edit URL returned HTTP 200. Seventeen operations conservatively used; three remain in this release allowance.
+
+### Shared paid navigation and whole-page auth loading — 15 October 2026
+
+User reported that paid accounts hid Invite friends/Plans on Overview but showed them after navigating elsewhere, and that successful authentication rendered the full-screen study loader inside the form column.
+
+Cause: the workspace accepted a per-page `isPremium` prop defaulting to false; Practice explicitly passed false. Auth boundaries were nested inside LoginForm/RegisterForm rather than wrapping AuthShell.
+
+Fix: removed page-level tier props. Every workspace navigation reads the actor-scoped/coalesced `/api/v1/profile` subscription through the existing account resource cache. Invite friends and Plans appear only when the server explicitly reports a free subscription; unknown/error states do not flash those links. This is presentation only: existing server authorization and entitlement checks remain unchanged. The auth boundary now wraps the entire login/register layout. Inner form Suspense fallbacks are null, so neither can mount a viewport-sized study loader inside a form.
+
+Validation: static export and TypeScript passed; 33 account/session/recovery regressions and 9 static-routing regressions passed; diff hygiene passed. Local Chrome with all provider traffic simulated verified five paid navigation links across Profile → Practice → Mock, seven links for a free account, one coalesced profile request across the paid navigation, and viewport-width loading without auth headings/section nesting on both Login and Register. No real accounts, email, payments or student data were changed. Temporary browser harness: `/tmp/jamb-nav-auth-browser.mjs`.
+
+User approved a new 20-operation allowance for publishing and checks.
+
+Published Pages `23bcc6b8` (rollback `6972361c`). The immediate production HTML check briefly served the prior deployment; after propagation, revalidated production login HTML showed whole-page loading without AuthShell content, and the navigation JavaScript matched the exported file SHA-256 exactly. Three HTTP checks used including the initial stale response. Eighteen operations conservatively reserved/used; two remain. No Worker, database or entitlement-rule changes.

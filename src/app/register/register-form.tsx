@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
-import { BrowserAccountBoundary, useBrowserAccount } from "@/components/browser-account-boundary";
+import { useBrowserAccount } from "@/components/browser-account-boundary";
 import { ArrowRight, Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
 
 function RegisterFormContent() {
@@ -194,8 +194,8 @@ function RegisterFormContent() {
 
 export function RegisterForm() {
   return (
-    <Suspense fallback={<div className="py-8 text-center text-xs text-slate-400">Loading form...</div>}>
-      <BrowserAccountBoundary mode="auth"><RegisterFormContent /></BrowserAccountBoundary>
+    <Suspense fallback={null}>
+      <RegisterFormContent />
     </Suspense>
   );
 }

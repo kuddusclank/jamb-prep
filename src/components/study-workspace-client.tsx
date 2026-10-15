@@ -1,5 +1,7 @@
 "use client";
 
+import { useApiResource } from "@/lib/api/use-api-resource";
+import type { ProfileData } from "@/lib/api/app-dtos";
 import { BrandMark } from "@/components/brand-mark";
 import type { ReactNode } from "react";
 import Link from "@/components/pending-link";
@@ -18,9 +20,11 @@ const destinations = [
   { href: '/pricing', label: 'Plans', icon: CreditCard },
 ];
 
-export function StudyWorkspaceClient({ children, isPremium }: { children: ReactNode; isPremium: boolean }) {
+export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
+  const profile = useApiResource<ProfileData>("/api/v1/profile");
+  const showFreeLinks = profile.data?.subscription.isPremium === false;
   const pathname = usePathname();
-  const visibleDestinations = destinations.filter(item => !isPremium || !["/referrals", "/pricing"].includes(item.href));
+  const visibleDestinations = destinations.filter(item => showFreeLinks || !["/referrals", "/pricing"].includes(item.href));
   const current = visibleDestinations.find(item => pathname === item.href || pathname.startsWith(`${item.href}/`));
   return <div className={styles.workspace}>
     <a href="#study-content" className="skip-link">Skip to study content</a>

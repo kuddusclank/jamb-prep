@@ -3,7 +3,6 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
-import { BrowserAccountBoundary } from "@/components/browser-account-boundary";
 import { sanitizeInternalRedirect } from "@/lib/auth/redirect";
 import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 
@@ -129,8 +128,8 @@ function LoginFormContent() {
 
 export function LoginForm() {
   return (
-    <Suspense fallback={<div className="py-8 text-center text-xs text-slate-400">Loading form...</div>}>
-      <BrowserAccountBoundary mode="auth"><LoginFormContent /></BrowserAccountBoundary>
+    <Suspense fallback={null}>
+      <LoginFormContent />
     </Suspense>
   );
 }
