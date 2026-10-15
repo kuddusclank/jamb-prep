@@ -81,3 +81,15 @@ Recovery fix deployed to Pages `497f7977` (previous rollback `608e8f1a`). Two pr
 ### Header logo correction
 
 Replaced branding-only BookOpen icons with the shared LecternIQ mark in public, student, administration, onboarding, pricing, 404 and CBT headers. Auth branding now uses the same shared component. Study-content book icons remain semantic content icons. Static build/TypeScript passed; exported homepage verified with the mark and no book logo. The immediate production check still returned the previous header; propagation is not yet confirmed. Pages deployment `06057307` (rollback `497f7977`). No API/database changes. Eleven remaining approved operations conservatively used for publishing and one production check; allowance exhausted.
+
+### Subject-combination editing fix — 15 October 2026
+
+The dashboard/profile header links used plain `/onboarding`, so the completed-account guard redirected students back to the dashboard. The duplicate profile shortcut included `edit=1` but the boundary read `window.location.search` during render, which was not reactive to client navigation.
+
+All edit links now share `/onboarding/?edit=1`; removed the redundant profile shortcut. The account boundary reads reactive Next search parameters inside Suspense. Explicit edit mode is handled by the coordinator only after provisioning/completion checks, so it cannot bypass account registration. Fresh onboarding still redirects completed accounts as before. Available-subject readiness and save authorization are unchanged.
+
+Verification: 31 account-navigation/session tests passed; static export and TypeScript passed; diff hygiene passed. A local Chrome test with all provider responses simulated clicked the profile Change Combination link, loaded all three current electives and existing study target/institution, saved and navigated to the dashboard. No real student writes, accounts or email/payment operations were performed.
+
+User approved 20 provider operations for publishing and bounded production checks. Fifteen conservatively reserved for Pages publishing; no Worker/database release required. Final deployment/check evidence follows.
+
+Published Pages deployment `6972361c` (rollback `06057307`). Production edit route returned HTTP 200/noindex, and the updated client bundle with the shared edit URL returned HTTP 200. Seventeen operations conservatively used; three remain in this release allowance.

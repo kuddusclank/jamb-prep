@@ -243,3 +243,11 @@ test('onboarding rejects a catalog choice whose active blueprint cannot form a f
  const fixture=sqlFixture();const sql=async(parts,...values)=>parts.join('?').includes('WITH latest AS')?[]:fixture.sql(parts,...values);
  await assert.rejects(saveStudentOnboardingAtomic(sql,A,body,new Date()),error=>error.status===422&&/not ready/.test(error.message));assert.equal(fixture.writes.length,0);
 });
+
+test('deliberate subject edits stay on onboarding while provisioning and initial setup guards remain enforced',()=>{
+ assert.equal(accountDestination(identity(),'/onboarding','/dashboard',true),null);
+ assert.equal(accountDestination(identity(),'/onboarding'),'/dashboard');
+ assert.equal(accountDestination(identity(A,{provisioned:false}),'/onboarding','/dashboard',true),'/register?resume=1');
+ assert.equal(accountDestination(identity(A,{onboardingCompleted:false}),'/onboarding','/dashboard',true),null);
+ assert.equal(accountDestination(identity(),'/login','/dashboard',true),'/dashboard');
+});

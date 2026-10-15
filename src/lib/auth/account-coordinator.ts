@@ -9,9 +9,10 @@ export interface OnboardingData {
   enrolledSubjects: { subject_id: string; code: string; name: string }[];
 }
 
-export function accountDestination(identity: SessionIdentityResponse, pathname: string, returnPath = '/dashboard'): string | null {
+export function accountDestination(identity: SessionIdentityResponse, pathname: string, returnPath = '/dashboard', editOnboarding = false): string | null {
   if (!identity.provisioned) return pathname === '/register' ? null : '/register?resume=1';
   if (!identity.onboardingCompleted) return pathname === '/onboarding' ? null : '/onboarding';
+  if (pathname === '/onboarding' && editOnboarding) return null;
   if (['/login', '/register', '/onboarding'].includes(pathname)) {
     const target = sanitizeInternalRedirect(returnPath);
     return target.startsWith('/onboarding') ? '/dashboard' : target;

@@ -101,3 +101,6 @@ export function buildLoginRedirectUrl(
   }
   return `/login?redirectTo=${encodeURIComponent(safeTarget)}`;
 }
+
+/** Shared destination for deliberate edits after initial account setup. */
+export const SUBJECT_COMBINATION_EDIT_URL = "/onboarding/?edit=1";

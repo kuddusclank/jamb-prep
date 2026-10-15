@@ -1,4 +1,5 @@
 "use client";
+import { SUBJECT_COMBINATION_EDIT_URL } from "@/lib/auth/redirect";
 import styles from "./dashboard.module.css";
 import { StudyWorkspace } from "@/components/study-workspace";
 import { buildCanonicalResultUrl } from "@/lib/routing/deep-links";
@@ -299,7 +300,7 @@ export default function DashboardPage() {
                 <h3 className="text-lg font-semibold text-[#092E28]">Your 4 UTME Subjects</h3>
                 <p className="text-xs text-slate-500">Your examination profile and current subject performance.</p>
               </div>
-              <Link href="/onboarding" className="text-xs font-semibold text-[#116149] hover:underline">
+              <Link href={SUBJECT_COMBINATION_EDIT_URL} className="text-xs font-semibold text-[#116149] hover:underline">
                 Change combination
               </Link>
             </div>

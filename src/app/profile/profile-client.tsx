@@ -1,5 +1,6 @@
 "use client";
 
+import { SUBJECT_COMBINATION_EDIT_URL } from "@/lib/auth/redirect";
 import { useState, useActionState } from "react";
 import { updateProfileAction, cancelSubscriptionAction } from "@/lib/client-actions";
 import { 
@@ -272,7 +273,7 @@ export function ProfileClient({
           </div>
 
           <Link
-            href="/onboarding"
+            href={SUBJECT_COMBINATION_EDIT_URL}
             className="text-xs font-semibold text-[#116149] hover:underline"
           >
             Change Combination

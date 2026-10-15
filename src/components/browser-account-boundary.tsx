@@ -2,8 +2,8 @@
 import StudyLoading from "./study-loading";
 import { signOutAction } from "@/lib/client-actions";
 
-import { useEffect, useState, ReactNode } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState, Suspense, ReactNode } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { accountDestination, getAccountCoordinator } from '../lib/auth/account-coordinator';
 import { BrowserSessionSnapshot } from '../lib/auth/session-manager';
@@ -35,14 +35,18 @@ export function useBrowserAccount() {
     retry: () => { getAccountCoordinator().clear(); void getAccountCoordinator().manager.initialize(); setRetry((value) => value + 1); } };
 }
 
-export function BrowserAccountBoundary({ children, mode = 'protected', returnPath }: { children: ReactNode; mode?: 'protected' | 'auth'; returnPath?: string }) {
+type BoundaryProps = { children: ReactNode; mode?: 'protected' | 'auth'; returnPath?: string };
+export function BrowserAccountBoundary(props:BoundaryProps) {
+  return <Suspense fallback={<StudyLoading/>}><BrowserAccountBoundaryContent {...props}/></Suspense>;
+}
+function BrowserAccountBoundaryContent({ children, mode = 'protected', returnPath }: BoundaryProps) {
   const account = useBrowserAccount();
   const rawPath = usePathname();
   const pathname = rawPath.replace(/\/$/, '') || '/';
   const router = useRouter();
   const identity = account.identity;
-  const editingOnboarding = pathname === '/onboarding' && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('edit') === '1';
-  const destination = identity && !editingOnboarding ? accountDestination(identity, pathname, returnPath ?? (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('redirectTo') ?? '/dashboard' : '/dashboard')) : null;
+  const searchParams=useSearchParams();
+  const destination = identity ? accountDestination(identity, pathname, returnPath ?? searchParams.get('redirectTo') ?? '/dashboard', searchParams.get('edit') === '1') : null;
   useEffect(() => {
     if (mode === 'protected' && account.session.status === 'unauthenticated') {
       router.replace(buildLoginRedirectUrl(`${window.location.pathname}${window.location.search}`));

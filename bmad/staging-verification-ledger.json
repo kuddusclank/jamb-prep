@@ -551,6 +551,20 @@
       "count": 1,
       "budget": "newSubjectAllowance",
       "status": "passed"
+    },
+    {
+      "id": "subject-edit-pages-1792101207253",
+      "action": "Pages publishing for tested subject combination edit flow",
+      "count": 15,
+      "budget": "subjectCombinationFixAllowance",
+      "status": "published-conservative-reservation"
+    },
+    {
+      "id": "subject-edit-production-1792101258093",
+      "action": "Production edit route and updated client asset checks",
+      "count": 2,
+      "budget": "subjectCombinationFixAllowance",
+      "status": "passed"
     }
   ],
   "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",
@@ -702,5 +716,19 @@
     "distinctForms": 20,
     "readinessGate": "Only complete active forms offered; fresh check at save",
     "productionHealth": 200
+  },
+  "subjectCombinationFixAllowance": {
+    "limit": 20,
+    "used": 17,
+    "maxConcurrency": 3,
+    "approvedAt": "2026-10-15T21:53:27.252Z",
+    "scope": "Publish subject change navigation fix and bounded checks; no real student/account/payment changes"
+  },
+  "subjectCombinationFixRelease": {
+    "pagesDeployment": "6972361c",
+    "previousDeployment": "06057307",
+    "localTests": 31,
+    "simulatedBrowserFlowPassed": true,
+    "productionChecks": 2
   }
 }
