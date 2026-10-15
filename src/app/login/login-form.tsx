@@ -107,6 +107,7 @@ function LoginFormContent() {
         </div>
       </div>
 
+      <a href="/forgot-password/" className="inline-flex min-h-11 items-center text-sm font-semibold text-emerald-800 underline underline-offset-4">Forgot password?</a>
       <button
         type="submit"
         disabled={isPending}

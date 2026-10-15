@@ -49,6 +49,8 @@ export function createClient() {
           data: { user: null, session: null },
           error: new Error('Supabase is not configured yet.'),
         }),
+        resetPasswordForEmail: async () => ({error:new Error('Supabase is not configured yet.')}),
+        updateUser: async () => ({data:{user:null},error:new Error('Supabase is not configured yet.')}),
         signOut: async () => ({ error: null }),
       },
     }) as any;

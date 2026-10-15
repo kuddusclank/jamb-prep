@@ -45,7 +45,7 @@ export default function PricingPage() {
             <strong className="block font-semibold text-slate-800 mb-1">
               How does the 50% referral discount work?
             </strong>
-            Invite 2 classmates with your unique referral link. Once both complete their first diagnostic mock, your first month is automatically halved from ₦1,000 to ₦500.
+            Invite 2 classmates with your unique referral link. Once both complete their account onboarding, your first month is automatically halved from ₦1,000 to ₦500.
           </div>
 
           <div>

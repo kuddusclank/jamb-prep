@@ -53,14 +53,14 @@ export default function MockLobbyPage() {
 
           <div className="rounded-3xl border border-emerald-950/10 bg-white p-6 sm:p-10 shadow-sm">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider">
-              <Clock size={13} /> Official CBT Exam Hall Briefing
+              <Clock size={13} /> Your CBT mock briefing
             </span>
 
             <h1 className="mt-4 text-2xl sm:text-4xl font-semibold tracking-tight text-[#092E28]">
               Full 4-Subject <span className="serif-accent text-[#116149]">UTME Simulation</span>
             </h1>
             <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-              This timed examination replicates the authentic Joint Admissions and Matriculation Board (JAMB) Computer-Based Test interface, keyboard navigation, and 400-point grading scale.
+              Practise with a timed four-subject UTME simulation, keyboard navigation and a 400-point grading scale. JAMBPrep is independent of JAMB.
             </p>
 
             {/* Subject Breakdown Grid */}
@@ -151,7 +151,7 @@ export default function MockLobbyPage() {
 
             {!resource.data.ready&&!resource.data.activeAttemptId&&<div role="status" className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"><p className="font-semibold">{resource.data.message}</p><ul className="mt-3 space-y-2">{resource.data.subjects.filter(s=>!s.ready).map(s=><li key={s.code}>{s.message}</li>)}</ul><a href="/practice/" className="mt-4 inline-block font-semibold underline">Practise a topic instead</a></div>}
             {/* Launch CTA */}
-            <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="mt-8 space-y-6 border-t border-slate-100 pt-6">
               <div className="text-xs text-slate-500">
                 Ready? Ensure you have 2 uninterrupted hours before starting.
               </div>

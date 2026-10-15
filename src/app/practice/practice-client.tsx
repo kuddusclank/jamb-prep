@@ -1,5 +1,7 @@
 "use client";
 
+import { ResultShare } from "@/components/result-share";
+import { practiceShareText } from "@/lib/share";
 import { useEffect, useRef, useState } from "react";
 import { ReportQuestionDialog } from "@/components/report-question-dialog";
 import { QuestionDiagram } from "@/components/question-diagram";
@@ -160,6 +162,7 @@ export function PracticeClient({
               : "Good effort. Review the diagnostic explanations carefully to turn mistakes into points."}
           </p>
 
+          <ResultShare text={practiceShareText(score,questions.length,currentQ?.subjectName || "UTME",new Set(questions.map(q=>q.topicTitle)).size===1?questions[0]?.topicTitle:undefined)} />
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               onClick={() => {

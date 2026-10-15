@@ -45,14 +45,14 @@ export function MockStartButton({canStart=true,activeAttemptId=null}:{canStart?:
   }
 
   return (
-    <div className="space-y-5">
+    <div className="w-full space-y-5">
       <fieldset disabled={isPending} className="space-y-3">
         <legend className="mb-3 font-semibold">Choose your mock experience</legend>
-        <label className="flex items-start gap-3 rounded-2xl border p-4">
+        <label className="flex min-h-24 cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/50 p-5 has-checked:border-emerald-700 has-checked:bg-emerald-50/60">
           <input type="radio" name="mock-mode" checked={!conditions} onChange={() => { setConditions(false); setError(""); }} className="mt-1" />
           <span><strong>Standard mock</strong><span className="block text-sm text-slate-600">Timed practice. Fullscreen is optional; no interruption monitoring.</span></span>
         </label>
-        <label className="flex items-start gap-3 rounded-2xl border p-4">
+        <label className="flex min-h-24 cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/50 p-5 has-checked:border-emerald-700 has-checked:bg-emerald-50/60">
           <input type="radio" name="mock-mode" checked={conditions} disabled={fullscreenSupported !== true} onChange={() => { setConditions(true); setError(""); }} className="mt-1" />
           <span><strong>Exam Conditions</strong><span className="block text-sm text-slate-600">{fullscreenSupported === false ? "Unavailable in this browser. Choose Standard mock; it works without fullscreen." : "Fullscreen required. Hiding the page or leaving fullscreen records an interruption, separately from your score."}</span></span>
         </label>

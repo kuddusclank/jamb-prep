@@ -1,5 +1,7 @@
 "use client";
 
+import { shareOrCopy } from "@/lib/share";
+import { SITE_URL } from "@/lib/seo";
 import { useState } from "react";
 import Link from "@/components/pending-link";
 import { Copy, Check, Share2, Sparkles, ArrowRight, Users } from "lucide-react";
@@ -14,19 +16,22 @@ export function ReferralCard({
   hasReward: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const [shareStatus,setShareStatus]=useState("");
 
   const referralUrl = typeof window !== "undefined"
     ? `${window.location.origin}/register?ref=${code}`
-    : `https://jambprep.ng/register?ref=${code}`;
+    : `${SITE_URL}/register/?ref=${encodeURIComponent(code)}`;
 
   const shareText = encodeURIComponent(
-    `Hey! I'm preparing for the 2026 JAMB UTME on JAMBPrep. Join with my link so we both get 50% off full mock exams and weak-topic drills: ${referralUrl}`
+    `I’m building my UTME study routine with JAMBPrep. Join me for topic practice, timed mocks and progress insights: ${referralUrl}`
   );
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(referralUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+  const copyToClipboard = async () => {
+    try {
+      const outcome=await shareOrCopy({title:'Study with me on JAMBPrep',text:'Join me for UTME topic practice and timed mocks.',url:referralUrl});
+      setCopied(outcome==='copied');setShareStatus(outcome==='copied'?'Invite copied.':outcome==='shared'?'Invite shared.':'');
+      setTimeout(()=>setCopied(false),2500);
+    } catch {setShareStatus('Unable to copy. Select the invite link or use WhatsApp.');}
   };
 
   const progressPercentage = Math.min(100, (qualifiedCount / 2) * 100);
@@ -58,7 +63,7 @@ export function ReferralCard({
                 </>
               ) : (
                 <>
-                  <Copy size={16} /> Copy
+                  <Copy size={16} /> Copy / share
                 </>
               )}
             </button>
@@ -75,6 +80,7 @@ export function ReferralCard({
         </div>
       </div>
 
+      <p role="status" className="text-sm text-slate-600">{shareStatus}</p>
       {/* 2. Progress Tracker */}
       <div className="rounded-2xl border border-slate-100 bg-[#F6F8F5] p-5 sm:p-6">
         <div className="flex items-center justify-between mb-3">

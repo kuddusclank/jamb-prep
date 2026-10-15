@@ -1618,9 +1618,19 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
         });
       }
 
+      const frozenSubjects = await dbCtx.sql<Array<{code:string;name:string;count:number}>>`
+        SELECT snapshot->>'subjectCode' AS code,
+          COALESCE(MAX(snapshot->>'subjectName'), snapshot->>'subjectCode') AS name,
+          COUNT(*)::int AS count
+        FROM attempt_questions WHERE attempt_id=${attemptId}::uuid
+        GROUP BY snapshot->>'subjectCode'
+        ORDER BY CASE WHEN snapshot->>'subjectCode'='ENG' THEN 0 ELSE 1 END, MIN(position)
+      `;
+      const scores=[row.english_score,row.subject_2_score,row.subject_3_score,row.subject_4_score];
       return {
         status: 200,
         body: {
+          subjectScores:frozenSubjects.map((subject,index)=>({...subject,score:scores[index]})),
           attemptId: row.attempt_id,
           totalScore: row.total_score,
           englishScore: row.english_score,

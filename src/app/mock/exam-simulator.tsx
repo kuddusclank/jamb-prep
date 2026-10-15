@@ -1,4 +1,5 @@
 "use client";
+import { subjectPalette } from "@/lib/exam-palette";
 
 import { ExamCalculator } from "./exam-calculator";
 import { ExamConditions } from "./exam-conditions";
@@ -167,6 +168,9 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
   }
 
   const currentQ = questions[currentIndex];
+  const palette = subjectPalette(questions,currentIndex);
+  const subjectAnswered = palette.filter(({question})=>Boolean(answers[question.id])).length;
+  const subjectPosition = palette.find(item=>item.globalIndex===currentIndex)?.number ?? 1;
   const isFlagged = flaggedQuestionIds.has(currentQ?.id);
   const selectedOptId = answers[currentQ?.id];
 
@@ -245,7 +249,6 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
         </div>
       </header>
 
-      {initialPayload.selectionWarnings?.length ? <details className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-950"><summary className="cursor-pointer font-semibold">About this question selection</summary><ul className="mt-2 space-y-1">{initialPayload.selectionWarnings.map(w=><li key={w}>{w}</li>)}</ul></details> : null}
       {submitError && <div role="alert" className="bg-red-50 p-4 text-red-800"><p>{submitError}</p><button type="button" disabled={isPending} onClick={handleFinalSubmit}>Retry submission</button></div>}
       {flagError && <p role="status" className="rounded-xl bg-amber-50 p-3 text-amber-900">{flagError}</p>}
       <ExamConditions attemptId={initialPayload.attemptId} enabled={initialPayload.examConditions} active={!isPending && status !== "expired"} />
@@ -291,7 +294,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
           {/* Question Meta Header */}
           <div className="flex flex-wrap gap-3 items-center justify-between text-xs text-slate-600 bg-white px-4 py-3 rounded-2xl border border-slate-200">
             <span className="font-bold tracking-wider uppercase text-slate-800">
-              {currentQ.subjectName} · Question {currentQ.position} of {totalQuestionsCount}
+              {currentQ.subjectName} · Question {subjectPosition} of {palette.length}
             </span>
             <div className="flex flex-wrap items-center gap-3">
               <ReportQuestionDialog key={currentQ.id} questionId={currentQ.id} attemptId={initialPayload.attemptId} />
@@ -380,7 +383,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
                   : "bg-slate-100 text-slate-500 cursor-not-allowed opacity-40"
               }`}
             >
-              <ArrowLeft size={14} /> Previous {previousPosition ? `(P: Q${previousPosition})` : '(P)'}
+              <ArrowLeft size={14} /> Previous (P)
             </button>
 
             {/* Reverse / Deselect Button (R) */}
@@ -409,7 +412,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
                   : "bg-slate-100 text-slate-500 cursor-not-allowed opacity-40"
               }`}
             >
-              Next {nextPosition ? `(N: Q${nextPosition})` : '(N)'} <ArrowRight size={14} />
+              Next (N) <ArrowRight size={14} />
             </button>
           </div>
         </div>
@@ -418,10 +421,10 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
         <div className="lg:col-span-4 bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5">
           <div className="flex items-center justify-between border-b border-slate-200 pb-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">
-              Question Palette ({totalAnsweredCount}/{totalQuestionsCount})
+              {currentQ.subjectCode} questions ({subjectAnswered}/{palette.length})
             </h3>
             <span className="text-[11px] font-mono text-[#116149]">
-              {Math.round((totalAnsweredCount / totalQuestionsCount) * 100)}% Done
+              {Math.round((subjectAnswered / Math.max(1,palette.length)) * 100)}% Done
             </span>
           </div>
 
@@ -443,7 +446,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
 
           {/* Interactive Palette Grid */}
           <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-5 gap-2 max-h-96 overflow-y-auto p-1">
-            {questions.map((q, idx) => {
+            {palette.map(({question:q,globalIndex:idx,number}) => {
               const isCurrent = idx === currentIndex;
               const isAnswered = Boolean(answers[q.id]);
               const qFlagged = flaggedQuestionIds.has(q.id);
@@ -464,9 +467,10 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
                   className={`size-11 rounded-xl border text-xs font-semibold flex items-center justify-center transition-all cursor-pointer ${itemBg} ${
                     isCurrent ? "ring-2 ring-slate-900 scale-105" : "hover:border-emerald-600"
                   }`}
-                  title={`Question ${q.position} (${q.subjectCode})`}
+                  aria-current={idx === currentIndex ? "step" : undefined}
+                  title={`Question ${number} (${q.subjectCode})`}
                 >
-                  {q.position}
+                  {number}
                 </button>
               );
             })}

@@ -452,6 +452,30 @@
       "count": 12,
       "status": "passed",
       "action": "Publish verified static build to existing Pages project (10 reserved provider calls), then check production mock/practice pages (2 calls)"
+    },
+    {
+      "id": "seo-release-1792059660504",
+      "action": "Native Worker publishing and configuration checks",
+      "count": 10,
+      "budget": "seoSharingRecoveryAllowance",
+      "status": "published-conservative-reservation",
+      "at": "2026-10-15T10:21:00.504Z"
+    },
+    {
+      "id": "seo-release-1792059747524",
+      "action": "Pages static asset publishing and deployment status",
+      "count": 10,
+      "budget": "seoSharingRecoveryAllowance",
+      "status": "published-conservative-reservation",
+      "at": "2026-10-15T10:22:27.524Z"
+    },
+    {
+      "id": "seo-release-1792059796469",
+      "action": "Ten bounded production HTTP checks; redirects inspected without following",
+      "count": 10,
+      "budget": "seoSharingRecoveryAllowance",
+      "status": "passed",
+      "at": "2026-10-15T10:23:16.469Z"
     }
   ],
   "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",
@@ -570,5 +594,19 @@
     "maxConcurrency": 3,
     "approvedAt": "2026-10-14",
     "scope": "New-bank audit, private backup, topic repair, blueprint activation and bounded checks; no accounts or charges"
+  },
+  "seoSharingRecoveryAllowance": {
+    "limit": 40,
+    "used": 30,
+    "maxConcurrency": 3,
+    "approvedAt": "2026-10-15",
+    "scope": "Recovery redirect audit, publishing and bounded production checks. No charges or new accounts."
+  },
+  "seoSharingRecoveryRelease": {
+    "workerVersion": "8d1af1a9-bc09-451e-8cb2-6f481f27b77d",
+    "pagesDeployment": "608e8f1a",
+    "productionChecks": 10,
+    "recoveryDeliveryVerified": false,
+    "pending": "User configuring Resend SMTP; recovery redirect allowlist unverified"
   }
 }

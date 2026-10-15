@@ -5,3 +5,8 @@
 /mock/result/            /mock                         302
 /checkout                /pricing                      301
 /checkout/               /pricing                      301
+
+/signin /login/ 301
+/signup /register/ 301
+/forgot /forgot-password/ 301
+/llm.txt /llms.txt 301

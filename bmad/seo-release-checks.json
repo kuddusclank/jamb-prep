@@ -1,0 +1,75 @@
+{
+  "at": "2026-10-15T10:23:20.443Z",
+  "evidence": [
+    {
+      "path": "/",
+      "status": 200,
+      "type": "text/html; charset=utf-8",
+      "location": null,
+      "cache": "public, max-age=0, must-revalidate"
+    },
+    {
+      "path": "/login/",
+      "status": 200,
+      "type": "text/html; charset=utf-8",
+      "location": null,
+      "cache": "public, max-age=0, must-revalidate"
+    },
+    {
+      "path": "/reset-password/",
+      "status": 200,
+      "type": "text/html; charset=utf-8",
+      "location": null,
+      "cache": "private, no-store"
+    },
+    {
+      "path": "/sitemap.xml",
+      "status": 200,
+      "type": "application/xml",
+      "location": null,
+      "cache": "public, max-age=0, must-revalidate"
+    },
+    {
+      "path": "/robots.txt",
+      "status": 200,
+      "type": "text/plain; charset=utf-8",
+      "location": null,
+      "cache": "public, max-age=0, must-revalidate"
+    },
+    {
+      "path": "/og-image.png",
+      "status": 200,
+      "type": "image/png",
+      "location": null,
+      "cache": "public, max-age=0, must-revalidate"
+    },
+    {
+      "path": "/signin",
+      "status": 301,
+      "type": "text/plain;charset=UTF-8",
+      "location": "https://jambprep.lecterniq.com/login/",
+      "cache": null
+    },
+    {
+      "path": "/llm.txt",
+      "status": 301,
+      "type": "text/plain;charset=UTF-8",
+      "location": "https://jambprep.lecterniq.com/llms.txt",
+      "cache": null
+    },
+    {
+      "path": "/api/v1/health",
+      "status": 200,
+      "type": "application/json; charset=utf-8",
+      "location": null,
+      "cache": "no-store"
+    },
+    {
+      "path": "/api/v1/exams/attempts/22222222-2222-4222-8222-222222222222/results",
+      "status": 401,
+      "type": "application/json; charset=utf-8",
+      "location": null,
+      "cache": "no-store"
+    }
+  ]
+}

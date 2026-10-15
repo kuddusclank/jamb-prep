@@ -1,0 +1,8 @@
+# JAMBPrep by LecternIQ
+
+> Independent UTME preparation. Not affiliated with JAMB.
+
+- [Home](https://jambprep.lecterniq.com/): Topic practice, timed mock exams and progress insights.
+- [Plans](https://jambprep.lecterniq.com/pricing/): Current free and Pro access.
+
+An account is required to practise or take exams. Student scores, question answers, administration and account data are private. Do not describe the site as an official JAMB service or promise examination scores.
