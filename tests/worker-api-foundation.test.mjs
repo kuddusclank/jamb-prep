@@ -1,3 +1,4 @@
+import {readySubjectRows} from './helpers/mock-ready-fixture.mjs';
 /**
  * Local Verification Test Suite for T03: Portable Native API & Database/Security Foundation
  *
@@ -646,6 +647,7 @@ test('6. Idempotency: enforces 400 missing key, 409 pending conflict, 422 payloa
   const simDb = createSimulatedDbFixture({
     onSql: async (queryText) => {
       if (queryText.includes('SELECT id FROM profiles')) return [{ id: STUDENT_USER_ID }];
+      if (queryText.includes('WITH latest AS')) return readySubjectRows(['Use of English','Mathematics','Physics','Chemistry'].map((name,index)=>({id:`33333333-3333-4333-8333-33333333333${index}`,name,code:index===0?'ENG':`E${index}`,is_compulsory:index===0})));
       if (queryText.includes('FROM subjects')) {
         handlerExecutions += 1;
         return ['Use of English', 'Mathematics', 'Physics', 'Chemistry'].map((name, index) => ({

@@ -192,3 +192,38 @@ Rollback: use the owner-only pre-repair backup path in new-subject-activation-re
 ## Literature addition — 14 October 2026
 
 [Literature blueprint](literature-mock-blueprint.md): proposed40 = drama10 + prose10 + poetry10 + principles5 + unseen appreciation5.535 structurally eligible items; zero linked extract groups. The subsequent authorised release activated Literature with494 classified candidates and one five-item extract group; see its release section. The other eight subjects retain their current configurations.
+
+## MTH — Mathematics, 40 questions (15 October 2026)
+
+User approved implementation and requested that subject selection list only mock-ready subjects. Years remain reference metadata. The audited bank has 272 eligible questions in 20 topics, but no active Mathematics blueprint before this change.
+
+| Section | Target | Current eligible pool | Current mapping |
+| --- | ---: | ---: | --- |
+| Number and numeration | 8 | 58 | Fractions/decimals/approximation, indices/logarithms, bases, surds |
+| Algebra | 12 | 82 | Progressions, binary operations, inequalities, matrices/determinants, polynomials/quadratics, sets, variation |
+| Geometry and trigonometry | 10 | 51 | Coordinate geometry and trigonometry |
+| Calculus | 4 | 41 | Combined calculus/differentiation, differentiation, integration |
+| Statistics and probability | 6 | 40 | Permutations/combinations, probability, statistics/dispersion |
+| Total | 40 | 272 | Twenty database topics |
+
+These are JAMBPrep coverage weights, not official JAMB quotas. Scope references the retained [official Mathematics syllabus catalogue link](https://ibass.jamb.gov.ng/static/media/Maths.a5ea8d3ba928a3915150.pdf). A fresh web fetch of that PDF was unavailable during this task; this is not represented as a new verification of its latest contents.
+
+Current coverage gaps: no separately classified mensuration, Euclidean geometry, locus, construction or vectors questions were found. The geometry cell can currently draw only from coordinate geometry/trigonometry. This blueprint makes a balanced available-bank practice mock, not a claim that every syllabus topic is represented. New topics are classified through the database/admin blueprint workflow; the selector contains no topic-title list. All questions/options/explanations remain in the database.
+
+Reuse the existing selector: random seeded ranks, lower-exposure preference, topic round-robin, duplicate content-family exclusion, 30/50/20 easy/medium/hard soft targets and 50% previous-form overlap soft target. Neither a 50% probability of repetition nor exact difficulty percentages are guaranteed; small/uneven pools produce documented internal relaxations. No sequence by insertion order, no replacement with another subject, no student-facing bank counts, no attempts/allowance consumed by readiness checks.
+
+Readiness filter uses the same eligible question view and form selector, including complete reviewed passage groups for English/Literature. Only subjects with a complete active 60-question compulsory or 40-question elective form appear in onboarding/change-combination choices. Existing enrolments remain intact. Fresh validation inside the save transaction rejects a choice that ceased being ready; 30-second public catalogue caching does not authorize writes.
+
+Implementation data: `mathematics-blueprint.json`; initial audit: `mathematics-blueprint-inventory.json`. Activation and validation evidence will be recorded after the transaction succeeds. Classification is based on current canonical topics, not an independent fact-check of all 272 solutions.
+
+### Mathematics activation evidence
+
+Activated blueprint `52d3fd9a-5592-4828-bc9d-50e7867b2121`: all 272 eligible Mathematics questions classified into the five cells above. Twenty seeded selections produced twenty distinct complete 40-question forms with unique content families. Source years from 1990 onward were varied during validation to confirm years remain reference metadata. No student attempts, quotas, accounts or question-content edits were made. A private owner-only before-image backup was saved before the transaction. An initial eligibility-view column-reference error rolled back fully before the corrected activation succeeded.
+
+Difficulty preferences currently require relaxation in each Mathematics cell because of the available difficulty mix; complete forms remain valid. The existing selector records these relaxations internally. Do not advertise exact 30/50/20 distribution until the bank supports it.
+
+The real database readiness check returned ENG, MTH, PHY, CHM, BIO, ECN, GOV, LIT, CRK and IRS. Readiness is computed from live database classifications, not this documented list, and excludes incomplete/retired banks.
+
+Validation: 37 focused tests passed (mock readiness, onboarding, auth/idempotency foundation); TypeScript passed; isolated native Worker dry run passed (647.38 KiB / gzip 137.03 KiB); `git diff --check` passed. These tests include missing/insufficient cells, duplicate content families, unreviewed passage sets, database failures and save-time rejection before writes. The production activation also exercised the new catalogue SQL and existing selector against actual bank data. Release receipt: `mathematics-blueprint-release.json`.
+
+Published native API version `a477a09d-b024-4f42-814d-96a7ce25f06b`; rollback `8d1af1a9-bc09-451e-8cb2-6f481f27b77d`. Production health returned HTTP 200/no-store. No Pages deployment was required: onboarding and profile changes already obtain their options from this API. The remaining 15 approved new-subject operations were conservatively used for audit, backup/activation/retry, publishing and health verification.

@@ -1,0 +1,17 @@
+{
+  "templateId": "mathematics-balanced-v1",
+  "title": "Mathematics: balanced 40-question UTME mock",
+  "totalQuestions": 40,
+  "sourceUrl": "https://ibass.jamb.gov.ng/static/media/Maths.a5ea8d3ba928a3915150.pdf",
+  "weightsAreOfficial": false,
+  "yearIsReferenceOnly": true,
+  "difficultyTargets": {"easy":30,"medium":50,"hard":20},
+  "overlapLimit": 0.5,
+  "cells": [
+    {"code":"number-numeration","title":"Number and numeration","count":8,"topics":["Fractions, Decimals and Approximations","Indices and Logarithms","Number Bases","Surds"]},
+    {"code":"algebra","title":"Algebra","count":12,"topics":["Arithmetic and Geometric Progressions","Binary Operations","Inequalities","Matrices and Determinants","Polynomials","Quadratic Equations","Sets","Variation"]},
+    {"code":"geometry-trigonometry","title":"Geometry and trigonometry","count":10,"topics":["Coordinate Geometry","Trigonometry"]},
+    {"code":"calculus","title":"Calculus","count":4,"topics":["Calculus & Differentiation","Differentiation","Integration"]},
+    {"code":"statistics-probability","title":"Statistics and probability","count":6,"topics":["Permutations and Combinations","Probability","Statistics and Measures of Dispersion"]}
+  ]
+}

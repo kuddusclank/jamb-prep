@@ -1,3 +1,4 @@
+import {readySubjectRows} from './helpers/mock-ready-fixture.mjs';
 /** T06 local injected adapters only: no Supabase, provider, or remote database traffic. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -110,11 +111,13 @@ test('late sign-in result cannot restore a logged-out account', async () => {
   } finally { fixture.manager.destroy(); }
 });
 
+
 function sqlFixture(rows = catalog, failInsert = false) {
   const writes = [];
   const sql = async (strings, ...values) => {
     const query = strings.join('?');
     if (query.includes('FROM profiles')) return [{ id: A }];
+    if (query.includes('WITH latest AS')) return readySubjectRows(rows);
     if (query.includes('FROM subjects')) return rows;
     if (query.includes('INSERT INTO student_subjects') && failInsert) throw new Error('Simulated write failure');
     writes.push({ query, values }); return [];
@@ -184,6 +187,7 @@ test('real idempotency wrapper and onboarding service share one injected transac
       if (query.includes('WITH upsert')) return [{ inserted_or_reset: true }];
       if (query.includes('UPDATE api_idempotency_keys')) { staged.push('completed'); return [{ idempotency_key: 'onboard-local-key' }]; }
       if (query.includes('FROM profiles')) return [{ id: A }];
+      if (query.includes('WITH latest AS')) return readySubjectRows(catalog);
       if (query.includes('FROM subjects')) return catalog;
       if (query.includes('INSERT INTO student_subjects') && failure === 'insert') throw new Error('Injected insert failure');
       staged.push(query); return [];
@@ -233,4 +237,9 @@ test('legacy onboarded account repairs its missing referral code once before loa
     assert.equal(referrals.code, 'RECOVEREDCODE'); assert.equal(bootstraps, 1);
     await coordinator.loadIdentity(); assert.equal(bootstraps, 1);
   } finally { coordinator.destroy(); fixture.manager.destroy(); }
+});
+
+test('onboarding rejects a catalog choice whose active blueprint cannot form a full mock before any writes',async()=>{
+ const fixture=sqlFixture();const sql=async(parts,...values)=>parts.join('?').includes('WITH latest AS')?[]:fixture.sql(parts,...values);
+ await assert.rejects(saveStudentOnboardingAtomic(sql,A,body,new Date()),error=>error.status===422&&/not ready/.test(error.message));assert.equal(fixture.writes.length,0);
 });

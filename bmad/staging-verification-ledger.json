@@ -516,6 +516,41 @@
       "budget": "seoSharingRecoveryAllowance",
       "status": "failed-previous-header-served",
       "at": "2026-10-15T11:32:49.898Z"
+    },
+    {
+      "id": "math-inventory-20261015",
+      "action": "Read-only mathematics topic and blueprint audit",
+      "count": 1,
+      "budget": "newSubjectAllowance",
+      "status": "passed"
+    },
+    {
+      "id": "math-activation-20261015",
+      "action": "Private Mathematics configuration backup and atomic blueprint activation/validation",
+      "count": 2,
+      "budget": "newSubjectAllowance",
+      "status": "rolled-back-column-projection-error"
+    },
+    {
+      "id": "math-activation-retry-20261015",
+      "action": "Retry rolled-back Mathematics activation after correcting eligibility-view projection",
+      "count": 1,
+      "budget": "newSubjectAllowance",
+      "status": "passed"
+    },
+    {
+      "id": "math-api-publish-20261015",
+      "action": "Native API publishing for mock-ready subject picker enforcement",
+      "count": 10,
+      "budget": "newSubjectAllowance",
+      "status": "published-conservative-reservation"
+    },
+    {
+      "id": "math-api-health-20261015",
+      "action": "One production native API health check after release",
+      "count": 1,
+      "budget": "newSubjectAllowance",
+      "status": "passed"
     }
   ],
   "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",
@@ -630,7 +665,7 @@
   },
   "newSubjectAllowance": {
     "limit": 40,
-    "used": 25,
+    "used": 40,
     "maxConcurrency": 3,
     "approvedAt": "2026-10-14",
     "scope": "New-bank audit, private backup, topic repair, blueprint activation and bounded checks; no accounts or charges"
@@ -657,5 +692,15 @@
     "pending": "User must request fresh link and confirm real password-change round trip",
     "smtpDelivery": "User-confirmed; email received in spam",
     "recoveryTimingFixPublished": true
+  },
+  "mathematicsRelease": {
+    "workerVersion": "a477a09d-b024-4f42-814d-96a7ce25f06b",
+    "previousWorkerVersion": "8d1af1a9-bc09-451e-8cb2-6f481f27b77d",
+    "blueprintId": "52d3fd9a-5592-4828-bc9d-50e7867b2121",
+    "classified": 272,
+    "formsTested": 20,
+    "distinctForms": 20,
+    "readinessGate": "Only complete active forms offered; fresh check at save",
+    "productionHealth": 200
   }
 }

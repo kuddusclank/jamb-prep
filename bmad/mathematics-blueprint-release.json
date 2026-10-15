@@ -1,0 +1,56 @@
+{
+  "at": "2026-10-15T14:07:34.380Z",
+  "backup": "/Users/akanbiabdulquddus/.codex/private-backups/jambprep/mathematics-before-activation-2026-10-15T14-06-53.298Z.json",
+  "blueprintId": "52d3fd9a-5592-4828-bc9d-50e7867b2121",
+  "cells": [
+    {
+      "code": "number-numeration",
+      "required": 8,
+      "classified": 58
+    },
+    {
+      "code": "algebra",
+      "required": 12,
+      "classified": 82
+    },
+    {
+      "code": "geometry-trigonometry",
+      "required": 10,
+      "classified": 51
+    },
+    {
+      "code": "calculus",
+      "required": 4,
+      "classified": 41
+    },
+    {
+      "code": "statistics-probability",
+      "required": 6,
+      "classified": 40
+    }
+  ],
+  "classified": 272,
+  "variationForms": 20,
+  "distinctForms": 20,
+  "warnings": [
+    "number-numeration: difficulty preference relaxed to preserve complete content.",
+    "algebra: difficulty preference relaxed to preserve complete content.",
+    "geometry-trigonometry: difficulty preference relaxed to preserve complete content.",
+    "calculus: difficulty preference relaxed to preserve complete content.",
+    "statistics-probability: difficulty preference relaxed to preserve complete content."
+  ],
+  "readySubjects": [
+    "ENG",
+    "MTH",
+    "PHY",
+    "CHM",
+    "BIO",
+    "ECN",
+    "GOV",
+    "LIT",
+    "CRK",
+    "IRS"
+  ],
+  "questionsEdited": 0,
+  "studentAttemptsCreated": 0
+}

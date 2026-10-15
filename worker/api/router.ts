@@ -1,3 +1,4 @@
+import {cachedMockReadySubjects} from '../services/mock-ready-subjects';
 import { ASSESSMENT_ADMIN_ROUTES } from '../services/assessment-admin-routes';
 import { PRACTICE_ROUTES } from '../services/practice-routes';
 import {computeRequestHash} from './idempotency';
@@ -969,12 +970,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
       const actor = ctx.actor!;
       const dbCtx = ctx.getDb();
       const [subjectsRows, prefRows, enrolledRows] = await Promise.all([
-        dbCtx.sql<Array<{ id: string; code: string; name: string; is_compulsory: boolean }>>`
-          SELECT id, code, name, is_compulsory
-          FROM subjects
-          WHERE is_active = TRUE
-          ORDER BY is_compulsory DESC, display_order ASC, name ASC
-        `,
+        cachedMockReadySubjects(dbCtx.sql),
         dbCtx.sql<
           Array<{
             target_score: number;

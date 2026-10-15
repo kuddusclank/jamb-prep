@@ -1,3 +1,4 @@
+import {loadMockReadySubjects} from './mock-ready-subjects';
 import { ApiError } from '../api/errors';
 import { onboardingPutSchema, assertValidUuid, OnboardingPutRequest } from '../api/contracts';
 import { SqlTagExecutor } from '../api/db-context';
@@ -20,6 +21,8 @@ export async function saveStudentOnboardingAtomic(tx: SqlTagExecutor, userId: st
   if (subjects.length !== 4 || new Set(subjects.map((s) => s.id)).size !== 4 || english.length !== 1 || subjects.some((s) => s.name !== 'Use of English' && (s.is_compulsory || s.code === 'ENG')) || names.some((name) => subjects.filter((s) => s.name === name).length !== 1)) {
     throw new ApiError({ status: 422, code: 'VALIDATION_FAILED', message: 'Choose Use of English and three available elective subjects.' });
   }
+  const ready=await loadMockReadySubjects(tx,subjects.map(subject=>subject.id));
+  if(ready.length!==4)throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'One of these subjects is not ready for full mocks. Refresh and choose from the available subjects.'});
   await tx`INSERT INTO student_preferences (user_id, target_score, exam_year, target_institution, target_course, updated_at)
     VALUES (${userId}::uuid, ${data.targetScore}, ${now.getUTCFullYear()}, ${data.targetInstitution ?? null}, ${data.targetCourse ?? null}, ${now.toISOString()}::timestamptz)
     ON CONFLICT (user_id) DO UPDATE SET target_score = EXCLUDED.target_score,

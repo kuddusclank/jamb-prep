@@ -1,0 +1,166 @@
+{
+  "at": "2026-10-15T14:01:46.610Z",
+  "topics": [
+    {
+      "code": "MTH",
+      "topic_id": "8a75e754-3e1d-4a1e-8b8f-5ff917b2ba00",
+      "title": "Arithmetic and Geometric Progressions",
+      "slug": "arithmetic-and-geometric-progressions",
+      "published": 13,
+      "eligible": 13
+    },
+    {
+      "code": "MTH",
+      "topic_id": "ecba49e5-0fba-457e-92b1-cfa340a407d9",
+      "title": "Binary Operations",
+      "slug": "binary-operations",
+      "published": 6,
+      "eligible": 6
+    },
+    {
+      "code": "MTH",
+      "topic_id": "770bef0b-850f-4472-8076-f9efba8a7ba4",
+      "title": "Calculus & Differentiation",
+      "slug": "calculus-differentiation",
+      "published": 24,
+      "eligible": 24
+    },
+    {
+      "code": "MTH",
+      "topic_id": "4e1ecd4c-4a33-4dc6-b4cd-d18a85be4250",
+      "title": "Coordinate Geometry",
+      "slug": "coordinate-geometry",
+      "published": 22,
+      "eligible": 22
+    },
+    {
+      "code": "MTH",
+      "topic_id": "1efa8418-8d1d-4e3d-9bfe-28cb88e47a96",
+      "title": "Differentiation",
+      "slug": "differentiation",
+      "published": 1,
+      "eligible": 1
+    },
+    {
+      "code": "MTH",
+      "topic_id": "9d482e64-01e7-4449-9645-f011485dbad8",
+      "title": "Fractions, Decimals and Approximations",
+      "slug": "fractions-decimals-and-approximations",
+      "published": 22,
+      "eligible": 22
+    },
+    {
+      "code": "MTH",
+      "topic_id": "27eda226-c56f-4faf-bc39-8007bb227275",
+      "title": "Indices and Logarithms",
+      "slug": "indices-and-logarithms",
+      "published": 20,
+      "eligible": 20
+    },
+    {
+      "code": "MTH",
+      "topic_id": "dddf5d88-497e-4224-b72f-92bb4c18ea21",
+      "title": "Inequalities",
+      "slug": "inequalities",
+      "published": 11,
+      "eligible": 11
+    },
+    {
+      "code": "MTH",
+      "topic_id": "96dea8a1-ec44-4580-a202-193c0aab691e",
+      "title": "Integration",
+      "slug": "integration",
+      "published": 16,
+      "eligible": 16
+    },
+    {
+      "code": "MTH",
+      "topic_id": "7ff44416-4d3d-403b-9266-35aece5ece55",
+      "title": "Matrices and Determinants",
+      "slug": "matrices-and-determinants",
+      "published": 9,
+      "eligible": 9
+    },
+    {
+      "code": "MTH",
+      "topic_id": "56b52254-b4e1-4dff-81c7-863e7a77bc78",
+      "title": "Number Bases",
+      "slug": "number-bases",
+      "published": 6,
+      "eligible": 6
+    },
+    {
+      "code": "MTH",
+      "topic_id": "4eee4f5b-562d-44f0-8758-2c0179a6a038",
+      "title": "Permutations and Combinations",
+      "slug": "permutations-and-combinations",
+      "published": 15,
+      "eligible": 15
+    },
+    {
+      "code": "MTH",
+      "topic_id": "95e4c664-fccf-4979-84e0-ac9847a56132",
+      "title": "Polynomials",
+      "slug": "polynomials",
+      "published": 22,
+      "eligible": 22
+    },
+    {
+      "code": "MTH",
+      "topic_id": "d86d673e-a128-424c-94a7-485c9d02020d",
+      "title": "Probability",
+      "slug": "probability",
+      "published": 11,
+      "eligible": 11
+    },
+    {
+      "code": "MTH",
+      "topic_id": "fee2028f-fb7e-4b32-be50-59e326e8ff74",
+      "title": "Quadratic Equations",
+      "slug": "quadratic-equations",
+      "published": 2,
+      "eligible": 2
+    },
+    {
+      "code": "MTH",
+      "topic_id": "469b8d3a-fde9-4d7d-8636-32b88d325d60",
+      "title": "Sets",
+      "slug": "sets",
+      "published": 8,
+      "eligible": 8
+    },
+    {
+      "code": "MTH",
+      "topic_id": "593f410b-1ef6-4227-8321-171b2aef4840",
+      "title": "Statistics and Measures of Dispersion",
+      "slug": "statistics-and-measures-of-dispersion",
+      "published": 14,
+      "eligible": 14
+    },
+    {
+      "code": "MTH",
+      "topic_id": "6d042ff9-c1e5-48e6-ad6f-e2a3a163e89b",
+      "title": "Surds",
+      "slug": "surds",
+      "published": 10,
+      "eligible": 10
+    },
+    {
+      "code": "MTH",
+      "topic_id": "4cbd9ad2-6366-4db5-a84b-a727e60cf604",
+      "title": "Trigonometry",
+      "slug": "trigonometry",
+      "published": 29,
+      "eligible": 29
+    },
+    {
+      "code": "MTH",
+      "topic_id": "3e6e1f8f-2d9b-4fbb-b5c0-e0a882177ad1",
+      "title": "Variation",
+      "slug": "variation",
+      "published": 11,
+      "eligible": 11
+    }
+  ],
+  "blueprints": []
+}
