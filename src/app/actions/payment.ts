@@ -134,7 +134,7 @@ export async function initializePaystackCheckoutAction(): Promise<InitializePaym
   const isRealKey = paystackSecret.startsWith("sk_test_") || paystackSecret.startsWith("sk_live_");
   const isPlaceholder = paystackSecret.includes("placeholder");
 
-  const planCode = process.env.PAYSTACK_PLAN_CODE || "PLN_tts4cz7tf89srcl";
+  const planCode = process.env.PAYSTACK_PLAN_CODE || "PLN_dwqq6sv5zvy3j5i";
 
   if (isRealKey && !isPlaceholder) {
     try {

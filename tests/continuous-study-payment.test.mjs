@@ -66,3 +66,13 @@ test('completed provider checkout recovers to confirmation instead of reusing a 
  const fetchImpl=async()=>new Response(JSON.stringify({status:true,data:{reference:'JAMB-existing',status:'success'}}),{status:200});
  const result=await initializeCheckout(db,{PAYSTACK_SECRET_KEY:'sk_test_local'},user,'test@example.invalid','same-key',now,fetchImpl);assert.equal(result.confirmationUrl,'/checkout/verify/?reference=JAMB-existing');assert.equal(result.authorizationUrl,undefined);
 });
+
+test('expired Pro entitlement transitions cleanly to Free tier with autoRenew false',async()=>{
+ const {getUserSubscriptionStatus}=await import('../worker/services/subscription-service.ts');
+ const expiredDb=simulated(()=>[{expires_at:'2026-10-10T00:00:00Z',plan_code:'MONTHLY_1000',auto_renew:true,cancelled_at:null}]);
+ const status=await getUserSubscriptionStatus(expiredDb.sql,user,now);
+ assert.equal(status.isPremium,false);
+ assert.equal(status.daysRemaining,0);
+ assert.equal(status.autoRenew,false);
+});
+

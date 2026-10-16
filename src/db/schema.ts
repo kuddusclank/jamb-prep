@@ -200,6 +200,17 @@ export const attemptResults = pgTable('attempt_results', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }).enableRLS();
 
+export const studentAppRatings = pgTable('student_app_ratings', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
+  attemptId: uuid('attempt_id').references(() => attempts.id, { onDelete: 'cascade' }).notNull().unique(),
+  rating: integer('rating').notNull(),
+  comment: text('comment'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('student_app_ratings_created_idx').on(table.createdAt),
+]).enableRLS();
+
 // ==========================================
 // 5. Payments, Subscriptions & Entitlements
 // ==========================================

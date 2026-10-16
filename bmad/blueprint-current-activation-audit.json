@@ -1,0 +1,221 @@
+{
+  "at": "2026-10-16T07:10:52.367399+00:00",
+  "subjects": [
+    {
+      "id": "7d5104d3-374e-4d0c-a2e8-c4705de88eac",
+      "code": "ACC",
+      "name": "Principles of Accounting",
+      "eligible": 15
+    },
+    {
+      "id": "b52c00c1-c40d-4528-baa7-1c7429395983",
+      "code": "AGR",
+      "name": "Agricultural Science",
+      "eligible": 15
+    },
+    {
+      "id": "c63a66f8-e815-4da4-9d53-63f54741e481",
+      "code": "BIO",
+      "name": "Biology",
+      "eligible": 481
+    },
+    {
+      "id": "5b986c50-fb16-495b-82fb-b989066608c5",
+      "code": "CHM",
+      "name": "Chemistry",
+      "eligible": 474
+    },
+    {
+      "id": "f9fe31e3-1f44-4fab-9d6d-40d518c7418e",
+      "code": "COM",
+      "name": "Commerce",
+      "eligible": 515
+    },
+    {
+      "id": "66999959-05dd-4379-b96c-f523c1e3a1ab",
+      "code": "CRK",
+      "name": "Christian Religious Knowledge",
+      "eligible": 61
+    },
+    {
+      "id": "5c71647c-ac6b-4391-bc1f-cef52cf000e8",
+      "code": "ECN",
+      "name": "Economics",
+      "eligible": 122
+    },
+    {
+      "id": "2d8b92e7-fa79-46e5-b850-bc09633ea3d0",
+      "code": "ENG",
+      "name": "Use of English",
+      "eligible": 664
+    },
+    {
+      "id": "4a1a81e3-2e99-4ccb-8037-2576f2f0fb4e",
+      "code": "GEO",
+      "name": "Geography",
+      "eligible": 15
+    },
+    {
+      "id": "2c72f0ab-e232-4b9f-807d-0d2cf6c4bc6e",
+      "code": "GOV",
+      "name": "Government",
+      "eligible": 211
+    },
+    {
+      "id": "f7c2bcb1-0f89-491a-9c68-964cf3769a5e",
+      "code": "HIS",
+      "name": "History",
+      "eligible": 15
+    },
+    {
+      "id": "bad8abc8-d5e1-4257-94ed-95174e08dc6c",
+      "code": "IRS",
+      "name": "Islamic Religious Studies",
+      "eligible": 49
+    },
+    {
+      "id": "7c23c8a8-107a-4f69-9aa6-87d7b9b42ad7",
+      "code": "LIT",
+      "name": "Literature in English",
+      "eligible": 494
+    },
+    {
+      "id": "c7cd45ac-de76-47fc-90bd-788171c5595f",
+      "code": "MTH",
+      "name": "Mathematics",
+      "eligible": 432
+    },
+    {
+      "id": "3db8ef29-5de6-4af1-8c1a-2ad4d6d4c1c7",
+      "code": "PHY",
+      "name": "Physics",
+      "eligible": 427
+    }
+  ],
+  "templates": [
+    {
+      "id": "english-2026",
+      "title": "JAMB Use of English — 2026 structure"
+    },
+    {
+      "id": "elective-coverage",
+      "title": "Elective subject coverage — review syllabus domains"
+    },
+    {
+      "id": "mathematics-balanced-v1",
+      "title": "Mathematics: balanced 40-question UTME mock"
+    }
+  ],
+  "blueprints": [
+    {
+      "id": "a9ecffb4-5b3a-43fe-a3a5-d23401132ec1",
+      "code": "BIO",
+      "cells": 5,
+      "title": "BIO reviewed structured bank — 13 October 2026",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-13T21:10:43.554569+00:00",
+      "classifications": 457,
+      "total_questions": 40
+    },
+    {
+      "id": "7041b47d-56cb-439d-bd95-a93f755b4c46",
+      "code": "CHM",
+      "cells": 4,
+      "title": "CHM reviewed structured bank — 13 October 2026",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-13T21:10:43.554569+00:00",
+      "classifications": 455,
+      "total_questions": 40
+    },
+    {
+      "id": "2359de32-d076-446c-a166-472239c539e7",
+      "code": "CRK",
+      "cells": 5,
+      "title": "CRK structured content review — 14 October 2026",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-14T13:43:42.213242+00:00",
+      "classifications": 61,
+      "total_questions": 40
+    },
+    {
+      "id": "d1711b11-091e-4471-81b7-f9dce9b9821e",
+      "code": "ECN",
+      "cells": 6,
+      "title": "ECN structured content review — 14 October 2026",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-14T13:43:42.213242+00:00",
+      "classifications": 122,
+      "total_questions": 40
+    },
+    {
+      "id": "00cb7d81-975c-48f9-8ec6-f57536f7ae2a",
+      "code": "ENG",
+      "cells": 8,
+      "title": "ENG reviewed structured bank — 13 October 2026",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-13T21:10:43.554569+00:00",
+      "classifications": 580,
+      "total_questions": 60
+    },
+    {
+      "id": "70113bad-e65c-4c72-83f6-15e0aeaecff0",
+      "code": "GOV",
+      "cells": 4,
+      "title": "GOV structured content review — 14 October 2026",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-14T13:43:42.213242+00:00",
+      "classifications": 211,
+      "total_questions": 40
+    },
+    {
+      "id": "186b21b3-5994-49e9-bd99-a7dd2a7b039b",
+      "code": "IRS",
+      "cells": 5,
+      "title": "IRS structured content review — 14 October 2026",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-14T13:43:42.213242+00:00",
+      "classifications": 49,
+      "total_questions": 40
+    },
+    {
+      "id": "959120c3-908e-4963-9842-83a7302a4282",
+      "code": "LIT",
+      "cells": 5,
+      "title": "Literature: drama, prose, poetry and appreciation",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-14T14:53:27.230999+00:00",
+      "classifications": 494,
+      "total_questions": 40
+    },
+    {
+      "id": "52d3fd9a-5592-4828-bc9d-50e7867b2121",
+      "code": "MTH",
+      "cells": 5,
+      "title": "Mathematics: balanced 40-question UTME mock",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-15T14:06:56.155515+00:00",
+      "classifications": 272,
+      "total_questions": 40
+    },
+    {
+      "id": "e56e568b-f76b-4173-ae88-a8ac9c309b05",
+      "code": "PHY",
+      "cells": 5,
+      "title": "PHY reviewed structured bank — 13 October 2026",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-10-13T21:10:43.554569+00:00",
+      "classifications": 406,
+      "total_questions": 40
+    }
+  ]
+}

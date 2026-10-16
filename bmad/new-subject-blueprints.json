@@ -1,0 +1,266 @@
+{
+  "date": "2026-10-16",
+  "scope": "JAMBPrep bank-balanced practice mock blueprints; not official JAMB question quotas",
+  "totalQuestions": 40,
+  "durationMinutes": 120,
+  "overlapLimit": 0.5,
+  "weightsAreOfficial": false,
+  "sourceUrl": "https://ibass.jamb.gov.ng/",
+  "subjects": [
+    {
+      "code": "ART",
+      "name": "Fine Arts",
+      "blueprintId": "a2ad069f-1e16-4ea9-98cb-32cd37ad2d41",
+      "status": "active",
+      "difficultyTargets": {
+        "medium": 100
+      },
+      "topics": [
+        {
+          "topicSlug": "african-and-world-art-history",
+          "title": "African and World Art History",
+          "requiredQuestions": 3,
+          "uniqueClassified": 10,
+          "uniqueAvailable": 10
+        },
+        {
+          "topicSlug": "classification-and-branches-of-art",
+          "title": "Classification and Branches of Art",
+          "requiredQuestions": 4,
+          "uniqueClassified": 12,
+          "uniqueAvailable": 12
+        },
+        {
+          "topicSlug": "drawing-painting-and-colour-theory",
+          "title": "Drawing, Painting and Colour Theory",
+          "requiredQuestions": 7,
+          "uniqueClassified": 20,
+          "uniqueAvailable": 20
+        },
+        {
+          "topicSlug": "elements-and-principles-of-design",
+          "title": "Elements and Principles of Design",
+          "requiredQuestions": 6,
+          "uniqueClassified": 17,
+          "uniqueAvailable": 17
+        },
+        {
+          "topicSlug": "graphic-design-and-computer-graphics",
+          "title": "Graphic Design, Lettering and Computer Graphics",
+          "requiredQuestions": 2,
+          "uniqueClassified": 6,
+          "uniqueAvailable": 6
+        },
+        {
+          "topicSlug": "sculpture-ceramics-and-pottery",
+          "title": "Sculpture, Ceramics and Pottery",
+          "requiredQuestions": 9,
+          "uniqueClassified": 26,
+          "uniqueAvailable": 26
+        },
+        {
+          "topicSlug": "textile-design-and-crafts",
+          "title": "Textile Design, Crafts and Applied Arts",
+          "requiredQuestions": 2,
+          "uniqueClassified": 8,
+          "uniqueAvailable": 8
+        },
+        {
+          "topicSlug": "traditional-nigerian-art-and-culture",
+          "title": "Traditional Nigerian Art and Culture",
+          "requiredQuestions": 7,
+          "uniqueClassified": 21,
+          "uniqueAvailable": 21
+        }
+      ]
+    },
+    {
+      "code": "MUS",
+      "name": "Music",
+      "blueprintId": "c38008bb-8155-4d53-8a55-71a1cdb713f3",
+      "status": "active",
+      "difficultyTargets": {
+        "medium": 100
+      },
+      "topics": [
+        {
+          "topicSlug": "african-traditional-music-and-instruments",
+          "title": "African Traditional Music and Instruments",
+          "requiredQuestions": 7,
+          "uniqueClassified": 10,
+          "uniqueAvailable": 10
+        },
+        {
+          "topicSlug": "contemporary-african-and-popular-music",
+          "title": "Popular Music, Highlife and Modern African Art Music",
+          "requiredQuestions": 10,
+          "uniqueClassified": 15,
+          "uniqueAvailable": 15
+        },
+        {
+          "topicSlug": "music-reading-and-sight-singing",
+          "title": "Sol-fa Notation and Sight Singing",
+          "requiredQuestions": 2,
+          "uniqueClassified": 3,
+          "uniqueAvailable": 3
+        },
+        {
+          "topicSlug": "musical-forms-and-analysis",
+          "title": "Musical Forms, Terms and Analysis",
+          "requiredQuestions": 1,
+          "uniqueClassified": 2,
+          "uniqueAvailable": 2
+        },
+        {
+          "topicSlug": "rudiments-and-theory-of-music",
+          "title": "Rudiments and Theory of Music",
+          "requiredQuestions": 16,
+          "uniqueClassified": 23,
+          "uniqueAvailable": 23
+        },
+        {
+          "topicSlug": "western-art-music-and-history",
+          "title": "Western Art Music Periods and Composers",
+          "requiredQuestions": 4,
+          "uniqueClassified": 7,
+          "uniqueAvailable": 7
+        }
+      ]
+    },
+    {
+      "code": "PHE",
+      "name": "Physical and Health Education",
+      "blueprintId": "23649515-cf6e-4359-b713-26fcd307f312",
+      "status": "active",
+      "difficultyTargets": {
+        "medium": 100
+      },
+      "topics": [
+        {
+          "topicSlug": "athletics-track-and-field-events",
+          "title": "Athletics: Track and Field Events",
+          "requiredQuestions": 5,
+          "uniqueClassified": 43,
+          "uniqueAvailable": 43
+        },
+        {
+          "topicSlug": "ball-and-racket-games",
+          "title": "Ball Games and Racket Games",
+          "requiredQuestions": 7,
+          "uniqueClassified": 53,
+          "uniqueAvailable": 53
+        },
+        {
+          "topicSlug": "first-aid-safety-and-sports-injuries",
+          "title": "First Aid, Safety and Sports Injuries",
+          "requiredQuestions": 3,
+          "uniqueClassified": 30,
+          "uniqueAvailable": 30
+        },
+        {
+          "topicSlug": "foundations-and-history-of-physical-education",
+          "title": "Foundations and History of Physical Education",
+          "requiredQuestions": 11,
+          "uniqueClassified": 86,
+          "uniqueAvailable": 86
+        },
+        {
+          "topicSlug": "gymnastics-and-traditional-sports",
+          "title": "Gymnastics, Martial Arts and Traditional Sports",
+          "requiredQuestions": 2,
+          "uniqueClassified": 20,
+          "uniqueAvailable": 20
+        },
+        {
+          "topicSlug": "health-education-and-personal-hygiene",
+          "title": "Health Education, Personal Hygiene and Nutrition",
+          "requiredQuestions": 2,
+          "uniqueClassified": 20,
+          "uniqueAvailable": 20
+        },
+        {
+          "topicSlug": "human-anatomy-and-physiology-in-sports",
+          "title": "Human Anatomy and Physiology in Sports",
+          "requiredQuestions": 5,
+          "uniqueClassified": 39,
+          "uniqueAvailable": 39
+        },
+        {
+          "topicSlug": "physical-fitness-and-conditioning",
+          "title": "Physical Fitness, Conditioning and Body Types",
+          "requiredQuestions": 5,
+          "uniqueClassified": 39,
+          "uniqueAvailable": 39
+        }
+      ]
+    },
+    {
+      "code": "YOR",
+      "name": "Yoruba",
+      "blueprintId": "4e28ae08-ce02-42ab-a245-ff4df5b8998d",
+      "status": "active",
+      "difficultyTargets": {
+        "medium": 11,
+        "easy": 89
+      },
+      "topics": [
+        {
+          "topicSlug": "yoruba-culture-customs-and-institutions",
+          "title": "Àṣà, Ìṣe, Ẹ̀sìn Ìbílẹ̀ àti Ìgbéyàwó Yorùbá (Culture, Customs & Institutions)",
+          "requiredQuestions": 6,
+          "uniqueClassified": 11,
+          "uniqueAvailable": 11
+        },
+        {
+          "topicSlug": "yoruba-grammar-and-sentence-structure",
+          "title": "Gírámà, Ìhun Gbólóhùn àti Ìsọ̀rí Ọ̀rọ̀ (Grammar & Sentence Structure)",
+          "requiredQuestions": 7,
+          "uniqueClassified": 14,
+          "uniqueAvailable": 14
+        },
+        {
+          "topicSlug": "yoruba-oral-literature-and-poetry",
+          "title": "Lítíréṣọ̀ Alohùn: Oríkì, Ìjálá, Ewì àti Alárìnjó (Oral Literature & Poetry)",
+          "requiredQuestions": 5,
+          "uniqueClassified": 10,
+          "uniqueAvailable": 10
+        },
+        {
+          "topicSlug": "yoruba-phonology-and-orthography",
+          "title": "Fọnọ́lọ́jì, Àmì Ohùn àti Akọtọ́ (Phonology & Orthography)",
+          "requiredQuestions": 1,
+          "uniqueClassified": 1,
+          "uniqueAvailable": 1
+        },
+        {
+          "topicSlug": "yoruba-proverbs-and-idioms",
+          "title": "Òwe, Àkànlò Èdè àti Ọnà Èdè (Proverbs, Idioms & Figures of Speech)",
+          "requiredQuestions": 5,
+          "uniqueClassified": 10,
+          "uniqueAvailable": 10
+        },
+        {
+          "topicSlug": "yoruba-reading-comprehension",
+          "title": "Àyọkà àti Òye Kíkà (Reading Comprehension)",
+          "requiredQuestions": 10,
+          "uniqueClassified": 20,
+          "uniqueAvailable": 20
+        },
+        {
+          "topicSlug": "yoruba-vocabulary-and-translation",
+          "title": "Ìtumọ̀ Ọ̀rọ̀, Àyálò Ọ̀rọ̀ àti Ògbufọ̀ (Vocabulary & Translation)",
+          "requiredQuestions": 4,
+          "uniqueClassified": 8,
+          "uniqueAvailable": 8
+        },
+        {
+          "topicSlug": "yoruba-written-literature-and-authors",
+          "title": "Lítíréṣọ̀ Àpilẹ̀kọ àti Àwọn Onkọ̀wé (Written Literature & Authors)",
+          "requiredQuestions": 2,
+          "uniqueClassified": 5,
+          "uniqueAvailable": 5
+        }
+      ]
+    }
+  ]
+}

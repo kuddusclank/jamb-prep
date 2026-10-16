@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-16T11:05:13.048Z",
+  "matchedSourceSeedRecords": 214,
+  "exactSourceMatches": 209,
+  "provenanceRestored": 209,
+  "contentOrAnswerKeysChanged": 0,
+  "publicationOrAssessmentFlagsChanged": 0,
+  "classificationChanges": 0,
+  "studentAttemptsCreated": 0,
+  "batchAuditRecorded": true,
+  "backupPath": "/Users/akanbiabdulquddus/.codex/private-backups/jambprep/legacy-provenance-before-2026-10-16T11-05-05.790Z.json",
+  "note": "The earlier run omitted the transaction receipt from this file although the database transaction committed and was verified. This corrected receipt records the committed outcome."
+}

@@ -1,0 +1,117 @@
+{
+  "templateId": "commerce-balanced-v1",
+  "subjectCode": "COM",
+  "title": "Commerce: balanced 40-question UTME mock",
+  "status": "active",
+  "totalQuestions": 40,
+  "sourceUrl": "https://ibass.jamb.gov.ng/assets/uploads/Commerce.pdf",
+  "weightsAreOfficial": false,
+  "yearIsReferenceOnly": true,
+  "difficultyTargets": {
+    "easy": 30,
+    "medium": 50,
+    "hard": 20
+  },
+  "overlapLimit": 0.5,
+  "inventoryAt": "2026-10-16T06:50:36.932964+00:00",
+  "cells": [
+    {
+      "code": "foundations",
+      "title": "Commerce and production",
+      "kind": "single",
+      "count": 4,
+      "topicSlugs": [
+        "scope-of-commerce-and-production"
+      ],
+      "auditedEligible": 23
+    },
+    {
+      "code": "trade-distribution",
+      "title": "Trade and distribution",
+      "kind": "single",
+      "count": 6,
+      "topicSlugs": [
+        "channels-of-distribution",
+        "foreign-trade-documents",
+        "home-trade-wholesale-trade",
+        "terms-of-trade-and-payments"
+      ],
+      "auditedEligible": 36
+    },
+    {
+      "code": "aids-to-trade",
+      "title": "Aids to trade",
+      "kind": "single",
+      "count": 6,
+      "topicSlugs": [
+        "aids-to-trade-advertising",
+        "aids-to-trade-communication",
+        "aids-to-trade-insurance",
+        "aids-to-trade-transportation",
+        "aids-to-trade-warehousing"
+      ],
+      "auditedEligible": 36
+    },
+    {
+      "code": "business-units",
+      "title": "Business ownership",
+      "kind": "single",
+      "count": 6,
+      "topicSlugs": [
+        "business-organizations-partnerships",
+        "limited-liability-companies",
+        "public-enterprises-and-privatization",
+        "sole-proprietorship-and-cooperatives"
+      ],
+      "auditedEligible": 52
+    },
+    {
+      "code": "finance",
+      "title": "Business finance and financial markets",
+      "kind": "single",
+      "count": 6,
+      "topicSlugs": [
+        "business-capital-and-financial-calculations",
+        "commercial-banks-and-functions",
+        "money-banking-and-financial-institutions",
+        "stock-exchange-and-capital-market"
+      ],
+      "auditedEligible": 63
+    },
+    {
+      "code": "management-marketing",
+      "title": "Management and marketing",
+      "kind": "single",
+      "count": 5,
+      "topicSlugs": [
+        "business-management-and-organization",
+        "marketing-and-sales-promotion"
+      ],
+      "auditedEligible": 53
+    },
+    {
+      "code": "law-consumers",
+      "title": "Business law and consumer protection",
+      "kind": "single",
+      "count": 4,
+      "topicSlugs": [
+        "business-law-contract-and-agency",
+        "consumer-protection"
+      ],
+      "auditedEligible": 23
+    },
+    {
+      "code": "commercial-environment",
+      "title": "Commercial institutions and technology",
+      "kind": "single",
+      "count": 3,
+      "topicSlugs": [
+        "economic-groupings-and-international-organizations",
+        "trade-associations-and-chambers-of-commerce",
+        "e-commerce-and-electronic-payments"
+      ],
+      "auditedEligible": 29
+    }
+  ],
+  "activationEvidence": "commerce-blueprint-release.json"
+}

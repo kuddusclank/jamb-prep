@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import { LayoutDashboard, Layers, Clock, ChartNoAxesCombined, Users, UserRound, CreditCard, LogOut } from "lucide-react";
 import { signOutAction } from "@/lib/client-actions";
 import styles from "./study-workspace.module.css";
+import { PolicyLinks } from "@/components/legal-page";
 
 const destinations = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -45,6 +46,6 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
       </div>
     </aside>
     <div id="study-content" tabIndex={-1} className={styles.content}>{children}</div>
-    <footer className={styles.footer}>JAMBPrep · Your subjects. Your pace. Your next step.</footer>
+    <footer className={styles.footer}><p>JAMBPrep · Your subjects. Your pace. Your next step.</p><PolicyLinks className="mt-3 justify-center"/></footer>
   </div>;
 }

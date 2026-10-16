@@ -65,7 +65,7 @@
 		"NEXT_PUBLIC_APP_URL": "https://jambprep.lecterniq.com",
 		"NEXT_PUBLIC_SUPABASE_URL": "https://bqumnaoiiukifvanoonm.supabase.co",
 		"NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_Fg-Vq3gTOa5Y6Au-Xu8FZw_Ld9ypzfW",
-		"NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY": "pk_test_eab1f68c7146da56e7408fb46ea912f7f2b3dc3d",
-		"PAYSTACK_PLAN_CODE": "PLN_tts4cz7tf89srcl"
+		"NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY": "pk_live_682778fefd13da72be1a7428d9fc62e8d9e07950",
+		"PAYSTACK_PLAN_CODE": "PLN_dwqq6sv5zvy3j5i"
 	}
 }

@@ -1,0 +1,375 @@
+{
+  "at": "2026-10-16T09:41:17.768Z",
+  "backupPath": "/Users/akanbiabdulquddus/.codex/private-backups/jambprep/before-expanded-blueprints-1792143568082.json",
+  "newBlueprints": [
+    {
+      "subject": "ACC",
+      "blueprintId": "406a9d6f-f249-4bf3-aca8-3a2141ab494a",
+      "classified": 300,
+      "cells": [
+        {
+          "code": "foundations",
+          "required": 8,
+          "classified": 70
+        },
+        {
+          "code": "cash-controls",
+          "required": 7,
+          "classified": 51
+        },
+        {
+          "code": "statements",
+          "required": 9,
+          "classified": 46
+        },
+        {
+          "code": "special-accounts",
+          "required": 6,
+          "classified": 45
+        },
+        {
+          "code": "ownership",
+          "required": 7,
+          "classified": 69
+        },
+        {
+          "code": "public-sector",
+          "required": 3,
+          "classified": 19
+        }
+      ],
+      "distinctOfflineForms": 20,
+      "warnings": [
+        "foundations: difficulty preference relaxed to preserve complete content.",
+        "statements: difficulty preference relaxed to preserve complete content.",
+        "special-accounts: difficulty preference relaxed to preserve complete content.",
+        "ownership: difficulty preference relaxed to preserve complete content.",
+        "public-sector: difficulty preference relaxed to preserve complete content."
+      ]
+    },
+    {
+      "subject": "GEO",
+      "blueprintId": "9fd82663-353d-467f-b3c3-a09e186c0f0d",
+      "classified": 314,
+      "cells": [
+        {
+          "code": "practical",
+          "required": 5,
+          "classified": 21
+        },
+        {
+          "code": "physical",
+          "required": 10,
+          "classified": 58
+        },
+        {
+          "code": "climate-environment",
+          "required": 9,
+          "classified": 80
+        },
+        {
+          "code": "human-economic",
+          "required": 10,
+          "classified": 125
+        },
+        {
+          "code": "regional",
+          "required": 6,
+          "classified": 30
+        }
+      ],
+      "distinctOfflineForms": 20,
+      "warnings": [
+        "climate-environment: difficulty preference relaxed to preserve complete content.",
+        "human-economic: difficulty preference relaxed to preserve complete content."
+      ]
+    },
+    {
+      "subject": "FRN",
+      "blueprintId": "3b664d74-d6d6-40a0-b719-1355040e05b1",
+      "classified": 216,
+      "cells": [
+        {
+          "code": "reading-claire",
+          "required": 4,
+          "classified": 5
+        },
+        {
+          "code": "reading-fatou",
+          "required": 4,
+          "classified": 4
+        },
+        {
+          "code": "structure",
+          "required": 16,
+          "classified": 93
+        },
+        {
+          "code": "vocabulary",
+          "required": 6,
+          "classified": 59
+        },
+        {
+          "code": "sounds",
+          "required": 5,
+          "classified": 23
+        },
+        {
+          "code": "culture",
+          "required": 5,
+          "classified": 32
+        }
+      ],
+      "distinctOfflineForms": 20,
+      "warnings": [
+        "vocabulary: difficulty preference relaxed to preserve complete content."
+      ]
+    },
+    {
+      "subject": "CMP",
+      "blueprintId": "f37e54d7-821b-4dfc-b134-670c28255ba2",
+      "classified": 285,
+      "cells": [
+        {
+          "code": "foundations",
+          "required": 5,
+          "classified": 34
+        },
+        {
+          "code": "systems",
+          "required": 12,
+          "classified": 120
+        },
+        {
+          "code": "data-programming",
+          "required": 10,
+          "classified": 67
+        },
+        {
+          "code": "applications",
+          "required": 6,
+          "classified": 24
+        },
+        {
+          "code": "networks-security",
+          "required": 7,
+          "classified": 40
+        }
+      ],
+      "distinctOfflineForms": 20,
+      "warnings": [
+        "foundations: difficulty preference relaxed to preserve complete content.",
+        "systems: difficulty preference relaxed to preserve complete content.",
+        "data-programming: difficulty preference relaxed to preserve complete content.",
+        "applications: difficulty preference relaxed to preserve complete content.",
+        "networks-security: difficulty preference relaxed to preserve complete content."
+      ]
+    },
+    {
+      "subject": "HEC",
+      "blueprintId": "e9e0cab3-0c8c-4c01-8208-ffbea1011557",
+      "classified": 226,
+      "cells": [
+        {
+          "code": "foundations",
+          "required": 4,
+          "classified": 20
+        },
+        {
+          "code": "family",
+          "required": 8,
+          "classified": 28
+        },
+        {
+          "code": "home-consumers",
+          "required": 8,
+          "classified": 55
+        },
+        {
+          "code": "foods",
+          "required": 10,
+          "classified": 62
+        },
+        {
+          "code": "clothing",
+          "required": 10,
+          "classified": 61
+        }
+      ],
+      "distinctOfflineForms": 20,
+      "warnings": [
+        "foundations: difficulty preference relaxed to preserve complete content.",
+        "family: difficulty preference relaxed to preserve complete content.",
+        "home-consumers: difficulty preference relaxed to preserve complete content.",
+        "foods: difficulty preference relaxed to preserve complete content.",
+        "clothing: difficulty preference relaxed to preserve complete content."
+      ]
+    },
+    {
+      "subject": "ARB",
+      "blueprintId": "4eaf21df-20b1-40b7-a769-f1726cf8afa4",
+      "classified": 80,
+      "cells": [
+        {
+          "code": "reading",
+          "required": 5,
+          "classified": 10
+        },
+        {
+          "code": "translation",
+          "required": 10,
+          "classified": 18
+        },
+        {
+          "code": "grammar",
+          "required": 10,
+          "classified": 30
+        },
+        {
+          "code": "composition",
+          "required": 5,
+          "classified": 12
+        },
+        {
+          "code": "literature",
+          "required": 10,
+          "classified": 10
+        }
+      ],
+      "distinctOfflineForms": 20,
+      "warnings": [
+        "reading: difficulty preference relaxed to preserve complete content.",
+        "translation: difficulty preference relaxed to preserve complete content.",
+        "grammar: difficulty preference relaxed to preserve complete content.",
+        "composition: difficulty preference relaxed to preserve complete content.",
+        "literature: difficulty preference relaxed to preserve complete content."
+      ]
+    },
+    {
+      "subject": "HAU",
+      "blueprintId": "bc13b71a-c72c-4577-930c-8b61218383bb",
+      "classified": 197,
+      "cells": [
+        {
+          "code": "reading",
+          "required": 8,
+          "classified": 31
+        },
+        {
+          "code": "grammar",
+          "required": 12,
+          "classified": 91
+        },
+        {
+          "code": "sounds",
+          "required": 5,
+          "classified": 14
+        },
+        {
+          "code": "vocabulary",
+          "required": 5,
+          "classified": 34
+        },
+        {
+          "code": "literature",
+          "required": 5,
+          "classified": 16
+        },
+        {
+          "code": "culture",
+          "required": 5,
+          "classified": 11
+        }
+      ],
+      "distinctOfflineForms": 20,
+      "warnings": [
+        "reading: difficulty preference relaxed to preserve complete content.",
+        "grammar: difficulty preference relaxed to preserve complete content.",
+        "sounds: difficulty preference relaxed to preserve complete content.",
+        "vocabulary: difficulty preference relaxed to preserve complete content.",
+        "literature: difficulty preference relaxed to preserve complete content.",
+        "culture: difficulty preference relaxed to preserve complete content."
+      ]
+    },
+    {
+      "subject": "IGB",
+      "blueprintId": "baec0a0f-89af-4c0b-a860-5e6468fbc217",
+      "classified": 189,
+      "cells": [
+        {
+          "code": "reading",
+          "required": 8,
+          "classified": 12
+        },
+        {
+          "code": "grammar",
+          "required": 10,
+          "classified": 54
+        },
+        {
+          "code": "vocabulary",
+          "required": 8,
+          "classified": 37
+        },
+        {
+          "code": "literature",
+          "required": 5,
+          "classified": 18
+        },
+        {
+          "code": "culture",
+          "required": 9,
+          "classified": 68
+        }
+      ],
+      "distinctOfflineForms": 20,
+      "warnings": [
+        "reading: difficulty preference relaxed to preserve complete content.",
+        "grammar: difficulty preference relaxed to preserve complete content.",
+        "vocabulary: difficulty preference relaxed to preserve complete content.",
+        "literature: difficulty preference relaxed to preserve complete content.",
+        "culture: difficulty preference relaxed to preserve complete content."
+      ]
+    }
+  ],
+  "mathematicsAdded": 160,
+  "changedFrenchQuestions": [
+    "56bbaea3-faf5-4663-8ddb-0882854fe2e6",
+    "5d6e7922-1850-4002-9852-5c00eff7071f",
+    "9a2436f8-1402-4074-b71f-8b2459e03bd5",
+    "ea71f143-de66-4a0b-a945-8ee1389bda33",
+    "fca6f478-3766-488a-bdb3-11262cfd6b5a",
+    "c8076590-5b0a-4040-afec-0633c31cc195",
+    "d3130b52-4aa0-40f5-9d91-2ab1ee7d5a1c",
+    "db68b718-bb50-4646-b5eb-65af5cf0735b",
+    "dc5b20db-1a24-4573-b9ec-6eeb6b513554",
+    "8852ca04-0788-4ff7-a849-de4ae67390f0"
+  ],
+  "frenchKeyCorrections": 3,
+  "heldQuestions": 885,
+  "readySubjects": [
+    "ENG",
+    "MTH",
+    "PHY",
+    "CHM",
+    "BIO",
+    "ECN",
+    "GOV",
+    "LIT",
+    "COM",
+    "ACC",
+    "CRK",
+    "IRS",
+    "GEO",
+    "ARB",
+    "CMP",
+    "FRN",
+    "HAU",
+    "HEC",
+    "IGB"
+  ],
+  "existingBlueprintsVerified": 19,
+  "elapsedMs": 109686,
+  "studentAttemptsCreated": 0,
+  "quotaWrites": 0
+}

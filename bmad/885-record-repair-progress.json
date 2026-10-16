@@ -1,0 +1,90 @@
+{
+  "at": "2026-10-16T11:52:52.095Z",
+  "bankQuestionCount": 8469,
+  "activeSubjectCount": 25,
+  "activeBlueprintCount": 25,
+  "sourceReviewManifest": "expanded-bank-mapping-review.json",
+  "originalHeldRecords": 885,
+  "nowClassifiedHeldRecords": 170,
+  "remainingUnmappedHeldRecords": 715,
+  "currentEligibilityOfRemaining": {
+    "false": 575,
+    "true": 140
+  },
+  "verifiedLegacySeedProvenanceRestored": 209,
+  "legacySeedQuestionsMapped": 95,
+  "additionalClearLegacyQuestionsMapped": 9,
+  "igboPassagesRestored": 27,
+  "igboQuestionsMapped": 26,
+  "igboVerifiedKeysCorrected": 2,
+  "igboUncertainKeyHeldOut": 1,
+  "agricultureHistoryQuestionsMappedFromOriginalHoldSet": 30,
+  "agricultureBlueprintId": "48dac6d4-0b78-4a94-8df5-29d374687d45",
+  "historyBlueprintId": "19afb690-cc01-4972-9c5c-6c689a779194",
+  "remainingHoldReasons": {
+    "unpublished-disabled-or-structurally-ineligible": 573,
+    "provenance-or-image-metadata-required": 10,
+    "existing-editorial-hold: chapter-context-required-in-student-stem": 40,
+    "existing-editorial-hold: incomplete-or-oversized-group": 11,
+    "duplicate-content-family": 61,
+    "existing-editorial-hold: duplicate-option-text": 11,
+    "existing-editorial-hold: duplicate-content-family": 1,
+    "existing-editorial-hold: ocr-contamination": 1,
+    "existing-editorial-hold: merged-corrupt-stem": 1,
+    "French comprehension: none of the four options answers the question": 1,
+    "reading-context-missing: no full passage in stem or passage link": 1,
+    "existing-editorial-hold: homology-analogy-wording-review": 1,
+    "existing-editorial-hold: suspect-key-and-explanation": 1,
+    "existing-editorial-hold: ambiguous-fossil-wording": 1,
+    "existing-editorial-hold: merged-corrupt-explanation": 1
+  },
+  "noQuestionDeleted": true,
+  "noStudentAttemptsCreated": true,
+  "noDeploymentPerformed": true,
+  "remainingBySubject": {
+    "CRK": 123,
+    "IRS": 95,
+    "ECN": 173,
+    "CHM": 4,
+    "GOV": 134,
+    "ENG": 62,
+    "HEC": 5,
+    "PHY": 8,
+    "BIO": 9,
+    "LIT": 44,
+    "HAU": 36,
+    "IGB": 21,
+    "FRN": 1
+  },
+  "englishStressPatternQuestionsMapped": 10,
+  "englishStressPatternCorrection": "Preserved uppercase stress notation; mapped ten exact CSV-matched, structurally valid unique questions to ENG section-8. Three other stress rows remained held for an OCR-like option typo or exact duplicate option.",
+  "privateEnglishStressPatternBackup": "/tmp/jambprep-private-backups/english-stress-patterns-before-2026-10-16T11-47-16.722Z.json",
+  "latestVerifiedAnswerKeyCorrections": {
+    "count": 3,
+    "releaseEvidence": "verified-answer-key-corrections-release.json",
+    "backup": "/tmp/jambprep-private-backups/verified-answer-keys-before-2026-10-16T11-52-36.885Z.json",
+    "records": [
+      {
+        "id": "9a2b3971-831f-4f81-9984-e7ab26032bd5",
+        "subject": "IGB",
+        "correctOption": "C",
+        "reason": "3/4 means three parts out of four; the answer key and explanation now agree."
+      },
+      {
+        "id": "df94990a-65c3-45b5-8ae7-b4ee32a05d83",
+        "subject": "IGB",
+        "correctOption": "B",
+        "reason": "The pronoun is Ọ; the answer key and explanation now agree."
+      },
+      {
+        "id": "6f0c00cb-708c-4350-802a-e9cda2594bef",
+        "subject": "HAU",
+        "correctOption": "B",
+        "reason": "The sentence is an imperative (umurtau); the answer key and explanation now agree."
+      }
+    ],
+    "questionEligibilityModified": 0,
+    "mockClassificationsModified": 0,
+    "studentAttemptsModified": 0
+  }
+}

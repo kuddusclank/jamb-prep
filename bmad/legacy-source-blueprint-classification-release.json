@@ -1,0 +1,63 @@
+{
+  "at": "2026-10-16T11:22:59.025Z",
+  "classified": 9,
+  "questions": [
+    {
+      "id": "0a99d6fc-80a1-489d-a3a4-b1a6c68ff38f",
+      "subject": "ENG",
+      "topic": "lexis-and-structure",
+      "cell": "section-6"
+    },
+    {
+      "id": "3b19c00c-35ef-46ed-9176-005cebbd9ff5",
+      "subject": "ENG",
+      "topic": "question-tags",
+      "cell": "section-7"
+    },
+    {
+      "id": "5cd5e54b-5334-4964-9d99-0a888a8f681c",
+      "subject": "ENG",
+      "topic": "pronouns-and-cases",
+      "cell": "section-7"
+    },
+    {
+      "id": "86dbe464-9f1f-443b-94af-338a317b71b3",
+      "subject": "ENG",
+      "topic": "concord-and-agreement",
+      "cell": "section-7"
+    },
+    {
+      "id": "a0f98a2d-be01-4769-8638-a481ae6a2fe1",
+      "subject": "ENG",
+      "topic": "subjunctive-mood",
+      "cell": "section-7"
+    },
+    {
+      "id": "cd1fbc1e-2cd0-486b-b1f1-fe3bb27470a6",
+      "subject": "ENG",
+      "topic": "sentence-inversion",
+      "cell": "section-7"
+    },
+    {
+      "id": "f4316747-08b4-48c7-a208-dd0bd7f2ad76",
+      "subject": "ENG",
+      "topic": "registers-of-medicine",
+      "cell": "section-7"
+    },
+    {
+      "id": "117bfc77-50db-46b8-94ff-a9c86777deaa",
+      "subject": "BIO",
+      "topic": "ecology-and-food-chains",
+      "cell": "section-3"
+    },
+    {
+      "id": "883d7e7f-ffcc-45c6-a3ae-f7be4486c7fb",
+      "subject": "BIO",
+      "topic": "genetics-and-heredity",
+      "cell": "section-4"
+    }
+  ],
+  "backupPath": "/tmp/jambprep-private-backups/clear-legacy-blueprint-mappings-before-2026-10-16T11-22-27.371Z.json",
+  "questionContentEdited": 0,
+  "studentAttemptsCreated": 0
+}

@@ -1,0 +1,56 @@
+{
+  "at": "2026-10-16T07:12:40.491Z",
+  "blueprintId": "a8ef8274-dee1-4f79-986c-f3ed22ffccd9",
+  "backupPath": "/Users/akanbiabdulquddus/.codex/private-backups/jambprep/jamb-assessment-before-commerce-1792134711906.json",
+  "bankEligible": 515,
+  "classified": 500,
+  "provenanceHeld": 15,
+  "duplicateFamiliesExcluded": 0,
+  "excludedQuestionIds": [],
+  "cells": [
+    {
+      "code": "foundations",
+      "required": 4,
+      "classified": 40
+    },
+    {
+      "code": "trade-distribution",
+      "required": 6,
+      "classified": 57
+    },
+    {
+      "code": "aids-to-trade",
+      "required": 6,
+      "classified": 54
+    },
+    {
+      "code": "business-units",
+      "required": 6,
+      "classified": 80
+    },
+    {
+      "code": "finance",
+      "required": 6,
+      "classified": 95
+    },
+    {
+      "code": "management-marketing",
+      "required": 5,
+      "classified": 85
+    },
+    {
+      "code": "law-consumers",
+      "required": 4,
+      "classified": 41
+    },
+    {
+      "code": "commercial-environment",
+      "required": 3,
+      "classified": 48
+    }
+  ],
+  "formsTested": 20,
+  "distinctForms": 20,
+  "warnings": [],
+  "active": true
+}

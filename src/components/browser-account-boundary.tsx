@@ -35,7 +35,7 @@ export function useBrowserAccount() {
     retry: () => { getAccountCoordinator().clear(); void getAccountCoordinator().manager.initialize(); setRetry((value) => value + 1); } };
 }
 
-type BoundaryProps = { children: ReactNode; mode?: 'protected' | 'auth'; returnPath?: string };
+type BoundaryProps = { children: ReactNode; mode?: 'protected' | 'auth' | 'public'; returnPath?: string };
 export function BrowserAccountBoundary(props:BoundaryProps) {
   return <Suspense fallback={<StudyLoading/>}><BrowserAccountBoundaryContent {...props}/></Suspense>;
 }
@@ -52,6 +52,7 @@ function BrowserAccountBoundaryContent({ children, mode = 'protected', returnPat
       router.replace(buildLoginRedirectUrl(`${window.location.pathname}${window.location.search}`));
     } else if (destination) router.replace(destination);
   }, [mode, account.session.status, destination, router]);
+  if (mode === 'public' && account.session.status !== 'authenticated') return <>{children}</>;
   if (mode === 'auth' && (account.session.status === 'unauthenticated' || (pathname === '/register' && identity && !identity.provisioned))) return <>{children}</>;
   if (account.error) return <main className="min-h-screen flex items-center justify-center px-5 py-12">
     <section role="alert" className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">

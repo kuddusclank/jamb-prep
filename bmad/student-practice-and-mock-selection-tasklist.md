@@ -173,3 +173,71 @@ See literature-mock-blueprint.md for L01–L06. L01 complete: five proposed cell
 ## Literature built and released — 14 October 2026
 
 L02–L06 initial acceptance complete.494 candidates,44 held; recovered Macbeth group and3 explicitly original additions. Exact40-item and combined180-item real-selector checks passed;20 offline forms vary; incomplete appreciation rejects. Static build passed via existing webpack fallback,33 pages; published Pages9fc7bc1d. L07 keeps full factual/key/rights review, extra extracts and hosted-device testing open. Evidence in literature-mock-blueprint.md and release/check JSON artifacts.
+
+
+## Expanded subject mapping release — 16 October 2026
+
+- [x] Audit all6,459 current records with explicit mapping or hold outcomes.
+- [x] Map160 Mathematics additions; all432 now classified.
+- [x] Configure/activate ACC, GEO, FRN, CMP, HEC, ARB, HAU and IGB using reviewed topic configuration and unique families.
+- [x] Recover French passage links; correct3 directly contradicted keys; hold1 item with no valid answer.
+- [x] Preserve existing holds, grouped selections, student snapshots and quotas; verify all19 active blueprints and post-commit readiness.
+- [x] Retain private before-image backup and release evidence;33 local tests and TypeScript pass.
+- [ ] Resolve885 documented held/unmapped records, including missing provenance/context and duplicate families; these remain excluded, not bulk approved. (Historical baseline; current reconciliation below.)
+- [ ] Expand French/other small reading pools and calibrate difficulties.
+
+## Newly added subjects — 16 October 2026
+
+- [x] Refresh bank inventory after the new imports: 8,469 total questions; ART125, MUS109, PHE331, YOR79.
+- [x] Create and activate 40-question blueprints for Fine Arts, Music, Physical and Health Education, and Yoruba; classify all current source-complete unique question families into database-topic cells.
+- [x] Keep weights bank-proportional and explicitly non-official; exclude exact duplicate families and the malformed Music stem from mock selection without changing question records.
+- [x] Validate each blueprint with the production readiness selector and20 randomized complete forms per subject; no student attempts created.
+- [ ] Finish the separate 885-record editorial-hold repair review; this activation does not resolve or override the existing holds. (Historical baseline; see updated progress below.)
+
+Blueprint and release evidence: `new-subject-blueprints.json`, `new-subject-blueprints-release.json`, and `subject-mock-blueprints.md`.
+
+Details, limits and rollback: subject-mock-blueprints.md, expanded-bank-mapping-review.json, expanded-blueprints-release.json. No code deployment or student attempt creation.
+
+
+### 885 held-record repair progress — 16 October 2026
+
+- [x] Restore traceable internal provenance on 209 exact matches to deleted legacy seed sources; do not claim those are official past questions.
+- [x] Map 95 uniquely eligible legacy-seed questions into existing blueprint cells; leave ambiguous, disabled, or already-used families unmapped.
+- [x] Recover four Igbo passages and link 27 dependent questions; correct two keys directly verified by those passages.
+- [x] Keep the one uncertain Igbo answer disabled and classify the other 26 distinct, eligible questions in the existing reading cell.
+- [x] Map nine additional legacy English/Biology seed questions to unambiguous existing cells after source, answer-key, explanation, eligibility, and duplicate-family checks.
+- [ ] Resolve 715 remaining held/unmapped records from the original review. Current breakdown and release evidence: `885-record-repair-progress.json`. The remaining 573 disabled/structurally ineligible questions and all unresolved factual/editorial/duplicate/context holds stay excluded from mock scoring until reviewed.
+
+
+### Agriculture and History — refreshed bank additions, 16 October 2026
+
+- [x] Audit refreshed AGR/HIS inventories and map every current topic into a blueprint cell (20 AGR topics, 21 HIS topics).
+- [x] Create and activate 40-question topic-balanced blueprints; classify 627 unique AGR and 755 unique HIS source-complete question families, excluding 14 exact duplicate families.
+- [x] Verify 20 distinct complete randomized forms per subject and application mock readiness; no question text, publication state, or student attempts changed.
+- [ ] Continue editorial-hold repair: 170 of the original 885 holds now have mappings; 715 remain held/unmapped.
+
+Evidence: `agriculture-history-blueprints.json`, `agriculture-history-blueprint-release.json`, `885-record-repair-progress.json`.
+
+### English stress-pattern false duplicate correction — 16 October 2026
+
+- [x] Cross-match English candidates against the user-provided `utme_general_english_all.csv`; stress choices use capitalization to encode syllable stress, so case-insensitive option comparison incorrectly marked distinct answers as duplicates.
+- [x] Classify ten exact-source-matched, eligible questions into the existing ENG `section-8` oral-forms cell after checking case-sensitive option uniqueness, one correct key, source/rights metadata, unique content families and live mock-readiness.
+- [x] Leave three other stress-pattern candidates held where source rows contain an OCR-like spelling issue or exact duplicate option. No question text/options/status, answer keys or student attempts were changed.
+- [x] Keep the historical 885-ID manifest unchanged; current reconciliation is 170 mapped and 715 remaining, with the current per-subject split in `885-record-repair-progress.json`.
+
+Evidence: `english-stress-patterns-classification-release.json`; private before-image backup path is recorded there.
+
+### Source-checked held-copy answer-key repairs — 16 October 2026
+
+- [x] Compared conflicting duplicate copies against the user-provided Hausa and Igbo past-question PDFs and each item’s answer/explanation.
+- [x] Corrected three unambiguous answer-key/explanation conflicts: IGB 3/4 → “Atọ n'ime anọ” (C); IGB pronoun → “Ọ” (B); HAU imperative → “umurtau” (B). Incremented editorial revisions and stored before/after snapshots plus admin audit events.
+- [x] Verified the live bank after commit. No question was enabled, classified, deleted, or removed from a student attempt. These duplicate-family records remain held from mock selection until their duplicate-family decision is resolved.
+- [x] Kept other disagreements held: supplied papers also contain answer-key conflicts or variant option orders, so matching a sibling’s key alone is not sufficient evidence.
+
+Evidence: `verified-answer-key-corrections-release.json`; current counts remain 170 mapped and 715 held/unmapped. Private before-image backup path is in the release evidence and `885-record-repair-progress.json`.
+
+### Requested transition of the original 885 held-set questions to draft — plan only
+
+- [ ] Execute the exact 885-ID status transition only after connecting an authorized production database/admin session, creating a validated private backup, and passing the all-blueprint readiness dry run.
+- Scope and rollback checklist: `885-question-draft-transition-plan.md`.
+- The transition has not been applied. The requested scope includes 170 records now mapped into active blueprints; readiness impact must be shown before any write. The currently available database connection is local staging and is not suitable for production.

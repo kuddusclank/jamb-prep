@@ -173,6 +173,12 @@ function RegisterFormContent() {
         />
       </div>
 
+      {!recovering && (
+        <p className="text-xs leading-relaxed text-slate-500">
+          By creating an account, you agree to our <a className="font-semibold text-[#116149] underline underline-offset-4" href="/terms/">Terms and Conditions</a> and acknowledge the <a className="font-semibold text-[#116149] underline underline-offset-4" href="/privacy/">Privacy Policy</a> and <a className="font-semibold text-[#116149] underline underline-offset-4" href="/refund-policy/">Refund Policy</a>.
+        </p>
+      )}
+
       <button
         type="submit"
         disabled={isPending}

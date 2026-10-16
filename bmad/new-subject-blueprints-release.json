@@ -1,0 +1,299 @@
+{
+  "at": "2026-10-16T10:58:46.485Z",
+  "backupPath": "/Users/akanbiabdulquddus/.codex/private-backups/jambprep/new-subject-blueprints-before-2026-10-16T10-57-59.576Z.json",
+  "subjects": [
+    {
+      "subject": "ART",
+      "blueprintId": "a2ad069f-1e16-4ea9-98cb-32cd37ad2d41",
+      "cells": [
+        {
+          "code": "african-and-world-art-history",
+          "title": "African and World Art History",
+          "required": 3,
+          "classified": 10,
+          "uniqueAvailable": 10
+        },
+        {
+          "code": "classification-and-branches-of-art",
+          "title": "Classification and Branches of Art",
+          "required": 4,
+          "classified": 12,
+          "uniqueAvailable": 12
+        },
+        {
+          "code": "drawing-painting-and-colour-theory",
+          "title": "Drawing, Painting and Colour Theory",
+          "required": 7,
+          "classified": 20,
+          "uniqueAvailable": 20
+        },
+        {
+          "code": "elements-and-principles-of-design",
+          "title": "Elements and Principles of Design",
+          "required": 6,
+          "classified": 17,
+          "uniqueAvailable": 17
+        },
+        {
+          "code": "graphic-design-and-computer-graphics",
+          "title": "Graphic Design, Lettering and Computer Graphics",
+          "required": 2,
+          "classified": 6,
+          "uniqueAvailable": 6
+        },
+        {
+          "code": "sculpture-ceramics-and-pottery",
+          "title": "Sculpture, Ceramics and Pottery",
+          "required": 9,
+          "classified": 26,
+          "uniqueAvailable": 26
+        },
+        {
+          "code": "textile-design-and-crafts",
+          "title": "Textile Design, Crafts and Applied Arts",
+          "required": 2,
+          "classified": 8,
+          "uniqueAvailable": 8
+        },
+        {
+          "code": "traditional-nigerian-art-and-culture",
+          "title": "Traditional Nigerian Art and Culture",
+          "required": 7,
+          "classified": 21,
+          "uniqueAvailable": 21
+        }
+      ],
+      "activeQuestionCandidates": 125,
+      "uniqueQuestionCandidates": 120,
+      "duplicateFamiliesExcluded": 5,
+      "excludedMalformedStemCount": 0,
+      "variationFormsTested": 20,
+      "distinctForms": 20,
+      "difficultyTargets": {
+        "medium": 100
+      },
+      "weightsAreOfficial": false,
+      "ready": true,
+      "warnings": [],
+      "questionsEdited": 0,
+      "studentAttemptsCreated": 0
+    },
+    {
+      "subject": "MUS",
+      "blueprintId": "c38008bb-8155-4d53-8a55-71a1cdb713f3",
+      "cells": [
+        {
+          "code": "african-traditional-music-and-instruments",
+          "title": "African Traditional Music and Instruments",
+          "required": 7,
+          "classified": 10,
+          "uniqueAvailable": 10
+        },
+        {
+          "code": "contemporary-african-and-popular-music",
+          "title": "Popular Music, Highlife and Modern African Art Music",
+          "required": 10,
+          "classified": 15,
+          "uniqueAvailable": 15
+        },
+        {
+          "code": "music-reading-and-sight-singing",
+          "title": "Sol-fa Notation and Sight Singing",
+          "required": 2,
+          "classified": 3,
+          "uniqueAvailable": 3
+        },
+        {
+          "code": "musical-forms-and-analysis",
+          "title": "Musical Forms, Terms and Analysis",
+          "required": 1,
+          "classified": 2,
+          "uniqueAvailable": 2
+        },
+        {
+          "code": "rudiments-and-theory-of-music",
+          "title": "Rudiments and Theory of Music",
+          "required": 16,
+          "classified": 23,
+          "uniqueAvailable": 23
+        },
+        {
+          "code": "western-art-music-and-history",
+          "title": "Western Art Music Periods and Composers",
+          "required": 4,
+          "classified": 7,
+          "uniqueAvailable": 7
+        }
+      ],
+      "activeQuestionCandidates": 108,
+      "uniqueQuestionCandidates": 60,
+      "duplicateFamiliesExcluded": 48,
+      "excludedMalformedStemCount": 1,
+      "variationFormsTested": 20,
+      "distinctForms": 20,
+      "difficultyTargets": {
+        "medium": 100
+      },
+      "weightsAreOfficial": false,
+      "ready": true,
+      "warnings": [],
+      "questionsEdited": 0,
+      "studentAttemptsCreated": 0
+    },
+    {
+      "subject": "PHE",
+      "blueprintId": "23649515-cf6e-4359-b713-26fcd307f312",
+      "cells": [
+        {
+          "code": "athletics-track-and-field-events",
+          "title": "Athletics: Track and Field Events",
+          "required": 5,
+          "classified": 43,
+          "uniqueAvailable": 43
+        },
+        {
+          "code": "ball-and-racket-games",
+          "title": "Ball Games and Racket Games",
+          "required": 7,
+          "classified": 53,
+          "uniqueAvailable": 53
+        },
+        {
+          "code": "first-aid-safety-and-sports-injuries",
+          "title": "First Aid, Safety and Sports Injuries",
+          "required": 3,
+          "classified": 30,
+          "uniqueAvailable": 30
+        },
+        {
+          "code": "foundations-and-history-of-physical-education",
+          "title": "Foundations and History of Physical Education",
+          "required": 11,
+          "classified": 86,
+          "uniqueAvailable": 86
+        },
+        {
+          "code": "gymnastics-and-traditional-sports",
+          "title": "Gymnastics, Martial Arts and Traditional Sports",
+          "required": 2,
+          "classified": 20,
+          "uniqueAvailable": 20
+        },
+        {
+          "code": "health-education-and-personal-hygiene",
+          "title": "Health Education, Personal Hygiene and Nutrition",
+          "required": 2,
+          "classified": 20,
+          "uniqueAvailable": 20
+        },
+        {
+          "code": "human-anatomy-and-physiology-in-sports",
+          "title": "Human Anatomy and Physiology in Sports",
+          "required": 5,
+          "classified": 39,
+          "uniqueAvailable": 39
+        },
+        {
+          "code": "physical-fitness-and-conditioning",
+          "title": "Physical Fitness, Conditioning and Body Types",
+          "required": 5,
+          "classified": 39,
+          "uniqueAvailable": 39
+        }
+      ],
+      "activeQuestionCandidates": 331,
+      "uniqueQuestionCandidates": 330,
+      "duplicateFamiliesExcluded": 1,
+      "excludedMalformedStemCount": 0,
+      "variationFormsTested": 20,
+      "distinctForms": 20,
+      "difficultyTargets": {
+        "medium": 100
+      },
+      "weightsAreOfficial": false,
+      "ready": true,
+      "warnings": [],
+      "questionsEdited": 0,
+      "studentAttemptsCreated": 0
+    },
+    {
+      "subject": "YOR",
+      "blueprintId": "4e28ae08-ce02-42ab-a245-ff4df5b8998d",
+      "cells": [
+        {
+          "code": "yoruba-culture-customs-and-institutions",
+          "title": "Àṣà, Ìṣe, Ẹ̀sìn Ìbílẹ̀ àti Ìgbéyàwó Yorùbá (Culture, Customs & Institutions)",
+          "required": 6,
+          "classified": 11,
+          "uniqueAvailable": 11
+        },
+        {
+          "code": "yoruba-grammar-and-sentence-structure",
+          "title": "Gírámà, Ìhun Gbólóhùn àti Ìsọ̀rí Ọ̀rọ̀ (Grammar & Sentence Structure)",
+          "required": 7,
+          "classified": 14,
+          "uniqueAvailable": 14
+        },
+        {
+          "code": "yoruba-oral-literature-and-poetry",
+          "title": "Lítíréṣọ̀ Alohùn: Oríkì, Ìjálá, Ewì àti Alárìnjó (Oral Literature & Poetry)",
+          "required": 5,
+          "classified": 10,
+          "uniqueAvailable": 10
+        },
+        {
+          "code": "yoruba-phonology-and-orthography",
+          "title": "Fọnọ́lọ́jì, Àmì Ohùn àti Akọtọ́ (Phonology & Orthography)",
+          "required": 1,
+          "classified": 1,
+          "uniqueAvailable": 1
+        },
+        {
+          "code": "yoruba-proverbs-and-idioms",
+          "title": "Òwe, Àkànlò Èdè àti Ọnà Èdè (Proverbs, Idioms & Figures of Speech)",
+          "required": 5,
+          "classified": 10,
+          "uniqueAvailable": 10
+        },
+        {
+          "code": "yoruba-reading-comprehension",
+          "title": "Àyọkà àti Òye Kíkà (Reading Comprehension)",
+          "required": 10,
+          "classified": 20,
+          "uniqueAvailable": 20
+        },
+        {
+          "code": "yoruba-vocabulary-and-translation",
+          "title": "Ìtumọ̀ Ọ̀rọ̀, Àyálò Ọ̀rọ̀ àti Ògbufọ̀ (Vocabulary & Translation)",
+          "required": 4,
+          "classified": 8,
+          "uniqueAvailable": 8
+        },
+        {
+          "code": "yoruba-written-literature-and-authors",
+          "title": "Lítíréṣọ̀ Àpilẹ̀kọ àti Àwọn Onkọ̀wé (Written Literature & Authors)",
+          "required": 2,
+          "classified": 5,
+          "uniqueAvailable": 5
+        }
+      ],
+      "activeQuestionCandidates": 79,
+      "uniqueQuestionCandidates": 79,
+      "duplicateFamiliesExcluded": 0,
+      "excludedMalformedStemCount": 0,
+      "variationFormsTested": 20,
+      "distinctForms": 20,
+      "difficultyTargets": {
+        "medium": 11,
+        "easy": 89
+      },
+      "weightsAreOfficial": false,
+      "ready": true,
+      "warnings": [
+        "yoruba-culture-customs-and-institutions: difficulty preference relaxed to preserve complete content."
+      ],
+      "questionsEdited": 0,
+      "studentAttemptsCreated": 0
+    }
+  ]
+}

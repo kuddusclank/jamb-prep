@@ -39,6 +39,11 @@ const body = { electives: catalog.slice(1).map((s) => s.name), targetScore: 300 
   assert.equal(accountDestination(identity(), '/register', '/login'), '/dashboard');
   assert.equal(accountDestination(identity(), '/onboarding', '/onboarding?x=1'), '/dashboard');
   assert.equal(accountDestination(identity(), '/login', '/result?attemptId=x'), '/result?attemptId=x');
+  for (const path of ['/', '/forgot-password', '/login', '/register']) {
+    assert.equal(accountDestination(identity(), path), '/dashboard');
+    assert.equal(accountDestination(identity(A, { onboardingCompleted: false }), path), '/onboarding');
+  }
+  assert.equal(accountDestination(identity(), '/reset-password'), null);
 });
 
 test('identity reads coalesce, expire and are scoped to the current actor', async () => {

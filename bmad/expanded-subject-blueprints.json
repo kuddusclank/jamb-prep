@@ -1,0 +1,605 @@
+{
+  "ACC": {
+    "subjectCode": "ACC",
+    "templateId": "acc-balanced-v1",
+    "title": "Principles of Accounting: balanced 40-question mock",
+    "totalQuestions": 40,
+    "weightsAreOfficial": false,
+    "yearIsReferenceOnly": true,
+    "status": "active",
+    "sourceUrl": "https://ibass.jamb.gov.ng/static/media/Account.d7ca9069d2d094c16cb6.pdf",
+    "difficultyTargets": {
+      "easy": 30,
+      "medium": 50,
+      "hard": 20
+    },
+    "overlapLimit": 0.5,
+    "cells": [
+      {
+        "code": "foundations",
+        "title": "Accounting concepts and records",
+        "count": 8,
+        "kind": "single",
+        "topicSlugs": [
+          "accounting-concepts-and-conventions",
+          "double-entry-system-and-ledger",
+          "the-accounting-equation"
+        ]
+      },
+      {
+        "code": "cash-controls",
+        "title": "Cash, bank and control accounts",
+        "count": 7,
+        "kind": "single",
+        "topicSlugs": [
+          "bank-reconciliation-statement",
+          "control-accounts",
+          "correction-of-errors-and-suspense-account",
+          "petty-cash-and-imprest-system",
+          "trial-balance-and-errors"
+        ]
+      },
+      {
+        "code": "statements",
+        "title": "Financial statements and adjustments",
+        "count": 9,
+        "kind": "single",
+        "topicSlugs": [
+          "capital-and-revenue-expenditure",
+          "depreciation-of-non-current-assets",
+          "financial-statement-ratios",
+          "incomplete-records-and-single-entry",
+          "stock-valuation-methods",
+          "trading-and-profit-and-loss-account"
+        ]
+      },
+      {
+        "code": "special-accounts",
+        "title": "Manufacturing, branch and non-profit accounts",
+        "count": 6,
+        "kind": "single",
+        "topicSlugs": [
+          "departmental-and-branch-accounts",
+          "manufacturing-accounts",
+          "non-profit-and-club-accounts"
+        ]
+      },
+      {
+        "code": "ownership",
+        "title": "Partnership and company accounts",
+        "count": 7,
+        "kind": "single",
+        "topicSlugs": [
+          "company-accounts-debentures-and-equity",
+          "partnership-accounts-profit-sharing"
+        ]
+      },
+      {
+        "code": "public-sector",
+        "title": "Public sector accounting",
+        "count": 3,
+        "kind": "single",
+        "topicSlugs": [
+          "public-sector-and-government-accounting"
+        ]
+      }
+    ],
+    "activationEvidence": "expanded-blueprints-release.json"
+  },
+  "GEO": {
+    "subjectCode": "GEO",
+    "templateId": "geo-balanced-v1",
+    "title": "Geography: balanced 40-question mock",
+    "totalQuestions": 40,
+    "weightsAreOfficial": false,
+    "yearIsReferenceOnly": true,
+    "status": "active",
+    "sourceUrl": "https://ibass.jamb.gov.ng/static/media/Geography.d714b304c100ff61b854.pdf",
+    "difficultyTargets": {
+      "easy": 30,
+      "medium": 50,
+      "hard": 20
+    },
+    "overlapLimit": 0.5,
+    "cells": [
+      {
+        "code": "practical",
+        "title": "Maps, surveying and spatial skills",
+        "count": 5,
+        "kind": "single",
+        "topicSlugs": [
+          "longitude-and-local-time",
+          "map-reading-contours-and-slopes",
+          "surveying-and-map-techniques"
+        ]
+      },
+      {
+        "code": "physical",
+        "title": "Earth structure and landforms",
+        "count": 10,
+        "kind": "single",
+        "topicSlugs": [
+          "coastal-and-marine-processes",
+          "earth-and-the-solar-system",
+          "earth-s-structure-and-layers",
+          "glacial-and-arid-landforms",
+          "internal-earth-processes-volcanism-and-folding",
+          "river-processes-and-landforms",
+          "rocks-and-rock-types",
+          "weathering-and-mass-movement"
+        ]
+      },
+      {
+        "code": "climate-environment",
+        "title": "Climate and environment",
+        "count": 9,
+        "kind": "single",
+        "topicSlugs": [
+          "atmospheric-moisture-and-rainfall",
+          "climate-of-west-africa",
+          "ecosystems-and-biomes",
+          "environmental-hazards-desertification",
+          "environmental-resources-and-conservation",
+          "soils-and-soil-properties",
+          "vegetation-belts-of-nigeria"
+        ]
+      },
+      {
+        "code": "human-economic",
+        "title": "Population, settlements and economic activity",
+        "count": 10,
+        "kind": "single",
+        "topicSlugs": [
+          "agriculture-and-pastoral-farming",
+          "manufacturing-and-industrial-location",
+          "mineral-resources-and-mining-in-nigeria",
+          "population-distribution-and-density",
+          "settlement-geography-urbanization",
+          "transportation-and-regional-development"
+        ]
+      },
+      {
+        "code": "regional",
+        "title": "World and regional geography",
+        "count": 6,
+        "kind": "single",
+        "topicSlugs": [
+          "world-regional-and-economic-geography"
+        ]
+      }
+    ],
+    "activationEvidence": "expanded-blueprints-release.json"
+  },
+  "FRN": {
+    "subjectCode": "FRN",
+    "templateId": "frn-balanced-v1",
+    "title": "French: balanced 40-question mock",
+    "totalQuestions": 40,
+    "weightsAreOfficial": false,
+    "yearIsReferenceOnly": true,
+    "status": "active",
+    "sourceUrl": "https://ibass.jamb.gov.ng/static/media/French.73f4e2456e30193188fa.pdf",
+    "difficultyTargets": {
+      "easy": 30,
+      "medium": 50,
+      "hard": 20
+    },
+    "overlapLimit": 0.5,
+    "cells": [
+      {
+        "code": "reading-claire",
+        "title": "Written comprehension: Claire passage",
+        "count": 4,
+        "kind": "comprehension",
+        "topicSlugs": []
+      },
+      {
+        "code": "reading-fatou",
+        "title": "Written comprehension: Fatou passage",
+        "count": 4,
+        "kind": "comprehension",
+        "topicSlugs": []
+      },
+      {
+        "code": "structure",
+        "title": "Structure and use of written French",
+        "count": 16,
+        "kind": "single",
+        "topicSlugs": [
+          "french-grammar-parts-of-speech",
+          "prepositions-and-conjunctions",
+          "verb-tenses-and-conjugation"
+        ]
+      },
+      {
+        "code": "vocabulary",
+        "title": "Vocabulary and expressions",
+        "count": 6,
+        "kind": "single",
+        "topicSlugs": [
+          "vocabulary-and-everyday-expressions"
+        ]
+      },
+      {
+        "code": "sounds",
+        "title": "French sounds and phonetics",
+        "count": 5,
+        "kind": "single",
+        "topicSlugs": [
+          "pronunciation-and-phonetics"
+        ]
+      },
+      {
+        "code": "culture",
+        "title": "French and Francophone culture",
+        "count": 5,
+        "kind": "single",
+        "topicSlugs": [
+          "french-and-francophone-culture-literature"
+        ]
+      }
+    ],
+    "activationEvidence": "expanded-blueprints-release.json"
+  },
+  "CMP": {
+    "subjectCode": "CMP",
+    "templateId": "cmp-balanced-v1",
+    "title": "Computer Studies: balanced 40-question mock",
+    "totalQuestions": 40,
+    "weightsAreOfficial": false,
+    "yearIsReferenceOnly": true,
+    "status": "active",
+    "sourceUrl": "https://ibass.jamb.gov.ng/static/media/Computer.ea1ead8cea82f53d3717.pdf",
+    "difficultyTargets": {
+      "easy": 30,
+      "medium": 50,
+      "hard": 20
+    },
+    "overlapLimit": 0.5,
+    "cells": [
+      {
+        "code": "foundations",
+        "title": "Computing foundations",
+        "count": 5,
+        "kind": "single",
+        "topicSlugs": [
+          "classification-of-computers",
+          "evolution-of-computing-and-generations"
+        ]
+      },
+      {
+        "code": "systems",
+        "title": "Hardware, software and operating systems",
+        "count": 12,
+        "kind": "single",
+        "topicSlugs": [
+          "computer-hardware-components-and-peripherals",
+          "computer-software-system-and-application",
+          "memory-and-storage-devices",
+          "operating-systems-and-booting"
+        ]
+      },
+      {
+        "code": "data-programming",
+        "title": "Data, algorithms and programming",
+        "count": 10,
+        "kind": "single",
+        "topicSlugs": [
+          "data-representation-and-logic-gates",
+          "database-management-systems-and-sql",
+          "programming-languages-and-algorithms",
+          "systems-development-life-cycle-sdlc"
+        ]
+      },
+      {
+        "code": "applications",
+        "title": "Application packages",
+        "count": 6,
+        "kind": "single",
+        "topicSlugs": [
+          "presentation-packages-and-graphics",
+          "spreadsheets-and-data-analysis",
+          "word-processing-and-desktop-publishing"
+        ]
+      },
+      {
+        "code": "networks-security",
+        "title": "Networks, security and ethics",
+        "count": 7,
+        "kind": "single",
+        "topicSlugs": [
+          "computer-networks-and-internet",
+          "computer-security-ethics-and-malware"
+        ]
+      }
+    ],
+    "activationEvidence": "expanded-blueprints-release.json"
+  },
+  "HEC": {
+    "subjectCode": "HEC",
+    "templateId": "hec-balanced-v1",
+    "title": "Home Economics: balanced 40-question mock",
+    "totalQuestions": 40,
+    "weightsAreOfficial": false,
+    "yearIsReferenceOnly": true,
+    "status": "active",
+    "sourceUrl": "https://ibass.jamb.gov.ng/static/media/HomeEcons.50fe1f14421b8b64b18f.pdf",
+    "difficultyTargets": {
+      "easy": 30,
+      "medium": 50,
+      "hard": 20
+    },
+    "overlapLimit": 0.5,
+    "cells": [
+      {
+        "code": "foundations",
+        "title": "Home economics foundations",
+        "count": 4,
+        "kind": "single",
+        "topicSlugs": [
+          "introduction-to-home-economics-and-careers"
+        ]
+      },
+      {
+        "code": "family",
+        "title": "Family and child development",
+        "count": 8,
+        "kind": "single",
+        "topicSlugs": [
+          "child-development-and-care",
+          "family-crises-and-conflict-resolution",
+          "family-living-and-relationships"
+        ]
+      },
+      {
+        "code": "home-consumers",
+        "title": "Home management and consumer education",
+        "count": 8,
+        "kind": "single",
+        "topicSlugs": [
+          "consumer-education-and-rights",
+          "family-resource-management-and-budgeting",
+          "household-linen-and-home-cleaning",
+          "housing-and-home-organization",
+          "personal-grooming-and-health"
+        ]
+      },
+      {
+        "code": "foods",
+        "title": "Foods and nutrition",
+        "count": 10,
+        "kind": "single",
+        "topicSlugs": [
+          "food-preparation-and-cooking-methods",
+          "food-storage-preservation-and-safety",
+          "kitchen-equipment-and-management",
+          "meal-planning-and-table-service",
+          "nutrients-and-nutritional-needs"
+        ]
+      },
+      {
+        "code": "clothing",
+        "title": "Clothing and textiles",
+        "count": 10,
+        "kind": "single",
+        "topicSlugs": [
+          "fabric-construction-and-yarn-production",
+          "garment-care-renovation-and-fasteners",
+          "garment-design-and-construction",
+          "sewing-equipment-and-tools",
+          "stitches-and-seams",
+          "textile-fibres-and-fabrics"
+        ]
+      }
+    ],
+    "activationEvidence": "expanded-blueprints-release.json"
+  },
+  "ARB": {
+    "subjectCode": "ARB",
+    "templateId": "arb-balanced-v1",
+    "title": "Arabic: balanced 40-question mock",
+    "totalQuestions": 40,
+    "weightsAreOfficial": false,
+    "yearIsReferenceOnly": true,
+    "status": "active",
+    "sourceUrl": "https://ibass.jamb.gov.ng/static/media/Arabic.233fe7117fc534609a6e.pdf",
+    "difficultyTargets": {
+      "easy": 30,
+      "medium": 50,
+      "hard": 20
+    },
+    "overlapLimit": 0.5,
+    "cells": [
+      {
+        "code": "reading",
+        "title": "Written comprehension (self-contained text)",
+        "count": 5,
+        "kind": "single",
+        "topicSlugs": [
+          "arabic-reading-comprehension"
+        ]
+      },
+      {
+        "code": "translation",
+        "title": "Translation and vocabulary",
+        "count": 10,
+        "kind": "single",
+        "topicSlugs": [
+          "translation-and-vocabulary"
+        ]
+      },
+      {
+        "code": "grammar",
+        "title": "Arabic syntax and morphology",
+        "count": 10,
+        "kind": "single",
+        "topicSlugs": [
+          "arabic-grammar-nahw",
+          "arabic-morphology-sarf"
+        ]
+      },
+      {
+        "code": "composition",
+        "title": "Expression, idioms and cultural contexts",
+        "count": 5,
+        "kind": "single",
+        "topicSlugs": [
+          "arabic-proverbs-and-idioms",
+          "islamic-and-cultural-studies"
+        ]
+      },
+      {
+        "code": "literature",
+        "title": "Arabic literature and history",
+        "count": 10,
+        "kind": "single",
+        "topicSlugs": [
+          "arabic-literature-and-history"
+        ]
+      }
+    ],
+    "activationEvidence": "expanded-blueprints-release.json"
+  },
+  "HAU": {
+    "subjectCode": "HAU",
+    "templateId": "hau-balanced-v1",
+    "title": "Hausa: balanced 40-question mock",
+    "totalQuestions": 40,
+    "weightsAreOfficial": false,
+    "yearIsReferenceOnly": true,
+    "status": "active",
+    "sourceUrl": "https://ibass.jamb.gov.ng/static/media/Hausa.ecb69ae5aafe1721516e.pdf",
+    "difficultyTargets": {
+      "easy": 30,
+      "medium": 50,
+      "hard": 20
+    },
+    "overlapLimit": 0.5,
+    "cells": [
+      {
+        "code": "reading",
+        "title": "Written comprehension (self-contained texts)",
+        "count": 8,
+        "kind": "single",
+        "topicSlugs": [
+          "hausa-reading-comprehension"
+        ]
+      },
+      {
+        "code": "grammar",
+        "title": "Grammar and sentence structure",
+        "count": 12,
+        "kind": "single",
+        "topicSlugs": [
+          "hausa-grammar-and-parts-of-speech",
+          "sentence-structure-and-syntax"
+        ]
+      },
+      {
+        "code": "sounds",
+        "title": "Phonology",
+        "count": 5,
+        "kind": "single",
+        "topicSlugs": [
+          "hausa-phonology-and-sound-systems"
+        ]
+      },
+      {
+        "code": "vocabulary",
+        "title": "Vocabulary, translation and idioms",
+        "count": 5,
+        "kind": "single",
+        "topicSlugs": [
+          "translation-and-vocabulary",
+          "hausa-proverbs-and-idiomatic-expressions"
+        ]
+      },
+      {
+        "code": "literature",
+        "title": "Hausa literature",
+        "count": 5,
+        "kind": "single",
+        "topicSlugs": [
+          "hausa-literature-prose-poetry-and-drama"
+        ]
+      },
+      {
+        "code": "culture",
+        "title": "Hausa culture",
+        "count": 5,
+        "kind": "single",
+        "topicSlugs": [
+          "hausa-culture-traditions-and-customs"
+        ]
+      }
+    ],
+    "activationEvidence": "expanded-blueprints-release.json"
+  },
+  "IGB": {
+    "subjectCode": "IGB",
+    "templateId": "igb-balanced-v1",
+    "title": "Igbo: balanced 40-question mock",
+    "totalQuestions": 40,
+    "weightsAreOfficial": false,
+    "yearIsReferenceOnly": true,
+    "status": "active",
+    "sourceUrl": "https://ibass.jamb.gov.ng/static/media/Igbo.f7422f280a5fcfda4752.pdf",
+    "difficultyTargets": {
+      "easy": 30,
+      "medium": 50,
+      "hard": 20
+    },
+    "overlapLimit": 0.5,
+    "cells": [
+      {
+        "code": "reading",
+        "title": "Written comprehension (self-contained texts)",
+        "count": 8,
+        "kind": "single",
+        "topicSlugs": [
+          "igbo-reading-comprehension"
+        ]
+      },
+      {
+        "code": "grammar",
+        "title": "Grammar and phonology",
+        "count": 10,
+        "kind": "single",
+        "topicSlugs": [
+          "igbo-phonology-and-orthography",
+          "igbo-grammar-and-parts-of-speech"
+        ]
+      },
+      {
+        "code": "vocabulary",
+        "title": "Vocabulary, idioms and translation",
+        "count": 8,
+        "kind": "single",
+        "topicSlugs": [
+          "igbo-idioms-proverbs-and-figures-of-speech",
+          "translation-and-vocabulary"
+        ]
+      },
+      {
+        "code": "literature",
+        "title": "Igbo literature",
+        "count": 5,
+        "kind": "single",
+        "topicSlugs": [
+          "igbo-literature-and-prescribed-texts"
+        ]
+      },
+      {
+        "code": "culture",
+        "title": "Igbo culture and numeration",
+        "count": 9,
+        "kind": "single",
+        "topicSlugs": [
+          "igbo-culture-customs-and-institutions",
+          "igbo-numeration-and-counting"
+        ]
+      }
+    ],
+    "activationEvidence": "expanded-blueprints-release.json"
+  }
+}

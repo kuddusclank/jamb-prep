@@ -1,0 +1,78 @@
+{
+  "at": "2026-10-16T11:47:27.143Z",
+  "classified": 10,
+  "blueprintId": "00cb7d81-975c-48f9-8ec6-f57536f7ae2a",
+  "cellCode": "section-8",
+  "sectionCountBefore": 80,
+  "sectionCountAfter": 90,
+  "sourceMatchedFrom": "user-provided utme_general_english_all.csv",
+  "backupPath": "/tmp/jambprep-private-backups/english-stress-patterns-before-2026-10-16T11-47-16.722Z.json",
+  "studentAttemptsCreated": 0,
+  "questionContentEdited": 0,
+  "questionOptionsEdited": 0,
+  "questionStatusChanged": 0,
+  "questions": [
+    {
+      "id": "07d795e1-c748-438d-a2f2-98c0de4fb536",
+      "sourceReference": "JAMB 2022 UTME Paper",
+      "topic": "stress-patterns",
+      "cell": "section-8"
+    },
+    {
+      "id": "2df5ffaa-0b3c-4f7a-81b7-3e09d9fb6206",
+      "sourceReference": "JAMB 2022 UTME Paper",
+      "topic": "stress-patterns",
+      "cell": "section-8"
+    },
+    {
+      "id": "36c00d19-56eb-4ca6-8389-e8a0987b2561",
+      "sourceReference": "JAMB 2017 UTME Paper",
+      "topic": "stress-patterns",
+      "cell": "section-8"
+    },
+    {
+      "id": "5671ba88-90a1-4eca-a6c5-8731ff0450c2",
+      "sourceReference": "JAMB 2023 UTME Paper",
+      "topic": "stress-patterns",
+      "cell": "section-8"
+    },
+    {
+      "id": "714a498e-e084-479d-906d-ea86da968083",
+      "sourceReference": "JAMB 2021 UTME Paper",
+      "topic": "stress-patterns",
+      "cell": "section-8"
+    },
+    {
+      "id": "766a9658-7e44-4edf-876f-2a9b773e07a6",
+      "sourceReference": "JAMB 2025 UTME English Paper",
+      "topic": "stress-patterns",
+      "cell": "section-8"
+    },
+    {
+      "id": "940c4882-06b7-415c-b001-6d154b96e734",
+      "sourceReference": "JAMB 2022 UTME Paper",
+      "topic": "stress-patterns",
+      "cell": "section-8"
+    },
+    {
+      "id": "aaa1653b-d311-478a-9811-c095bc60002f",
+      "sourceReference": "JAMB 2021 UTME Paper",
+      "topic": "stress-patterns",
+      "cell": "section-8"
+    },
+    {
+      "id": "d7a2b098-de21-4302-b539-1650943c5ddd",
+      "sourceReference": "JAMB 2017 UTME Paper",
+      "topic": "stress-patterns",
+      "cell": "section-8"
+    },
+    {
+      "id": "d4fd73bf-9cae-43bc-9443-4f123e6e550e",
+      "sourceReference": "JAMB 2023 UTME Paper",
+      "topic": "stress-patterns",
+      "cell": "section-8"
+    }
+  ],
+  "formAssembliesValidated": 1,
+  "mockReadinessGate": "passed"
+}

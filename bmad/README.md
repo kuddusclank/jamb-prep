@@ -57,6 +57,10 @@ User requested planning and then a hold. Read [admin expansion plan](admin-expan
 
 Read the question-to-blueprint review section in [student selection plan](student-practice-and-mock-selection-plan.md) and the metadata-only [draft classification manifest](question-blueprint-review-map.json). Mapped candidates are now applied and the four production blueprints are active. Editorial holds remain excluded; see blueprint-activation-release.json for release evidence.
 
+## 885-question draft transition — 16 October 2026
+
+The requested transition of the exact original 885 held-set IDs to draft is planned but not applied. Read [the guarded transition plan](885-question-draft-transition-plan.md) for the production-access prerequisite, backup, selector-readiness dry run, audit/history requirements, and rollback. The 170 records later mapped into active blueprints are included in the requested scope, so impact must be checked before writing.
+
 ## Expanded subject blueprint specifications — 14 October 2026
 
 [Subject mock blueprints](subject-mock-blueprints.md) consolidates the four active subject structures and proposes GOV/ECN/CRK/IRS allocations. All eight blueprints are now active. The new-bank repair section records independently verified candidate counts, quarantines, corrected mappings and remaining review work.

@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-16T11:07:54.300Z",
+  "backupPath": "/Users/akanbiabdulquddus/.codex/private-backups/jambprep/legacy-seed-mappings-before-2026-10-16T11-07-47.013Z.json",
+  "mapped": 95,
+  "eligibleTopicMatchedCandidates": 95,
+  "sourceVerifiedSeedRecords": 209,
+  "subjects": {
+    "ACC": 15,
+    "BIO": 13,
+    "CHM": 15,
+    "COM": 15,
+    "ENG": 8,
+    "GEO": 15,
+    "PHY": 14
+  },
+  "studentAttemptsCreated": 0,
+  "questionContentEdited": 0
+}

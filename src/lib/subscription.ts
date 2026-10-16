@@ -43,7 +43,7 @@ export const getUserSubscriptionStatus = cache(async (userId: string): Promise<S
       expiresAt: expiry,
       daysRemaining: isPremium ? daysRemaining : 0,
       planCode: entitlement.planCode,
-      autoRenew: entitlement.autoRenew ?? true,
+      autoRenew: isPremium ? (entitlement.autoRenew ?? true) : false,
       cancelledAt: entitlement.cancelledAt ? new Date(entitlement.cancelledAt) : null,
     };
   } catch (err) {
@@ -53,7 +53,7 @@ export const getUserSubscriptionStatus = cache(async (userId: string): Promise<S
       expiresAt: null,
       daysRemaining: 0,
       planCode: null,
-      autoRenew: true,
+      autoRenew: false,
       cancelledAt: null,
     };
   }

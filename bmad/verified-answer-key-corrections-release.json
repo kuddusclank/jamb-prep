@@ -1,0 +1,30 @@
+{
+  "at": "2026-10-16T11:52:46.580Z",
+  "corrected": [
+    {
+      "id": "6f0c00cb-708c-4350-802a-e9cda2594bef",
+      "subject": "HAU",
+      "correctLabel": "B",
+      "correctAnswer": "umurtau",
+      "editorialRevision": 2
+    },
+    {
+      "id": "9a2b3971-831f-4f81-9984-e7ab26032bd5",
+      "subject": "IGB",
+      "correctLabel": "C",
+      "correctAnswer": "Atọ n'ime anọ",
+      "editorialRevision": 2
+    },
+    {
+      "id": "df94990a-65c3-45b5-8ae7-b4ee32a05d83",
+      "subject": "IGB",
+      "correctLabel": "B",
+      "correctAnswer": "Ọ",
+      "editorialRevision": 2
+    }
+  ],
+  "backupPath": "/tmp/jambprep-private-backups/verified-answer-keys-before-2026-10-16T11-52-36.885Z.json",
+  "questionEligibilityModified": 0,
+  "questionClassificationsModified": 0,
+  "studentAttemptsModified": 0
+}

@@ -1,0 +1,320 @@
+{
+  "date": "2026-10-16",
+  "scope": "JAMBPrep bank-balanced mock blueprints mapped to all current database topics; allocations are not official JAMB topic quotas.",
+  "weightsAreOfficial": false,
+  "subjects": [
+    {
+      "subject": "AGR",
+      "subjectName": "Agricultural Science",
+      "blueprintId": "48dac6d4-0b78-4a94-8df5-29d374687d45",
+      "totalQuestions": 40,
+      "sourceUrl": "https://ibass.jamb.gov.ng/static/media/AgricPdf.9465f3cd595e9542868a.pdf",
+      "topicCount": 20,
+      "questionCandidates": 636,
+      "uniqueQuestionCandidates": 627,
+      "duplicateFamiliesExcluded": 9,
+      "cells": [
+        {
+          "topic": "agricultural-biotechnology-and-crop-improvement",
+          "title": "Agricultural Biotechnology and Crop Improvement",
+          "required": 1,
+          "classified": 2,
+          "uniqueAvailable": 2
+        },
+        {
+          "topic": "agricultural-economics-farm-records",
+          "title": "Agricultural Economics: Farm Records",
+          "required": 2,
+          "classified": 32,
+          "uniqueAvailable": 32
+        },
+        {
+          "topic": "agricultural-extension-and-rural-sociology",
+          "title": "Agricultural Extension and Rural Sociology",
+          "required": 2,
+          "classified": 30,
+          "uniqueAvailable": 30
+        },
+        {
+          "topic": "animal-health-livestock-diseases",
+          "title": "Animal Health: Livestock Diseases",
+          "required": 1,
+          "classified": 1,
+          "uniqueAvailable": 1
+        },
+        {
+          "topic": "animal-nutrition-feed-classification",
+          "title": "Animal Nutrition: Feed Classification",
+          "required": 2,
+          "classified": 41,
+          "uniqueAvailable": 41
+        },
+        {
+          "topic": "animal-reproduction-and-breeding",
+          "title": "Animal Reproduction, Breeding and Genetics",
+          "required": 1,
+          "classified": 29,
+          "uniqueAvailable": 29
+        },
+        {
+          "topic": "animal-science-anatomy-of-ruminants",
+          "title": "Animal Science: Anatomy of Ruminants",
+          "required": 5,
+          "classified": 85,
+          "uniqueAvailable": 85
+        },
+        {
+          "topic": "crop-husbandry-cereals-and-legumes",
+          "title": "Crop Husbandry: Cereals and Legumes",
+          "required": 1,
+          "classified": 12,
+          "uniqueAvailable": 12
+        },
+        {
+          "topic": "crop-propagation-and-nursery-management",
+          "title": "Crop Propagation and Nursery Management",
+          "required": 1,
+          "classified": 25,
+          "uniqueAvailable": 25
+        },
+        {
+          "topic": "crop-protection-pests-and-diseases",
+          "title": "Crop Protection: Pests and Diseases",
+          "required": 2,
+          "classified": 40,
+          "uniqueAvailable": 40
+        },
+        {
+          "topic": "farm-surveying-and-farmstead-planning",
+          "title": "Farm Surveying and Farmstead Planning",
+          "required": 1,
+          "classified": 4,
+          "uniqueAvailable": 4
+        },
+        {
+          "topic": "farm-tools-and-machinery",
+          "title": "Farm Tools and Machinery",
+          "required": 2,
+          "classified": 31,
+          "uniqueAvailable": 31
+        },
+        {
+          "topic": "fisheries-and-aquaculture",
+          "title": "Fisheries and Aquaculture",
+          "required": 1,
+          "classified": 12,
+          "uniqueAvailable": 12
+        },
+        {
+          "topic": "forestry-and-wildlife-management",
+          "title": "Forestry and Wildlife Management",
+          "required": 1,
+          "classified": 11,
+          "uniqueAvailable": 11
+        },
+        {
+          "topic": "importance-of-agriculture",
+          "title": "Importance of Agriculture",
+          "required": 5,
+          "classified": 78,
+          "uniqueAvailable": 78
+        },
+        {
+          "topic": "land-use-and-land-tenure-system",
+          "title": "Land Use and Land Tenure System",
+          "required": 1,
+          "classified": 17,
+          "uniqueAvailable": 17
+        },
+        {
+          "topic": "pasture-and-forage-crops",
+          "title": "Pasture, Forage Crops and Range Management",
+          "required": 1,
+          "classified": 21,
+          "uniqueAvailable": 21
+        },
+        {
+          "topic": "plant-nutrients-and-fertilizers",
+          "title": "Plant Nutrients and Fertilizers",
+          "required": 3,
+          "classified": 46,
+          "uniqueAvailable": 46
+        },
+        {
+          "topic": "soil-chemistry-soil-ph-and-liming",
+          "title": "Soil Chemistry: Soil pH and Liming",
+          "required": 3,
+          "classified": 48,
+          "uniqueAvailable": 48
+        },
+        {
+          "topic": "soil-science-soil-texture-and-structure",
+          "title": "Soil Science: Soil Texture and Structure",
+          "required": 4,
+          "classified": 62,
+          "uniqueAvailable": 62
+        }
+      ]
+    },
+    {
+      "subject": "HIS",
+      "subjectName": "History",
+      "blueprintId": "19afb690-cc01-4972-9c5c-6c689a779194",
+      "totalQuestions": 40,
+      "sourceUrl": "https://ibass.jamb.gov.ng/static/media/History.64d0bbe89bb7585bcddc.pdf",
+      "topicCount": 21,
+      "questionCandidates": 760,
+      "uniqueQuestionCandidates": 755,
+      "duplicateFamiliesExcluded": 5,
+      "cells": [
+        {
+          "topic": "african-history-and-liberation-struggles",
+          "title": "African History, Pan-Africanism and Regional Bodies",
+          "required": 9,
+          "classified": 186,
+          "uniqueAvailable": 186
+        },
+        {
+          "topic": "british-conquest-the-benin-punitive-expedition",
+          "title": "British Conquest: The Benin Punitive Expedition",
+          "required": 1,
+          "classified": 1,
+          "uniqueAvailable": 1
+        },
+        {
+          "topic": "colonial-administration-and-constitutional-development",
+          "title": "Colonial Administration, Directives and Constitutional Development",
+          "required": 3,
+          "classified": 61,
+          "uniqueAvailable": 61
+        },
+        {
+          "topic": "early-nigerian-civilizations-nok-culture",
+          "title": "Early Nigerian Civilizations: Nok Culture",
+          "required": 1,
+          "classified": 9,
+          "uniqueAvailable": 9
+        },
+        {
+          "topic": "historiography-and-sources-of-history",
+          "title": "Historiography, Methodology and Sources of History",
+          "required": 1,
+          "classified": 6,
+          "uniqueAvailable": 6
+        },
+        {
+          "topic": "igbo-ukwu-bronze-metallurgy",
+          "title": "Igbo-Ukwu Bronze Metallurgy",
+          "required": 1,
+          "classified": 1,
+          "uniqueAvailable": 1
+        },
+        {
+          "topic": "kanem-borno-empire-the-saifawa-dynasty",
+          "title": "Kanem-Borno Empire: The Saifawa Dynasty",
+          "required": 1,
+          "classified": 25,
+          "uniqueAvailable": 25
+        },
+        {
+          "topic": "kingdom-of-benin-dynastic-evolution",
+          "title": "Kingdom of Benin: Dynastic Evolution",
+          "required": 1,
+          "classified": 35,
+          "uniqueAvailable": 35
+        },
+        {
+          "topic": "military-rule-the-murtala-obasanjo-regime",
+          "title": "Military Rule: The Murtala-Obasanjo Regime",
+          "required": 1,
+          "classified": 39,
+          "uniqueAvailable": 39
+        },
+        {
+          "topic": "nationalist-movements-early-parties",
+          "title": "Nationalist Movements: Early Parties",
+          "required": 1,
+          "classified": 1,
+          "uniqueAvailable": 1
+        },
+        {
+          "topic": "nigeria-s-independence-1960-coalition",
+          "title": "Nigeria's Independence: 1960 Coalition",
+          "required": 1,
+          "classified": 1,
+          "uniqueAvailable": 1
+        },
+        {
+          "topic": "post-independence-nigeria-and-military-regimes",
+          "title": "Post-Independence Politics, Republics and Military Regimes",
+          "required": 2,
+          "classified": 46,
+          "uniqueAvailable": 46
+        },
+        {
+          "topic": "pre-colonial-systems-and-inter-group-relations",
+          "title": "Pre-Colonial Kingdoms, Dynasties and Inter-Group Relations",
+          "required": 9,
+          "classified": 196,
+          "uniqueAvailable": 196
+        },
+        {
+          "topic": "the-1914-amalgamation-of-nigeria",
+          "title": "The 1914 Amalgamation of Nigeria",
+          "required": 1,
+          "classified": 24,
+          "uniqueAvailable": 24
+        },
+        {
+          "topic": "the-19th-century-sokoto-jihad",
+          "title": "The 19th Century Sokoto Jihad",
+          "required": 1,
+          "classified": 24,
+          "uniqueAvailable": 24
+        },
+        {
+          "topic": "the-fourth-republic-1999-transition-",
+          "title": "The Fourth Republic (1999 Transition)",
+          "required": 1,
+          "classified": 1,
+          "uniqueAvailable": 1
+        },
+        {
+          "topic": "the-nigerian-civil-war-1967-1970-",
+          "title": "The Nigerian Civil War (1967–1970)",
+          "required": 1,
+          "classified": 26,
+          "uniqueAvailable": 26
+        },
+        {
+          "topic": "the-old-oyo-empire-constitutional-structure",
+          "title": "The Old Oyo Empire: Constitutional Structure",
+          "required": 1,
+          "classified": 16,
+          "uniqueAvailable": 16
+        },
+        {
+          "topic": "the-yoruba-19th-century-wars",
+          "title": "The Yoruba 19th Century Wars",
+          "required": 1,
+          "classified": 9,
+          "uniqueAvailable": 9
+        },
+        {
+          "topic": "trans-saharan-trade-and-islam",
+          "title": "Trans-Saharan Trade and Islam",
+          "required": 1,
+          "classified": 23,
+          "uniqueAvailable": 23
+        },
+        {
+          "topic": "world-history-and-international-relations",
+          "title": "World History, Global Conflicts and International Organisations",
+          "required": 1,
+          "classified": 25,
+          "uniqueAvailable": 25
+        }
+      ]
+    }
+  ]
+}

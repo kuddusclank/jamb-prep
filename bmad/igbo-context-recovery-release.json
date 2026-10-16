@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-16T11:15:01.249Z",
+  "passagesCreated": 4,
+  "questionsLinkedToSourcePassages": 27,
+  "verifiedAnswerKeysCorrected": 2,
+  "uncertainAnswerHeldOutOfScoring": 1,
+  "questionsClassifiedIntoExistingBlueprint": 26,
+  "blueprintId": "baec0a0f-89af-4c0b-a860-5e6468fbc217",
+  "cell": "reading",
+  "questionTextChanged": 0,
+  "studentAttemptsCreated": 0,
+  "backups": [
+    "/tmp/jambprep-private-backups/igbo-context-before-2026-10-16T11-12-24.553Z.json",
+    "/tmp/jambprep-private-backups/igbo-classifications-before-2026-10-16T11-14-50.030Z.json"
+  ],
+  "validation": "All 26 mapped questions were rechecked as published, enabled, structurally eligible, with full source/rights metadata, unique family hashes within candidate set, no family collision with existing IGB blueprint classifications, and one existing single-question reading cell per question."
+}

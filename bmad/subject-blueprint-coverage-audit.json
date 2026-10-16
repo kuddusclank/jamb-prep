@@ -1,0 +1,918 @@
+{
+  "at": "2026-10-16T09:42:26.797Z",
+  "scope": "Current aggregate bank counts plus production selector catalogue readiness. Read-only; no student records.",
+  "subjects": [
+    {
+      "id": "7d5104d3-374e-4d0c-a2e8-c4705de88eac",
+      "code": "ACC",
+      "name": "Principles of Accounting",
+      "is_compulsory": false,
+      "total": 315,
+      "published": 315,
+      "eligible": 315,
+      "blueprint_id": "406a9d6f-f249-4bf3-aca8-3a2141ab494a",
+      "blueprint_target": 40,
+      "mapped_eligible": 300,
+      "cells": [
+        {
+          "code": "foundations",
+          "required_count": 8,
+          "eligible_mapped": 70
+        },
+        {
+          "code": "cash-controls",
+          "required_count": 7,
+          "eligible_mapped": 51
+        },
+        {
+          "code": "statements",
+          "required_count": 9,
+          "eligible_mapped": 46
+        },
+        {
+          "code": "special-accounts",
+          "required_count": 6,
+          "eligible_mapped": 45
+        },
+        {
+          "code": "ownership",
+          "required_count": 7,
+          "eligible_mapped": 69
+        },
+        {
+          "code": "public-sector",
+          "required_count": 3,
+          "eligible_mapped": 19
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 15,
+      "mock_ready": true
+    },
+    {
+      "id": "b52c00c1-c40d-4528-baa7-1c7429395983",
+      "code": "AGR",
+      "name": "Agricultural Science",
+      "is_compulsory": false,
+      "total": 15,
+      "published": 15,
+      "eligible": 15,
+      "blueprint_id": null,
+      "blueprint_target": null,
+      "mapped_eligible": 0,
+      "cells": null,
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": false,
+      "unmapped_eligible": 15,
+      "mock_ready": false
+    },
+    {
+      "id": "3c4fc5c3-9efc-4378-b010-8d608fa6a518",
+      "code": "ARB",
+      "name": "Arabic",
+      "is_compulsory": false,
+      "total": 80,
+      "published": 80,
+      "eligible": 80,
+      "blueprint_id": "4eaf21df-20b1-40b7-a769-f1726cf8afa4",
+      "blueprint_target": 40,
+      "mapped_eligible": 80,
+      "cells": [
+        {
+          "code": "reading",
+          "required_count": 5,
+          "eligible_mapped": 10
+        },
+        {
+          "code": "translation",
+          "required_count": 10,
+          "eligible_mapped": 18
+        },
+        {
+          "code": "grammar",
+          "required_count": 10,
+          "eligible_mapped": 30
+        },
+        {
+          "code": "composition",
+          "required_count": 5,
+          "eligible_mapped": 12
+        },
+        {
+          "code": "literature",
+          "required_count": 10,
+          "eligible_mapped": 10
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 0,
+      "mock_ready": true
+    },
+    {
+      "id": "c63a66f8-e815-4da4-9d53-63f54741e481",
+      "code": "BIO",
+      "name": "Biology",
+      "is_compulsory": false,
+      "total": 481,
+      "published": 481,
+      "eligible": 481,
+      "blueprint_id": "a9ecffb4-5b3a-43fe-a3a5-d23401132ec1",
+      "blueprint_target": 40,
+      "mapped_eligible": 457,
+      "cells": [
+        {
+          "code": "section-1",
+          "required_count": 6,
+          "eligible_mapped": 161
+        },
+        {
+          "code": "section-2",
+          "required_count": 16,
+          "eligible_mapped": 208
+        },
+        {
+          "code": "section-3",
+          "required_count": 10,
+          "eligible_mapped": 52
+        },
+        {
+          "code": "section-4",
+          "required_count": 4,
+          "eligible_mapped": 32
+        },
+        {
+          "code": "section-5",
+          "required_count": 4,
+          "eligible_mapped": 4
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 24,
+      "mock_ready": true
+    },
+    {
+      "id": "5b986c50-fb16-495b-82fb-b989066608c5",
+      "code": "CHM",
+      "name": "Chemistry",
+      "is_compulsory": false,
+      "total": 474,
+      "published": 474,
+      "eligible": 474,
+      "blueprint_id": "7041b47d-56cb-439d-bd95-a93f755b4c46",
+      "blueprint_target": 40,
+      "mapped_eligible": 455,
+      "cells": [
+        {
+          "code": "section-1",
+          "required_count": 8,
+          "eligible_mapped": 108
+        },
+        {
+          "code": "section-2",
+          "required_count": 12,
+          "eligible_mapped": 175
+        },
+        {
+          "code": "section-3",
+          "required_count": 8,
+          "eligible_mapped": 87
+        },
+        {
+          "code": "section-4",
+          "required_count": 12,
+          "eligible_mapped": 85
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 19,
+      "mock_ready": true
+    },
+    {
+      "id": "2f567b16-b675-4cbc-8e2f-fded1ab241c5",
+      "code": "CMP",
+      "name": "Computer Studies",
+      "is_compulsory": false,
+      "total": 285,
+      "published": 285,
+      "eligible": 285,
+      "blueprint_id": "f37e54d7-821b-4dfc-b134-670c28255ba2",
+      "blueprint_target": 40,
+      "mapped_eligible": 285,
+      "cells": [
+        {
+          "code": "foundations",
+          "required_count": 5,
+          "eligible_mapped": 34
+        },
+        {
+          "code": "systems",
+          "required_count": 12,
+          "eligible_mapped": 120
+        },
+        {
+          "code": "data-programming",
+          "required_count": 10,
+          "eligible_mapped": 67
+        },
+        {
+          "code": "applications",
+          "required_count": 6,
+          "eligible_mapped": 24
+        },
+        {
+          "code": "networks-security",
+          "required_count": 7,
+          "eligible_mapped": 40
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 0,
+      "mock_ready": true
+    },
+    {
+      "id": "f9fe31e3-1f44-4fab-9d6d-40d518c7418e",
+      "code": "COM",
+      "name": "Commerce",
+      "is_compulsory": false,
+      "total": 515,
+      "published": 515,
+      "eligible": 515,
+      "blueprint_id": "a8ef8274-dee1-4f79-986c-f3ed22ffccd9",
+      "blueprint_target": 40,
+      "mapped_eligible": 500,
+      "cells": [
+        {
+          "code": "foundations",
+          "required_count": 4,
+          "eligible_mapped": 40
+        },
+        {
+          "code": "trade-distribution",
+          "required_count": 6,
+          "eligible_mapped": 57
+        },
+        {
+          "code": "aids-to-trade",
+          "required_count": 6,
+          "eligible_mapped": 54
+        },
+        {
+          "code": "business-units",
+          "required_count": 6,
+          "eligible_mapped": 80
+        },
+        {
+          "code": "finance",
+          "required_count": 6,
+          "eligible_mapped": 95
+        },
+        {
+          "code": "management-marketing",
+          "required_count": 5,
+          "eligible_mapped": 85
+        },
+        {
+          "code": "law-consumers",
+          "required_count": 4,
+          "eligible_mapped": 41
+        },
+        {
+          "code": "commercial-environment",
+          "required_count": 3,
+          "eligible_mapped": 48
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 15,
+      "mock_ready": true
+    },
+    {
+      "id": "66999959-05dd-4379-b96c-f523c1e3a1ab",
+      "code": "CRK",
+      "name": "Christian Religious Knowledge",
+      "is_compulsory": false,
+      "total": 184,
+      "published": 184,
+      "eligible": 61,
+      "blueprint_id": "2359de32-d076-446c-a166-472239c539e7",
+      "blueprint_target": 40,
+      "mapped_eligible": 61,
+      "cells": [
+        {
+          "code": "foundations",
+          "required_count": 10,
+          "eligible_mapped": 16
+        },
+        {
+          "code": "prophets",
+          "required_count": 8,
+          "eligible_mapped": 14
+        },
+        {
+          "code": "jesus",
+          "required_count": 12,
+          "eligible_mapped": 18
+        },
+        {
+          "code": "church",
+          "required_count": 4,
+          "eligible_mapped": 4
+        },
+        {
+          "code": "epistles",
+          "required_count": 6,
+          "eligible_mapped": 9
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 0,
+      "mock_ready": true
+    },
+    {
+      "id": "5c71647c-ac6b-4391-bc1f-cef52cf000e8",
+      "code": "ECN",
+      "name": "Economics",
+      "is_compulsory": false,
+      "total": 295,
+      "published": 295,
+      "eligible": 122,
+      "blueprint_id": "d1711b11-091e-4471-81b7-f9dce9b9821e",
+      "blueprint_target": 40,
+      "mapped_eligible": 122,
+      "cells": [
+        {
+          "code": "foundations",
+          "required_count": 6,
+          "eligible_mapped": 6
+        },
+        {
+          "code": "micro",
+          "required_count": 12,
+          "eligible_mapped": 66
+        },
+        {
+          "code": "macro",
+          "required_count": 8,
+          "eligible_mapped": 8
+        },
+        {
+          "code": "finance",
+          "required_count": 6,
+          "eligible_mapped": 11
+        },
+        {
+          "code": "development",
+          "required_count": 4,
+          "eligible_mapped": 16
+        },
+        {
+          "code": "international",
+          "required_count": 4,
+          "eligible_mapped": 15
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 0,
+      "mock_ready": true
+    },
+    {
+      "id": "2d8b92e7-fa79-46e5-b850-bc09633ea3d0",
+      "code": "ENG",
+      "name": "Use of English",
+      "is_compulsory": true,
+      "total": 667,
+      "published": 667,
+      "eligible": 664,
+      "blueprint_id": "00cb7d81-975c-48f9-8ec6-f57536f7ae2a",
+      "blueprint_target": 60,
+      "mapped_eligible": 580,
+      "cells": [
+        {
+          "code": "section-1",
+          "required_count": 5,
+          "eligible_mapped": 70
+        },
+        {
+          "code": "section-2",
+          "required_count": 10,
+          "eligible_mapped": 60
+        },
+        {
+          "code": "section-3",
+          "required_count": 10,
+          "eligible_mapped": 106
+        },
+        {
+          "code": "section-4",
+          "required_count": 5,
+          "eligible_mapped": 24
+        },
+        {
+          "code": "section-5",
+          "required_count": 5,
+          "eligible_mapped": 95
+        },
+        {
+          "code": "section-6",
+          "required_count": 5,
+          "eligible_mapped": 102
+        },
+        {
+          "code": "section-7",
+          "required_count": 10,
+          "eligible_mapped": 47
+        },
+        {
+          "code": "section-8",
+          "required_count": 10,
+          "eligible_mapped": 76
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 60,
+      "count_target_met": true,
+      "unmapped_eligible": 84,
+      "mock_ready": true
+    },
+    {
+      "id": "bb3e5744-56b3-46df-b582-4bf8a55017bf",
+      "code": "FRN",
+      "name": "French",
+      "is_compulsory": false,
+      "total": 217,
+      "published": 217,
+      "eligible": 216,
+      "blueprint_id": "3b664d74-d6d6-40a0-b719-1355040e05b1",
+      "blueprint_target": 40,
+      "mapped_eligible": 216,
+      "cells": [
+        {
+          "code": "reading-claire",
+          "required_count": 4,
+          "eligible_mapped": 5
+        },
+        {
+          "code": "reading-fatou",
+          "required_count": 4,
+          "eligible_mapped": 4
+        },
+        {
+          "code": "structure",
+          "required_count": 16,
+          "eligible_mapped": 93
+        },
+        {
+          "code": "vocabulary",
+          "required_count": 6,
+          "eligible_mapped": 59
+        },
+        {
+          "code": "sounds",
+          "required_count": 5,
+          "eligible_mapped": 23
+        },
+        {
+          "code": "culture",
+          "required_count": 5,
+          "eligible_mapped": 32
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 0,
+      "mock_ready": true
+    },
+    {
+      "id": "4a1a81e3-2e99-4ccb-8037-2576f2f0fb4e",
+      "code": "GEO",
+      "name": "Geography",
+      "is_compulsory": false,
+      "total": 329,
+      "published": 329,
+      "eligible": 329,
+      "blueprint_id": "9fd82663-353d-467f-b3c3-a09e186c0f0d",
+      "blueprint_target": 40,
+      "mapped_eligible": 314,
+      "cells": [
+        {
+          "code": "practical",
+          "required_count": 5,
+          "eligible_mapped": 21
+        },
+        {
+          "code": "physical",
+          "required_count": 10,
+          "eligible_mapped": 58
+        },
+        {
+          "code": "climate-environment",
+          "required_count": 9,
+          "eligible_mapped": 80
+        },
+        {
+          "code": "human-economic",
+          "required_count": 10,
+          "eligible_mapped": 125
+        },
+        {
+          "code": "regional",
+          "required_count": 6,
+          "eligible_mapped": 30
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 15,
+      "mock_ready": true
+    },
+    {
+      "id": "2c72f0ab-e232-4b9f-807d-0d2cf6c4bc6e",
+      "code": "GOV",
+      "name": "Government",
+      "is_compulsory": false,
+      "total": 345,
+      "published": 345,
+      "eligible": 211,
+      "blueprint_id": "70113bad-e65c-4c72-83f6-15e0aeaecff0",
+      "blueprint_target": 40,
+      "mapped_eligible": 211,
+      "cells": [
+        {
+          "code": "principles",
+          "required_count": 16,
+          "eligible_mapped": 98
+        },
+        {
+          "code": "nigeria",
+          "required_count": 16,
+          "eligible_mapped": 92
+        },
+        {
+          "code": "foreign",
+          "required_count": 4,
+          "eligible_mapped": 12
+        },
+        {
+          "code": "organisations",
+          "required_count": 4,
+          "eligible_mapped": 9
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 0,
+      "mock_ready": true
+    },
+    {
+      "id": "69956e83-5d3b-45b9-a748-d703e171f2dc",
+      "code": "HAU",
+      "name": "Hausa",
+      "is_compulsory": false,
+      "total": 233,
+      "published": 233,
+      "eligible": 233,
+      "blueprint_id": "bc13b71a-c72c-4577-930c-8b61218383bb",
+      "blueprint_target": 40,
+      "mapped_eligible": 197,
+      "cells": [
+        {
+          "code": "reading",
+          "required_count": 8,
+          "eligible_mapped": 31
+        },
+        {
+          "code": "grammar",
+          "required_count": 12,
+          "eligible_mapped": 91
+        },
+        {
+          "code": "sounds",
+          "required_count": 5,
+          "eligible_mapped": 14
+        },
+        {
+          "code": "vocabulary",
+          "required_count": 5,
+          "eligible_mapped": 34
+        },
+        {
+          "code": "literature",
+          "required_count": 5,
+          "eligible_mapped": 16
+        },
+        {
+          "code": "culture",
+          "required_count": 5,
+          "eligible_mapped": 11
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 36,
+      "mock_ready": true
+    },
+    {
+      "id": "cce1c15c-f69e-46fc-b817-2b5aa82bf1d0",
+      "code": "HEC",
+      "name": "Home Economics",
+      "is_compulsory": false,
+      "total": 231,
+      "published": 231,
+      "eligible": 231,
+      "blueprint_id": "e9e0cab3-0c8c-4c01-8208-ffbea1011557",
+      "blueprint_target": 40,
+      "mapped_eligible": 226,
+      "cells": [
+        {
+          "code": "foundations",
+          "required_count": 4,
+          "eligible_mapped": 20
+        },
+        {
+          "code": "family",
+          "required_count": 8,
+          "eligible_mapped": 28
+        },
+        {
+          "code": "home-consumers",
+          "required_count": 8,
+          "eligible_mapped": 55
+        },
+        {
+          "code": "foods",
+          "required_count": 10,
+          "eligible_mapped": 62
+        },
+        {
+          "code": "clothing",
+          "required_count": 10,
+          "eligible_mapped": 61
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 5,
+      "mock_ready": true
+    },
+    {
+      "id": "f7c2bcb1-0f89-491a-9c68-964cf3769a5e",
+      "code": "HIS",
+      "name": "History",
+      "is_compulsory": false,
+      "total": 15,
+      "published": 15,
+      "eligible": 15,
+      "blueprint_id": null,
+      "blueprint_target": null,
+      "mapped_eligible": 0,
+      "cells": null,
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": false,
+      "unmapped_eligible": 15,
+      "mock_ready": false
+    },
+    {
+      "id": "95899dfb-5630-4c7e-8828-a68fc0fff124",
+      "code": "IGB",
+      "name": "Igbo",
+      "is_compulsory": false,
+      "total": 236,
+      "published": 236,
+      "eligible": 236,
+      "blueprint_id": "baec0a0f-89af-4c0b-a860-5e6468fbc217",
+      "blueprint_target": 40,
+      "mapped_eligible": 189,
+      "cells": [
+        {
+          "code": "reading",
+          "required_count": 8,
+          "eligible_mapped": 12
+        },
+        {
+          "code": "grammar",
+          "required_count": 10,
+          "eligible_mapped": 54
+        },
+        {
+          "code": "vocabulary",
+          "required_count": 8,
+          "eligible_mapped": 37
+        },
+        {
+          "code": "literature",
+          "required_count": 5,
+          "eligible_mapped": 18
+        },
+        {
+          "code": "culture",
+          "required_count": 9,
+          "eligible_mapped": 68
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 47,
+      "mock_ready": true
+    },
+    {
+      "id": "bad8abc8-d5e1-4257-94ed-95174e08dc6c",
+      "code": "IRS",
+      "name": "Islamic Religious Studies",
+      "is_compulsory": false,
+      "total": 144,
+      "published": 144,
+      "eligible": 49,
+      "blueprint_id": "186b21b3-5994-49e9-bd99-a7dd2a7b039b",
+      "blueprint_target": 40,
+      "mapped_eligible": 49,
+      "cells": [
+        {
+          "code": "quran",
+          "required_count": 10,
+          "eligible_mapped": 12
+        },
+        {
+          "code": "hadith",
+          "required_count": 6,
+          "eligible_mapped": 7
+        },
+        {
+          "code": "faith",
+          "required_count": 6,
+          "eligible_mapped": 7
+        },
+        {
+          "code": "fiqh",
+          "required_count": 10,
+          "eligible_mapped": 15
+        },
+        {
+          "code": "history",
+          "required_count": 8,
+          "eligible_mapped": 8
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 0,
+      "mock_ready": true
+    },
+    {
+      "id": "7c23c8a8-107a-4f69-9aa6-87d7b9b42ad7",
+      "code": "LIT",
+      "name": "Literature in English",
+      "is_compulsory": false,
+      "total": 538,
+      "published": 538,
+      "eligible": 494,
+      "blueprint_id": "959120c3-908e-4963-9842-83a7302a4282",
+      "blueprint_target": 40,
+      "mapped_eligible": 494,
+      "cells": [
+        {
+          "code": "drama",
+          "required_count": 10,
+          "eligible_mapped": 124
+        },
+        {
+          "code": "prose",
+          "required_count": 10,
+          "eligible_mapped": 186
+        },
+        {
+          "code": "poetry",
+          "required_count": 10,
+          "eligible_mapped": 80
+        },
+        {
+          "code": "principles",
+          "required_count": 5,
+          "eligible_mapped": 99
+        },
+        {
+          "code": "appreciation",
+          "required_count": 5,
+          "eligible_mapped": 5
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 0,
+      "mock_ready": true
+    },
+    {
+      "id": "c7cd45ac-de76-47fc-90bd-788171c5595f",
+      "code": "MTH",
+      "name": "Mathematics",
+      "is_compulsory": false,
+      "total": 432,
+      "published": 432,
+      "eligible": 432,
+      "blueprint_id": "52d3fd9a-5592-4828-bc9d-50e7867b2121",
+      "blueprint_target": 40,
+      "mapped_eligible": 432,
+      "cells": [
+        {
+          "code": "number-numeration",
+          "required_count": 8,
+          "eligible_mapped": 99
+        },
+        {
+          "code": "algebra",
+          "required_count": 12,
+          "eligible_mapped": 128
+        },
+        {
+          "code": "geometry-trigonometry",
+          "required_count": 10,
+          "eligible_mapped": 93
+        },
+        {
+          "code": "calculus",
+          "required_count": 4,
+          "eligible_mapped": 52
+        },
+        {
+          "code": "statistics-probability",
+          "required_count": 6,
+          "eligible_mapped": 60
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 0,
+      "mock_ready": true
+    },
+    {
+      "id": "3db8ef29-5de6-4af1-8c1a-2ad4d6d4c1c7",
+      "code": "PHY",
+      "name": "Physics",
+      "is_compulsory": false,
+      "total": 428,
+      "published": 428,
+      "eligible": 427,
+      "blueprint_id": "e56e568b-f76b-4173-ae88-a8ac9c309b05",
+      "blueprint_target": 40,
+      "mapped_eligible": 406,
+      "cells": [
+        {
+          "code": "section-1",
+          "required_count": 12,
+          "eligible_mapped": 113
+        },
+        {
+          "code": "section-2",
+          "required_count": 6,
+          "eligible_mapped": 63
+        },
+        {
+          "code": "section-3",
+          "required_count": 8,
+          "eligible_mapped": 96
+        },
+        {
+          "code": "section-4",
+          "required_count": 10,
+          "eligible_mapped": 99
+        },
+        {
+          "code": "section-5",
+          "required_count": 4,
+          "eligible_mapped": 35
+        }
+      ],
+      "draft_blueprints": 0,
+      "target": 40,
+      "count_target_met": true,
+      "unmapped_eligible": 21,
+      "mock_ready": true
+    }
+  ]
+}

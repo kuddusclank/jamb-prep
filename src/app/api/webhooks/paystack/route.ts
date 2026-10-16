@@ -53,9 +53,13 @@ export async function POST(req: NextRequest) {
       await db.insert(paymentWebhookEvents).values({
         eventId, eventType: event.event, payload: event,
       }).onConflictDoNothing();
-    } else if (event.event === "subscription.disable") {
-      // User or merchant disabled subscription directly on Paystack
-      const subCode = event.data?.subscription_code;
+    } else if (
+      event.event === "subscription.disable" ||
+      event.event === "subscription.not_renew" ||
+      event.event === "invoice.payment_failed"
+    ) {
+      // User or merchant disabled subscription or renewal failed on Paystack
+      const subCode = event.data?.subscription?.subscription_code || event.data?.subscription_code;
       const customerCode = event.data?.customer?.customer_code;
 
       if (subCode || customerCode) {

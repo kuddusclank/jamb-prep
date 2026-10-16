@@ -1,5 +1,5 @@
 import { BrandMark } from "@/components/brand-mark";
-import { BrowserAccountNavigation } from "@/components/browser-account-boundary";
+import { BrowserAccountBoundary, BrowserAccountNavigation } from "@/components/browser-account-boundary";
 import Link from "@/components/pending-link";
 import { 
   ArrowRight, 
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { MobileMenu, Reveal, SubjectPicker } from "./landing-interactions";
 import { UserDropdown } from "@/components/user-dropdown";
+import { PolicyLinks } from "@/components/legal-page";
 
 const button = "inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-[#116149] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0b4936] hover:-translate-y-0.5";
 const faq = [
@@ -25,7 +26,7 @@ const faq = [
   ['Will it work on my phone?', 'The platform is optimized for phones, tablets and computers. The mock interface includes touch-friendly question navigation as well as desktop keyboard controls.'],
   ['What happens if my internet disconnects?', 'The exam engine automatically saves answers on your device and syncs them continuously. You can continue answering questions without interruption.'],
   ['What will the free plan include?', 'One full diagnostic mock, a detailed score breakdown, and one topic-practice session of 5, 10 or 15 questions each day with comprehensive step-by-step explanations. The daily allowance resets at midnight West Africa Time.'],
-  ['How does Premium access work?', 'Premium access is ₦1,000 for 30 days via Paystack, granting unlimited CBT mocks, unlimited practice questions, full answer explanations, and advanced study coach analytics. If you refer 2 verified friends, you unlock 50% off (₦500).'],
+  ['How does Premium access work?', 'Premium access is ₦1,000 for 30 days during our launch offer (regularly ₦2,000) through December 31, 2026. It includes unlimited CBT mocks, unlimited practice questions, full answer explanations, and advanced study coach analytics. An eligible referral reward can reduce the first month to ₦500.'],
 ];
 
 export default function Home() {
@@ -35,7 +36,7 @@ export default function Home() {
   const displayName = "Candidate";
 
   return (
-    <>
+    <BrowserAccountBoundary mode="public">
       <a href="#main" className="skip-link">Skip to content</a>
 
       {/* Header Navigation */}
@@ -438,6 +439,7 @@ export default function Home() {
               {
                 name: 'Free',
                 price: '₦0',
+                regularPrice: null,
                 period: 'to get started',
                 desc: 'Find your starting point and build a daily revision habit.',
                 features: [
@@ -451,7 +453,8 @@ export default function Home() {
               {
                 name: 'Premium',
                 price: '₦1,000',
-                period: 'for 30 days',
+                regularPrice: '₦2,000',
+                period: 'for 30 days · launch offer ends Dec 31, 2026',
                 desc: 'Full access to practise, review and simulate CBT exams.',
                 features: [
                   'Unlimited 180-question full mock exams',
@@ -471,7 +474,10 @@ export default function Home() {
                     </span>
                   )}
                 </div>
-                <p className="mt-5 text-5xl font-semibold tracking-tight">{plan.price}</p>
+                <div className="mt-5 flex flex-wrap items-baseline gap-3">
+                  <p className="text-5xl font-semibold tracking-tight">{plan.price}</p>
+                  {plan.isPaid && <><span className="text-lg font-semibold text-white/55 line-through">{plan.regularPrice}</span><span className="rounded-full bg-[#e7b85a] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#102f29]">50% off</span></>}
+                </div>
                 <p className={`mt-2 text-sm ${i ? 'text-white/65' : 'text-slate-500'}`}>{plan.period}</p>
                 <p className={`mt-5 text-sm leading-relaxed ${i ? 'text-white/80' : 'text-slate-600'}`}>{plan.desc}</p>
                 <ul className="mt-7 flex-1 space-y-4">
@@ -545,7 +551,7 @@ export default function Home() {
                   <Sparkles size={16} className="text-amber-800" /> Refer & Earn 50% Off
                 </p>
                 <p className="max-w-lg text-sm leading-relaxed text-amber-900 mt-1">
-                  Invite two friends who register and get your <strong>30-day Premium for just ₦500</strong>!
+                  Invite two friends who complete account onboarding and get your <strong>first 30 days of Premium for ₦500</strong>!
                 </p>
               </div>
               <Link 
@@ -603,7 +609,8 @@ export default function Home() {
           An independent UTME preparation platform. Not affiliated with the Joint Admissions and Matriculation Board.
         </p>
         <a href="#main" className="inline-flex min-h-11 items-center gap-2 self-start">Back to top ↑</a>
+        <PolicyLinks className="sm:justify-end"/>
       </footer>
-    </>
+    </BrowserAccountBoundary>
   );
 }

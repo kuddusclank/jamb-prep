@@ -62,7 +62,7 @@ export function CheckoutClient({ pricing }: CheckoutClientProps) {
               50% Referral Discount Voucher Applied!
             </strong>
             <p className="text-slate-600 mt-0.5">
-              Because you invited 2 classmates who completed their first diagnostic, your first month is halved from ₦1,000 to <strong>₦500</strong>.
+              Because 2 classmates completed account onboarding through your link, your first month is halved from ₦1,000 to <strong>₦500</strong>.
             </p>
           </div>
         </div>
@@ -73,7 +73,7 @@ export function CheckoutClient({ pricing }: CheckoutClientProps) {
               <Users size={14} /> Want 50% off your first month?
             </span>
             <p className="text-slate-600 mt-0.5">
-              Invite 2 friends who complete their first diagnostic to pay <strong>₦500</strong> instead of ₦1,000.
+              Invite 2 friends who complete account onboarding to pay <strong>₦500</strong> instead of ₦1,000.
             </p>
           </div>
           <Link
@@ -135,9 +135,9 @@ export function CheckoutClient({ pricing }: CheckoutClientProps) {
         </div>
 
         {/* Plan 2: Premium Coach Tier */}
-        <div className="rounded-3xl border-2 border-[#116149] bg-white p-6 sm:p-8 flex flex-col justify-between shadow-lg shadow-[#116149]/10 relative">
-          <div className="absolute -top-3.5 right-6 px-3.5 py-0.5 rounded-full bg-[#116149] text-white text-[11px] font-bold uppercase tracking-wider">
-            Most Recommended
+        <div className="relative flex flex-col justify-between rounded-3xl border-2 border-[#116149] bg-white p-6 shadow-lg shadow-[#116149]/10 sm:p-8">
+          <div className="absolute -top-3.5 right-6 rounded-full bg-[#116149] px-3.5 py-1 text-[11px] font-bold uppercase tracking-wider text-white">
+            50% off through December 31
           </div>
 
           <div>
@@ -149,25 +149,15 @@ export function CheckoutClient({ pricing }: CheckoutClientProps) {
               Unlimited practice, authentic CBT hall simulations, and personalized revision.
             </p>
 
-            <div className="mt-5 pb-5 border-b border-slate-100 flex items-baseline gap-2">
-              {pricing.hasDiscount ? (
-                <>
-                  <span className="text-4xl font-extrabold text-[#116149]">
-                    ₦{pricing.finalAmountNaira.toLocaleString()}
-                  </span>
-                  <span className="text-lg line-through text-slate-400 font-semibold">
-                    ₦{pricing.originalAmountNaira.toLocaleString()}
-                  </span>
-                  <span className="text-xs text-slate-400">/ 30 days</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-4xl font-extrabold text-[#092E28]">
-                    ₦{pricing.finalAmountNaira.toLocaleString()}
-                  </span>
-                  <span className="text-xs text-slate-400">/ 30 days</span>
-                </>
-              )}
+            <div className="mt-5 border-b border-slate-100 pb-5">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <span className="text-4xl font-extrabold text-[#116149]">₦{pricing.finalAmountNaira.toLocaleString()}</span>
+                <span className="text-sm font-semibold text-slate-400 line-through">₦{pricing.hasDiscount ? pricing.originalAmountNaira.toLocaleString() : "1,000"}</span>
+                <span className="text-sm font-semibold text-slate-400 line-through">₦2,000</span>
+                <span className="text-xs text-slate-500">/ 30 days</span>
+              </div>
+              <p className="mt-2 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">Launch price · ends December 31, 2026</p>
+              {pricing.hasDiscount && <p className="mt-2 text-xs text-slate-600">Your referral reward lowers the launch price by another 50% for this first month.</p>}
             </div>
 
             {pricing.isAlreadyPremium && formattedExpiry && (
@@ -234,6 +224,9 @@ export function CheckoutClient({ pricing }: CheckoutClientProps) {
               <ShieldCheck size={13} className="text-emerald-700" />
               <span>Secured by Paystack • Card, Bank Transfer, USSD</span>
             </div>
+            <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-500">
+              By continuing, you agree to our <Link href="/terms/" className="underline underline-offset-2">Terms</Link> and acknowledge the <Link href="/privacy/" className="underline underline-offset-2">Privacy</Link> and <Link href="/refund-policy/" className="underline underline-offset-2">Refund Policies</Link>.
+            </p>
           </div>
         </div>
 

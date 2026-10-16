@@ -1,0 +1,341 @@
+{
+  "at": "2026-10-16T06:44:59.163553+00:00",
+  "cells": [
+    {
+      "code": "number-numeration",
+      "required_count": 8,
+      "eligible_mapped": 58
+    },
+    {
+      "code": "algebra",
+      "required_count": 12,
+      "eligible_mapped": 82
+    },
+    {
+      "code": "geometry-trigonometry",
+      "required_count": 10,
+      "eligible_mapped": 51
+    },
+    {
+      "code": "calculus",
+      "required_count": 4,
+      "eligible_mapped": 41
+    },
+    {
+      "code": "statistics-probability",
+      "required_count": 6,
+      "eligible_mapped": 40
+    }
+  ],
+  "years": [
+    {
+      "total": 4,
+      "exam_year": 2000,
+      "unmapped_eligible": 0
+    },
+    {
+      "total": 5,
+      "exam_year": 2001,
+      "unmapped_eligible": 0
+    },
+    {
+      "total": 7,
+      "exam_year": 2002,
+      "unmapped_eligible": 0
+    },
+    {
+      "total": 6,
+      "exam_year": 2003,
+      "unmapped_eligible": 0
+    },
+    {
+      "total": 6,
+      "exam_year": 2004,
+      "unmapped_eligible": 0
+    },
+    {
+      "total": 7,
+      "exam_year": 2005,
+      "unmapped_eligible": 0
+    },
+    {
+      "total": 9,
+      "exam_year": 2006,
+      "unmapped_eligible": 0
+    },
+    {
+      "total": 10,
+      "exam_year": 2007,
+      "unmapped_eligible": 0
+    },
+    {
+      "total": 10,
+      "exam_year": 2008,
+      "unmapped_eligible": 0
+    },
+    {
+      "total": 11,
+      "exam_year": 2009,
+      "unmapped_eligible": 0
+    },
+    {
+      "total": 25,
+      "exam_year": 2010,
+      "unmapped_eligible": 0
+    },
+    {
+      "total": 33,
+      "exam_year": 2011,
+      "unmapped_eligible": 0
+    },
+    {
+      "total": 42,
+      "exam_year": 2012,
+      "unmapped_eligible": 0
+    },
+    {
+      "total": 39,
+      "exam_year": 2013,
+      "unmapped_eligible": 0
+    },
+    {
+      "total": 40,
+      "exam_year": 2014,
+      "unmapped_eligible": 0
+    },
+    {
+      "total": 40,
+      "exam_year": 2015,
+      "unmapped_eligible": 40
+    },
+    {
+      "total": 40,
+      "exam_year": 2016,
+      "unmapped_eligible": 40
+    },
+    {
+      "total": 40,
+      "exam_year": 2017,
+      "unmapped_eligible": 40
+    },
+    {
+      "total": 40,
+      "exam_year": 2018,
+      "unmapped_eligible": 40
+    },
+    {
+      "total": 4,
+      "exam_year": 2022,
+      "unmapped_eligible": 0
+    },
+    {
+      "total": 7,
+      "exam_year": 2023,
+      "unmapped_eligible": 0
+    },
+    {
+      "total": 7,
+      "exam_year": 2024,
+      "unmapped_eligible": 0
+    }
+  ],
+  "topics": [
+    {
+      "total": 20,
+      "eligible": 20,
+      "published": 20,
+      "topic_slug": "arithmetic-and-geometric-progressions",
+      "mock_mapped": 13,
+      "topic_title": "Arithmetic and Geometric Progressions",
+      "eligible_unmapped": 7
+    },
+    {
+      "total": 7,
+      "eligible": 7,
+      "published": 7,
+      "topic_slug": "binary-operations",
+      "mock_mapped": 6,
+      "topic_title": "Binary Operations",
+      "eligible_unmapped": 1
+    },
+    {
+      "total": 28,
+      "eligible": 28,
+      "published": 28,
+      "topic_slug": "calculus-differentiation",
+      "mock_mapped": 24,
+      "topic_title": "Calculus & Differentiation",
+      "eligible_unmapped": 4
+    },
+    {
+      "total": 30,
+      "eligible": 30,
+      "published": 30,
+      "topic_slug": "coordinate-geometry",
+      "mock_mapped": 22,
+      "topic_title": "Coordinate Geometry",
+      "eligible_unmapped": 8
+    },
+    {
+      "total": 1,
+      "eligible": 1,
+      "published": 1,
+      "topic_slug": "differentiation",
+      "mock_mapped": 1,
+      "topic_title": "Differentiation",
+      "eligible_unmapped": 0
+    },
+    {
+      "total": 44,
+      "eligible": 44,
+      "published": 44,
+      "topic_slug": "fractions-decimals-and-approximations",
+      "mock_mapped": 22,
+      "topic_title": "Fractions, Decimals and Approximations",
+      "eligible_unmapped": 22
+    },
+    {
+      "total": 29,
+      "eligible": 29,
+      "published": 29,
+      "topic_slug": "indices-and-logarithms",
+      "mock_mapped": 20,
+      "topic_title": "Indices and Logarithms",
+      "eligible_unmapped": 9
+    },
+    {
+      "total": 16,
+      "eligible": 16,
+      "published": 16,
+      "topic_slug": "inequalities",
+      "mock_mapped": 11,
+      "topic_title": "Inequalities",
+      "eligible_unmapped": 5
+    },
+    {
+      "total": 23,
+      "eligible": 23,
+      "published": 23,
+      "topic_slug": "integration",
+      "mock_mapped": 16,
+      "topic_title": "Integration",
+      "eligible_unmapped": 7
+    },
+    {
+      "total": 13,
+      "eligible": 13,
+      "published": 13,
+      "topic_slug": "matrices-and-determinants",
+      "mock_mapped": 9,
+      "topic_title": "Matrices and Determinants",
+      "eligible_unmapped": 4
+    },
+    {
+      "total": 11,
+      "eligible": 11,
+      "published": 11,
+      "topic_slug": "number-bases",
+      "mock_mapped": 6,
+      "topic_title": "Number Bases",
+      "eligible_unmapped": 5
+    },
+    {
+      "total": 17,
+      "eligible": 17,
+      "published": 17,
+      "topic_slug": "permutations-and-combinations",
+      "mock_mapped": 15,
+      "topic_title": "Permutations and Combinations",
+      "eligible_unmapped": 2
+    },
+    {
+      "total": 49,
+      "eligible": 49,
+      "published": 49,
+      "topic_slug": "polynomials",
+      "mock_mapped": 22,
+      "topic_title": "Polynomials",
+      "eligible_unmapped": 27
+    },
+    {
+      "total": 16,
+      "eligible": 16,
+      "published": 16,
+      "topic_slug": "probability",
+      "mock_mapped": 11,
+      "topic_title": "Probability",
+      "eligible_unmapped": 5
+    },
+    {
+      "total": 2,
+      "eligible": 2,
+      "published": 2,
+      "topic_slug": "quadratic-equations",
+      "mock_mapped": 2,
+      "topic_title": "Quadratic Equations",
+      "eligible_unmapped": 0
+    },
+    {
+      "total": 10,
+      "eligible": 10,
+      "published": 10,
+      "topic_slug": "sets",
+      "mock_mapped": 8,
+      "topic_title": "Sets",
+      "eligible_unmapped": 2
+    },
+    {
+      "total": 27,
+      "eligible": 27,
+      "published": 27,
+      "topic_slug": "statistics-and-measures-of-dispersion",
+      "mock_mapped": 14,
+      "topic_title": "Statistics and Measures of Dispersion",
+      "eligible_unmapped": 13
+    },
+    {
+      "total": 15,
+      "eligible": 15,
+      "published": 15,
+      "topic_slug": "surds",
+      "mock_mapped": 10,
+      "topic_title": "Surds",
+      "eligible_unmapped": 5
+    },
+    {
+      "total": 63,
+      "eligible": 63,
+      "published": 63,
+      "topic_slug": "trigonometry",
+      "mock_mapped": 29,
+      "topic_title": "Trigonometry",
+      "eligible_unmapped": 34
+    },
+    {
+      "total": 11,
+      "eligible": 11,
+      "published": 11,
+      "topic_slug": "variation",
+      "mock_mapped": 11,
+      "topic_title": "Variation",
+      "eligible_unmapped": 0
+    }
+  ],
+  "totals": {
+    "all": 432,
+    "eligible": 432,
+    "published": 432,
+    "latest_upload": "2026-10-16T06:15:51.415156+00:00",
+    "mapped_eligible": 272,
+    "unmapped_eligible": 160,
+    "assessment_disabled": 0,
+    "published_ineligible": 0
+  },
+  "blueprint": {
+    "id": "52d3fd9a-5592-4828-bc9d-50e7867b2121",
+    "title": "Mathematics: balanced 40-question UTME mock",
+    "version": 1,
+    "total_questions": 40
+  },
+  "duplicate_eligible_stem_groups": 3
+}

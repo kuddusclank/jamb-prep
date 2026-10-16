@@ -1,0 +1,290 @@
+{
+  "at": "2026-10-16T06:50:36.932964+00:00",
+  "cells": null,
+  "years": [
+    {
+      "total": 50,
+      "exam_year": 1994,
+      "unmapped_eligible": 50
+    },
+    {
+      "total": 50,
+      "exam_year": 1995,
+      "unmapped_eligible": 50
+    },
+    {
+      "total": 50,
+      "exam_year": 1997,
+      "unmapped_eligible": 50
+    },
+    {
+      "total": 50,
+      "exam_year": 1998,
+      "unmapped_eligible": 50
+    },
+    {
+      "total": 50,
+      "exam_year": 2003,
+      "unmapped_eligible": 50
+    },
+    {
+      "total": 50,
+      "exam_year": 2004,
+      "unmapped_eligible": 50
+    },
+    {
+      "total": 3,
+      "exam_year": 2022,
+      "unmapped_eligible": 3
+    },
+    {
+      "total": 5,
+      "exam_year": 2023,
+      "unmapped_eligible": 5
+    },
+    {
+      "total": 7,
+      "exam_year": 2024,
+      "unmapped_eligible": 7
+    }
+  ],
+  "topics": [
+    {
+      "total": 3,
+      "eligible": 3,
+      "published": 3,
+      "topic_slug": "aids-to-trade-advertising",
+      "mock_mapped": 0,
+      "topic_title": "Aids to Trade: Advertising",
+      "eligible_unmapped": 3
+    },
+    {
+      "total": 5,
+      "eligible": 5,
+      "published": 5,
+      "topic_slug": "aids-to-trade-communication",
+      "mock_mapped": 0,
+      "topic_title": "Aids to Trade: Communication",
+      "eligible_unmapped": 5
+    },
+    {
+      "total": 14,
+      "eligible": 14,
+      "published": 14,
+      "topic_slug": "aids-to-trade-insurance",
+      "mock_mapped": 0,
+      "topic_title": "Aids to Trade: Insurance",
+      "eligible_unmapped": 14
+    },
+    {
+      "total": 9,
+      "eligible": 9,
+      "published": 9,
+      "topic_slug": "aids-to-trade-transportation",
+      "mock_mapped": 0,
+      "topic_title": "Aids to Trade: Transportation",
+      "eligible_unmapped": 9
+    },
+    {
+      "total": 5,
+      "eligible": 5,
+      "published": 5,
+      "topic_slug": "aids-to-trade-warehousing",
+      "mock_mapped": 0,
+      "topic_title": "Aids to Trade: Warehousing",
+      "eligible_unmapped": 5
+    },
+    {
+      "total": 26,
+      "eligible": 26,
+      "published": 26,
+      "topic_slug": "business-capital-and-financial-calculations",
+      "mock_mapped": 0,
+      "topic_title": "Business Capital and Financial Calculations",
+      "eligible_unmapped": 26
+    },
+    {
+      "total": 14,
+      "eligible": 14,
+      "published": 14,
+      "topic_slug": "business-law-contract-and-agency",
+      "mock_mapped": 0,
+      "topic_title": "Business Law: Contract and Agency",
+      "eligible_unmapped": 14
+    },
+    {
+      "total": 29,
+      "eligible": 29,
+      "published": 29,
+      "topic_slug": "business-management-and-organization",
+      "mock_mapped": 0,
+      "topic_title": "Business Management and Organization",
+      "eligible_unmapped": 29
+    },
+    {
+      "total": 8,
+      "eligible": 8,
+      "published": 8,
+      "topic_slug": "business-organizations-partnerships",
+      "mock_mapped": 0,
+      "topic_title": "Business Organizations: Partnerships",
+      "eligible_unmapped": 8
+    },
+    {
+      "total": 6,
+      "eligible": 6,
+      "published": 6,
+      "topic_slug": "channels-of-distribution",
+      "mock_mapped": 0,
+      "topic_title": "Channels of Distribution",
+      "eligible_unmapped": 6
+    },
+    {
+      "total": 10,
+      "eligible": 10,
+      "published": 10,
+      "topic_slug": "commercial-banks-and-functions",
+      "mock_mapped": 0,
+      "topic_title": "Commercial Banks and Functions",
+      "eligible_unmapped": 10
+    },
+    {
+      "total": 9,
+      "eligible": 9,
+      "published": 9,
+      "topic_slug": "consumer-protection",
+      "mock_mapped": 0,
+      "topic_title": "Consumer Protection",
+      "eligible_unmapped": 9
+    },
+    {
+      "total": 9,
+      "eligible": 9,
+      "published": 9,
+      "topic_slug": "e-commerce-and-electronic-payments",
+      "mock_mapped": 0,
+      "topic_title": "E-Commerce and Electronic Payments",
+      "eligible_unmapped": 9
+    },
+    {
+      "total": 10,
+      "eligible": 10,
+      "published": 10,
+      "topic_slug": "economic-groupings-and-international-organizations",
+      "mock_mapped": 0,
+      "topic_title": "Economic Groupings and International Organizations",
+      "eligible_unmapped": 10
+    },
+    {
+      "total": 11,
+      "eligible": 11,
+      "published": 11,
+      "topic_slug": "foreign-trade-documents",
+      "mock_mapped": 0,
+      "topic_title": "Foreign Trade: Documents",
+      "eligible_unmapped": 11
+    },
+    {
+      "total": 7,
+      "eligible": 7,
+      "published": 7,
+      "topic_slug": "home-trade-wholesale-trade",
+      "mock_mapped": 0,
+      "topic_title": "Home Trade: Wholesale Trade",
+      "eligible_unmapped": 7
+    },
+    {
+      "total": 19,
+      "eligible": 19,
+      "published": 19,
+      "topic_slug": "limited-liability-companies",
+      "mock_mapped": 0,
+      "topic_title": "Limited Liability Companies",
+      "eligible_unmapped": 19
+    },
+    {
+      "total": 24,
+      "eligible": 24,
+      "published": 24,
+      "topic_slug": "marketing-and-sales-promotion",
+      "mock_mapped": 0,
+      "topic_title": "Marketing and Sales Promotion",
+      "eligible_unmapped": 24
+    },
+    {
+      "total": 9,
+      "eligible": 9,
+      "published": 9,
+      "topic_slug": "money-banking-and-financial-institutions",
+      "mock_mapped": 0,
+      "topic_title": "Money, Banking and Financial Institutions",
+      "eligible_unmapped": 9
+    },
+    {
+      "total": 17,
+      "eligible": 17,
+      "published": 17,
+      "topic_slug": "public-enterprises-and-privatization",
+      "mock_mapped": 0,
+      "topic_title": "Public Enterprises and Privatization",
+      "eligible_unmapped": 17
+    },
+    {
+      "total": 23,
+      "eligible": 23,
+      "published": 23,
+      "topic_slug": "scope-of-commerce-and-production",
+      "mock_mapped": 0,
+      "topic_title": "Scope of Commerce and Production",
+      "eligible_unmapped": 23
+    },
+    {
+      "total": 8,
+      "eligible": 8,
+      "published": 8,
+      "topic_slug": "sole-proprietorship-and-cooperatives",
+      "mock_mapped": 0,
+      "topic_title": "Sole Proprietorship and Cooperatives",
+      "eligible_unmapped": 8
+    },
+    {
+      "total": 18,
+      "eligible": 18,
+      "published": 18,
+      "topic_slug": "stock-exchange-and-capital-market",
+      "mock_mapped": 0,
+      "topic_title": "Stock Exchange and Capital Market",
+      "eligible_unmapped": 18
+    },
+    {
+      "total": 12,
+      "eligible": 12,
+      "published": 12,
+      "topic_slug": "terms-of-trade-and-payments",
+      "mock_mapped": 0,
+      "topic_title": "Terms of Trade and Payments",
+      "eligible_unmapped": 12
+    },
+    {
+      "total": 10,
+      "eligible": 10,
+      "published": 10,
+      "topic_slug": "trade-associations-and-chambers-of-commerce",
+      "mock_mapped": 0,
+      "topic_title": "Trade Associations and Chambers of Commerce",
+      "eligible_unmapped": 10
+    }
+  ],
+  "totals": {
+    "all": 315,
+    "eligible": 315,
+    "published": 315,
+    "latest_upload": "2026-10-16T06:49:12.691811+00:00",
+    "mapped_eligible": 0,
+    "unmapped_eligible": 315,
+    "assessment_disabled": 0,
+    "published_ineligible": 0
+  },
+  "blueprint": null,
+  "duplicate_eligible_stem_groups": 0
+}

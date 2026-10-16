@@ -8,6 +8,7 @@ import {ADMIN_WORKFLOW_ROUTES,beginImportBatch,finishImportBatch,recordQuestionH
 import { initializeCheckout, verifyOwnedPayment, cancelOwnedSubscription, configureVerifiedRenewal } from '../services/paystack-service';
 import { allocatePractice, checkIssuedPractice, startFrozenMock } from '../services/study-service';
 import { saveStudentOnboardingAtomic } from '../services/onboarding-service';
+import { APP_RATING_ROUTES } from '../services/app-rating-service';
 /**
  * Typed Native Worker API Router & Foundation Endpoint Registry (T03)
  *
@@ -410,18 +411,47 @@ async function handlePaystackWebhook(ctx: RouteRequestContext): Promise<RouteHan
         if(updated.length)await tx`UPDATE payment_renewal_requests SET status='ready',subscription_code=${code} WHERE reference=${jobs[0].reference}`;
       });
     }
-  } else if (event.event === 'subscription.disable') {
-    const subCode = event.data?.subscription?.subscription_code || (event.data as { subscription_code?: string })?.subscription_code;
+  } else if (
+    event.event === 'subscription.disable' ||
+    event.event === 'subscription.not_renew' ||
+    event.event === 'invoice.payment_failed'
+  ) {
+    const subCode =
+      event.data?.subscription?.subscription_code ||
+      (event.data as { subscription_code?: string })?.subscription_code;
     const customerCode = event.data?.customer?.customer_code;
 
     if (subCode || customerCode) {
       const dbCtx = ctx.getDb();
       const nowIso = ctx.now.toISOString();
       if (subCode) {
+        const updated = await dbCtx.sql<Array<{ user_id: string }>>`
+          UPDATE subscription_entitlements
+          SET
+            auto_renew = FALSE,
+            cancelled_at = COALESCE(cancelled_at, ${nowIso}::timestamptz),
+            updated_at = ${nowIso}::timestamptz
+          WHERE paystack_subscription_code = ${subCode}
+          RETURNING user_id
+        `;
+        if (updated.length === 0 && customerCode) {
+          await dbCtx.sql`
+            UPDATE subscription_entitlements
+            SET
+              auto_renew = FALSE,
+              cancelled_at = COALESCE(cancelled_at, ${nowIso}::timestamptz),
+              updated_at = ${nowIso}::timestamptz
+            WHERE paystack_customer_code = ${customerCode}
+          `;
+        }
+      } else if (customerCode) {
         await dbCtx.sql`
           UPDATE subscription_entitlements
-          SET auto_renew = FALSE, cancelled_at = ${nowIso}::timestamptz, updated_at = ${nowIso}::timestamptz
-          WHERE paystack_subscription_code = ${subCode}
+          SET
+            auto_renew = FALSE,
+            cancelled_at = COALESCE(cancelled_at, ${nowIso}::timestamptz),
+            updated_at = ${nowIso}::timestamptz
+          WHERE paystack_customer_code = ${customerCode}
         `;
       }
     }
@@ -802,6 +832,7 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
  * `hooks.allowUnreviewedProductRoutes` is injected in local tests.
  */
 export const ENABLED_PRODUCTION_ROUTE_IDS: ReadonlySet<string> = new Set([
+  ...APP_RATING_ROUTES.map(route => route.id),
   ...ASSESSMENT_ADMIN_ROUTES.map(route=>route.id),
   ...PRACTICE_ROUTES.map(route=>route.id),
   'system.health',
@@ -854,6 +885,7 @@ export const ENABLED_PRODUCTION_ROUTE_IDS: ReadonlySet<string> = new Set([
  * Full Route Registry for `/api/v1/*` and legacy webhook/admin aliases (Plan Section 6.2).
  */
 export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
+  ...APP_RATING_ROUTES,
   ...ASSESSMENT_ADMIN_ROUTES,
   ...PRACTICE_ROUTES,
   ...ADMIN_CURRICULUM_ROUTES,

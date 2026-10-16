@@ -2,17 +2,18 @@
 import { BrandMark } from "@/components/brand-mark";
 import type { CheckoutPricing } from "@/lib/client-actions";
 import { StudyWorkspace } from "@/components/study-workspace";
-import { HelpCircle, BookOpen } from "lucide-react";
+import { HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { CheckoutClient } from "./checkout-client";
 
 import { useBrowserAccount } from "@/components/browser-account-boundary";
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
+import { PolicyLinks } from "@/components/legal-page";
 export default function PricingPage() {
   const account = useBrowserAccount();
   const resource = useApiResource<CheckoutPricing>('/api/v1/pricing');
   const user = account.session.user;
-  if (!user) return <main className="shell section-space"><h1 className="text-3xl font-bold">Premium: ₦1,000 per month</h1><p className="mt-4">Unlock unlimited practice, mocks and detailed coaching. Your first month may qualify for the referral discount.</p><Link href="/login?redirectTo=/pricing" className="mt-6 inline-block rounded-full bg-[#116149] px-6 py-3 text-white">Sign in to check your price</Link></main>;
+  if (!user) return <main className="shell section-space"><section className="mx-auto max-w-3xl rounded-3xl border border-emerald-900/15 bg-white p-6 shadow-sm sm:p-10"><span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#116149]">Launch offer · 50% off through December 31, 2026</span><h1 className="mt-5 text-3xl font-bold text-[#092E28]">Premium study access</h1><div className="mt-4 flex flex-wrap items-baseline gap-3"><span className="text-5xl font-extrabold text-[#116149]">₦1,000</span><span className="text-xl font-semibold text-slate-400 line-through">₦2,000</span><span className="text-sm text-slate-500">/ 30 days</span></div><p className="mt-4 max-w-xl text-slate-600">Unlock unlimited practice, full mock exams and detailed coaching at half price during our launch offer.</p><Link href="/login?redirectTo=/pricing" className="mt-6 inline-flex min-h-12 items-center rounded-full bg-[#116149] px-6 font-semibold text-white">Sign in to get Premium</Link></section></main>;
   if (!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry} /></StudyWorkspace>;
   const pricing = resource.data;
 
@@ -46,7 +47,7 @@ export default function PricingPage() {
             <strong className="block font-semibold text-slate-800 mb-1">
               How does the 50% referral discount work?
             </strong>
-            Invite 2 classmates with your unique referral link. Once both complete their account onboarding, your first month is automatically halved from ₦1,000 to ₦500.
+            Invite 2 classmates with your unique referral link. Once both complete account onboarding, your first month can be reduced from the ₦1,000 launch price to ₦500.
           </div>
 
           <div>
@@ -97,8 +98,9 @@ export default function PricingPage() {
         </div>
       </header>
       <main className="shell flex-1">{content}</main>
-      <footer className="shell py-8 text-center text-xs text-slate-400">
-        JAMBPrep · Independent UTME preparation.
+      <footer className="shell flex flex-col items-center gap-3 py-8 text-center text-xs text-slate-400">
+        <span>JAMBPrep · Independent UTME preparation.</span>
+        <PolicyLinks className="justify-center"/>
       </footer>
     </div>
   );

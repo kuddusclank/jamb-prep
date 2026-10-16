@@ -593,6 +593,57 @@
       "count": 3,
       "budget": "dropdownLogoFixAllowance",
       "status": "passed"
+    },
+    {
+      "id": 81,
+      "action": "User-requested current Mathematics upload audit",
+      "at": "2026-10-16",
+      "authorization": "Direct user instruction: audit them; read-only current Mathematics uploads only. No prior publication allowance reused or extended.",
+      "scope": "One sequential TLS-verified database session: BEGIN READ ONLY, 25-second statement timeout, aggregate SELECT, ROLLBACK. No writes or student data.",
+      "status": "completed",
+      "evidence": "bmad/mathematics-current-bank-audit.json"
+    },
+    {
+      "id": 82,
+      "action": "User-requested current Commerce upload audit",
+      "at": "2026-10-16",
+      "authorization": "Direct user instruction: do the same for commerce; read-only audit only. No prior allowance reused.",
+      "scope": "One sequential TLS-verified database session, read-only transaction and bounded aggregate SELECT. No student data or writes.",
+      "status": "completed",
+      "evidence": "bmad/commerce-current-bank-audit.json"
+    },
+    {
+      "id": 83,
+      "action": "User-authorized inactive blueprint audit and Commerce activation",
+      "at": "2026-10-16",
+      "authorization": "Direct user instruction: activate all inactive blueprints. Scoped to safe configuration activation and validation; no old allowance extended.",
+      "scope": "One inventory session; two private assessment backup reads (six tables each), one fully rolled-back activation attempt after JSON encoding constraint rejection, and one committed retry with 20 real seeded form selections and catalogue readiness. Sequential sessions only; no student records or question content changed.",
+      "status": "completed",
+      "evidence": "bmad/commerce-blueprint-release.json",
+      "inactiveDatabaseBlueprintsFound": 0,
+      "newlyActivatedSubjects": [
+        "COM"
+      ]
+    },
+    {
+      "id": 84,
+      "action": "User-requested cross-subject count and blueprint readiness audit",
+      "at": "2026-10-16T09:29:21.284Z",
+      "authorization": "Direct request to audit new bank counts versus blueprint coverage. No prior allowance reused.",
+      "scope": "One sequential database connection, aggregate subject counts and production loadMockReadySubjects SELECT. Read-only; no student records or mutations.",
+      "status": "completed",
+      "evidence": "bmad/subject-blueprint-coverage-audit.json"
+    },
+    {
+      "id": 85,
+      "action": "User-authorized expanded bank review, mapping and activation",
+      "at": "2026-10-16T09:41:17.768Z",
+      "authorization": "Direct user request: add French, map all remaining eligible banks, implement blueprints, review existing coverage. No prior capped allowance reused.",
+      "scope": "Sequential read-only export of questions/configuration (no student data), private assessment/French backup, one committed transaction creating8 blueprints and1967 mappings including160 Mathematics additions, repairing French context/3 keys and holding1 invalid item; real selector validation for19 blueprints, post-commit catalogue and aggregate audits. Offline rerankings run locally; no accounts, charges, attempts or quota writes.",
+      "status": "completed",
+      "evidence": "bmad/expanded-blueprints-release.json",
+      "readySubjects": 19,
+      "privateBackup": "/Users/akanbiabdulquddus/.codex/private-backups/jambprep/before-expanded-blueprints-1792143568082.json"
     }
   ],
   "accounting": "Conservative operation reservations; each database client operation consumes one slot even on connection failure. Operations run sequentially.",

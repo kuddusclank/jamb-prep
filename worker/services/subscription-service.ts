@@ -93,7 +93,7 @@ export async function getUserSubscriptionStatus(
     expiresAt: expiry.toISOString(),
     daysRemaining,
     planCode: entitlement.plan_code,
-    autoRenew: entitlement.auto_renew ?? true,
+    autoRenew: isPremium ? (entitlement.auto_renew ?? true) : false,
     cancelledAt: entitlement.cancelled_at ? new Date(entitlement.cancelled_at).toISOString() : null,
   };
 }

@@ -13,7 +13,7 @@ export function accountDestination(identity: SessionIdentityResponse, pathname: 
   if (!identity.provisioned) return pathname === '/register' ? null : '/register?resume=1';
   if (!identity.onboardingCompleted) return pathname === '/onboarding' ? null : '/onboarding';
   if (pathname === '/onboarding' && editOnboarding) return null;
-  if (['/login', '/register', '/onboarding'].includes(pathname)) {
+  if (['/', '/login', '/register', '/forgot-password', '/onboarding'].includes(pathname)) {
     const target = sanitizeInternalRedirect(returnPath);
     return target.startsWith('/onboarding') ? '/dashboard' : target;
   }
