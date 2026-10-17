@@ -324,8 +324,8 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
                   Passage: {currentQ.passage.title}
                 </div>
               )}
-              <div className="italic text-slate-700">
-                {currentQ.passage.content}
+              <div className="text-slate-700 whitespace-pre-wrap">
+                <MathRenderer content={currentQ.passage.content} />
               </div>
             </div>
           )}

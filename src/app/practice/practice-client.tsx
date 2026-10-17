@@ -341,9 +341,9 @@ export function PracticeClient({
               Passage: {currentQ.passage.title}
             </h3>
           )}
-          <p className="text-sm leading-relaxed text-slate-800 italic">
-            {currentQ.passage.content}
-          </p>
+          <div className="text-sm leading-relaxed text-slate-800 whitespace-pre-wrap">
+            <MathRenderer content={currentQ.passage.content} />
+          </div>
         </div>
       )}
 
