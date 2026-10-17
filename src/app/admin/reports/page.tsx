@@ -52,9 +52,12 @@ function ReportsContent() {
   const currentSubject = searchParams.get("subject") || "";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
 
-  const [actionError,setActionError]=useState<string|null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({});
   const [updating, setUpdating] = useState<Record<string, boolean>>({});
+  const [localOverrides, setLocalOverrides] = useState<
+    Record<string, { status: ReportItem["status"]; adminNotes: string | null }>
+  >({});
 
   const queryParts = [
     `page=${currentPage}`,
@@ -79,6 +82,7 @@ function ReportsContent() {
     if (!("page" in updates)) {
       params.delete("page");
     }
+    setLocalOverrides({});
     router.push(`/admin/reports/?${params.toString()}`);
   }
 
@@ -89,16 +93,20 @@ function ReportsContent() {
   ) {
     setActionError(null);
     setUpdating((prev) => ({ ...prev, [reportId]: true }));
+    const nextNotes = adminNotes ?? notesDraft[reportId] ?? null;
     try {
       await getAccountCoordinator().mutate(
         `/api/v1/admin/reports/${reportId}`,
         {
           status: nextStatus,
-          adminNotes: adminNotes ?? notesDraft[reportId] ?? null,
+          adminNotes: nextNotes,
         },
         "PATCH"
       );
-      reportsRes.retry();
+      setLocalOverrides((prev) => ({
+        ...prev,
+        [reportId]: { status: nextStatus, adminNotes: nextNotes },
+      }));
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Failed to update report.");
     } finally {
@@ -214,6 +222,12 @@ function ReportsContent() {
               <div className="space-y-4">
                 {reportsRes.data.reports.map((rep) => {
                   const isBusy = updating[rep.id] ?? false;
+                  const effectiveStatus =
+                    localOverrides[rep.id]?.status ?? rep.status;
+                  const effectiveNotes =
+                    localOverrides[rep.id] !== undefined
+                      ? localOverrides[rep.id].adminNotes
+                      : rep.adminNotes;
 
                   return (
                     <div
@@ -225,16 +239,16 @@ function ReportsContent() {
                         <div className="flex flex-wrap items-center gap-2">
                           <span
                             className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                              rep.status === "open"
+                              effectiveStatus === "open"
                                 ? "bg-rose-100 text-rose-800"
-                                : rep.status === "investigating"
+                                : effectiveStatus === "investigating"
                                 ? "bg-amber-100 text-amber-800"
-                                : rep.status === "resolved"
+                                : effectiveStatus === "resolved"
                                 ? "bg-emerald-100 text-emerald-800"
                                 : "bg-slate-100 text-slate-700"
                             }`}
                           >
-                            {rep.status.toUpperCase()}
+                            {effectiveStatus.toUpperCase()}
                           </span>
 
                           <span className="rounded-md bg-rose-50 border border-rose-200 px-2 py-0.5 text-xs font-semibold text-rose-800">
@@ -274,7 +288,7 @@ function ReportsContent() {
                           <input
                             type="text"
                             placeholder="Add admin resolution notes (e.g. Fixed option C stem)..."
-                            defaultValue={rep.adminNotes || ""}
+                            defaultValue={effectiveNotes || ""}
                             onChange={(e) =>
                               setNotesDraft((prev) => ({
                                 ...prev,
@@ -293,33 +307,36 @@ function ReportsContent() {
                             Edit Question ↗
                           </Link>
 
-                          {rep.status !== "investigating" && (
+                          {effectiveStatus !== "investigating" && (
                             <button
+                              type="button"
                               disabled={isBusy}
                               onClick={() => void handleUpdateReport(rep.id, "investigating")}
                               className="rounded-xl bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-200 disabled:opacity-50"
                             >
-                              Investigate
+                              {isBusy ? "Saving..." : "Investigate"}
                             </button>
                           )}
 
-                          {rep.status !== "resolved" && (
+                          {effectiveStatus !== "resolved" && (
                             <button
+                              type="button"
                               disabled={isBusy}
                               onClick={() => void handleUpdateReport(rep.id, "resolved")}
                               className="rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
                             >
-                              Resolve
+                              {isBusy ? "Saving..." : "Resolve"}
                             </button>
                           )}
 
-                          {rep.status !== "dismissed" && (
+                          {effectiveStatus !== "dismissed" && (
                             <button
+                              type="button"
                               disabled={isBusy}
                               onClick={() => void handleUpdateReport(rep.id, "dismissed")}
                               className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100 disabled:opacity-50"
                             >
-                              Dismiss
+                              {isBusy ? "Saving..." : "Dismiss"}
                             </button>
                           )}
                         </div>
