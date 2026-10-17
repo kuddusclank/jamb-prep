@@ -55,7 +55,9 @@ export async function initializeCheckout(db:RequestDbContext,env:PaymentEnv,user
   try {
     const origin=env.PUBLIC_APP_ORIGIN??'https://jambprep.lecterniq.com';
     const url=new URL(origin);if(url.protocol!=='https:'||url.username||url.password||url.pathname!=='/')throw new Error('Invalid callback origin');
-    const result=await paystackRequest(env,'/transaction/initialize',{email,amount:String(prepared.amount),currency:'NGN',reference:prepared.reference,callback_url:`${url.origin}/checkout/verify/`,metadata:{userId,rewardId:prepared.rewardId}},fetchImpl);
+    const initPayload:Record<string,unknown>={email,amount:String(prepared.amount),currency:'NGN',channels:['card'],reference:prepared.reference,callback_url:`${url.origin}/checkout/verify/`,metadata:{userId,rewardId:prepared.rewardId}};
+    if(prepared.amount===100000&&env.PAYSTACK_PLAN_CODE)initPayload.plan=env.PAYSTACK_PLAN_CODE;
+    const result=await paystackRequest(env,'/transaction/initialize',initPayload,fetchImpl);
     if(result.reference!==prepared.reference)throw new Error('Provider reference mismatch');
     const authorizationUrl=validateCheckoutUrl(result.authorization_url);
     await db.sql`UPDATE payment_checkout_requests SET status='ready',authorization_url=${authorizationUrl} WHERE user_id=${userId}::uuid AND reference=${prepared.reference} AND status='initializing'`;
@@ -76,13 +78,14 @@ export async function verifyOwnedPayment(db:RequestDbContext,env:PaymentEnv,user
   }
   if(!matchesPayment(result,reference,payment.amount_kobo,userId))throw new ApiError({status:409,code:'CONFLICT',message:'This payment has not been confirmed with the expected amount and currency.'});
   const auth=result.authorization as {authorization_code?:string}|undefined;const customer=result.customer as {customer_code?:string}|undefined;
-  const settled=await settleVerifiedPaymentAtomic(db,{reference,expectedUserId:userId,now,paystackMeta:{authorizationCode:auth?.authorization_code,customerCode:customer?.customer_code}});
-  let renewalStatus='unavailable';
-  if((result.authorization as {reusable?:boolean}|undefined)?.reusable===true) {
+  const sub=result.subscription as {subscription_code?:string;email_token?:string}|undefined;
+  const settled=await settleVerifiedPaymentAtomic(db,{reference,expectedUserId:userId,now,paystackMeta:{authorizationCode:auth?.authorization_code,customerCode:customer?.customer_code,subscriptionCode:sub?.subscription_code,emailToken:sub?.email_token}});
+  let renewalStatus=sub?.subscription_code?'ready':'unavailable';
+  if(!sub?.subscription_code && (result.authorization as {reusable?:boolean}|undefined)?.reusable===true) {
     try {renewalStatus=await configureVerifiedRenewal(db,env,userId,reference,auth?.authorization_code,customer?.customer_code,now,fetchImpl);}
     catch {renewalStatus='needs-reconciliation';}
   }
-  return {success:true,reference,expiresAt:settled.expiresAt,alreadyProcessed:settled.alreadyProcessed,renewalStatus,message:renewalStatus==='ready'?'Payment confirmed. Premium and monthly renewal are active.':'Payment confirmed. Premium is active; automatic renewal has not been confirmed. Your account shows its current renewal status.'};
+  return {success:true,reference,expiresAt:settled.expiresAt,alreadyProcessed:settled.alreadyProcessed,renewalStatus,message:renewalStatus==='ready'?'Payment confirmed. Premium and monthly renewal are active.':'Payment confirmed. Premium is active for 30 days.'};
 }
 export async function cancelOwnedSubscription(db:RequestDbContext,env:PaymentEnv,userId:string,now:Date,fetchImpl:typeof fetch=fetch) {
   const rows=await db.sql<Array<{paystack_subscription_code:string|null;paystack_email_token:string|null;expires_at:string;auto_renew:boolean}>>`SELECT paystack_subscription_code,paystack_email_token,expires_at,auto_renew FROM subscription_entitlements WHERE user_id=${userId}::uuid LIMIT 1`;
@@ -118,7 +121,16 @@ export async function configureVerifiedRenewal(db:RequestDbContext,env:PaymentEn
   });
   if(!prepared.created)return prepared.status;
   try {
-    const result=await paystackRequest(env,'/subscription',{customer:customerCode,plan:env.PAYSTACK_PLAN_CODE,authorization:authorizationCode,start_date:new Date(prepared.expires_at).toISOString()},fetchImpl);
+    let result:Record<string,unknown>;
+    try {
+      result=await paystackRequest(env,'/subscription',{customer:customerCode,plan:env.PAYSTACK_PLAN_CODE,authorization:authorizationCode,start_date:new Date(prepared.expires_at).toISOString()},fetchImpl);
+    } catch(postErr) {
+      const subs=await paystackRequest(env,'/subscription?perPage=50',undefined,fetchImpl);
+      const list=Array.isArray(subs)?subs:[];
+      const match=list.find((s:any)=>s&&s.status==='active'&&(s.customer?.customer_code===customerCode||s.customer_code===customerCode)&&(s.plan?.plan_code===env.PAYSTACK_PLAN_CODE||!s.plan?.plan_code)) as Record<string,unknown>|undefined;
+      if(!match)throw postErr;
+      result=match;
+    }
     if(typeof result.subscription_code!=='string'||typeof result.email_token!=='string'||!result.subscription_code.startsWith('SUB_'))throw new Error('Invalid subscription confirmation');
     await db.runSerializableTransaction(async tx=>{
       await tx`UPDATE subscription_entitlements SET paystack_subscription_code=${result.subscription_code as string},paystack_email_token=${result.email_token as string},auto_renew=TRUE,cancelled_at=NULL,updated_at=${now.toISOString()}::timestamptz WHERE user_id=${userId}::uuid AND paystack_subscription_code IS NULL`;

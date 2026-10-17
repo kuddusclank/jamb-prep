@@ -61,7 +61,7 @@ export function ProfileClient({
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelFeedback, setCancelFeedback] = useState<{ error?: string; message?: string } | null>(null);
   const [isCancelledLocally, setIsCancelledLocally] = useState(
-    subscription.autoRenew === false
+    Boolean(subscription.cancelledAt)
   );
 
   const [displayName, setDisplayName] = useState(initialProfile.displayName);
@@ -82,14 +82,15 @@ export function ProfileClient({
         setIsConfirmingCancel(false);
       }
     } catch (err: unknown) {
-      setCancelFeedback({ error: err instanceof Error ? err.message : "Failed to cancel subscription." });
+      setCancelFeedback({ error: err instanceof Error ? err instanceof Error ? err.message : "Failed to cancel subscription." : "Failed to cancel subscription." });
     } finally {
       setIsCancelling(false);
     }
   };
 
   const isCurrentPremium = subscription.isPremium;
-  const isAutoRenewing = isCurrentPremium && !isCancelledLocally && subscription.autoRenew !== false;
+  const isCancelled = isCurrentPremium && (isCancelledLocally || Boolean(subscription.cancelledAt));
+  const isAutoRenewing = isCurrentPremium && !isCancelled && subscription.autoRenew !== false;
 
   const formattedExpiry = subscription.expiresAt
     ? new Date(subscription.expiresAt).toLocaleDateString("en-NG", {
@@ -329,7 +330,7 @@ export function ProfileClient({
         {isCurrentPremium ? (
           /* Active Premium Plan Card */
           <div className={`rounded-2xl border-2 p-6 space-y-5 ${
-            isAutoRenewing 
+            !isCancelled 
               ? "border-emerald-300 bg-emerald-50/50" 
               : "border-amber-300 bg-amber-50/40"
           }`}>
@@ -339,9 +340,13 @@ export function ProfileClient({
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#116149] text-white text-[11px] font-bold uppercase tracking-wider">
                     <ShieldCheck size={12} /> ACTIVE (AUTO-RENEWING)
                   </span>
-                ) : (
+                ) : isCancelled ? (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-700 text-white text-[11px] font-bold uppercase tracking-wider">
                     <AlertTriangle size={12} /> CANCELLATION SCHEDULED
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#116149] text-white text-[11px] font-bold uppercase tracking-wider">
+                    <ShieldCheck size={12} /> ACTIVE (30-DAY PRO ACCESS)
                   </span>
                 )}
                 <h3 className="text-xl font-bold text-[#092E28] mt-2">
@@ -353,9 +358,13 @@ export function ProfileClient({
                       <>
                         Your unlimited access is valid through <strong>{formattedExpiry}</strong> ({subscription.daysRemaining} days remaining). Auto-renews on this date via Paystack.
                       </>
-                    ) : (
+                    ) : isCancelled ? (
                       <>
                         Auto-renewal is disabled for this plan. Your Pro benefits remain active until <strong>{formattedExpiry}</strong> ({subscription.daysRemaining} days remaining), when your account will automatically switch to the Free plan.
+                      </>
+                    ) : (
+                      <>
+                        Your unlimited Pro access is valid through <strong>{formattedExpiry}</strong> ({subscription.daysRemaining} days remaining). Paid via 30-day pass (auto-renewal not enabled).
                       </>
                     )}
                   </p>
@@ -430,13 +439,21 @@ export function ProfileClient({
                     </div>
                   </div>
                 )
-              ) : (
+              ) : isCancelled ? (
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-2 text-amber-900 font-semibold">
                     <CheckCircle2 size={16} className="text-amber-700 shrink-0" />
                     <span>Cancelled on Paystack · Automatically switches to Free on {formattedExpiry}</span>
                   </div>
                   <span className="text-slate-600">Your Pro access remains available until expiry.</span>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2 text-[#116149] font-semibold">
+                    <CheckCircle2 size={16} className="text-[#116149] shrink-0" />
+                    <span>30-Day Pro Access Active · Valid until {formattedExpiry}</span>
+                  </div>
+                  <span className="text-slate-600">Switches to Free on {formattedExpiry} unless renewed.</span>
                 </div>
               )}
             </div>
