@@ -14,6 +14,7 @@ import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
 import { createNativeApiClient } from "@/lib/api/native-client";
 import { computeBootstrapIdempotencyKey } from "@/lib/auth/session-manager";
 import { getDefaultBrowserSessionManager } from "@/lib/auth/session-manager";
+import { detachAndUnsubscribeBrowserPush } from "@/lib/pwa/push-client";
 import type { ExamQuestion } from "@/features/exam-engine/domain/types";
 
 export interface PracticeQuestionItem {
@@ -81,6 +82,7 @@ export async function signOutAction(): Promise<void> {
     const pending = Object.keys(localStorage).some(key => key.startsWith('jamb_outbox_') && (() => { try { return JSON.parse(localStorage.getItem(key) ?? '[]').length > 0; } catch { return true; } })());
     if (pending && !window.confirm('Some exam answers have not synced. Signing out will remove them from this device. Sign out anyway?')) return;
   }
+  await detachAndUnsubscribeBrowserPush({ notifyServer: true }).catch(() => undefined);
   await getDefaultBrowserSessionManager().signOut();
   if (typeof window !== "undefined") {
     window.location.assign("/login");

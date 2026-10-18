@@ -15,7 +15,9 @@ export function accountDestination(identity: SessionIdentityResponse, pathname: 
   if (pathname === '/onboarding' && editOnboarding) return null;
   if (['/', '/login', '/register', '/forgot-password', '/onboarding'].includes(pathname)) {
     const target = sanitizeInternalRedirect(returnPath);
-    return target.startsWith('/onboarding') ? '/dashboard' : target;
+    const targetUrl = new URL(target, 'https://jambprep.internal');
+    const isOnboarding = targetUrl.pathname.replace(/\/$/, '') === '/onboarding';
+    return isOnboarding && targetUrl.searchParams.get('edit') !== '1' ? '/dashboard' : target;
   }
   return null;
 }
@@ -105,7 +107,14 @@ export function createAccountCoordinator(manager: BrowserSessionManager, api: Na
       return result.data;
     },
     loadIdentity,
-    loadOnboarding: () => load('onboarding', async () => (await api.request<OnboardingData>('/api/v1/onboarding')).data),
+    loadOnboarding: () => load('onboarding', async () => {
+      const data = (await api.request<OnboardingData>('/api/v1/onboarding')).data;
+      const subjects = data?.availableSubjects;
+      const english = Array.isArray(subjects) && subjects.some(subject => subject.code === 'ENG' && subject.is_compulsory);
+      const electives = Array.isArray(subjects) ? new Set(subjects.filter(subject => subject.code !== 'ENG' && !subject.is_compulsory).map(subject => subject.id)) : new Set();
+      if (!english || electives.size < 3) throw new Error('Subject choices are temporarily unavailable. Please retry. Your saved combination has not been changed.');
+      return data;
+    }),
     async saveOnboarding(body: { electives: string[]; targetScore: number; targetInstitution?: string | null; targetCourse?: string | null }) {
       if (saving) throw new Error('Please wait for your current save to finish.');
       saving = true;

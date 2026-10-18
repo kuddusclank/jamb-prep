@@ -54,6 +54,7 @@ export const PRIVATE_STORAGE_KEY_PREFIXES: ReadonlyArray<string> = [
   'jambprep_profile_',
   'jambprep_exam_',
   'jambprep_practice_',
+  'jambprep_push_',
 ];
 
 const inMemoryCacheClearers = new Set<() => void>();

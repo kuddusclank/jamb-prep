@@ -25,6 +25,38 @@ export function validateCheckoutUrl(value:unknown):string {
 }
 export async function initializeCheckout(db:RequestDbContext,env:PaymentEnv,userId:string,email:string,key:string,now:Date,fetchImpl:typeof fetch=fetch) {
   const hash=await computeRequestHash('payments.checkout','{}');
+
+  // If there is an existing pending checkout, inspect its live provider state
+  const pendingRows = await db.sql<Array<{reference:string;status:string;authorization_url:string|null}>>`
+    SELECT c.reference, c.status, c.authorization_url 
+    FROM payment_checkout_requests c 
+    JOIN payment_transactions p ON p.reference = c.reference 
+    WHERE c.user_id = ${userId}::uuid AND p.status = 'pending' AND c.status IN ('initializing','ready','unknown') 
+    ORDER BY c.created_at DESC LIMIT 1
+  `;
+
+  if (pendingRows[0]) {
+    const existing = pendingRows[0];
+    if (existing.status === 'ready' && existing.authorization_url) {
+      try {
+        const payment = await paystackRequest(env, `/transaction/verify/${encodeURIComponent(existing.reference)}`, undefined, fetchImpl);
+        if (payment.status === 'success') {
+          return { reference: existing.reference, confirmationUrl: `/checkout/verify/?reference=${encodeURIComponent(existing.reference)}` };
+        }
+        if (['pending', 'ongoing', 'processing'].includes(String(payment.status))) {
+          return { reference: existing.reference, authorizationUrl: validateCheckoutUrl(existing.authorization_url) };
+        }
+        // Provider reported abandoned or failed: mark previous transaction failed so a fresh checkout can initialize
+        await db.sql`UPDATE payment_transactions SET status = 'failed' WHERE reference = ${existing.reference} AND user_id = ${userId}::uuid AND status = 'pending'`;
+      } catch {
+        // If provider cannot confirm or errors, unblock by failing stale pending transaction
+        await db.sql`UPDATE payment_transactions SET status = 'failed' WHERE reference = ${existing.reference} AND user_id = ${userId}::uuid AND status = 'pending'`;
+      }
+    } else {
+      await db.sql`UPDATE payment_transactions SET status = 'failed' WHERE reference = ${existing.reference} AND user_id = ${userId}::uuid AND status = 'pending'`;
+    }
+  }
+
   const prepared=await db.runSerializableTransaction(async(tx)=>{
     await tx`SELECT id FROM profiles WHERE id=${userId}::uuid FOR UPDATE`;
     const existing=await tx<Array<{reference:string;status:string;authorization_url:string|null;request_hash:string;payment_status:string}>>`SELECT c.reference,c.status,c.authorization_url,c.request_hash,p.status AS payment_status FROM payment_checkout_requests c JOIN payment_transactions p ON p.reference=c.reference WHERE c.user_id=${userId}::uuid AND c.idempotency_key=${key} FOR UPDATE OF c`;
@@ -45,18 +77,14 @@ export async function initializeCheckout(db:RequestDbContext,env:PaymentEnv,user
     const confirmationUrl=`/checkout/verify/?reference=${encodeURIComponent(prepared.reference)}`;
     if ('payment_status' in prepared && prepared.payment_status==='success') return {reference:prepared.reference,confirmationUrl};
     if(prepared.status==='ready'&&prepared.authorization_url) {
-      const payment=await paystackRequest(env,`/transaction/verify/${encodeURIComponent(prepared.reference)}`,undefined,fetchImpl);
-      if(payment.reference!==prepared.reference) throw new ApiError({status:503,code:'SERVICE_UNAVAILABLE',message:'Payment provider could not confirm this reference.'});
-      if(payment.status==='success') return {reference:prepared.reference,confirmationUrl};
-      if(['pending','ongoing','processing'].includes(String(payment.status))) return {reference:prepared.reference,authorizationUrl:validateCheckoutUrl(prepared.authorization_url)};
+      return {reference:prepared.reference,authorizationUrl:validateCheckoutUrl(prepared.authorization_url)};
     }
     return {reference:prepared.reference,confirmationUrl};
   }
   try {
     const origin=env.PUBLIC_APP_ORIGIN??'https://jambprep.lecterniq.com';
     const url=new URL(origin);if(url.protocol!=='https:'||url.username||url.password||url.pathname!=='/')throw new Error('Invalid callback origin');
-    const initPayload:Record<string,unknown>={email,amount:String(prepared.amount),currency:'NGN',channels:['card'],reference:prepared.reference,callback_url:`${url.origin}/checkout/verify/`,metadata:{userId,rewardId:prepared.rewardId}};
-    if(prepared.amount===100000&&env.PAYSTACK_PLAN_CODE)initPayload.plan=env.PAYSTACK_PLAN_CODE;
+    const initPayload:Record<string,unknown>={email,amount:String(prepared.amount),currency:'NGN',reference:prepared.reference,callback_url:`${url.origin}/checkout/verify/`,metadata:{userId,rewardId:prepared.rewardId}};
     const result=await paystackRequest(env,'/transaction/initialize',initPayload,fetchImpl);
     if(result.reference!==prepared.reference)throw new Error('Provider reference mismatch');
     const authorizationUrl=validateCheckoutUrl(result.authorization_url);
@@ -72,17 +100,18 @@ export async function verifyOwnedPayment(db:RequestDbContext,env:PaymentEnv,user
   const rows=await db.sql<Array<{reference:string;amount_kobo:number;user_id:string;status:string}>>`SELECT reference,amount_kobo,user_id,status FROM payment_transactions WHERE reference=${reference} AND user_id=${userId}::uuid LIMIT 1`;
   const payment=rows[0];if(!payment)throw new ApiError({status:404,code:'NOT_FOUND',message:'Your payment reference was not found.'});
   const result=await paystackRequest(env,`/transaction/verify/${encodeURIComponent(reference)}`,undefined,fetchImpl);
-  if(['failed','abandoned'].includes(String(result.status)) && result.reference===reference && result.currency==='NGN' && Number(result.amount)===payment.amount_kobo && (result.metadata as {userId?:string}|undefined)?.userId===userId) {
+  if(['failed','abandoned'].includes(String(result.status))) {
     await db.sql`UPDATE payment_transactions SET status='failed' WHERE reference=${reference} AND user_id=${userId}::uuid AND status='pending'`;
-    throw new ApiError({status:409,code:'PAYMENT_FAILED',message:'Paystack confirms this checkout did not succeed. You can start a new checkout.'});
+    throw new ApiError({status:409,code:'PAYMENT_FAILED',message:'Paystack confirms this payment was cancelled or abandoned. Return to checkout to try again.'});
   }
   if(!matchesPayment(result,reference,payment.amount_kobo,userId))throw new ApiError({status:409,code:'CONFLICT',message:'This payment has not been confirmed with the expected amount and currency.'});
-  const auth=result.authorization as {authorization_code?:string}|undefined;const customer=result.customer as {customer_code?:string}|undefined;
+  const auth=result.authorization as {authorization_code?:string;channel?:string;reusable?:boolean}|undefined;const customer=result.customer as {customer_code?:string}|undefined;
   const sub=result.subscription as {subscription_code?:string;email_token?:string}|undefined;
   const settled=await settleVerifiedPaymentAtomic(db,{reference,expectedUserId:userId,now,paystackMeta:{authorizationCode:auth?.authorization_code,customerCode:customer?.customer_code,subscriptionCode:sub?.subscription_code,emailToken:sub?.email_token}});
   let renewalStatus=sub?.subscription_code?'ready':'unavailable';
-  if(!sub?.subscription_code && (result.authorization as {reusable?:boolean}|undefined)?.reusable===true) {
-    try {renewalStatus=await configureVerifiedRenewal(db,env,userId,reference,auth?.authorization_code,customer?.customer_code,now,fetchImpl);}
+  const isCardReusable = (auth?.channel === 'card' || !auth?.channel) && auth?.reusable === true;
+  if(!sub?.subscription_code && isCardReusable && auth?.authorization_code && customer?.customer_code) {
+    try {renewalStatus=await configureVerifiedRenewal(db,env,userId,reference,auth.authorization_code,customer.customer_code,now,fetchImpl);}
     catch {renewalStatus='needs-reconciliation';}
   }
   return {success:true,reference,expiresAt:settled.expiresAt,alreadyProcessed:settled.alreadyProcessed,renewalStatus,message:renewalStatus==='ready'?'Payment confirmed. Premium and monthly renewal are active.':'Payment confirmed. Premium is active for 30 days.'};

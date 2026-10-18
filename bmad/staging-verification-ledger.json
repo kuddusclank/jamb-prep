@@ -843,5 +843,60 @@
     "reducedMotionVerified": true,
     "safariAutomation": "Session creation timed out; manual Safari check pending",
     "studentWrites": 0
+  },
+  "loginLoadingRelease20261017": {
+    "approvedAdditionalOperations": 20,
+    "usedReservedOperations": 20,
+    "accounting": "Nineteen conservatively reserved for Pages upload/control operations; one canonical login HEAD. No hosted auth, student writes or database checks.",
+    "pagesDeployment": "9a3e2265",
+    "sourceBaseline": "34a0942 plus reviewed login/loading working-tree changes; PWA changes began after deployment artifact was built/uploaded",
+    "localRegressionTests": 32,
+    "productionLoginStatus": 200,
+    "apiWorkersChanged": false
+  },
+  "pwaFoundationRelease20261017": {
+    "approvedOperations": 20,
+    "usedReservedOperations": 20,
+    "accounting": "16 conservatively reserved for Pages publication; four canonical HTTP GET checks. Python TLS attempt failed certificate validation before an application request; checks completed using curl.",
+    "pagesDeployment": "7bf5fd6e",
+    "previousPagesDeployment": "9a3e2265",
+    "buildId": "7b32065fa76da6417096",
+    "unitRegressionTests": 40,
+    "localBrowserChecks": [
+      "Chromium: controlled reload, offline fallback, online recovery, private cache exclusion",
+      "Chromium with injected account/API fixtures: delayed onboarding stays shimmer-only for new and existing users"
+    ],
+    "productionChecks": [
+      "manifest standalone",
+      "versioned service worker",
+      "matching build metadata",
+      "onboarding edit HTML"
+    ],
+    "apiWorkerChanged": false,
+    "fullOfflineStudy": false,
+    "physicalIphoneAcceptance": false,
+    "rescueArtifact": "/tmp/jambprep-pwa-rescue/sw.js",
+    "rescueTest": "VM install/activate checked: network passthrough, only public caches removed"
+  },
+  "subjectCatalogueRecovery20261017": {
+    "approvedOperations": 25,
+    "usedReservedOperations": 25,
+    "accounting": "5 reserved read-only database transaction operations; 2 live HTML/chunk reads; 2 live Worker/Hyperdrive binding reads; 14 reserved for Pages publication attempts; 2 final canonical reads. Local snapshot audit/browser fixtures are loopback only.",
+    "liveMockReadySubjects": 25,
+    "localMockReadySubjects": 0,
+    "databaseChanged": false,
+    "liveHyperdriveMatchesAuditedProject": true,
+    "initialPagesAttempt": "0d225fe8",
+    "initialAttemptIssue": "Another local build replaced out/ with an unprocessed SW template; corrected promptly with isolated verified artifact.",
+    "pagesDeployment": "48dea17b",
+    "buildId": "366dbc27390aba5b1be7",
+    "isolatedArtifact": "/tmp/jambprep-reviewed-pwa-afr2muxl/out",
+    "regressionTests": 41,
+    "localBrowserEmptyCatalogueRecovery": true,
+    "productionChecks": [
+      "matching build metadata",
+      "matching processed service worker"
+    ],
+    "installedUserSessionVerified": false
   }
 }

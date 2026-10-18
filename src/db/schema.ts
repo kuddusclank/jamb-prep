@@ -374,3 +374,129 @@ export const questionAssessmentClassifications=pgTable('question_assessment_clas
 export const assessmentBlueprintTemplates=pgTable('assessment_blueprint_templates',{id:text('id').primaryKey(),title:text('title').notNull(),totalQuestions:integer('total_questions').notNull(),cycleYear:integer('cycle_year'),sourceUrl:text('source_url').notNull(),cells:jsonb('cells').notNull()}).enableRLS();
 
 export const studyEvidencePolicy=pgTable('study_evidence_policy',{id:boolean('id').primaryKey().default(true),earlySample:integer('early_sample').default(5).notNull(),confidentSample:integer('confident_sample').default(10).notNull(),confidentSessions:integer('confident_sessions').default(2).notNull(),weakBelow:integer('weak_below').default(65).notNull(),strongAt:integer('strong_at').default(75).notNull()}).enableRLS();
+
+// ==========================================
+// 8. Premium Study Schedule, Daily Goals, Streaks & Web Push Reminders
+// ==========================================
+export const studySchedules = pgTable('study_schedules', {
+  userId: uuid('user_id').primaryKey().references(() => profiles.id, { onDelete: 'cascade' }),
+  enabled: boolean('enabled').default(false).notNull(),
+  goalType: text('goal_type').default('questions').notNull(),
+  dailyGoal: integer('daily_goal').default(10).notNull(),
+  pendingDailyGoal: integer('pending_daily_goal'),
+  pendingGoalEffectiveDate: date('pending_goal_effective_date'),
+  reminderEnabled: boolean('reminder_enabled').default(false).notNull(),
+  reminderLocalTime: text('reminder_local_time').default('19:00').notNull(),
+  timeZone: text('time_zone').default('Africa/Lagos').notNull(),
+  pendingTimeZone: text('pending_time_zone'),
+  pendingTimeZoneEffectiveDate: date('pending_time_zone_effective_date'),
+  policyVersion: integer('policy_version').default(1).notNull(),
+  revision: integer('revision').default(1).notNull(),
+  nextReminderAt: timestamp('next_reminder_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('study_schedules_due_idx').on(table.enabled, table.reminderEnabled, table.nextReminderAt),
+]).enableRLS();
+
+export const studyGoalDays = pgTable('study_goal_days', {
+  userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
+  localDate: date('local_date').notNull(),
+  targetQuestions: integer('target_questions').notNull(),
+  timeZone: text('time_zone').notNull(),
+  policyVersion: integer('policy_version').default(1).notNull(),
+  acceptedCount: integer('accepted_count').default(0).notNull(),
+  qualifiedAt: timestamp('qualified_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.userId, table.localDate] }),
+  index('study_goal_days_user_qualified_idx').on(table.userId, table.qualifiedAt, table.localDate),
+]).enableRLS();
+
+export const studyGoalEvents = pgTable('study_goal_events', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
+  questionId: uuid('question_id').references(() => questions.id, { onDelete: 'cascade' }).notNull(),
+  localDate: date('local_date').notNull(),
+  attemptId: uuid('attempt_id').references(() => attempts.id, { onDelete: 'cascade' }).notNull(),
+  mode: attemptModeEnum('mode').notNull(),
+  acceptedAt: timestamp('accepted_at', { withTimezone: true }).defaultNow().notNull(),
+  policyVersion: integer('policy_version').default(1).notNull(),
+}, (table) => [
+  uniqueIndex('study_goal_events_user_question_date_key').on(table.userId, table.questionId, table.localDate),
+  index('study_goal_events_user_date_idx').on(table.userId, table.localDate),
+]).enableRLS();
+
+export const studyStreakSummaries = pgTable('study_streak_summaries', {
+  userId: uuid('user_id').primaryKey().references(() => profiles.id, { onDelete: 'cascade' }),
+  currentStreak: integer('current_streak').default(0).notNull(),
+  bestStreak: integer('best_streak').default(0).notNull(),
+  lastQualifiedDate: date('last_qualified_date'),
+  revision: integer('revision').default(1).notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}).enableRLS();
+
+export const webPushSubscriptions = pgTable('web_push_subscriptions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
+  endpointHash: text('endpoint_hash').notNull().unique(),
+  endpoint: text('endpoint').notNull(),
+  p256dh: text('p256dh').notNull(),
+  authSecret: text('auth_secret').notNull(),
+  vapidVersion: integer('vapid_version').default(1).notNull(),
+  deviceLabel: text('device_label').default('Study device').notNull(),
+  environment: text('environment').default('browser').notNull(),
+  enabled: boolean('enabled').default(true).notNull(),
+  disabledReason: text('disabled_reason'),
+  lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).defaultNow().notNull(),
+  lastTestSentAt: timestamp('last_test_sent_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('web_push_subscriptions_endpoint_hash_key').on(table.endpointHash),
+  index('web_push_subscriptions_user_enabled_idx').on(table.userId, table.enabled),
+]).enableRLS();
+
+export const studyReminderOccurrences = pgTable('study_reminder_occurrences', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
+  localDate: date('local_date').notNull(),
+  reminderSlot: text('reminder_slot').default('daily').notNull(),
+  scheduleRevision: integer('schedule_revision').notNull(),
+  scheduledFor: timestamp('scheduled_for', { withTimezone: true }).notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  state: text('state').default('claimed').notNull(),
+  leaseOwner: text('lease_owner'),
+  leasedUntil: timestamp('leased_until', { withTimezone: true }),
+  retryCount: integer('retry_count').default(0).notNull(),
+  nextRetryAt: timestamp('next_retry_at', { withTimezone: true }),
+  skipReason: text('skip_reason'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('study_reminder_occurrences_unique_slot_key').on(
+    table.userId,
+    table.localDate,
+    table.reminderSlot,
+    table.scheduleRevision
+  ),
+  index('study_reminder_occurrences_state_lease_idx').on(table.state, table.leasedUntil, table.nextRetryAt),
+]).enableRLS();
+
+export const studyReminderDeliveries = pgTable('study_reminder_deliveries', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  occurrenceId: uuid('occurrence_id').references(() => studyReminderOccurrences.id, { onDelete: 'cascade' }).notNull(),
+  subscriptionId: uuid('subscription_id').references(() => webPushSubscriptions.id, { onDelete: 'cascade' }).notNull(),
+  state: text('state').default('queued').notNull(),
+  providerStatus: integer('provider_status'),
+  errorCode: text('error_code'),
+  retryCount: integer('retry_count').default(0).notNull(),
+  nextRetryAt: timestamp('next_retry_at', { withTimezone: true }),
+  acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+  lastAttemptAt: timestamp('last_attempt_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('study_reminder_deliveries_occurrence_sub_key').on(table.occurrenceId, table.subscriptionId),
+]).enableRLS();

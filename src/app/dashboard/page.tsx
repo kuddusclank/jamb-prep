@@ -53,6 +53,7 @@ interface StaticMockHistoryItem {
   subject4Score: number;
 }
 
+import { useEffect, useRef } from "react";
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
 import StudyLoading from "@/components/study-loading";
 import { BrowserAccountBoundary, useBrowserAccount } from "@/components/browser-account-boundary";
@@ -61,6 +62,13 @@ import type { DashboardData } from "@/lib/api/app-dtos";
 export default function DashboardPage() {
   const resource = useApiResource<DashboardData>('/api/v1/dashboard');
   const account = useBrowserAccount();
+  const flameScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (flameScrollRef.current) {
+      flameScrollRef.current.scrollLeft = flameScrollRef.current.scrollWidth;
+    }
+  }, [resource.data?.studyStreak?.streak?.recentDays?.length]);
   if (!resource.data && !resource.error) return <BrowserAccountBoundary><StudyLoading /></BrowserAccountBoundary>;
   if (!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry} /></StudyWorkspace>;
   const { subscription, coach, qualifiedReferrals, has50PercentReward } = resource.data;
@@ -97,7 +105,7 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            {/* Target and Progress Gauges */}
+            {/* Target, Progress and Streak Gauges */}
             <div className={styles.scoreRow}>
               <div className="rounded-2xl border border-slate-200 bg-white p-3.5 flex items-center gap-3 shadow-sm min-w-0 flex-1">
                 <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-100 text-[#116149]">
@@ -126,8 +134,138 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
+
+              {resource.data.studyStreak && (
+                <Link
+                  href="/profile#schedule"
+                  className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50 to-orange-50/60 p-3.5 flex items-center gap-3 shadow-sm min-w-0 flex-1 hover:border-amber-300 transition"
+                  title="View Study Streak & Schedule Settings"
+                >
+                  <span className={`flex size-10 items-center justify-center rounded-xl ${
+                    resource.data.studyStreak.streak.currentStreak > 0
+                      ? 'bg-amber-500 text-white shadow-sm shadow-amber-500/30'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    <Flame size={20} className={resource.data.studyStreak.streak.currentStreak > 0 ? 'animate-pulse' : ''} />
+                  </span>
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1">
+                      Study Streak {resource.data.studyStreak.streak.qualifiedToday && '🔥'}
+                    </div>
+                    <div className="text-xl font-extrabold text-[#092E28]">
+                      {resource.data.studyStreak.streak.currentStreak}{' '}
+                      <span className="text-xs font-normal text-slate-500">
+                        {resource.data.studyStreak.streak.currentStreak === 1 ? 'day' : 'days'}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              )}
             </div>
           </div>
+
+          {/* Daily Study Streak Fire Motivation Card */}
+          {resource.data.studyStreak && (
+            <div className="rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50/80 via-white to-emerald-50/50 p-6 sm:p-7 shadow-sm relative overflow-hidden">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div className="space-y-3 max-w-2xl">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-extrabold uppercase tracking-wider shadow-sm shadow-amber-500/25">
+                      <Flame size={14} className="fill-current" />
+                      {resource.data.studyStreak.streak.qualifiedToday
+                        ? "Today's Streak Locked In"
+                        : resource.data.studyStreak.streak.currentStreak > 0
+                          ? `Keep Your ${resource.data.studyStreak.streak.currentStreak}-Day Fire Burning`
+                          : "Start Your Day 1 Streak Today"}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-500">
+                      Best Streak: <strong className="text-[#092E28]">{resource.data.studyStreak.streak.bestStreak} {resource.data.studyStreak.streak.bestStreak === 1 ? 'day' : 'days'}</strong>
+                    </span>
+                  </div>
+
+                  <p className="text-sm sm:text-base text-slate-700 font-medium leading-relaxed">
+                    {resource.data.studyStreak.streak.qualifiedToday ? (
+                      <>
+                        Awesome work! You’ve secured today’s streak. <strong className="text-[#116149]">Practice at least once or take a mock exam tomorrow</strong> to extend your streak to {resource.data.studyStreak.streak.currentStreak + 1} days!
+                      </>
+                    ) : resource.data.studyStreak.streak.currentStreak > 0 ? (
+                      <>
+                        You are on a <strong className="text-[#092E28]">{resource.data.studyStreak.streak.currentStreak}-day streak</strong>! Complete at least one practice session or a mock exam today before midnight to reach <strong className="text-[#116149]">{resource.data.studyStreak.streak.currentStreak + 1} days</strong>.
+                      </>
+                    ) : (
+                      <>
+                        Build your daily UTME habit. <strong className="text-[#092E28]">Any completed practice session or mock exam</strong> counts toward today’s streak and keeps your fire burning!
+                      </>
+                    )}
+                  </p>
+
+                  {/* Flame Calendar Strip (Scrollable from registration date to today) */}
+                  <div
+                    ref={flameScrollRef}
+                    className="flex items-center gap-2 sm:gap-3 pt-1 overflow-x-auto pb-1 max-w-full flex-nowrap scroll-smooth"
+                    tabIndex={0}
+                    aria-label="Daily study streak calendar"
+                  >
+                    {resource.data.studyStreak.streak.recentDays.map((day) => (
+                      <div
+                        key={day.localDate}
+                        className={`flex flex-col items-center justify-center p-2 rounded-xl text-center shrink-0 min-w-11 sm:min-w-12 transition ${
+                          day.isToday
+                            ? day.qualified
+                              ? 'bg-amber-100/90 border-2 border-amber-500 text-amber-950 font-bold shadow-sm'
+                              : 'bg-white border-2 border-dashed border-amber-400 text-amber-900 font-bold'
+                            : day.qualified
+                              ? 'bg-amber-50/80 border border-amber-200 text-amber-900'
+                              : 'bg-slate-100/70 border border-slate-200 text-slate-400'
+                        }`}
+                        title={`${day.localDate}: ${day.qualified ? 'Qualified streak day' : 'No study recorded'}`}
+                      >
+                        <span className="text-[10px] uppercase tracking-wider font-semibold">
+                          {day.dayShort}
+                        </span>
+                        <span className="text-lg mt-0.5" aria-hidden="true">
+                          {day.qualified ? '🔥' : '⚪'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Fire Card Actions */}
+                <div className="shrink-0 flex flex-col sm:flex-row lg:flex-col gap-2.5">
+                  {!resource.data.studyStreak.streak.qualifiedToday ? (
+                    <>
+                      <Link
+                        href="/practice"
+                        className="min-h-11 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 text-xs font-bold text-white hover:bg-[#0b4936] transition shadow-md shadow-[#116149]/20"
+                      >
+                        Practice Now (5 Qs) <ArrowRight size={14} />
+                      </Link>
+                      <Link
+                        href="/mock"
+                        className="min-h-11 inline-flex items-center justify-center gap-2 rounded-full border border-emerald-900/20 bg-white px-6 text-xs font-semibold text-[#092E28] hover:bg-emerald-50 transition"
+                      >
+                        Take Mock Exam
+                      </Link>
+                    </>
+                  ) : (
+                    <Link
+                      href="/practice"
+                      className="min-h-11 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 text-xs font-bold text-white hover:bg-[#0b4936] transition shadow-md shadow-[#116149]/20"
+                    >
+                      Keep Practicing <ArrowRight size={14} />
+                    </Link>
+                  )}
+                  <Link
+                    href="/profile#schedule"
+                    className="text-[11px] font-semibold text-slate-500 hover:text-[#116149] text-center underline decoration-slate-300 underline-offset-4"
+                  >
+                    Reminder & Goal Settings
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Central Study Coach Advice Banner ("Know what to study next") */}
           <div className="rounded-3xl bg-white border border-emerald-950/10 p-6 sm:p-8 relative overflow-hidden shadow-sm">

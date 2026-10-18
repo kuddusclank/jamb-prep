@@ -1,15 +1,13 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
-import { sanitizeInternalRedirect } from "@/lib/auth/redirect";
+import { presentSignInError } from "@/lib/auth/sign-in-error";
 import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 
 function LoginFormContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = sanitizeInternalRedirect(searchParams.get("redirectTo"), "/dashboard");
   const queryError = searchParams.get("error");
   const queryMessage = searchParams.get("message");
 
@@ -32,10 +30,13 @@ function LoginFormContent() {
 
     try {
       const coordinator = getAccountCoordinator();
-      const result = await coordinator.manager.signInWithPassword({ email: cleanEmail, password });
-      if (result.error || result.state.status !== 'authenticated') { setError(result.error || 'Sign-in failed.'); return; }
       coordinator.clear();
-      router.replace(redirectTo);
+      const result = await coordinator.manager.signInWithPassword({ email: cleanEmail, password });
+      if (result.error || result.state.status !== 'authenticated') {
+        setError(presentSignInError(result.error));
+        return;
+      }
+      // The account boundary verifies identity and owns the post-login redirect.
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An unexpected network error occurred. Please try again.");
       setIsPending(false);

@@ -491,6 +491,7 @@ test('review: absent API configuration cannot claim successful profile provision
         getDefaultBrowserSessionManager: () => ({ initialize: async () => {}, getValidAccessToken: async () => 'local-token', getState: () => ({ user: { id: '11111111-1111-4111-8111-111111111111' } }) }),
         computeBootstrapIdempotencyKey: async () => 'test-bootstrap-key',
       },
+      '@/lib/pwa/push-client': { detachAndUnsubscribeBrowserPush: async () => undefined },
     });
     const form = new FormData();
     form.set('displayName', 'Test Student');

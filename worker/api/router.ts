@@ -9,6 +9,8 @@ import { initializeCheckout, verifyOwnedPayment, cancelOwnedSubscription, config
 import { allocatePractice, checkIssuedPractice, startFrozenMock } from '../services/study-service';
 import { saveStudentOnboardingAtomic } from '../services/onboarding-service';
 import { APP_RATING_ROUTES } from '../services/app-rating-service';
+import { STUDY_SCHEDULE_ROUTES } from '../services/study-schedule-routes';
+import { getStudyScheduleState, type StudyScheduleViewResponse } from '../services/study-schedule-service';
 /**
  * Typed Native Worker API Router & Foundation Endpoint Registry (T03)
  *
@@ -102,6 +104,10 @@ export interface NativeApiEnv extends DatabaseBindingEnv, AuthEnvConfig, CorsEnv
   PAYSTACK_SECRET_KEY?: string;
   PAYSTACK_WEBHOOK_SECRET?: string;
   PAYSTACK_PLAN_CODE?: string;
+  VAPID_PUBLIC_KEY?: string;
+  VAPID_PRIVATE_KEY?: string;
+  VAPID_SUBJECT?: string;
+  VAPID_KEY_VERSION?: string;
 }
 
 export interface RateLimitCheckParams {
@@ -395,8 +401,10 @@ async function handlePaystackWebhook(ctx: RouteRequestContext): Promise<RouteHan
       });
       await tx`INSERT INTO payment_webhook_events(event_id,event_type,payload,processed_at) VALUES (${eventId},${event.event},${rawBody}::text::jsonb,${ctx.now.toISOString()}::timestamptz) ON CONFLICT(event_id) DO NOTHING`;
     });
-    if(event.data?.authorization?.reusable) {
-      try { await configureVerifiedRenewal(dbCtx,ctx.env,txn.user_id,reference,event.data.authorization.authorization_code??undefined,event.data.customer?.customer_code??undefined,ctx.now,ctx.hooks?.fetchImpl); }
+    const authData = event.data?.authorization as { authorization_code?: string | null; channel?: string; reusable?: boolean } | undefined;
+    const isCardReusable = (authData?.channel === 'card' || !authData?.channel) && authData?.reusable === true;
+    if(isCardReusable && authData?.authorization_code && event.data?.customer?.customer_code) {
+      try { await configureVerifiedRenewal(dbCtx,ctx.env,txn.user_id,reference,authData.authorization_code,event.data.customer.customer_code,ctx.now,ctx.hooks?.fetchImpl); }
       catch { /* Paid access is committed. Durable renewal state requires reconciliation. */ }
     }
   } else if(event.event==='subscription.create') {
@@ -833,6 +841,7 @@ async function handleAdminQuestionImport(ctx: RouteRequestContext): Promise<Rout
  */
 export const ENABLED_PRODUCTION_ROUTE_IDS: ReadonlySet<string> = new Set([
   ...APP_RATING_ROUTES.map(route => route.id),
+  ...STUDY_SCHEDULE_ROUTES.map(route => route.id),
   ...ASSESSMENT_ADMIN_ROUTES.map(route=>route.id),
   ...PRACTICE_ROUTES.map(route=>route.id),
   'system.health',
@@ -886,6 +895,7 @@ export const ENABLED_PRODUCTION_ROUTE_IDS: ReadonlySet<string> = new Set([
  */
 export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
   ...APP_RATING_ROUTES,
+  ...STUDY_SCHEDULE_ROUTES,
   ...ASSESSMENT_ADMIN_ROUTES,
   ...PRACTICE_ROUTES,
   ...ADMIN_CURRICULUM_ROUTES,
@@ -1067,10 +1077,11 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
     handler: async (ctx) => {
       const actor = ctx.actor!;
       const dbCtx = ctx.getDb();
-      const [subscription, coach, referralRows] = await Promise.all([
+      const [subscription, coach, referralRows, studyStreak] = await Promise.all([
         getUserSubscriptionStatus(dbCtx.sql, actor.userId, ctx.now),
         getStudentCoachInsights(dbCtx.sql, actor.userId),
         dbCtx.sql<Array<{ qualified_count: number; has_reward: boolean }>>`SELECT (SELECT COUNT(*)::int FROM referrals WHERE referrer_id = ${actor.userId}::uuid AND status = 'qualified') AS qualified_count, EXISTS (SELECT 1 FROM referral_rewards WHERE user_id = ${actor.userId}::uuid AND status = 'available' AND reward_type='FIRST_MONTH_50_PERCENT') AND NOT EXISTS(SELECT 1 FROM payment_transactions WHERE user_id=${actor.userId}::uuid AND status='success') AS has_reward`,
+        getStudyScheduleState(dbCtx.sql, actor.userId, { now: ctx.now }).catch(() => null),
       ]);
       return {
         status: 200,
@@ -1080,6 +1091,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
           coach,
           qualifiedReferrals: Number(referralRows[0]?.qualified_count ?? 0),
           has50PercentReward: Boolean(referralRows[0]?.has_reward),
+          studyStreak,
         },
       };
     },
@@ -1113,7 +1125,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
     handler: async (ctx) => {
       const actor = ctx.actor!;
       const dbCtx = ctx.getDb();
-      const [profileRows, prefRows, subscription] = await Promise.all([
+      const [profileRows, prefRows, subscription, studyStreak] = await Promise.all([
         dbCtx.sql<Array<{ id: string; display_name: string; email: string; role: string }>>`
           SELECT id, display_name, email, role
           FROM profiles
@@ -1134,6 +1146,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
           LIMIT 1
         `,
         getUserSubscriptionStatus(dbCtx.sql, actor.userId, ctx.now),
+        getStudyScheduleState(dbCtx.sql, actor.userId, { now: ctx.now }).catch(() => null),
       ]);
 
       return {
@@ -1142,6 +1155,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
           profile: profileRows[0] ?? null,
           preferences: prefRows[0] ?? null,
           subscription,
+          studyStreak,
         },
       };
     },

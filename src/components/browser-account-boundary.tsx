@@ -49,6 +49,7 @@ function BrowserAccountBoundaryContent({ children, mode = 'protected', returnPat
   const destination = identity ? accountDestination(identity, pathname, returnPath ?? searchParams.get('redirectTo') ?? '/dashboard', searchParams.get('edit') === '1') : null;
   useEffect(() => {
     if (mode === 'protected' && account.session.status === 'unauthenticated') {
+      if (getAccountCoordinator().manager.getState().status !== 'unauthenticated') return;
       router.replace(buildLoginRedirectUrl(`${window.location.pathname}${window.location.search}`));
     } else if (destination) router.replace(destination);
   }, [mode, account.session.status, destination, router]);

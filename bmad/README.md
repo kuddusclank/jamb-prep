@@ -70,3 +70,11 @@ The requested transition of the exact original 885 held-set IDs to draft is plan
 [Literature-in-English mock specification](literature-mock-blueprint.md) defines40 questions and records the current535-item aggregate inventory. Literature is now active with494 classified candidates and a recovered appreciation group; see the release section for evidence and remaining editorial/device gates.
 
 - [SEO, sharing, recovery and CBT polish](seo-sharing-and-cbt-polish.md) — 15 October release; SMTP/redirect verification remains open.
+
+## Future learning and school partnerships — planning, 17 October 2026
+
+See [future feature plan](future-learning-and-school-partnerships-plan.md) and [phased tasklist](future-learning-and-school-partnerships-tasklist.md) for weekly250 offline practice, mode-specific dashboard/navigation and snapshots, dictionary/five daily words, and school tenant/teacher reporting with upfront bulk access at ₦1,500 per student/month for 1–12 months. This is a future planning request; it does not authorise implementation or overwrite existing individual billing. Open policy decisions are identified in the plan.
+
+## Priority: Premium Schedule — 17 October 2026
+
+User requested a plan and another-agent handoff for Account/My profile Schedule: Premium-only daily study goals, streaks and opt-in PWA study reminders. Read [Schedule plan](study-schedule-and-reminders-plan.md), [implementation tasklist](study-schedule-and-reminders-tasklist.md), and [agent prompt](study-schedule-agent-prompt.md). Architecture is server scheduler + Web Push + existing service worker; no browser timer promise. This documentation does not authorise implementation/deployment or real notification sends in this planning session.

@@ -13,6 +13,7 @@ import { buildCanonicalResultUrl } from "@/lib/routing/deep-links";
 import { ReportQuestionDialog } from "@/components/report-question-dialog";
 import { QuestionDiagram } from "@/components/question-diagram";
 import { MathRenderer } from "@/components/math-renderer";
+import { isArabicText } from "@/lib/utils";
 import {
   Clock,
   Flag,
@@ -318,7 +319,12 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
 
           {/* Reading Comprehension Passage (if applicable) */}
           {currentQ.passage && (
-            <div className="bg-slate-50 p-5 sm:p-6 rounded-2xl border border-slate-200 text-slate-800 text-xs sm:text-sm leading-relaxed max-h-56 overflow-y-auto">
+            <div
+              dir={isArabicText(currentQ.passage.content) ? "rtl" : undefined}
+              className={`bg-slate-50 p-5 sm:p-6 rounded-2xl border border-slate-200 text-slate-800 text-xs sm:text-sm leading-relaxed max-h-56 overflow-y-auto ${
+                isArabicText(currentQ.passage.content) ? "text-right [direction:rtl]" : ""
+              }`}
+            >
               {currentQ.passage.title && (
                 <div className="font-bold text-slate-600 uppercase tracking-wider mb-2 text-xs">
                   Passage: {currentQ.passage.title}
@@ -331,45 +337,67 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
           )}
 
           {/* Question Stem Card */}
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-            <div className="text-base sm:text-lg font-medium text-slate-900 leading-relaxed">
-              <MathRenderer content={currentQ.stem} />
-            </div>
+          {(() => {
+            const isQArabic =
+              currentQ.subjectCode === 'ARB' ||
+              isArabicText(currentQ.stem) ||
+              currentQ.options.some((o) => isArabicText(o.content));
 
-<QuestionDiagram url={currentQ.imageUrl} alt={currentQ.imageAlt} />
-            {/* Options List A, B, C, D */}
-            <div className="space-y-3 pt-2">
-              {currentQ.options.map((opt) => {
-                const isSelected = selectedOptId === opt.id;
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    aria-pressed={isSelected}
-                    onClick={() => selectOption(opt.id, opt.label)}
-                    className={`w-full flex items-start gap-3.5 p-4 rounded-2xl border text-left text-sm sm:text-base font-medium transition-all cursor-pointer ${
-                      isSelected
-                        ? "bg-[#116149] border-emerald-400 text-white ring-2 ring-emerald-400 shadow-md"
-                        : "bg-slate-50 border-slate-200 text-slate-700 hover:border-emerald-700 hover:bg-slate-100"
-                    }`}
-                  >
-                    <span
-                      className={`flex size-7 shrink-0 items-center justify-center rounded-xl border text-xs font-bold transition-colors ${
-                        isSelected
-                          ? "bg-white text-[#116149] border-white"
-                          : "bg-slate-100 text-slate-600 border-slate-300"
-                      }`}
-                    >
-                      {opt.label}
-                    </span>
-                    <span className="flex-1 pt-0.5">
-                      <MathRenderer content={opt.content} />
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+            return (
+              <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                <div
+                  dir={isQArabic ? "rtl" : undefined}
+                  className={`text-base sm:text-lg font-medium text-slate-900 leading-relaxed ${
+                    isQArabic ? "text-right [direction:rtl]" : ""
+                  }`}
+                >
+                  <MathRenderer content={currentQ.stem} />
+                </div>
+
+                <QuestionDiagram url={currentQ.imageUrl} alt={currentQ.imageAlt} />
+
+                {/* Options List A, B, C, D */}
+                <div className="space-y-3 pt-2">
+                  {currentQ.options.map((opt) => {
+                    const isSelected = selectedOptId === opt.id;
+                    const isOptArabic = isQArabic || isArabicText(opt.content);
+
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => selectOption(opt.id, opt.label)}
+                        dir={isOptArabic ? "rtl" : undefined}
+                        className={`w-full flex items-start gap-3.5 p-4 rounded-2xl border font-medium transition-all cursor-pointer ${
+                          isOptArabic
+                            ? "flex-row text-right [direction:rtl]"
+                            : "text-left"
+                        } text-sm sm:text-base ${
+                          isSelected
+                            ? "bg-[#116149] border-emerald-400 text-white ring-2 ring-emerald-400 shadow-md"
+                            : "bg-slate-50 border-slate-200 text-slate-700 hover:border-emerald-700 hover:bg-slate-100"
+                        }`}
+                      >
+                        <span
+                          className={`flex size-7 shrink-0 items-center justify-center rounded-xl border text-xs font-bold transition-colors ${
+                            isSelected
+                              ? "bg-white text-[#116149] border-white"
+                              : "bg-slate-100 text-slate-600 border-slate-300"
+                          }`}
+                        >
+                          {opt.label}
+                        </span>
+                        <span className="flex-1 pt-0.5">
+                          <MathRenderer content={opt.content} />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* 4. REACTIVE BOTTOM NAVIGATION BAR */}
           <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 flex flex-wrap gap-2 items-center justify-between">

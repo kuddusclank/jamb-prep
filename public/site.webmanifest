@@ -1,8 +1,8 @@
 {
   "name": "JAMBPrep by LecternIQ",
   "short_name": "JAMBPrep",
-  "start_url": "/",
-  "display": "browser",
+  "start_url": "/?source=pwa",
+  "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#116149",
   "icons": [
@@ -16,5 +16,15 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "id": "/",
+  "scope": "/",
+  "description": "Focused UTME practice, timed mock exams and progress insights.",
+  "lang": "en",
+  "dir": "ltr",
+  "orientation": "any",
+  "categories": [
+    "education"
+  ],
+  "prefer_related_applications": false
 }

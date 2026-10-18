@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
 import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
 import { MathRenderer } from "@/components/math-renderer";
+import { isArabicText } from "@/lib/utils";
 
 interface QuestionOption {
   id: string;
@@ -389,53 +390,75 @@ function QuestionsContent() {
                       </div>
 
                       {/* Stem Text */}
-                      <div className="mt-4 text-base font-medium leading-relaxed text-slate-900">
-                        <MathRenderer content={q.stem} />
-                      </div>
+                      {(() => {
+                        const isQArabic =
+                          q.subject_code === 'ARB' ||
+                          isArabicText(q.stem) ||
+                          q.options.some((o) => isArabicText(o.content));
 
-                      {/* Image Preview if present */}
-                      {q.image_url && (
-                        <div className="mt-3">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={q.image_url}
-                            alt="Question diagram"
-                            className="max-h-60 rounded-xl border border-slate-200 object-contain"
-                          />
-                        </div>
-                      )}
-
-                      {/* Options Grid */}
-                      <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                        {q.options.map((opt) => (
-                          <div
-                            key={opt.label}
-                            className={`flex items-start gap-2.5 rounded-xl border p-3 text-sm ${
-                              opt.is_correct
-                                ? "border-emerald-300 bg-emerald-50/70 font-semibold text-emerald-950"
-                                : "border-slate-100 bg-slate-50 text-slate-700"
-                            }`}
-                          >
-                            <span
-                              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                                opt.is_correct
-                                  ? "bg-emerald-600 text-white"
-                                  : "bg-slate-200 text-slate-600"
+                        return (
+                          <>
+                            <div
+                              dir={isQArabic ? "rtl" : undefined}
+                              className={`mt-4 text-base font-medium leading-relaxed text-slate-900 ${
+                                isQArabic ? "text-right [direction:rtl]" : ""
                               }`}
                             >
-                              {opt.label}
-                            </span>
-                            <div className="flex-1">
-                              <MathRenderer content={opt.content} />
+                              <MathRenderer content={q.stem} />
                             </div>
-                            {opt.is_correct && (
-                              <span className="shrink-0 text-xs font-bold text-emerald-700">
-                                ✓ Correct
-                              </span>
+
+                            {/* Image Preview if present */}
+                            {q.image_url && (
+                              <div className="mt-3">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={q.image_url}
+                                  alt="Question diagram"
+                                  className="max-h-60 rounded-xl border border-slate-200 object-contain"
+                                />
+                              </div>
                             )}
-                          </div>
-                        ))}
-                      </div>
+
+                            {/* Options Grid */}
+                            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                              {q.options.map((opt) => {
+                                const isOptArabic = isQArabic || isArabicText(opt.content);
+                                return (
+                                  <div
+                                    key={opt.label}
+                                    dir={isOptArabic ? "rtl" : undefined}
+                                    className={`flex items-start gap-2.5 rounded-xl border p-3 text-sm ${
+                                      isOptArabic ? "text-right [direction:rtl]" : ""
+                                    } ${
+                                      opt.is_correct
+                                        ? "border-emerald-300 bg-emerald-50/70 font-semibold text-emerald-950"
+                                        : "border-slate-100 bg-slate-50 text-slate-700"
+                                    }`}
+                                  >
+                                    <span
+                                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                                        opt.is_correct
+                                          ? "bg-emerald-600 text-white"
+                                          : "bg-slate-200 text-slate-600"
+                                      }`}
+                                    >
+                                      {opt.label}
+                                    </span>
+                                    <div className="flex-1">
+                                      <MathRenderer content={opt.content} />
+                                    </div>
+                                    {opt.is_correct && (
+                                      <span className="shrink-0 text-xs font-bold text-emerald-700">
+                                        ✓ Correct
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </>
+                        );
+                      })()}
 
                       {/* Explanation Collapsible */}
                       {q.explanation && (
@@ -453,7 +476,12 @@ function QuestionsContent() {
                             {isExpOpen ? "▼ Hide Explanation" : "▶ View Explanation"}
                           </button>
                           {isExpOpen && (
-                            <div className="mt-2 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-700">
+                            <div
+                              dir={isArabicText(q.explanation) ? "rtl" : undefined}
+                              className={`mt-2 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-700 ${
+                                isArabicText(q.explanation) ? "text-right [direction:rtl]" : ""
+                              }`}
+                            >
                               <MathRenderer content={q.explanation} />
                             </div>
                           )}

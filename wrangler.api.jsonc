@@ -26,7 +26,10 @@
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_Fg-Vq3gTOa5Y6Au-Xu8FZw_Ld9ypzfW",
     "ALLOWED_ORIGINS": "https://jambprep.lecterniq.com,https://jambprep.pages.dev,http://localhost:3000,http://127.0.0.1:3000",
     "PUBLIC_APP_ORIGIN": "https://jambprep.lecterniq.com",
-    "PAYSTACK_PLAN_CODE": "PLN_dwqq6sv5zvy3j5i"
+    "PAYSTACK_PLAN_CODE": "PLN_dwqq6sv5zvy3j5i",
+    "VAPID_PUBLIC_KEY": "BCdEb6JGkPOb6gV4MpVieY0jmc8rn30m4rs7ho7K_izrzCkRsh9d9HlUPPZozp6peHQ8rftHlTNHGlH7qbSznIQ",
+    "VAPID_SUBJECT": "mailto:support@lecterniq.com",
+    "VAPID_KEY_VERSION": "1"
   },
   "ratelimits": [
     {

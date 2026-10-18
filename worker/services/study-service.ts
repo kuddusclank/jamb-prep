@@ -5,6 +5,7 @@ import type { SqlTagExecutor } from '../api/db-context';
 import { getUserSubscriptionStatus } from './subscription-service';
 import { resolvePracticeTopic } from './practice-catalogue-service';
 import { recordTopicMasteryBatch } from './coach-service';
+import { recordAcceptedStudyGoalEvent } from './study-schedule-service';
 
 export function watDate(now: Date): string { return new Date(now.getTime() + 3600000).toISOString().slice(0, 10); }
 export function validatePracticeInput(input: unknown): { subjectCode: string; topicSlug: string | null; count: number } {
@@ -77,6 +78,7 @@ export async function checkIssuedPractice(tx: SqlTagExecutor, userId: string, in
   const isCorrect = existing[0]?.selected_option_id === row.correct_option_id;
   if (answers.length) await tx`INSERT INTO scored_response_events(attempt_id,question_id,user_id,subject_id,topic_id,mode,answered,is_correct,difficulty,scored_at,editorial_revision) SELECT ${input.sessionId}::uuid,aq.question_id,${userId}::uuid,aq.subject_id,aq.topic_id,'practice',true,${isCorrect},COALESCE(aq.snapshot->>'difficulty','medium'),${now.toISOString()}::timestamptz,COALESCE((aq.snapshot->>'editorialRevision')::int,1) FROM attempt_questions aq WHERE aq.attempt_id=${input.sessionId}::uuid AND aq.question_id=${input.questionId}::uuid ON CONFLICT DO NOTHING`;
   if (answers.length) await recordTopicMasteryBatch(tx, userId, [{ subjectId: row.subject_id, topicId: row.topic_id, isCorrect }], now);
+  if (answers.length) await recordAcceptedStudyGoalEvent(tx, { userId, attemptId: input.sessionId, questionId: input.questionId, mode: 'practice', now });
   if(answers.length)await tx`UPDATE attempts a SET status='completed',completed_at=${now.toISOString()}::timestamptz WHERE a.id=${input.sessionId}::uuid AND a.user_id=${userId}::uuid AND a.status='in_progress' AND NOT EXISTS(SELECT 1 FROM attempt_questions aq WHERE aq.attempt_id=a.id AND NOT EXISTS(SELECT 1 FROM attempt_answers aa WHERE aa.attempt_id=aq.attempt_id AND aa.question_id=aq.question_id AND aa.selected_option_id IS NOT NULL))`;
   return { isCorrect, correctOption: correct.label, explanation: row.frozen_explanation ?? 'An explanation has not been supplied.' };
 }

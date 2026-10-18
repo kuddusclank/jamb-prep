@@ -76,3 +76,143 @@ test('expired Pro entitlement transitions cleanly to Free tier with autoRenew fa
  assert.equal(status.autoRenew,false);
 });
 
+test('checkout initialization allows any payment channel without hardcoded card or upfront plan',async()=>{
+  let capturedPayload;
+  const db=simulated(text=>{
+    if(text.includes('FROM profiles'))return [{id:user}];
+    if(text.includes('FROM subscription_entitlements'))return [];
+    if(text.includes('SELECT (SELECT COUNT(*)'))return [{qualified_count:0,has_reward:false}];
+    return [];
+  });
+  const fetchImpl=async(url,opts)=>{
+    if(url.endsWith('/transaction/initialize')){
+      capturedPayload=JSON.parse(opts.body);
+      return new Response(JSON.stringify({status:true,data:{reference:capturedPayload.reference,authorization_url:'https://checkout.paystack.com/auth-any'}}),{status:200});
+    }
+    return new Response(JSON.stringify({status:true,data:{}}),{status:200});
+  };
+  const res=await initializeCheckout(db,{PAYSTACK_SECRET_KEY:'sk_test_local',PAYSTACK_PLAN_CODE:'PLN_monthly'},user,'student@example.invalid','key-1',now,fetchImpl);
+  assert.equal(res.authorizationUrl,'https://checkout.paystack.com/auth-any');
+  assert.equal(capturedPayload.channels,undefined);
+  assert.equal(capturedPayload.plan,undefined);
+  assert.equal(capturedPayload.amount,'100000');
+});
+
+test('card payment with reusable authorization activates subscription renewal',async()=>{
+  let configuredRenewal=false;
+  const db=simulated(text=>{
+    if(text.includes('FROM payment_transactions'))return [{reference:'JAMB-card',amount_kobo:100000,user_id:user,status:'pending'}];
+    if(text.includes('FROM profiles'))return [{id:user}];
+    if(text.includes('FROM subscription_entitlements'))return [{expires_at:'2026-11-17T00:00:00Z',paystack_subscription_code:null,auto_renew:false,cancelled_at:null}];
+    if(text.includes('FROM payment_renewal_requests'))return [];
+    return [{id:user}];
+  });
+  const fetchImpl=async(url,opts)=>{
+    if(url.includes('/transaction/verify/')){
+      return new Response(JSON.stringify({
+        status:true,
+        data:{
+          status:'success',
+          reference:'JAMB-card',
+          amount:100000,
+          currency:'NGN',
+          metadata:{userId:user},
+          authorization:{authorization_code:'AUTH_card_123',channel:'card',reusable:true},
+          customer:{customer_code:'CUS_123'}
+        }
+      }),{status:200});
+    }
+    if(url.includes('/plan/')){
+      return new Response(JSON.stringify({status:true,data:{amount:100000,currency:'NGN',interval:'monthly'}}),{status:200});
+    }
+    if(url.endsWith('/subscription')&&opts.method==='POST'){
+      configuredRenewal=true;
+      const body=JSON.parse(opts.body);
+      assert.equal(body.customer,'CUS_123');
+      assert.equal(body.authorization,'AUTH_card_123');
+      return new Response(JSON.stringify({status:true,data:{subscription_code:'SUB_card_123',email_token:'token_123'}}),{status:200});
+    }
+    return new Response(JSON.stringify({status:true,data:{}}),{status:200});
+  };
+  const verified=await verifyOwnedPayment(db,{PAYSTACK_SECRET_KEY:'sk_test_local',PAYSTACK_PLAN_CODE:'PLN_monthly'},user,'JAMB-card',now,fetchImpl);
+  assert.equal(verified.success,true);
+  assert.equal(verified.renewalStatus,'ready');
+  assert.equal(configuredRenewal,true);
+  assert.match(verified.message,/Premium and monthly renewal are active/);
+});
+
+test('non-card payment (bank transfer / ussd) activates 30-day premium without recurring renewal',async()=>{
+  let renewalAttempted=false;
+  const db=simulated(text=>{
+    if(text.includes('FROM payment_transactions'))return [{reference:'JAMB-transfer',amount_kobo:100000,user_id:user,status:'pending'}];
+    if(text.includes('FROM profiles'))return [{id:user}];
+    if(text.includes('FROM subscription_entitlements'))return [{expires_at:'2026-11-17T00:00:00Z',paystack_subscription_code:null,auto_renew:false,cancelled_at:null}];
+    return [{id:user}];
+  });
+  const fetchImpl=async(url)=>{
+    if(url.includes('/subscription')||url.includes('/plan/')){
+      renewalAttempted=true;
+    }
+    return new Response(JSON.stringify({
+      status:true,
+      data:{
+        status:'success',
+        reference:'JAMB-transfer',
+        amount:100000,
+        currency:'NGN',
+        metadata:{userId:user},
+        authorization:{channel:'bank_transfer',reusable:false},
+        customer:{customer_code:'CUS_transfer'}
+      }
+    }),{status:200});
+  };
+  const verified=await verifyOwnedPayment(db,{PAYSTACK_SECRET_KEY:'sk_test_local',PAYSTACK_PLAN_CODE:'PLN_monthly'},user,'JAMB-transfer',now,fetchImpl);
+  assert.equal(verified.success,true);
+  assert.equal(verified.renewalStatus,'unavailable');
+  assert.equal(renewalAttempted,false);
+  assert.equal(verified.message,'Payment confirmed. Premium is active for 30 days.');
+});
+
+test('abandoned previous checkout is auto-failed and allows initializing a fresh checkout',async()=>{
+  let markedFailed=false;
+  let initializedNew=false;
+  let pendingQueryCount=0;
+  const db=simulated((text)=>{
+    if(text.includes('WHERE c.user_id =') && text.includes("p.status = 'pending'")){
+      pendingQueryCount++;
+      return pendingQueryCount===1?[{reference:'JAMB-abandoned',status:'ready',authorization_url:'https://checkout.paystack.com/abandoned'}]:[];
+    }
+    if(text.includes('FROM profiles'))return [{id:user}];
+    if(text.includes('FROM subscription_entitlements'))return [];
+    if(text.includes('UPDATE payment_transactions SET status = \'failed\'')){
+      markedFailed=true;
+      return [];
+    }
+    return [];
+  });
+  const fetchImpl=async(url, opts)=>{
+    if(url.includes('/transaction/verify/JAMB-abandoned')){
+      return new Response(JSON.stringify({
+        status:true,
+        data:{status:'abandoned',reference:'JAMB-abandoned'}
+      }),{status:200});
+    }
+    if(url.includes('/transaction/initialize')){
+      initializedNew=true;
+      const body=JSON.parse(opts.body);
+      return new Response(JSON.stringify({
+        status:true,
+        data:{reference:body.reference,authorization_url:'https://checkout.paystack.com/fresh-new'}
+      }),{status:200});
+    }
+    return new Response(JSON.stringify({status:true,data:{}}),{status:200});
+  };
+  const res=await initializeCheckout(db,{PAYSTACK_SECRET_KEY:'sk_test_local'},user,'student@example.invalid','fresh-key',now,fetchImpl);
+  assert.equal(markedFailed,true);
+  assert.equal(initializedNew,true);
+  assert.equal(res.authorizationUrl,'https://checkout.paystack.com/fresh-new');
+  assert.equal(res.confirmationUrl,undefined);
+});
+
+
+

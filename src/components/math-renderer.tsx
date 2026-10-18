@@ -1,5 +1,6 @@
 import React from 'react';
 import katex from 'katex';
+import { isArabicText } from '@/lib/utils';
 
 interface MathRendererProps {
   content: string;
@@ -92,12 +93,22 @@ function renderInlineFormatting(text: string, keyPrefix: string, depth = 0): Rea
 export function MathRenderer({ content, className = '' }: MathRendererProps) {
   if (!content) return null;
 
+  const isRtl = isArabicText(content);
+
   // Pattern matching $$...$$ (display math) or $...$ (inline math)
+  // Pre-normalize common patterns like $₦345$ or $$₦1,000$$ where the Naira sign was placed inside math delimiters
+  const normalizedContent = content
+    .replace(/\$\$([ \t]*)₦([ \t]*)/g, '₦$$$$$1')
+    .replace(/\$([ \t]*)₦([ \t]*)/g, '₦$$$1');
+
   const mathRegex = /(\$\$[\s\S]+?\$\$|\$[^\$]+?\$)/g;
-  const parts = content.split(mathRegex);
+  const parts = normalizedContent.split(mathRegex);
 
   return (
-    <span className={`inline-block leading-relaxed ${className}`}>
+    <span
+      dir={isRtl ? 'rtl' : undefined}
+      className={`inline-block leading-relaxed ${isRtl ? 'text-right [direction:rtl]' : ''} ${className}`}
+    >
       {parts.map((part, index) => {
         if (part.startsWith('$$') && part.endsWith('$$')) {
           const math = part.slice(2, -2).trim();
@@ -105,6 +116,7 @@ export function MathRenderer({ content, className = '' }: MathRendererProps) {
             const html = katex.renderToString(math, {
               displayMode: true,
               throwOnError: false,
+              strict: false,
             });
             return (
               <span
@@ -122,6 +134,7 @@ export function MathRenderer({ content, className = '' }: MathRendererProps) {
             const html = katex.renderToString(math, {
               displayMode: false,
               throwOnError: false,
+              strict: false,
             });
             return (
               <span

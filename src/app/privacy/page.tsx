@@ -22,7 +22,8 @@ export default function PrivacyPolicyPage() {
         <ul className="list-disc space-y-2 pl-6">
           <li><strong>Account information:</strong> account ID, email address, display name, sign-in/session information and account status.</li>
           <li><strong>Study profile:</strong> selected subjects, subject combination, target score, onboarding answers and any exam-year reference you provide.</li>
-          <li><strong>Learning activity:</strong> practice and mock sessions, questions issued, answers, results, timing, saved progress and topic insights.</li>
+          <li><strong>Learning activity:</strong> practice and mock sessions, questions issued, answers, results, timing, saved progress, topic insights, daily study schedule targets and study streak history.</li>
+          <li><strong>Optional push reminder subscriptions:</strong> if you explicitly enable study reminders on a supported device, we store your chosen reminder time, time zone, device label, and browser Web Push subscription endpoint and encryption keys so our scheduler can send generic study reminders through your browser or operating-system push service (such as Google FCM, Mozilla Push, Apple Web Push, or Windows Push Notification Services). Reminder payloads use generic study text and do not include your name, email, or scores. You can disable reminders or remove a device subscription at any time from your profile, even if a paid plan has expired.</li>
           <li><strong>Submissions:</strong> question flags or reports, ratings, support messages and information you choose to include.</li>
           <li><strong>Referrals:</strong> referral codes, attribution, eligibility and reward status.</li>
           <li><strong>Payments:</strong> transaction references, amount, currency, payment/subscription status, access dates, cancellation details and limited tokenized authorization details needed to verify or renew access. A third-party payment processor handles card entry and processing. Do not send us your card number, PIN or security code.</li>
@@ -48,7 +49,7 @@ export default function PrivacyPolicyPage() {
       </LegalSection>
 
       <LegalSection title="Retention and security">
-        <p>We retain information for as long as needed to provide the service, maintain study history, administer payments, protect exam integrity, resolve support issues and meet legal obligations. We then delete it or remove identifying details, subject to lawful retention, backup and dispute-resolution needs. The joint controllers have retention and deletion arrangements in place.</p>
+        <p>We retain information for as long as needed to provide the service, maintain study history, administer payments, protect exam integrity, resolve support issues and meet legal obligations. Expired or revoked Web Push subscriptions are automatically disabled when reported gone by the push provider or removed when you sign out or detach the device. We then delete information or remove identifying details, subject to lawful retention, backup and dispute-resolution needs. The joint controllers have retention and deletion arrangements in place.</p>
         <p>We use technical and organisational safeguards intended to protect information. No online service can guarantee complete security. Use a unique password, protect your email and device, sign out on shared devices, and tell us promptly if you suspect account misuse.</p>
       </LegalSection>
 

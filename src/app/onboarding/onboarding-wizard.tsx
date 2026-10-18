@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { getAccountCoordinator, OnboardingData } from "@/lib/auth/account-coordinator";
 import { useRouter } from "next/navigation";
 import { Check, ArrowRight, Loader2, Target } from "lucide-react";
+import { ResourceStatus } from "@/lib/api/use-api-resource";
 
 
 const targetPresets = [
@@ -23,6 +24,7 @@ export function OnboardingWizard() {
   const [loadAttempt, setLoadAttempt] = useState(0);
   useEffect(() => {
     let active = true;
+    setCatalog(null);
     setState(null);
     void getAccountCoordinator().loadOnboarding().then((data) => {
       if (!active) return;
@@ -55,6 +57,11 @@ export function OnboardingWizard() {
   };
 
   const isReady = Boolean(catalog?.availableSubjects.some((subject) => subject.code === 'ENG' && subject.is_compulsory)) && selectedElectives.length === 3;
+
+  if (!catalog) return <>
+    <ResourceStatus error={state?.error ?? null} retry={() => { getAccountCoordinator().clear(); setLoadAttempt(value => value + 1); }} />
+    {state?.error && typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname) && <p className="mt-4 text-sm text-slate-600">This local preview uses a separate test database. <a className="font-semibold text-emerald-800 underline" href="https://jambprep.lecterniq.com/onboarding/?edit=1">Open the live subject selector</a></p>}
+  </>;
 
   return (
     <form onSubmit={formAction} className="space-y-8">

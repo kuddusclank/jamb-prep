@@ -15,6 +15,10 @@
 import { assertActorOwnership } from '../api/authorization';
 import { RequestDbContext, SqlTagExecutor } from '../api/db-context';
 import { ApiError } from '../api/errors';
+import {
+  recordAcceptedStudyGoalEvent,
+  recordCompletedMockStreakQualification,
+} from './study-schedule-service';
 
 export const MAX_EXAM_PAYLOAD_UTF8_BYTES = 512 * 1024; // 512 KB
 
@@ -253,6 +257,19 @@ export async function upsertOwnedExamAnswerAtomic(
       });
     }
 
+    if (params.selectedOptionId !== null) {
+      await recordAcceptedStudyGoalEvent(
+        tx,
+        {
+          userId: params.userId,
+          attemptId: params.attemptId,
+          questionId: params.questionId,
+          mode: 'mock',
+          now: new Date(serverReceivedAt),
+        }
+      );
+    }
+
     return {
       acknowledged: true,
       attemptId: params.attemptId,
@@ -485,6 +502,12 @@ export async function submitAndScoreExamAttemptAtomic(
       });
     }
 
+    // Completing any CBT mock simulation automatically qualifies today's study streak
+    await recordCompletedMockStreakQualification(tx, {
+      userId: params.userId,
+      attemptId: params.attemptId,
+      now: new Date(serverSubmittedAt),
+    });
 
     return {
       attemptId: params.attemptId,

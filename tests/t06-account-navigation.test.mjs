@@ -7,6 +7,7 @@ import { createBrowserSessionManager } from '../src/lib/auth/session-manager.ts'
 import { createNativeApiClient } from '../src/lib/api/native-client.ts';
 import { saveStudentOnboardingAtomic } from '../worker/services/onboarding-service.ts';
 import { getAuthenticatedSessionIdentity } from '../worker/services/auth-provisioning-service.ts';
+import { presentSignInError } from '../src/lib/auth/sign-in-error.ts';
 
 const A = '11111111-1111-4111-8111-111111111111';
 const B = '22222222-2222-4222-8222-222222222222';
@@ -44,6 +45,42 @@ const body = { electives: catalog.slice(1).map((s) => s.name), targetScore: 300 
     assert.equal(accountDestination(identity(A, { onboardingCompleted: false }), path), '/onboarding');
   }
   assert.equal(accountDestination(identity(), '/reset-password'), null);
+});
+
+test('sign-in preserves subject editing and the destination is stable after navigation', () => {
+  for (const target of ['/onboarding/?edit=1', '/onboarding?edit=1']) {
+    assert.equal(accountDestination(identity(), '/login', target), target);
+    assert.equal(accountDestination(identity(), '/onboarding', '/dashboard', true), null);
+    assert.equal(accountDestination(identity(A, { onboardingCompleted: false }), '/login', target), '/onboarding');
+  }
+  assert.equal(accountDestination(identity(), '/login', '/onboarding/'), '/dashboard');
+  assert.equal(accountDestination(identity(), '/login', '/onboarding/?edit=0'), '/dashboard');
+  assert.equal(accountDestination(identity(), '/login', '//evil.test/onboarding/?edit=1'), '/dashboard');
+});
+
+test('credential failures explain how new students can continue without exposing account existence', () => {
+  const expected = "We couldn't sign you in with that email and password. If you're new to JAMBPrep, create an account first.";
+  assert.equal(presentSignInError('Invalid login credentials'), expected);
+  assert.equal(presentSignInError('Invalid email or password.'), expected);
+  assert.equal(presentSignInError(null), expected);
+  assert.equal(presentSignInError('Temporarily unavailable. Please retry.'), 'Temporarily unavailable. Please retry.');
+});
+
+test('empty or incomplete onboarding catalogues never become a cached usable form', async () => {
+  const fixture = await managerFixture();
+  let calls = 0;
+  const complete = { availableSubjects: catalog, enrolledSubjects: [], preferences: null };
+  const coordinator = createAccountCoordinator(fixture.manager, { async request() {
+    calls++;
+    return { data: calls === 1 ? { ...complete, availableSubjects: [] } : calls === 2 ? { ...complete, availableSubjects: catalog.slice(0, 2) } : complete };
+  } });
+  try {
+    await assert.rejects(coordinator.loadOnboarding(), /Subject choices are temporarily unavailable/);
+    await assert.rejects(coordinator.loadOnboarding(), /Subject choices are temporarily unavailable/);
+    assert.equal((await coordinator.loadOnboarding()).availableSubjects.length, 4);
+    await coordinator.loadOnboarding();
+    assert.equal(calls, 3);
+  } finally { coordinator.destroy(); fixture.manager.destroy(); }
 });
 
 test('identity reads coalesce, expire and are scoped to the current actor', async () => {

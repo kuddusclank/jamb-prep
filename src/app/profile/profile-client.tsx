@@ -19,6 +19,7 @@ import {
   Lock
 } from "lucide-react";
 import Link from "@/components/pending-link";
+import { ScheduleSection } from "./schedule-section";
 
 interface SubjectSummary {
   name: string;
@@ -300,6 +301,9 @@ export function ProfileClient({
           ))}
         </div>
       </div>
+
+      {/* Section 2b: Premium Study Schedule, Daily Goals, Streaks & Web Push Reminders */}
+      <ScheduleSection />
 
       {/* Section 3: Subscription & Billing Management */}
       <div id="subscription" className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">

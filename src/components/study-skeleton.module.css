@@ -1,0 +1,12 @@
+.screen { min-height: 65vh; padding: clamp(24px, 5vw, 64px) 20px; background: #fff; }
+.content { max-width: 960px; margin: 0 auto; }
+.block { position: relative; overflow: hidden; background: #edf0f2; border-radius: 16px; }
+.block::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, #ffffffb3, transparent); animation: shimmer 1.6s ease-in-out infinite; }
+.heading { width: 55%; height: 32px; }
+.subtitle { width: 75%; height: 16px; margin-top: 18px; }
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 32px 0; }
+.card { height: 110px; }
+.panel { height: 230px; }
+@keyframes shimmer { to { transform: translateX(100%); } }
+@media (max-width: 600px) { .cards { grid-template-columns: 1fr; } .card { height: 70px; } }
+@media (prefers-reduced-motion: reduce) { .block::after { animation: none; display: none; } }

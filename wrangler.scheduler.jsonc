@@ -1,0 +1,35 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jambprep-study-reminder-scheduler",
+  "main": "worker/scheduler/entry.ts",
+  "compatibility_date": "2026-10-10",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "1d7b203e4b0d4913baaa695ffcf0c311"
+    }
+  ],
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    }
+  },
+  "vars": {
+    "ENVIRONMENT": "production",
+    "STUDY_REMINDER_DISPATCH_ENABLED": "true",
+    "STUDY_REMINDER_BATCH_LIMIT": "25",
+    "STUDY_REMINDER_CONCURRENCY": "5",
+    "VAPID_PUBLIC_KEY": "BCdEb6JGkPOb6gV4MpVieY0jmc8rn30m4rs7ho7K_izrzCkRsh9d9HlUPPZozp6peHQ8rftHlTNHGlH7qbSznIQ",
+    "VAPID_SUBJECT": "mailto:support@lecterniq.com",
+    "VAPID_KEY_VERSION": "1"
+  },
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  }
+}

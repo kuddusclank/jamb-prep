@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { ReportQuestionDialog } from "@/components/report-question-dialog";
 import { QuestionDiagram } from "@/components/question-diagram";
 import { MathRenderer } from "@/components/math-renderer";
+import { isArabicText } from "@/lib/utils";
 import { 
   resumePracticeSession,
   finishPracticeSession,
@@ -161,8 +162,19 @@ export function PracticeClient({
               ? "Excellent performance! Keep reinforcing your mastery with consistent daily revision."
               : "Good effort. Review the diagnostic explanations carefully to turn mistakes into points."}
           </p>
-
-          <ResultShare text={practiceShareText(score,questions.length,currentQ?.subjectName || "UTME",new Set(questions.map(q=>q.topicTitle)).size===1?questions[0]?.topicTitle:undefined)} />
+          <ResultShare
+            type="practice"
+            score={score}
+            totalQuestions={questions.length}
+            percentage={percentage}
+            subjectName={currentQ?.subjectName || "Use of English"}
+            topicTitle={new Set(questions.map(q => q.topicTitle)).size === 1 ? questions[0]?.topicTitle : undefined}
+            feedbackText={
+              percentage >= 75
+                ? "Excellent performance! Keep reinforcing your mastery with consistent daily revision."
+                : "Good effort. Review the diagnostic explanations carefully to turn mistakes into points."
+            }
+          />
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               onClick={() => {
@@ -335,7 +347,12 @@ export function PracticeClient({
 <QuestionDiagram url={currentQ.imageUrl} alt={currentQ.imageAlt} />
       {/* Reading Passage (if present) */}
       {currentQ.passage && (
-        <div className="rounded-3xl border border-emerald-950/10 bg-[#EDF2E9]/60 p-6 sm:p-8">
+        <div
+          dir={isArabicText(currentQ.passage.content) ? "rtl" : undefined}
+          className={`rounded-3xl border border-emerald-950/10 bg-[#EDF2E9]/60 p-6 sm:p-8 ${
+            isArabicText(currentQ.passage.content) ? "text-right [direction:rtl]" : ""
+          }`}
+        >
           {currentQ.passage.title && (
             <h3 className="text-sm font-bold text-[#092E28] uppercase tracking-wider mb-2">
               Passage: {currentQ.passage.title}
@@ -348,11 +365,23 @@ export function PracticeClient({
       )}
 
       {/* Question Card */}
-      <div className="rounded-3xl border border-emerald-950/10 bg-white p-6 sm:p-10 shadow-sm space-y-6">
-        {/* Question Stem with KaTeX Math Rendering */}
-        <div className="text-base sm:text-lg font-medium text-[#092E28] leading-relaxed">
-          <MathRenderer content={currentQ.stem} />
-        </div>
+      {(() => {
+        const isQArabic =
+          currentQ.subjectCode === 'ARB' ||
+          isArabicText(currentQ.stem) ||
+          currentQ.options.some((o) => isArabicText(o.content));
+
+        return (
+          <div className="rounded-3xl border border-emerald-950/10 bg-white p-6 sm:p-10 shadow-sm space-y-6">
+            {/* Question Stem with KaTeX Math Rendering */}
+            <div
+              dir={isQArabic ? "rtl" : undefined}
+              className={`text-base sm:text-lg font-medium text-[#092E28] leading-relaxed ${
+                isQArabic ? "text-right [direction:rtl]" : ""
+              }`}
+            >
+              <MathRenderer content={currentQ.stem} />
+            </div>
 
         {/* Multiple Choice Options (A, B, C, D) */}
         <div className="space-y-3 pt-2">
@@ -379,13 +408,20 @@ export function PracticeClient({
               badgeStyles = "border-[#116149] bg-[#116149] text-white";
             }
 
+            const isOptArabic = isQArabic || isArabicText(opt.content);
+
             return (
               <button
                 key={opt.label}
                 type="button"
                 onClick={() => handleSelectOption(opt.label)}
                 disabled={!!answerResult}
-                className={`w-full flex items-start gap-4 p-4 sm:p-4.5 rounded-2xl border text-left text-sm sm:text-base font-medium transition-all cursor-pointer disabled:cursor-default ${cardStyles}`}
+                dir={isOptArabic ? "rtl" : undefined}
+                className={`w-full flex items-start gap-4 p-4 sm:p-4.5 rounded-2xl border font-medium transition-all cursor-pointer disabled:cursor-default ${
+                  isOptArabic
+                    ? "flex-row text-right [direction:rtl]"
+                    : "text-left"
+                } text-sm sm:text-base ${cardStyles}`}
               >
                 <span className={`flex size-7 shrink-0 items-center justify-center rounded-xl border text-xs font-bold transition-colors ${badgeStyles}`}>
                   {opt.label}
@@ -399,31 +435,39 @@ export function PracticeClient({
         </div>
 
         {/* Detailed Diagnostic Solution Banner */}
-        {answerResult && (
-          <div className={`mt-6 rounded-2xl p-5 sm:p-6 border ${
-            answerResult.isCorrect 
-              ? "bg-emerald-50/90 border-emerald-200 text-emerald-950" 
-              : "bg-amber-50/90 border-amber-200 text-amber-950"
-          }`}>
-            <div className="flex items-center gap-2 mb-2 font-bold text-sm">
-              {answerResult.isCorrect ? (
-                <>
-                  <CheckCircle2 size={18} className="text-emerald-700" />
-                  <span className="text-emerald-800">Correct! Option {answerResult.correctOption}</span>
-                </>
-              ) : (
-                <>
-                  <XCircle size={18} className="text-amber-700" />
-                  <span className="text-amber-800">Incorrect. The correct answer is Option {answerResult.correctOption}</span>
-                </>
-              )}
+        {answerResult && (() => {
+          const isExpArabic = isQArabic || isArabicText(answerResult.explanation);
+          return (
+            <div
+              dir={isExpArabic ? "rtl" : undefined}
+              className={`mt-6 rounded-2xl p-5 sm:p-6 border ${
+                isExpArabic ? "text-right [direction:rtl]" : ""
+              } ${
+                answerResult.isCorrect 
+                  ? "bg-emerald-50/90 border-emerald-200 text-emerald-950" 
+                  : "bg-amber-50/90 border-amber-200 text-amber-950"
+              }`}
+            >
+              <div className={`flex items-center gap-2 mb-2 font-bold text-sm ${isExpArabic ? "flex-row-reverse justify-end" : ""}`}>
+                {answerResult.isCorrect ? (
+                  <>
+                    <CheckCircle2 size={18} className="text-emerald-700 shrink-0" />
+                    <span className="text-emerald-800">Correct! Option {answerResult.correctOption}</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle size={18} className="text-amber-700 shrink-0" />
+                    <span className="text-amber-800">Incorrect. The correct answer is Option {answerResult.correctOption}</span>
+                  </>
+                )}
+              </div>
+              <div className="text-xs sm:text-sm leading-relaxed mt-2 text-slate-800">
+                <strong className="block mb-1 text-slate-900">Step-by-step Explanation:</strong>
+                <MathRenderer content={answerResult.explanation} />
+              </div>
             </div>
-            <div className="text-xs sm:text-sm leading-relaxed mt-2 text-slate-800">
-              <strong className="block mb-1 text-slate-900">Step-by-step Explanation:</strong>
-              <MathRenderer content={answerResult.explanation} />
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Action Buttons */}
         <div className="pt-4 flex items-center justify-between border-t border-slate-100">
@@ -467,6 +511,8 @@ export function PracticeClient({
           )}
         </div>
       </div>
+    );
+  })()}
     </div>
   );
 }
