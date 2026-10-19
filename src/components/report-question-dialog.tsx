@@ -1,18 +1,21 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { Flag } from "lucide-react";
 import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
 
 interface ReportQuestionDialogProps {
   questionId: string;
   attemptId?: string | null;
   buttonClassName?: string;
+  variant?: "text" | "icon";
 }
 
 export function ReportQuestionDialog({
   questionId,
   attemptId,
-  buttonClassName = "text-xs text-slate-500 hover:text-rose-600 underline",
+  buttonClassName,
+  variant = "text",
 }: ReportQuestionDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -57,13 +60,28 @@ export function ReportQuestionDialog({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className={buttonClassName}
-      >
-        Report a problem
-      </button>
+      {variant === "icon" ? (
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          title="Report a problem with this question"
+          aria-label="Report a problem with this question"
+          className={
+            buttonClassName ||
+            "inline-flex size-6 items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+          }
+        >
+          <Flag size={13} />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          className={buttonClassName || "text-xs text-slate-500 hover:text-rose-600 underline"}
+        >
+          Report a problem
+        </button>
+      )}
 
       {isOpen && (
         <dialog ref={dialogRef} onCancel={() => setIsOpen(false)} aria-labelledby="report-dialog-title" className="fixed inset-0 z-50 m-0 flex h-full max-h-none w-full max-w-none items-center justify-center border-0 bg-slate-900/50 p-4 backdrop-blur-xs">

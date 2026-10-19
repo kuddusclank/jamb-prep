@@ -347,17 +347,16 @@ export function PracticeClient({
           <span>•</span>
           <span className="text-slate-500">{currentQ.topicTitle}</span>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <span className="font-semibold text-slate-700">
             Question {currentIndex + 1} of {questions.length}
           </span>
           <span className="px-2 py-0.5 rounded-full bg-slate-100 text-[11px] font-semibold text-slate-600 uppercase">
             {currentQ.difficulty}
           </span>
+          <ReportQuestionDialog key={currentQ.id} questionId={currentQ.id} variant="icon" />
         </div>
       </div>
-
-      <ReportQuestionDialog key={currentQ.id} questionId={currentQ.id} />
 
 <QuestionDiagram url={currentQ.imageUrl} alt={currentQ.imageAlt} />
       {/* Reading Passage (if present) */}
