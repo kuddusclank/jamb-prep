@@ -90,14 +90,21 @@ export function ResultShare(props: ResultShareProps) {
       const file = new File([blob], `jambprep-${type}-result.png`, { type: "image/png" });
 
       let shared = false;
-      if (typeof navigator !== "undefined" && typeof navigator.canShare === "function") {
+      const isMobile =
+        typeof navigator !== "undefined" &&
+        (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || "") ||
+          (typeof navigator.maxTouchPoints === "number" &&
+            navigator.maxTouchPoints > 1 &&
+            typeof window !== "undefined" &&
+            "ontouchend" in window));
+
+      if (isMobile && typeof navigator !== "undefined" && typeof navigator.canShare === "function") {
         try {
           if (navigator.canShare({ files: [file] })) {
             await navigator.share({
               files: [file],
               title: type === "mock" ? "My UTME Mock Result" : "My JAMBPrep Practice Result",
               text: shareMessage,
-              url: referralUrl,
             });
             shared = true;
           }
