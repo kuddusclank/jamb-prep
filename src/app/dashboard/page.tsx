@@ -267,66 +267,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Central Study Coach Advice Banner ("Know what to study next") */}
-          <div className="rounded-3xl bg-white border border-emerald-950/10 p-6 sm:p-8 relative overflow-hidden shadow-sm">
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 relative z-10">
-              <div className="max-w-xl">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-200/70 text-[#116149] text-xs font-bold uppercase tracking-wider mb-3">
-                  <Award size={14} /> {coachRecommendation.badge}
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight leading-snug text-[#092E28]">
-                  {coachRecommendation.headline}
-                </h2>
-                <p className="mt-2.5 text-sm text-slate-600 leading-relaxed">
-                  {coachRecommendation.explanation}
-                </p>
-
-                {/* Score Target Meter if completed mocks exist */}
-                {latestScore !== null && (
-                  <div className="mt-4 pt-4 border-t border-emerald-950/10">
-                    <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-                      <span className="text-slate-600">Goal Progression ({latestScore} / {targetScore})</span>
-                      <span className="text-[#116149] font-bold">
-                        {gapToTarget === 0 ? "Target Reached! 🎉" : `${gapToTarget} points to goal`}
-                      </span>
-                    </div>
-                    <div className="h-2.5 w-full bg-emerald-950/10 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-[#116149] rounded-full transition-all duration-500"
-                        style={{ width: `${scorePercent}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="shrink-0 flex flex-col sm:flex-row xl:flex-col gap-3">
-                {coachRecommendation.suggestedTopicSlug ? (
-                  <Link
-                    href={`/practice?${new URLSearchParams({subject:coachRecommendation.suggestedSubjectCode,...(coachRecommendation.suggestedTopicSlug?{topic:coachRecommendation.suggestedTopicSlug}:{})})}`}
-                    className="min-h-12 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-7 text-sm font-semibold text-white hover:bg-[#0b4936] transition-all hover:-translate-y-0.5 shadow-md shadow-[#116149]/20"
-                  >
-                    Practice Weak Topic Now <ArrowRight size={16} />
-                  </Link>
-                ) : (
-                  <Link
-                    href="/practice"
-                    className="min-h-12 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-7 text-sm font-semibold text-white hover:bg-[#0b4936] transition-all hover:-translate-y-0.5 shadow-md shadow-[#116149]/20"
-                  >
-                    Start Topic Practice <ArrowRight size={16} />
-                  </Link>
-                )}
-
-                <Link
-                  href="/mock"
-                  className="min-h-12 inline-flex items-center justify-center gap-2 rounded-full border border-emerald-900/20 bg-white px-7 text-sm font-semibold text-[#092E28] hover:bg-emerald-50 transition-all text-center"
-                >
-                  Full Mock Simulation (180 Qs)
-                </Link>
-              </div>
-            </div>
-          </div>
 
           {/* Your next revision priorities Section */}
           <div>

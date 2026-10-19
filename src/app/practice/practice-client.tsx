@@ -292,28 +292,43 @@ export function PracticeClient({
               ))}
             </div>
             <p className="mt-2 text-xs text-slate-500">
-              {isPremium ? "Pro includes unlimited practice sessions." : dailySessionUsed ? "Your daily free session has been used. Resume it or return after midnight WAT." : "Free includes one session daily: choose 5, 10 or 15 questions. Resets midnight WAT."}
+              {isPremium
+                ? "Pro includes unlimited practice sessions."
+                : dailySessionUsed
+                ? activeSessionId
+                  ? "Your daily free session has been used. Resume your saved session below or upgrade to Pro."
+                  : "Your daily free session has been used. Upgrade to Pro for unlimited sessions or return after midnight WAT."
+                : "Free includes one session daily: choose 5, 10 or 15 questions. Resets midnight WAT."}
             </p>
           </div>
 
           {activeSessionId&&<div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-sm">You have a saved practice session.</p><div className="mt-3 flex gap-3"><button disabled={isLoading} onClick={()=>{writeUrl(selectedSubject,selectedTopic?.slug,activeSessionId);}} className="rounded-full bg-emerald-800 px-5 py-3 text-sm text-white">Resume session</button><button disabled={isLoading} onClick={async()=>{setIsLoading(true);try{await finishPracticeSession(activeSessionId,true);refreshCatalogue();}catch(error){setErrorMessage(error instanceof Error?error.message:'Unable to end session.');}finally{setIsLoading(false);}}} className="rounded-full border px-5 py-3 text-sm">End session</button></div></div>}
           {/* Launch Button */}
-          <button
-            type="button"
-            onClick={startPractice}
-            disabled={isLoading||invalidSelection||available<questionCount||(!isPremium&&dailySessionUsed)||Boolean(activeSessionId)}
-            className="w-full flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 py-4 text-sm font-semibold text-white shadow-sm hover:bg-[#0e523e] transition-all cursor-pointer disabled:opacity-50"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 size={18} className="animate-spin" /> Preparing Practice Set...
-              </>
-            ) : (
-              <>
-                Start Focused Practice <ArrowRight size={16} />
-              </>
-            )}
-          </button>
+          {!isPremium && dailySessionUsed ? (
+            <Link
+              href="/pricing"
+              className="w-full flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 py-4 text-sm font-semibold text-white shadow-sm hover:bg-[#0e523e] transition-all cursor-pointer text-center"
+            >
+              <Sparkles size={18} className="text-[#E7B85A]" /> Upgrade to Pro <ArrowRight size={16} />
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={startPractice}
+              disabled={isLoading||invalidSelection||available<questionCount||Boolean(activeSessionId)}
+              className="w-full flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 py-4 text-sm font-semibold text-white shadow-sm hover:bg-[#0e523e] transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" /> Preparing Practice Set...
+                </>
+              ) : (
+                <>
+                  Start Focused Practice <ArrowRight size={16} />
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     );
