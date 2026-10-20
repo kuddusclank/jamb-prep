@@ -16,7 +16,7 @@ const destinations = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/practice', label: 'Practice', icon: Layers },
   { href: '/mock', label: 'Mock exams', icon: Clock },
-  { href: '/dictionary', label: 'Dictionary & Games', icon: BookA, isPro: true },
+  { href: '/dictionary', label: 'Dictionary', icon: BookA, isPro: true },
   { href: '/analytics', label: 'Performance', icon: ChartNoAxesCombined },
   { href: '/referrals', label: 'Invite friends', icon: Users },
   { href: '/profile', label: 'My profile', icon: UserRound },

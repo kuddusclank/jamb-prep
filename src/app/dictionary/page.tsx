@@ -195,7 +195,7 @@ export default function DictionaryPage() {
                 <BookOpen size={13} /> UTME Use of English Lexical Engine
               </span>
               <h1 className="mt-2.5 text-3xl font-extrabold tracking-tight text-slate-900">
-                Dictionary, Lexis & Oral Games
+                Dictionary
               </h1>
               <p className="mt-1 text-sm text-slate-500 max-w-2xl">
                 Master 680+ high-frequency synonyms, antonyms, irregular verb traps, silent letters, and syllable stress patterns tested in the JAMB UTME with live Free Dictionary definitions.
