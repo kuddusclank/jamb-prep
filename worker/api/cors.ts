@@ -55,7 +55,8 @@ export function validateOriginAndGetCorsHeaders(
   }
 
   const allowedOrigins = resolveAllowedOrigins(env);
-  if (!allowedOrigins.has(origin)) {
+  const isPagesDev = /^https:\/\/([a-z0-9-]+\.)?jambprep\.pages\.dev$/.test(origin);
+  if (!allowedOrigins.has(origin) && !isPagesDev) {
     throw new ApiError({
       status: 403,
       code: 'FORBIDDEN_ORIGIN',
