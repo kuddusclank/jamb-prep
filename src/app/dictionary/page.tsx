@@ -13,6 +13,7 @@ import {
   Flame,
   CheckCircle2,
   ArrowRight,
+  ArrowLeft,
   Filter,
   Zap,
   Ear,
@@ -195,31 +196,41 @@ export default function DictionaryPage() {
                 <BookOpen size={13} /> UTME Use of English Lexical Engine
               </span>
               <h1 className="mt-2.5 text-3xl font-extrabold tracking-tight text-slate-900">
-                Dictionary
+                {activeTab === "games" ? "Word Games" : "Dictionary"}
               </h1>
               <p className="mt-1 text-sm text-slate-500 max-w-2xl">
-                Master 680+ high-frequency synonyms, antonyms, irregular verb traps, silent letters, and syllable stress patterns tested in the JAMB UTME with live Free Dictionary definitions.
+                {activeTab === "games"
+                  ? "Sharpen your oral English, syllable stress, sound matching, and vocabulary recall with interactive UTME drills."
+                  : "Master 680+ high-frequency synonyms, antonyms, irregular verb traps, silent letters, and syllable stress patterns tested in the JAMB UTME with live Free Dictionary definitions."}
               </p>
             </div>
 
-            {/* Games Shortcut Button */}
+            {/* Games Shortcut / Back Button */}
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setActiveTab("games")}
+                onClick={() => setActiveTab(activeTab === "games" ? "browse" : "games")}
                 className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold transition shadow-xs cursor-pointer ${
                   activeTab === "games"
-                    ? "bg-[#116149] text-white"
+                    ? "bg-[#116149] text-white hover:bg-[#0d4d3a]"
                     : "bg-emerald-50 text-[#116149] border border-emerald-200 hover:bg-emerald-100"
                 }`}
               >
-                <Gamepad2 size={16} /> Play Word Games
+                {activeTab === "games" ? (
+                  <>
+                    <BookOpen size={16} /> Back to Dictionary
+                  </>
+                ) : (
+                  <>
+                    <Gamepad2 size={16} /> Play Word Games
+                  </>
+                )}
               </button>
             </div>
           </div>
 
-          {/* Daily 5 High-Yield Words Banner */}
-          {dailyFive && (
+          {/* Daily 5 High-Yield Words Banner (Hidden when playing word games) */}
+          {dailyFive && activeTab !== "games" && (
             <section className="rounded-3xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/70 via-white to-slate-50 p-6 shadow-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-emerald-100">
                 <div className="flex items-center gap-2.5">
@@ -278,52 +289,55 @@ export default function DictionaryPage() {
             </section>
           )}
 
-          {/* Navigation Tabs (Responsive Segmented Control on mobile, Tabs on desktop) */}
-          <div className="grid grid-cols-3 p-1 rounded-2xl bg-slate-100 border border-slate-200/70 gap-1 sm:flex sm:bg-transparent sm:p-0 sm:border-0 sm:border-b sm:border-slate-200 sm:rounded-none">
-            <button
-              type="button"
-              onClick={() => setActiveTab("browse")}
-              className={`py-2.5 px-2 sm:px-5 text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 rounded-xl sm:rounded-none sm:border-b-2 ${
-                activeTab === "browse"
-                  ? "bg-white text-[#116149] shadow-xs sm:bg-transparent sm:shadow-none sm:border-[#116149]"
-                  : "text-slate-600 hover:text-slate-900 sm:border-transparent sm:text-slate-500 sm:hover:text-slate-800"
-              }`}
-            >
-              <BookOpen size={16} className="shrink-0" />
-              <span className="truncate">Dictionary</span>
-              <span className="hidden sm:inline text-xs opacity-75 font-normal">({UTME_LEXICON.length})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab("saved");
-                refreshSavedWords();
-              }}
-              className={`py-2.5 px-2 sm:px-5 text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 rounded-xl sm:rounded-none sm:border-b-2 ${
-                activeTab === "saved"
-                  ? "bg-white text-[#116149] shadow-xs sm:bg-transparent sm:shadow-none sm:border-[#116149]"
-                  : "text-slate-600 hover:text-slate-900 sm:border-transparent sm:text-slate-500 sm:hover:text-slate-800"
-              }`}
-            >
-              <Bookmark size={16} className="shrink-0" />
-              <span className="truncate">Word Bank</span>
-              <span className="text-[11px] font-semibold px-1.5 py-0.2 rounded-full bg-slate-200/80 text-slate-700">
-                {savedWords.length}
+          {/* Navigation Tabs (Responsive 2-Tab Segmented Control for Dictionary and Word Bank) */}
+          {activeTab !== "games" ? (
+            <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-100 border border-slate-200/70 gap-1 sm:flex sm:bg-transparent sm:p-0 sm:border-0 sm:border-b sm:border-slate-200 sm:rounded-none">
+              <button
+                type="button"
+                onClick={() => setActiveTab("browse")}
+                className={`py-2.5 px-3 sm:px-5 text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 rounded-xl sm:rounded-none sm:border-b-2 ${
+                  activeTab === "browse"
+                    ? "bg-white text-[#116149] shadow-xs sm:bg-transparent sm:shadow-none sm:border-[#116149]"
+                    : "text-slate-600 hover:text-slate-900 sm:border-transparent sm:text-slate-500 sm:hover:text-slate-800"
+                }`}
+              >
+                <BookOpen size={16} className="shrink-0" />
+                <span className="truncate">Dictionary</span>
+                <span className="hidden sm:inline text-xs opacity-75 font-normal">({UTME_LEXICON.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("saved");
+                  refreshSavedWords();
+                }}
+                className={`py-2.5 px-3 sm:px-5 text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 rounded-xl sm:rounded-none sm:border-b-2 ${
+                  activeTab === "saved"
+                    ? "bg-white text-[#116149] shadow-xs sm:bg-transparent sm:shadow-none sm:border-[#116149]"
+                    : "text-slate-600 hover:text-slate-900 sm:border-transparent sm:text-slate-500 sm:hover:text-slate-800"
+                }`}
+              >
+                <Bookmark size={16} className="shrink-0" />
+                <span className="truncate">Word Bank</span>
+                <span className="text-[11px] font-semibold px-1.5 py-0.2 rounded-full bg-slate-200/80 text-slate-700">
+                  {savedWords.length}
+                </span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <button
+                type="button"
+                onClick={() => setActiveTab("browse")}
+                className="inline-flex items-center gap-2 text-sm font-bold text-[#116149] hover:text-[#0d4d3a] transition cursor-pointer"
+              >
+                <ArrowLeft size={16} /> Back to Dictionary
+              </button>
+              <span className="text-xs font-semibold text-slate-500">
+                Oral English & Lexis Drills
               </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("games")}
-              className={`py-2.5 px-2 sm:px-5 text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 rounded-xl sm:rounded-none sm:border-b-2 ${
-                activeTab === "games"
-                  ? "bg-white text-[#116149] shadow-xs sm:bg-transparent sm:shadow-none sm:border-[#116149]"
-                  : "text-slate-600 hover:text-slate-900 sm:border-transparent sm:text-slate-500 sm:hover:text-slate-800"
-              }`}
-            >
-              <Gamepad2 size={16} className="shrink-0" />
-              <span className="truncate">Word Games</span>
-            </button>
-          </div>
+            </div>
+          )}
 
           {/* TAB 1: BROWSE DICTIONARY */}
           {activeTab === "browse" && (
@@ -740,16 +754,25 @@ export default function DictionaryPage() {
           {activeTab === "games" && (
             <div className="space-y-6">
               <div className="rounded-3xl border border-emerald-200 bg-gradient-to-r from-emerald-800 to-[#116149] p-8 text-white shadow-md">
-                <div className="max-w-xl space-y-3">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-emerald-100 backdrop-blur-xs border border-white/20">
-                    <Gamepad2 size={14} /> Interactive Oral English & Lexis Drills
-                  </span>
-                  <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                    Level Up Your UTME English Score
-                  </h2>
-                  <p className="text-sm text-emerald-100/90 leading-relaxed">
-                    Test your mastery of word stress patterns, vowel and consonant phonetics, silent letters, and synonyms with rapid-fire UTME drills.
-                  </p>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="max-w-xl space-y-3">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-emerald-100 backdrop-blur-xs border border-white/20">
+                      <Gamepad2 size={14} /> Interactive Oral English & Lexis Drills
+                    </span>
+                    <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                      Level Up Your UTME English Score
+                    </h2>
+                    <p className="text-sm text-emerald-100/90 leading-relaxed">
+                      Test your mastery of word stress patterns, vowel and consonant phonetics, silent letters, and synonyms with rapid-fire UTME drills.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("browse")}
+                    className="self-start sm:self-center inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-xs font-bold text-[#116149] hover:bg-emerald-50 transition shadow-xs cursor-pointer shrink-0"
+                  >
+                    <BookOpen size={15} /> Back to Dictionary
+                  </button>
                 </div>
               </div>
 
