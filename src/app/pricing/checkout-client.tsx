@@ -185,7 +185,7 @@ export function CheckoutClient({ pricing }: CheckoutClientProps) {
               </li>
               <li className="flex items-center gap-2.5">
                 <Check size={15} className="text-[#116149] shrink-0" />
-                <span><strong>UTME Dictionary & Oral English Games</strong> (stress drills, sound match, silent letters)</span>
+                <span><strong>UTME Dictionary & Oral English Games</strong> (680+ curated words, Free Dictionary lookup, stress drills, sound match)</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Check size={15} className="text-[#116149] shrink-0" />

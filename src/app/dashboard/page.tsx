@@ -15,6 +15,7 @@ Target,
 TrendingUp,
 Users,
 BookA,
+BookOpen,
 Gamepad2,
 Sparkles
 } from "lucide-react";
@@ -431,7 +432,7 @@ export default function DashboardPage() {
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-200 text-[11px] font-bold uppercase tracking-wider mb-2 border border-emerald-400/20">
                   {isPremium ? (
                     <>
-                      <Sparkles size={12} className="text-emerald-300" /> UTME Lexis & Oral English
+                      <BookOpen size={12} className="text-emerald-300" /> UTME Lexis & Oral English
                     </>
                   ) : (
                     <>
@@ -446,8 +447,8 @@ export default function DashboardPage() {
                   Boost your Use of English score with high-yield UTME words, syllable stress drills, silent letter hunting, and rhyme rush games.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                  <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-100">🎯 Daily 5 Words</span>
-                  <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-100">🔊 IPA Transcriptions</span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-100">📖 680+ Words & Free Dictionary</span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-100">🔊 IPA & Native Audio</span>
                   <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-100">🎮 4 Interactive Games</span>
                 </div>
               </div>

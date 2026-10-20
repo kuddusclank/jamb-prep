@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Volume2, Bookmark, BookmarkCheck, X, Sparkles, AlertTriangle, ArrowRight } from "lucide-react";
+import { Volume2, Bookmark, BookmarkCheck, X, BookOpen, Zap, AlertTriangle, Globe } from "lucide-react";
 import type { UtmeWordEntry } from "@/lib/dictionary/types";
 import { DictionaryService } from "@/lib/dictionary/dictionary-service";
+import { FreeDictionaryService } from "@/lib/dictionary/free-dictionary-service";
 
 interface WordInspectorSheetProps {
   wordEntry: UtmeWordEntry | null;
@@ -14,18 +15,59 @@ interface WordInspectorSheetProps {
 export function WordInspectorSheet({ wordEntry, isOpen, onClose }: WordInspectorSheetProps) {
   const [isSaved, setIsSaved] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [liveAudioUrl, setLiveAudioUrl] = useState<string | null>(null);
+  const [liveEntry, setLiveEntry] = useState<UtmeWordEntry | null>(null);
 
   useEffect(() => {
     if (wordEntry) {
       setIsSaved(DictionaryService.isWordSaved(wordEntry.word));
+      setLiveEntry(wordEntry);
+
+      const initialAudio = wordEntry.audioUrl || wordEntry.phonetics.audio || null;
+      setLiveAudioUrl(initialAudio);
+
+      // If wordEntry doesn't have native audio, look up online via Free Dictionary API
+      if (!initialAudio) {
+        FreeDictionaryService.lookup(wordEntry.word).then((online) => {
+          if (online?.audioUrl) {
+            setLiveAudioUrl(online.audioUrl);
+          }
+          if (online && (!wordEntry.meaningsList || wordEntry.meaningsList.length === 0)) {
+            setLiveEntry((prev) => (prev ? { ...prev, meaningsList: online.meaningsList } : prev));
+          }
+        });
+      }
     }
   }, [wordEntry]);
 
   if (!isOpen || !wordEntry) return null;
 
+  const current = liveEntry || wordEntry;
+
   const playPronunciation = () => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     setIsPlayingAudio(true);
+
+    if (liveAudioUrl) {
+      const audio = new Audio(liveAudioUrl);
+      audio.onended = () => setIsPlayingAudio(false);
+      audio.onerror = () => {
+        // Fallback to speech synthesis
+        fallbackSpeech();
+      };
+      audio.play().catch(() => {
+        fallbackSpeech();
+      });
+      return;
+    }
+
+    fallbackSpeech();
+  };
+
+  const fallbackSpeech = () => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      setIsPlayingAudio(false);
+      return;
+    }
     const utterance = new SpeechSynthesisUtterance(wordEntry.word);
     utterance.lang = "en-GB"; // Standard British English as tested in JAMB
     utterance.rate = 0.85; // Slightly slower for clarity
@@ -36,7 +78,7 @@ export function WordInspectorSheet({ wordEntry, isOpen, onClose }: WordInspector
   };
 
   const handleToggleSave = () => {
-    const newState = DictionaryService.toggleSaveWord(wordEntry);
+    const newState = DictionaryService.toggleSaveWord(current);
     setIsSaved(newState);
   };
 
@@ -50,7 +92,8 @@ export function WordInspectorSheet({ wordEntry, isOpen, onClose }: WordInspector
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-[#116149] border border-emerald-200">
-              <Sparkles size={12} /> UTME Lexicon
+              {current.source === "free_dictionary" ? <Globe size={12} /> : <BookOpen size={12} />}
+              {current.source === "free_dictionary" ? "Free Dictionary API" : "UTME Lexicon"}
             </span>
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 capitalize">
               {wordEntry.partOfSpeech}
@@ -126,19 +169,40 @@ export function WordInspectorSheet({ wordEntry, isOpen, onClose }: WordInspector
         {/* Definition */}
         <div className="mt-4 rounded-2xl bg-slate-50 p-4 border border-slate-100">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Definition</p>
-          <p className="text-sm text-slate-900 leading-relaxed font-medium">{wordEntry.definition}</p>
-          {wordEntry.contextSentence && (
+          <p className="text-sm text-slate-900 leading-relaxed font-medium">{current.definition}</p>
+          {current.contextSentence && (
             <div className="mt-2.5 pt-2.5 border-t border-slate-200/60 text-xs italic text-slate-600">
-              "{wordEntry.contextSentence}"
+              "{current.contextSentence}"
             </div>
           )}
         </div>
+
+        {/* Extended Meanings from Free Dictionary API */}
+        {current.meaningsList && current.meaningsList.length > 1 && (
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <Globe size={13} className="text-emerald-700" /> Additional Meanings
+            </p>
+            {current.meaningsList.slice(1, 4).map((m, idx) => (
+              <div key={idx} className="border-t border-slate-100 pt-2.5 first:border-0 first:pt-0">
+                <span className="text-[11px] font-bold uppercase text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md">
+                  {m.partOfSpeech}
+                </span>
+                <ul className="mt-1.5 list-disc list-inside space-y-1 text-xs text-slate-700">
+                  {m.definitions.slice(0, 2).map((d, dIdx) => (
+                    <li key={dIdx} className="leading-snug">{d}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Verb Conjugation Matrix (if applicable) */}
         {wordEntry.verbForms && (
           <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
             <p className="text-xs font-bold text-emerald-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Sparkles size={13} className="text-[#116149]" /> Verb Conjugation Traps
+              <Zap size={13} className="text-[#116149]" /> Verb Conjugation Traps
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
               <div className="p-2 rounded-xl bg-white border border-emerald-200/60 shadow-2xs">

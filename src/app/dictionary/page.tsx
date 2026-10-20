@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { StudyWorkspace } from "@/components/study-workspace";
 import {
@@ -10,7 +10,6 @@ import {
   Bookmark,
   BookmarkCheck,
   Gamepad2,
-  Sparkles,
   Flame,
   CheckCircle2,
   ArrowRight,
@@ -18,10 +17,15 @@ import {
   Zap,
   Ear,
   Target,
-  EyeOff,
+  ArrowLeftRight,
+  AlertTriangle,
+  Globe,
+  Loader2,
+  X,
 } from "lucide-react";
 import type { UtmeWordEntry, UserSavedWord, DailyFivePack, WordCategory } from "@/lib/dictionary/types";
 import { DictionaryService } from "@/lib/dictionary/dictionary-service";
+import { FreeDictionaryService } from "@/lib/dictionary/free-dictionary-service";
 import { UTME_LEXICON } from "@/lib/dictionary/utme-lexicon-data";
 import { WordInspectorSheet } from "@/components/dictionary/word-inspector-sheet";
 import { ProFeatureGate } from "@/components/dictionary/pro-feature-gate";
@@ -34,6 +38,12 @@ export default function DictionaryPage() {
   const [dailyFive, setDailyFive] = useState<DailyFivePack | null>(null);
   const [savedWords, setSavedWords] = useState<UserSavedWord[]>([]);
   const [activeTab, setActiveTab] = useState<"browse" | "saved" | "games">("browse");
+  const [displayLimit, setDisplayLimit] = useState(40);
+
+  // Free Dictionary API states
+  const [onlineResult, setOnlineResult] = useState<UtmeWordEntry | null>(null);
+  const [isSearchingOnline, setIsSearchingOnline] = useState(false);
+  const [searchedOnlineTerm, setSearchedOnlineTerm] = useState("");
 
   useEffect(() => {
     setDailyFive(DictionaryService.getDailyFive());
@@ -49,28 +59,95 @@ export default function DictionaryPage() {
     setIsSheetOpen(true);
   };
 
-  const filteredWords = UTME_LEXICON.filter((entry) => {
-    if (selectedCategory !== "all" && entry.category !== selectedCategory) {
-      return false;
-    }
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase().trim();
-    return (
-      entry.word.toLowerCase().includes(q) ||
-      entry.definition.toLowerCase().includes(q) ||
-      entry.synonyms.some((s) => s.toLowerCase().includes(q)) ||
-      entry.antonyms.some((a) => a.toLowerCase().includes(q))
-    );
-  });
+  // Filter local UTME lexicon
+  const filteredWords = useMemo(() => {
+    return UTME_LEXICON.filter((entry) => {
+      if (selectedCategory !== "all" && entry.category !== selectedCategory) {
+        return false;
+      }
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase().trim();
+      return (
+        entry.word.toLowerCase().includes(q) ||
+        entry.definition.toLowerCase().includes(q) ||
+        entry.synonyms.some((s) => s.toLowerCase().includes(q)) ||
+        entry.antonyms.some((a) => a.toLowerCase().includes(q))
+      );
+    });
+  }, [searchQuery, selectedCategory]);
 
-  const playWordAudio = (word: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  // Debounced search on Free Dictionary API when user enters a query
+  useEffect(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (q.length < 2) {
+      setOnlineResult(null);
+      setIsSearchingOnline(false);
+      setSearchedOnlineTerm("");
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingOnline(true);
+      setSearchedOnlineTerm(q);
+      try {
+        const result = await FreeDictionaryService.lookup(q);
+        setOnlineResult(result);
+      } catch {
+        setOnlineResult(null);
+      } finally {
+        setIsSearchingOnline(false);
+      }
+    }, 450);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleManualOnlineSearch = async () => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return;
+    setIsSearchingOnline(true);
+    setSearchedOnlineTerm(q);
+    try {
+      const result = await FreeDictionaryService.lookup(q);
+      setOnlineResult(result);
+    } catch {
+      setOnlineResult(null);
+    } finally {
+      setIsSearchingOnline(false);
+    }
+  };
+
+  const playWordAudio = (word: string, audioUrl?: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+
+    if (audioUrl) {
+      const audio = new Audio(audioUrl);
+      audio.play().catch(() => {
+        fallbackSpeech(word);
+      });
+      return;
+    }
+
+    fallbackSpeech(word);
+  };
+
+  const fallbackSpeech = (word: string) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     const utterance = new SpeechSynthesisUtterance(word);
     utterance.lang = "en-GB";
     utterance.rate = 0.85;
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
+  };
+
+  const handleToggleSaveDirect = (entry: UtmeWordEntry, e: React.MouseEvent) => {
+    e.stopPropagation();
+    DictionaryService.toggleSaveWord(entry);
+    refreshSavedWords();
+  };
+
+  const isWordSaved = (word: string) => {
+    return savedWords.some((w) => w.word.toLowerCase() === word.toLowerCase().trim());
   };
 
   return (
@@ -88,7 +165,7 @@ export default function DictionaryPage() {
                 Dictionary, Lexis & Oral Games
               </h1>
               <p className="mt-1 text-sm text-slate-500 max-w-2xl">
-                Master high-frequency synonyms, antonyms, irregular verb traps, silent letters, and syllable stress patterns tested in the JAMB UTME.
+                Master 680+ high-frequency synonyms, antonyms, irregular verb traps, silent letters, and syllable stress patterns tested in the JAMB UTME with live Free Dictionary definitions.
               </p>
             </div>
 
@@ -114,7 +191,7 @@ export default function DictionaryPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-emerald-100">
                 <div className="flex items-center gap-2.5">
                   <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#116149] text-white shadow-xs">
-                    <Sparkles size={16} />
+                    <BookOpen size={16} />
                   </span>
                   <div>
                     <h2 className="text-base font-bold text-slate-900">Daily 5 UTME Trap Words</h2>
@@ -142,9 +219,9 @@ export default function DictionaryPage() {
                         </span>
                         <button
                           type="button"
-                          onClick={(e) => playWordAudio(item.word, e)}
-                          className="p-1 text-slate-400 hover:text-[#116149] transition"
-                          title="Listen"
+                          onClick={(e) => playWordAudio(item.word, item.audioUrl, e)}
+                          className="p-1 text-slate-400 hover:text-[#116149] transition rounded-full hover:bg-slate-100"
+                          title="Listen pronunciation"
                         >
                           <Volume2 size={13} />
                         </button>
@@ -172,13 +249,13 @@ export default function DictionaryPage() {
             <button
               type="button"
               onClick={() => setActiveTab("browse")}
-              className={`py-3 px-5 text-sm font-bold border-b-2 transition cursor-pointer ${
+              className={`py-3 px-5 text-sm font-bold border-b-2 transition cursor-pointer flex items-center gap-2 ${
                 activeTab === "browse"
                   ? "border-[#116149] text-[#116149]"
                   : "border-transparent text-slate-500 hover:text-slate-800"
               }`}
             >
-              Browse Dictionary ({UTME_LEXICON.length})
+              <BookOpen size={16} /> Browse Dictionary ({UTME_LEXICON.length})
             </button>
             <button
               type="button"
@@ -186,18 +263,18 @@ export default function DictionaryPage() {
                 setActiveTab("saved");
                 refreshSavedWords();
               }}
-              className={`py-3 px-5 text-sm font-bold border-b-2 transition cursor-pointer flex items-center gap-1.5 ${
+              className={`py-3 px-5 text-sm font-bold border-b-2 transition cursor-pointer flex items-center gap-2 ${
                 activeTab === "saved"
                   ? "border-[#116149] text-[#116149]"
                   : "border-transparent text-slate-500 hover:text-slate-800"
               }`}
             >
-              My Word Bank ({savedWords.length})
+              <Bookmark size={16} /> My Word Bank ({savedWords.length})
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("games")}
-              className={`py-3 px-5 text-sm font-bold border-b-2 transition cursor-pointer flex items-center gap-1.5 ${
+              className={`py-3 px-5 text-sm font-bold border-b-2 transition cursor-pointer flex items-center gap-2 ${
                 activeTab === "games"
                   ? "border-[#116149] text-[#116149]"
                   : "border-transparent text-slate-500 hover:text-slate-800"
@@ -219,9 +296,37 @@ export default function DictionaryPage() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search by word, definition, synonym, or antonym (e.g., ephemeral, broadcast, subtle)..."
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 py-3 text-sm focus:bg-white focus:border-[#116149] focus:outline-hidden transition"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleManualOnlineSearch();
+                      }
+                    }}
+                    placeholder="Search by word, definition, synonym, or look up ANY English word via Free Dictionary API..."
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-24 py-3 text-sm focus:bg-white focus:border-[#116149] focus:outline-hidden transition"
                   />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-12 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-full"
+                    >
+                      <X size={15} />
+                    </button>
+                  )}
+                  {isSearchingOnline ? (
+                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+                      <Loader2 size={18} className="animate-spin text-emerald-600" />
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleManualOnlineSearch}
+                      title="Search Free English Dictionary"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 px-2.5 py-1 text-xs font-semibold text-emerald-800 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition cursor-pointer"
+                    >
+                      Lookup
+                    </button>
+                  )}
                 </div>
 
                 {/* Category Pills */}
@@ -232,7 +337,7 @@ export default function DictionaryPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("all")}
-                    className={`px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
+                    className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
                       selectedCategory === "all"
                         ? "bg-slate-900 text-white"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -243,65 +348,151 @@ export default function DictionaryPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("irregular_verb")}
-                    className={`px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
                       selectedCategory === "irregular_verb"
                         ? "bg-[#116149] text-white"
                         : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
                     }`}
                   >
-                    Irregular Verbs
+                    <Zap size={12} /> Irregular Verbs
                   </button>
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("oral_english")}
-                    className={`px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
                       selectedCategory === "oral_english"
-                        ? "bg-blue-700 text-white"
+                        ? "bg-[#116149] text-white"
                         : "bg-blue-50 text-blue-800 hover:bg-blue-100"
                     }`}
                   >
-                    Oral English & Silent Letters
+                    <Ear size={12} /> Oral English & Silent Letters
                   </button>
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("lexis_synonym")}
-                    className={`px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
                       selectedCategory === "lexis_synonym"
-                        ? "bg-purple-700 text-white"
+                        ? "bg-[#116149] text-white"
                         : "bg-purple-50 text-purple-800 hover:bg-purple-100"
                     }`}
                   >
-                    Synonyms
+                    <Target size={12} /> Synonyms
                   </button>
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("lexis_antonym")}
-                    className={`px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
                       selectedCategory === "lexis_antonym"
-                        ? "bg-rose-700 text-white"
+                        ? "bg-[#116149] text-white"
                         : "bg-rose-50 text-rose-800 hover:bg-rose-100"
                     }`}
                   >
-                    Antonyms
+                    <ArrowLeftRight size={12} /> Antonyms
                   </button>
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("commonly_confused")}
-                    className={`px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
                       selectedCategory === "commonly_confused"
-                        ? "bg-amber-700 text-white"
+                        ? "bg-[#116149] text-white"
                         : "bg-amber-50 text-amber-800 hover:bg-amber-100"
                     }`}
                   >
-                    Commonly Confused
+                    <AlertTriangle size={12} /> Commonly Confused
                   </button>
                 </div>
               </div>
 
+              {/* Free Dictionary Live Result Banner (if found for search query) */}
+              {onlineResult && (
+                <div className="rounded-2xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-50/90 via-white to-sky-50/50 p-5 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-emerald-100">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-2xs">
+                        <Globe size={13} /> Free English Dictionary API
+                      </span>
+                      <span className="text-xs font-semibold text-slate-500 capitalize bg-white px-2.5 py-0.5 rounded-full border border-slate-200">
+                        {onlineResult.partOfSpeech}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleSaveDirect(onlineResult, e)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${
+                          isWordSaved(onlineResult.word)
+                            ? "bg-amber-100 text-amber-900 border border-amber-300"
+                            : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        {isWordSaved(onlineResult.word) ? (
+                          <>
+                            <BookmarkCheck size={14} className="text-amber-700" /> Saved in Bank
+                          </>
+                        ) : (
+                          <>
+                            <Bookmark size={14} /> Save to Word Bank
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleOpenWord(onlineResult)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold bg-[#116149] text-white hover:bg-[#0e523e] transition cursor-pointer"
+                      >
+                        Inspect Details <ArrowRight size={13} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-3.5 flex flex-wrap items-baseline gap-3">
+                    <h3 className="text-2xl font-black text-slate-900 capitalize tracking-tight">
+                      {onlineResult.word}
+                    </h3>
+                    <span className="font-mono text-sm text-slate-500">
+                      {onlineResult.phonetics.ipa}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => playWordAudio(onlineResult.word, onlineResult.audioUrl)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-900 hover:bg-emerald-200 transition cursor-pointer"
+                    >
+                      <Volume2 size={13} /> Listen Audio
+                    </button>
+                  </div>
+
+                  <p className="mt-2 text-sm text-slate-700 font-medium leading-relaxed">
+                    {onlineResult.definition}
+                  </p>
+
+                  {onlineResult.contextSentence && (
+                    <p className="mt-1.5 text-xs italic text-slate-500">
+                      "{onlineResult.contextSentence}"
+                    </p>
+                  )}
+
+                  {onlineResult.synonyms.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-1.5">
+                      <span className="text-xs font-bold text-slate-400">Synonyms:</span>
+                      {onlineResult.synonyms.map((s, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-700"
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Word List Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {filteredWords.map((entry) => {
-                  const saved = savedWords.some((w) => w.word.toLowerCase() === entry.word.toLowerCase());
+                {filteredWords.slice(0, displayLimit).map((entry) => {
+                  const saved = isWordSaved(entry.word);
                   return (
                     <article
                       key={entry.id}
@@ -321,20 +512,22 @@ export default function DictionaryPage() {
                           <div className="flex items-center gap-1.5">
                             <button
                               type="button"
-                              onClick={(e) => playWordAudio(entry.word, e)}
+                              onClick={(e) => playWordAudio(entry.word, entry.audioUrl, e)}
                               className="p-1 text-slate-400 hover:text-[#116149] transition rounded-full hover:bg-slate-100"
                               title="Listen pronunciation"
                             >
                               <Volume2 size={16} />
                             </button>
-                            <span
-                              className={`p-1 rounded-full ${
-                                saved ? "text-amber-500" : "text-slate-300"
+                            <button
+                              type="button"
+                              onClick={(e) => handleToggleSaveDirect(entry, e)}
+                              className={`p-1 rounded-full transition ${
+                                saved ? "text-amber-500" : "text-slate-300 hover:text-slate-600"
                               }`}
-                              title={saved ? "Saved" : "Not saved"}
+                              title={saved ? "Saved in Word Bank" : "Save to Word Bank"}
                             >
                               <Bookmark size={15} className={saved ? "fill-amber-500" : ""} />
-                            </span>
+                            </button>
                           </div>
                         </div>
 
@@ -373,22 +566,40 @@ export default function DictionaryPage() {
                 })}
               </div>
 
-              {filteredWords.length === 0 && (
-                <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center">
-                  <p className="text-base font-bold text-slate-900">No words found</p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Try searching for another word or reset your category filter.
-                  </p>
+              {/* Show More Words Button */}
+              {filteredWords.length > displayLimit && (
+                <div className="text-center pt-4">
                   <button
                     type="button"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setSelectedCategory("all");
-                    }}
-                    className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#116149] px-5 py-2 text-xs font-semibold text-white"
+                    onClick={() => setDisplayLimit((prev) => prev + 40)}
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-6 py-2.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition cursor-pointer"
                   >
-                    Clear Filter
+                    Load More Words (Showing {displayLimit} of {filteredWords.length})
                   </button>
+                </div>
+              )}
+
+              {/* Empty state when no local or online matches */}
+              {filteredWords.length === 0 && !onlineResult && !isSearchingOnline && (
+                <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center">
+                  <p className="text-base font-bold text-slate-900">
+                    No words found for "{searchQuery}"
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500 max-w-md mx-auto">
+                    Neither the local UTME bank nor the Free Dictionary API returned a match. Check your spelling or try another term.
+                  </p>
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery("");
+                        setSelectedCategory("all");
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full bg-[#116149] px-5 py-2 text-xs font-semibold text-white cursor-pointer"
+                    >
+                      Clear Search
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -419,7 +630,14 @@ export default function DictionaryPage() {
                     return (
                       <div
                         key={item.word}
-                        onClick={() => fullEntry && handleOpenWord(fullEntry)}
+                        onClick={async () => {
+                          if (fullEntry) {
+                            handleOpenWord(fullEntry);
+                          } else {
+                            const online = await FreeDictionaryService.lookup(item.word);
+                            if (online) handleOpenWord(online);
+                          }
+                        }}
                         className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-emerald-500 transition cursor-pointer flex flex-col justify-between"
                       >
                         <div>
@@ -431,7 +649,7 @@ export default function DictionaryPage() {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                const isM = DictionaryService.toggleMastered(item.word);
+                                DictionaryService.toggleMastered(item.word);
                                 refreshSavedWords();
                               }}
                               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer ${
@@ -444,14 +662,18 @@ export default function DictionaryPage() {
                               {item.mastered ? "Mastered" : "Mark Mastered"}
                             </button>
                           </div>
-                          {fullEntry && (
+                          {fullEntry ? (
                             <p className="text-sm text-slate-600 line-clamp-2">
                               {fullEntry.definition}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-slate-400 italic">
+                              Saved from Free English Dictionary. Click to inspect definitions.
                             </p>
                           )}
                         </div>
 
-                        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
                           <span>Saved {new Date(item.savedAt).toLocaleDateString()}</span>
                           <span className="text-[#116149] font-semibold flex items-center gap-1">
                             Inspect <ArrowRight size={12} />
@@ -468,135 +690,154 @@ export default function DictionaryPage() {
           {/* TAB 3: WORD GAMES HUB */}
           {activeTab === "games" && (
             <div className="space-y-6">
-              <div className="text-center max-w-xl mx-auto mb-6">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200">
-                  <Gamepad2 size={13} className="text-amber-700" /> Interactive UTME Arcade
-                </span>
-                <h2 className="mt-2 text-2xl font-extrabold text-slate-900">
-                  Oral English & Vocabulary Drills
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Fast-paced, bite-sized mini games to turn the hardest sections of JAMB Use of English into automatic points.
-                </p>
+              <div className="rounded-3xl border border-emerald-200 bg-gradient-to-r from-emerald-800 to-[#116149] p-8 text-white shadow-md">
+                <div className="max-w-xl space-y-3">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-emerald-100 backdrop-blur-xs border border-white/20">
+                    <Gamepad2 size={14} /> Interactive Oral English & Lexis Drills
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                    Level Up Your UTME English Score
+                  </h2>
+                  <p className="text-sm text-emerald-100/90 leading-relaxed">
+                    Test your mastery of word stress patterns, vowel and consonant phonetics, silent letters, and synonyms with rapid-fire UTME drills.
+                  </p>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {/* 4 Games Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Game 1: Stress Master */}
                 <Link
                   href="/games/stress-master"
-                  className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-[#116149] hover:shadow-lg transition-all flex flex-col justify-between"
+                  className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-emerald-500 hover:shadow-lg transition flex flex-col justify-between"
                 >
-                  <div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-[#116149] mb-4 group-hover:scale-105 transition-transform">
-                      <Target size={24} />
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 group-hover:scale-105 transition-transform">
+                        <Zap size={24} />
+                      </span>
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900">
+                        Syllable Stress
+                      </span>
                     </div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-                      Oral English · Stress
-                    </span>
-                    <h3 className="mt-2 text-xl font-bold text-slate-900 group-hover:text-[#116149] transition">
-                      Stress Master
-                    </h3>
-                    <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">
-                      Tap the stressed syllable in polysyllabic words (e.g., photoGRAPHic) and solve emphatic sentence contrast questions.
-                    </p>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#116149] transition">
+                        Stress Master
+                      </h3>
+                      <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                        Identify which syllable carries the primary stress in 2-, 3-, and 4-syllable UTME trap words.
+                      </p>
+                    </div>
                   </div>
 
                   <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#116149]">
-                    <span>Play Syllable & Emphatic Drills</span>
-                    <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />
+                    <span>Play Drill</span>
+                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                   </div>
                 </Link>
 
-                {/* Game 2: Sound Match & Rhyme Rush */}
+                {/* Game 2: Sound Match */}
                 <Link
                   href="/games/sound-match"
-                  className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-blue-600 hover:shadow-lg transition-all flex flex-col justify-between"
+                  className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-emerald-500 hover:shadow-lg transition flex flex-col justify-between"
                 >
-                  <div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-700 mb-4 group-hover:scale-105 transition-transform">
-                      <Ear size={24} />
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 border border-blue-200 group-hover:scale-105 transition-transform">
+                        <Ear size={24} />
+                      </span>
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-100 text-blue-900">
+                        Vowels & Consonants
+                      </span>
                     </div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-blue-800 bg-blue-50 px-2.5 py-0.5 rounded-full">
-                      Phonetics & Rhymes
-                    </span>
-                    <h3 className="mt-2 text-xl font-bold text-slate-900 group-hover:text-blue-700 transition">
-                      Sound Match & Rhyme Rush
-                    </h3>
-                    <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">
-                      Identify identical vowel & consonant phonemes (/ʃ/, /θ/, /iː/), decode IPA transcriptions, and catch rhyming pairs like suite & sweet.
-                    </p>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#116149] transition">
+                        Sound Match
+                      </h3>
+                      <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                        Match words sharing the exact same vowel or consonant sound (e.g., /iː/, /ʃ/, /θ/, /eɪ/).
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-blue-700">
-                    <span>Train Ear for Speech Sounds</span>
-                    <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />
+                  <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#116149]">
+                    <span>Play Drill</span>
+                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                   </div>
                 </Link>
 
-                {/* Game 3: Syn/Antonym Blitz */}
+                {/* Game 3: Synonym Blitz */}
                 <Link
                   href="/games/synonym-blitz"
-                  className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-purple-600 hover:shadow-lg transition-all flex flex-col justify-between"
+                  className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-emerald-500 hover:shadow-lg transition flex flex-col justify-between"
                 >
-                  <div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-100 text-purple-700 mb-4 group-hover:scale-105 transition-transform">
-                      <Zap size={24} />
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 border border-purple-200 group-hover:scale-105 transition-transform">
+                        <Target size={24} />
+                      </span>
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-900">
+                        Speed Lexis
+                      </span>
                     </div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-purple-800 bg-purple-50 px-2.5 py-0.5 rounded-full">
-                      Lexis & Structure
-                    </span>
-                    <h3 className="mt-2 text-xl font-bold text-slate-900 group-hover:text-purple-700 transition">
-                      Syn/Antonym Blitz
-                    </h3>
-                    <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">
-                      Rapid-fire 10-second drill: decide nearest in meaning or opposite in meaning in authentic past UTME sentences.
-                    </p>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#116149] transition">
+                        Synonym Blitz
+                      </h3>
+                      <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                        Test rapid vocabulary recall against a 60-second timer to boost your comprehension speed.
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-purple-700">
-                    <span>Speed-Train Word Meanings</span>
-                    <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />
+                  <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#116149]">
+                    <span>Play Drill</span>
+                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                   </div>
                 </Link>
 
                 {/* Game 4: Silent Hunter */}
                 <Link
                   href="/games/silent-hunter"
-                  className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-amber-600 hover:shadow-lg transition-all flex flex-col justify-between"
+                  className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-emerald-500 hover:shadow-lg transition flex flex-col justify-between"
                 >
-                  <div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 mb-4 group-hover:scale-105 transition-transform">
-                      <EyeOff size={24} />
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 group-hover:scale-105 transition-transform">
+                        <AlertTriangle size={24} />
+                      </span>
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-900">
+                        Silent Letters
+                      </span>
                     </div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full">
-                      Silent Letters
-                    </span>
-                    <h3 className="mt-2 text-xl font-bold text-slate-900 group-hover:text-amber-700 transition">
-                      Silent Hunter
-                    </h3>
-                    <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">
-                      Tap the exact silent letter in tricky exam words like receipt, indict, subtle, mortgage, corps, and plumber.
-                    </p>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#116149] transition">
+                        Silent Letter Hunter
+                      </h3>
+                      <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                        Spot the unpronounced silent consonants in notorious JAMB words like "debt", "doubt", "receipt", and "corps".
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-amber-700">
-                    <span>Hunt Silent Letters</span>
-                    <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />
+                  <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#116149]">
+                    <span>Play Drill</span>
+                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                   </div>
                 </Link>
               </div>
             </div>
           )}
         </div>
-
-        {/* Word Inspector Modal Sheet */}
-        <WordInspectorSheet
-          wordEntry={activeWord}
-          isOpen={isSheetOpen}
-          onClose={() => setIsSheetOpen(false)}
-        />
       </main>
+
+      {/* Word Inspector Modal Sheet */}
+      <WordInspectorSheet
+        wordEntry={activeWord}
+        isOpen={isSheetOpen}
+        onClose={() => setIsSheetOpen(false)}
+      />
     </StudyWorkspace>
-  </ProFeatureGate>
+    </ProFeatureGate>
   );
 }

@@ -1,5 +1,6 @@
 export type PartOfSpeech =
   | 'noun'
+  | 'pronoun'
   | 'verb'
   | 'adjective'
   | 'adverb'
@@ -28,11 +29,20 @@ export interface PhoneticDetails {
   primaryStressIndex: number; // 0-based index of stressed syllable (e.g. 1 -> re-CEIPT)
   silentLetters?: { letter: string; index: number }[]; // 0-based index in the word string
   rhymesWith: string[];   // Words sharing the exact vowel + coda sound (e.g. ["deceit", "conceit"])
+  audio?: string;         // Audio pronunciation mp3 url (e.g. from Free Dictionary API)
   soundFeatures?: {
     symbol: string;       // e.g. "/iː/", "/ʃ/", "/θ/", "/ð/"
     category: 'vowel' | 'consonant';
     description: string;  // e.g. "Long close front unrounded vowel"
   }[];
+}
+
+export interface DictionaryMeaningDetail {
+  partOfSpeech: string;
+  definitions: string[];
+  example?: string;
+  synonyms?: string[];
+  antonyms?: string[];
 }
 
 export interface UtmeWordEntry {
@@ -48,6 +58,9 @@ export interface UtmeWordEntry {
   phonetics: PhoneticDetails;
   category: WordCategory;
   jambFrequency: 'medium' | 'high' | 'very_high';
+  audioUrl?: string;
+  source?: 'utme_bank' | 'free_dictionary';
+  meaningsList?: DictionaryMeaningDetail[];
 }
 
 export interface UserSavedWord {

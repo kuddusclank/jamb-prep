@@ -1,5 +1,6 @@
 import { UTME_LEXICON } from './utme-lexicon-data';
 import type { UtmeWordEntry, UserSavedWord, DailyFivePack } from './types';
+import { FreeDictionaryService } from './free-dictionary-service';
 
 const SAVED_WORDS_KEY = 'jambprep_user_saved_words_v1';
 
@@ -9,7 +10,7 @@ export class DictionaryService {
    */
   static searchWords(query: string): UtmeWordEntry[] {
     const q = query.trim().toLowerCase();
-    if (!q) return UTME_LEXICON.slice(0, 15);
+    if (!q) return UTME_LEXICON.slice(0, 30);
 
     return UTME_LEXICON.filter((entry) => {
       return (
@@ -36,43 +37,7 @@ export class DictionaryService {
     const local = this.getWord(word);
     if (local) return local;
 
-    const clean = word.trim().toLowerCase().replace(/[^a-z-]/g, '');
-    if (!clean) return null;
-
-    try {
-      const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(clean)}`, {
-        headers: { Accept: 'application/json' },
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (!Array.isArray(data) || data.length === 0) return null;
-
-      const first = data[0];
-      const meaning = first.meanings?.[0];
-      const def = meaning?.definitions?.[0];
-      const phoneticText = first.phonetic || first.phonetics?.find((p: { text?: string }) => p.text)?.text || '';
-
-      const syntheticEntry: UtmeWordEntry = {
-        id: `ext-${clean}`,
-        word: clean,
-        partOfSpeech: (meaning?.partOfSpeech as UtmeWordEntry['partOfSpeech']) || 'noun',
-        definition: def?.definition || 'Definition unavailable.',
-        contextSentence: def?.example || `Example sentence for ${clean}.`,
-        synonyms: (meaning?.synonyms || []).slice(0, 5),
-        antonyms: (meaning?.antonyms || []).slice(0, 5),
-        phonetics: {
-          ipa: phoneticText,
-          syllables: [clean],
-          primaryStressIndex: 0,
-          rhymesWith: [],
-        },
-        category: 'oral_english',
-        jambFrequency: 'medium',
-      };
-      return syntheticEntry;
-    } catch {
-      return null;
-    }
+    return FreeDictionaryService.lookup(word);
   }
 
   /**

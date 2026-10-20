@@ -54,7 +54,7 @@ export function ProFeatureGate({
                   <CheckCircle2 size={16} className="text-[#116149]" /> High-Yield Lexicon
                 </span>
                 <p className="text-xs text-slate-600 mt-1">
-                  Authentic UTME past questions vocabulary, irregular verb tables & silent letter traps.
+                  680+ authentic UTME past questions vocabulary, Free Dictionary lookup, irregular verb tables & silent letter traps.
                 </p>
               </div>
 
