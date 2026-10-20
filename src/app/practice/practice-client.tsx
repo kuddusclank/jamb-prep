@@ -17,6 +17,7 @@ import {
 } from "@/lib/client-actions";
 import { 
   BookOpen, 
+  BookA,
   CheckCircle2, 
   XCircle, 
   ArrowRight, 
@@ -29,6 +30,8 @@ import {
   Lock
 } from "lucide-react";
 import Link from "@/components/pending-link";
+import { InspectableText } from "@/components/dictionary/inspectable-text";
+import { QuickLookupDialog } from "@/components/dictionary/quick-lookup-dialog";
 
 import { useRouter } from "next/navigation";
 import type { PracticeSubject, PracticeTopic } from "@/lib/api/practice-dtos";
@@ -73,6 +76,7 @@ export function PracticeClient({
   const [score, setScore] = useState<number>(0);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isQuickLookupOpen, setIsQuickLookupOpen] = useState<boolean>(false);
 
   const subject=enrolledSubjects.find(s=>s.code===selectedSubject);
   const selectedTopic=subject?.topics.find(t=>t.slug===selectedTopicSlug||t.aliases.some(a=>a.toLowerCase()===selectedTopicSlug?.toLowerCase()));
@@ -354,6 +358,15 @@ export function PracticeClient({
           <span className="px-2 py-0.5 rounded-full bg-slate-100 text-[11px] font-semibold text-slate-600 uppercase">
             {currentQ.difficulty}
           </span>
+          <button
+            type="button"
+            onClick={() => setIsQuickLookupOpen(true)}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-[#116149] border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+            title="Open Quick UTME Dictionary"
+          >
+            <BookA size={12} />
+            <span>Dictionary</span>
+          </button>
           <ReportQuestionDialog key={currentQ.id} questionId={currentQ.id} variant="icon" />
         </div>
       </div>
@@ -367,13 +380,24 @@ export function PracticeClient({
             isArabicText(currentQ.passage.content) ? "text-right [direction:rtl]" : ""
           }`}
         >
-          {currentQ.passage.title && (
-            <h3 className="text-sm font-bold text-[#092E28] uppercase tracking-wider mb-2">
-              Passage: {currentQ.passage.title}
-            </h3>
-          )}
+          <div className="flex items-center justify-between gap-2 mb-2">
+            {currentQ.passage.title ? (
+              <h3 className="text-sm font-bold text-[#092E28] uppercase tracking-wider">
+                Passage: {currentQ.passage.title}
+              </h3>
+            ) : <span />}
+            {!isArabicText(currentQ.passage.content) && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                <BookA size={11} /> Tap words to inspect
+              </span>
+            )}
+          </div>
           <div className="text-sm leading-relaxed text-slate-800 whitespace-pre-wrap">
-            <MathRenderer content={currentQ.passage.content} />
+            {!isArabicText(currentQ.passage.content) ? (
+              <InspectableText content={currentQ.passage.content} />
+            ) : (
+              <MathRenderer content={currentQ.passage.content} />
+            )}
           </div>
         </div>
       )}
@@ -527,6 +551,11 @@ export function PracticeClient({
       </div>
     );
   })()}
+
+      <QuickLookupDialog
+        isOpen={isQuickLookupOpen}
+        onClose={() => setIsQuickLookupOpen(false)}
+      />
     </div>
   );
 }

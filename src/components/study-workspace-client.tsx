@@ -6,7 +6,7 @@ import { BrandMark } from "@/components/brand-mark";
 import type { ReactNode } from "react";
 import Link from "@/components/pending-link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Layers, Clock, ChartNoAxesCombined, Users, UserRound, CreditCard, LogOut, Flame } from "lucide-react";
+import { LayoutDashboard, Layers, Clock, ChartNoAxesCombined, Users, UserRound, CreditCard, LogOut, Flame, BookA } from "lucide-react";
 import { signOutAction } from "@/lib/client-actions";
 import styles from "./study-workspace.module.css";
 import { PolicyLinks } from "@/components/legal-page";
@@ -16,6 +16,7 @@ const destinations = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/practice', label: 'Practice', icon: Layers },
   { href: '/mock', label: 'Mock exams', icon: Clock },
+  { href: '/dictionary', label: 'Dictionary & Games', icon: BookA },
   { href: '/analytics', label: 'Performance', icon: ChartNoAxesCombined },
   { href: '/referrals', label: 'Invite friends', icon: Users },
   { href: '/profile', label: 'My profile', icon: UserRound },

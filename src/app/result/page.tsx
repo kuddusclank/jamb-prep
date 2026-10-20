@@ -11,9 +11,10 @@ import { MathRenderer } from '@/components/math-renderer';
 import { isArabicText } from '@/lib/utils';
 import { MockResultRatingPrompt } from '@/components/mock-result-rating-prompt';
 interface ResultData {subjectScores?:{code:string;name:string;count:number;score:number}[];totalScore:number;englishScore:number;subject2Score:number;subject3Score:number;subject4Score:number;timeSpentSeconds:number;completedAt:string;}
-import { CheckCircle2, XCircle, AlertCircle, HelpCircle, ChevronDown, ChevronUp, Sparkles, Filter, Bookmark } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, HelpCircle, ChevronDown, ChevronUp, Sparkles, Filter, Bookmark, BookA } from 'lucide-react';
 import { ReportQuestionDialog } from '@/components/report-question-dialog';
 import { QuestionDiagram } from '@/components/question-diagram';
+import { InspectableText } from '@/components/dictionary/inspectable-text';
 
 interface ReviewQuestion {
   id: string;
@@ -375,14 +376,25 @@ function Review({ attemptId }: { attemptId: string }) {
               {/* Comprehension / Reading Passage (if applicable) */}
               {question.passage?.content && (
                 <div className="my-3.5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 leading-relaxed">
-                  {question.passage.title && (
-                    <div className="mb-2">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    {question.passage.title ? (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-slate-200 text-slate-800">
                         {question.passage.title}
                       </span>
-                    </div>
-                  )}
-                  <MathRenderer content={question.passage.content} />
+                    ) : <span />}
+                    {!isQArabic && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full">
+                        <BookA size={11} /> Tap words to inspect
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-slate-800 whitespace-pre-wrap">
+                    {!isQArabic ? (
+                      <InspectableText content={question.passage.content} />
+                    ) : (
+                      <MathRenderer content={question.passage.content} />
+                    )}
+                  </div>
                 </div>
               )}
 

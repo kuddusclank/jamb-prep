@@ -39,6 +39,7 @@
 		{
 			"binding": "HYPERDRIVE",
 			"id": "67223d34f19c4b98a3920083dcdc5efb",
+			"localConnectionString": "postgresql://postgres.bqumnaoiiukifvanoonm:HeHg7tj7KT4EMDDd@aws-0-eu-west-1.pooler.supabase.com:5432/postgres"
 		}
 	],
 	"routes": [

@@ -13,7 +13,10 @@ Flame,
 Lock,
 Target,
 TrendingUp,
-Users
+Users,
+BookA,
+Gamepad2,
+Sparkles
 } from "lucide-react";
 import Link from "@/components/pending-link";
 
@@ -418,6 +421,43 @@ export default function DashboardPage() {
                   </Link>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Daily 5 Lexis & Word Games Spotlight */}
+          <div className="rounded-3xl border border-emerald-950/10 bg-linear-to-br from-emerald-900 to-[#092E28] p-6 sm:p-8 text-white relative overflow-hidden shadow-sm">
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="max-w-xl">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-200 text-[11px] font-bold uppercase tracking-wider mb-2 border border-emerald-400/20">
+                  <Sparkles size={12} className="text-emerald-300" /> UTME Lexis & Oral English
+                </div>
+                <h3 className="text-xl sm:text-2xl font-bold tracking-tight">
+                  Master Vocabulary & Speech Sounds
+                </h3>
+                <p className="mt-2 text-sm text-emerald-100/80 leading-relaxed">
+                  Boost your Use of English score with high-yield UTME words, syllable stress drills, silent letter hunting, and rhyme rush games.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                  <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-100">🎯 Daily 5 Words</span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-100">🔊 IPA Transcriptions</span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-100">🎮 4 Interactive Games</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 shrink-0">
+                <Link
+                  href="/dictionary"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-xs font-bold text-[#092E28] hover:bg-emerald-50 transition shadow-sm"
+                >
+                  <BookA size={14} /> Open Dictionary Hub
+                </Link>
+                <Link
+                  href="/games/stress-master"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-800/40 px-6 py-3 text-xs font-semibold text-emerald-100 hover:bg-emerald-800/70 transition"
+                >
+                  <Gamepad2 size={14} /> Play Word Games <ArrowRight size={14} />
+                </Link>
+              </div>
             </div>
           </div>
 
