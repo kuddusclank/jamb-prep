@@ -803,6 +803,96 @@ export async function recordCompletedMockStreakQualification(
   }
 }
 
+/**
+ * Automatically qualifies today's study streak whenever a student plays a word game
+ * or actively learns/saves/masters words in the UTME dictionary.
+ */
+export async function recordLearningActivityStreakQualification(
+  sql: SqlClient,
+  params: {
+    userId: string;
+    activityType: 'dictionary_word_learned' | 'dictionary_game_completed' | 'dictionary_study';
+    details?: {
+      word?: string;
+      game?: string;
+      score?: number;
+      wordsStudiedCount?: number;
+    };
+    now?: Date;
+  }
+): Promise<{
+  qualifiedToday: boolean;
+  currentStreak: number;
+  bestStreak: number;
+  localDate: string;
+}> {
+  const now = params.now ?? new Date();
+
+  try {
+    const scheduleRows = await sql<Array<RawStudyScheduleRow>>`
+      SELECT *
+      FROM public.study_schedules
+      WHERE user_id = ${params.userId}::uuid
+      LIMIT 1
+    `;
+    const rawSchedule = scheduleRows[0];
+    const timeZone =
+      rawSchedule && isValidIanaTimeZone(rawSchedule.time_zone)
+        ? rawSchedule.time_zone
+        : DEFAULT_STUDY_TIME_ZONE;
+    const localDate = resolveLocalDate(now, timeZone);
+    const targetQuestions = Number(rawSchedule?.daily_goal ?? DEFAULT_DAILY_GOAL);
+
+    await sql`
+      INSERT INTO public.study_goal_days (
+        user_id,
+        local_date,
+        target_questions,
+        time_zone,
+        policy_version,
+        accepted_count,
+        qualified_at,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        ${params.userId}::uuid,
+        ${localDate}::date,
+        ${targetQuestions},
+        ${timeZone},
+        ${rawSchedule?.policy_version ?? STUDY_SCHEDULE_POLICY_VERSION},
+        ${targetQuestions},
+        ${now.toISOString()}::timestamptz,
+        ${now.toISOString()}::timestamptz,
+        ${now.toISOString()}::timestamptz
+      )
+      ON CONFLICT (user_id, local_date) DO UPDATE
+      SET
+        qualified_at = COALESCE(public.study_goal_days.qualified_at, EXCLUDED.qualified_at),
+        accepted_count = GREATEST(public.study_goal_days.accepted_count, EXCLUDED.accepted_count),
+        updated_at = EXCLUDED.updated_at
+    `;
+
+    const summary = await refreshUserStreakSummary(sql, params.userId, localDate, now);
+    return {
+      qualifiedToday: true,
+      currentStreak: summary.currentStreak,
+      bestStreak: summary.bestStreak,
+      localDate,
+    };
+  } catch (error) {
+    if (!isMissingScheduleSchemaError(error)) {
+      console.error('Learning activity streak qualification error:', error);
+    }
+    return {
+      qualifiedToday: true,
+      currentStreak: 1,
+      bestStreak: 1,
+      localDate: resolveLocalDate(now, DEFAULT_STUDY_TIME_ZONE),
+    };
+  }
+}
+
 export async function getStudyScheduleState(
   sql: SqlClient,
   userId: string,

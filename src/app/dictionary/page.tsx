@@ -29,6 +29,7 @@ import { FreeDictionaryService } from "@/lib/dictionary/free-dictionary-service"
 import { UTME_LEXICON } from "@/lib/dictionary/utme-lexicon-data";
 import { WordInspectorSheet } from "@/components/dictionary/word-inspector-sheet";
 import { ProFeatureGate } from "@/components/dictionary/pro-feature-gate";
+import { recordStreakActivity, type StreakActivationResult } from "@/lib/dictionary/streak-activation";
 
 export default function DictionaryPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,6 +40,7 @@ export default function DictionaryPage() {
   const [savedWords, setSavedWords] = useState<UserSavedWord[]>([]);
   const [activeTab, setActiveTab] = useState<"browse" | "saved" | "games">("browse");
   const [displayLimit, setDisplayLimit] = useState(40);
+  const [streakStatus, setStreakStatus] = useState<StreakActivationResult | null>(null);
 
   // Free Dictionary API states
   const [onlineResult, setOnlineResult] = useState<UtmeWordEntry | null>(null);
@@ -57,6 +59,12 @@ export default function DictionaryPage() {
   const handleOpenWord = (entry: UtmeWordEntry) => {
     setActiveWord(entry);
     setIsSheetOpen(true);
+    recordStreakActivity({
+      activityType: "dictionary_word_learned",
+      details: { word: entry.word },
+    }).then((res) => {
+      if (res) setStreakStatus(res);
+    });
   };
 
   // Filter local UTME lexicon
@@ -142,8 +150,16 @@ export default function DictionaryPage() {
 
   const handleToggleSaveDirect = (entry: UtmeWordEntry, e: React.MouseEvent) => {
     e.stopPropagation();
-    DictionaryService.toggleSaveWord(entry);
+    const newState = DictionaryService.toggleSaveWord(entry);
     refreshSavedWords();
+    if (newState) {
+      recordStreakActivity({
+        activityType: "dictionary_word_learned",
+        details: { word: entry.word },
+      }).then((res) => {
+        if (res) setStreakStatus(res);
+      });
+    }
   };
 
   const isWordSaved = (word: string) => {
@@ -200,7 +216,8 @@ export default function DictionaryPage() {
                 </div>
 
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200 self-start sm:self-auto">
-                  <Flame size={13} className="text-amber-600 fill-amber-600" /> Daily Lesson
+                  <Flame size={13} className="text-amber-600 fill-amber-600 animate-pulse" />
+                  {streakStatus?.qualifiedToday ? "Daily Streak Active 🔥" : "Daily Streak Practice"}
                 </span>
               </div>
 
@@ -244,18 +261,20 @@ export default function DictionaryPage() {
             </section>
           )}
 
-          {/* Navigation Tabs */}
-          <div className="flex border-b border-slate-200">
+          {/* Navigation Tabs (Responsive Segmented Control on mobile, Tabs on desktop) */}
+          <div className="grid grid-cols-3 p-1 rounded-2xl bg-slate-100 border border-slate-200/70 gap-1 sm:flex sm:bg-transparent sm:p-0 sm:border-0 sm:border-b sm:border-slate-200 sm:rounded-none">
             <button
               type="button"
               onClick={() => setActiveTab("browse")}
-              className={`py-3 px-5 text-sm font-bold border-b-2 transition cursor-pointer flex items-center gap-2 ${
+              className={`py-2.5 px-2 sm:px-5 text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 rounded-xl sm:rounded-none sm:border-b-2 ${
                 activeTab === "browse"
-                  ? "border-[#116149] text-[#116149]"
-                  : "border-transparent text-slate-500 hover:text-slate-800"
+                  ? "bg-white text-[#116149] shadow-xs sm:bg-transparent sm:shadow-none sm:border-[#116149]"
+                  : "text-slate-600 hover:text-slate-900 sm:border-transparent sm:text-slate-500 sm:hover:text-slate-800"
               }`}
             >
-              <BookOpen size={16} /> Browse Dictionary ({UTME_LEXICON.length})
+              <BookOpen size={16} className="shrink-0" />
+              <span className="truncate">Dictionary</span>
+              <span className="hidden sm:inline text-xs opacity-75 font-normal">({UTME_LEXICON.length})</span>
             </button>
             <button
               type="button"
@@ -263,24 +282,29 @@ export default function DictionaryPage() {
                 setActiveTab("saved");
                 refreshSavedWords();
               }}
-              className={`py-3 px-5 text-sm font-bold border-b-2 transition cursor-pointer flex items-center gap-2 ${
+              className={`py-2.5 px-2 sm:px-5 text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 rounded-xl sm:rounded-none sm:border-b-2 ${
                 activeTab === "saved"
-                  ? "border-[#116149] text-[#116149]"
-                  : "border-transparent text-slate-500 hover:text-slate-800"
+                  ? "bg-white text-[#116149] shadow-xs sm:bg-transparent sm:shadow-none sm:border-[#116149]"
+                  : "text-slate-600 hover:text-slate-900 sm:border-transparent sm:text-slate-500 sm:hover:text-slate-800"
               }`}
             >
-              <Bookmark size={16} /> My Word Bank ({savedWords.length})
+              <Bookmark size={16} className="shrink-0" />
+              <span className="truncate">Word Bank</span>
+              <span className="text-[11px] font-semibold px-1.5 py-0.2 rounded-full bg-slate-200/80 text-slate-700">
+                {savedWords.length}
+              </span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("games")}
-              className={`py-3 px-5 text-sm font-bold border-b-2 transition cursor-pointer flex items-center gap-2 ${
+              className={`py-2.5 px-2 sm:px-5 text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 rounded-xl sm:rounded-none sm:border-b-2 ${
                 activeTab === "games"
-                  ? "border-[#116149] text-[#116149]"
-                  : "border-transparent text-slate-500 hover:text-slate-800"
+                  ? "bg-white text-[#116149] shadow-xs sm:bg-transparent sm:shadow-none sm:border-[#116149]"
+                  : "text-slate-600 hover:text-slate-900 sm:border-transparent sm:text-slate-500 sm:hover:text-slate-800"
               }`}
             >
-              <Gamepad2 size={16} /> Word Games Hub
+              <Gamepad2 size={16} className="shrink-0" />
+              <span className="truncate">Word Games</span>
             </button>
           </div>
 
@@ -301,14 +325,14 @@ export default function DictionaryPage() {
                         handleManualOnlineSearch();
                       }
                     }}
-                    placeholder="Search by word, definition, synonym, or look up ANY English word via Free Dictionary API..."
+                    placeholder="Search words, definitions, or look up online..."
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-24 py-3 text-sm focus:bg-white focus:border-[#116149] focus:outline-hidden transition"
                   />
                   {searchQuery && (
                     <button
                       type="button"
                       onClick={() => setSearchQuery("")}
-                      className="absolute right-12 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-full"
+                      className="absolute right-14 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer"
                     >
                       <X size={15} />
                     </button>
@@ -322,24 +346,24 @@ export default function DictionaryPage() {
                       type="button"
                       onClick={handleManualOnlineSearch}
                       title="Search Free English Dictionary"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 px-2.5 py-1 text-xs font-semibold text-emerald-800 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition cursor-pointer"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition cursor-pointer"
                     >
                       Lookup
                     </button>
                   )}
                 </div>
 
-                {/* Category Pills */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1 flex items-center gap-1">
+                {/* Category Filter Pills (Horizontal swipe on mobile, wrap on desktop) */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 -mx-1 px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden border-t border-slate-100">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1 flex items-center gap-1 shrink-0">
                     <Filter size={11} /> Filter:
                   </span>
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("all")}
-                    className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
+                    className={`shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer ${
                       selectedCategory === "all"
-                        ? "bg-slate-900 text-white"
+                        ? "bg-slate-900 text-white shadow-2xs"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     }`}
                   >
@@ -348,10 +372,10 @@ export default function DictionaryPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("irregular_verb")}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
+                    className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer ${
                       selectedCategory === "irregular_verb"
-                        ? "bg-[#116149] text-white"
-                        : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                        ? "bg-[#116149] text-white shadow-2xs"
+                        : "bg-emerald-50 text-emerald-800 border border-emerald-100 hover:bg-emerald-100"
                     }`}
                   >
                     <Zap size={12} /> Irregular Verbs
@@ -359,10 +383,10 @@ export default function DictionaryPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("oral_english")}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
+                    className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer ${
                       selectedCategory === "oral_english"
-                        ? "bg-[#116149] text-white"
-                        : "bg-blue-50 text-blue-800 hover:bg-blue-100"
+                        ? "bg-[#116149] text-white shadow-2xs"
+                        : "bg-blue-50 text-blue-800 border border-blue-100 hover:bg-blue-100"
                     }`}
                   >
                     <Ear size={12} /> Oral English & Silent Letters
@@ -370,10 +394,10 @@ export default function DictionaryPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("lexis_synonym")}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
+                    className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer ${
                       selectedCategory === "lexis_synonym"
-                        ? "bg-[#116149] text-white"
-                        : "bg-purple-50 text-purple-800 hover:bg-purple-100"
+                        ? "bg-[#116149] text-white shadow-2xs"
+                        : "bg-purple-50 text-purple-800 border border-purple-100 hover:bg-purple-100"
                     }`}
                   >
                     <Target size={12} /> Synonyms
@@ -381,10 +405,10 @@ export default function DictionaryPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("lexis_antonym")}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
+                    className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer ${
                       selectedCategory === "lexis_antonym"
-                        ? "bg-[#116149] text-white"
-                        : "bg-rose-50 text-rose-800 hover:bg-rose-100"
+                        ? "bg-[#116149] text-white shadow-2xs"
+                        : "bg-rose-50 text-rose-800 border border-rose-100 hover:bg-rose-100"
                     }`}
                   >
                     <ArrowLeftRight size={12} /> Antonyms
@@ -392,10 +416,10 @@ export default function DictionaryPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("commonly_confused")}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
+                    className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer ${
                       selectedCategory === "commonly_confused"
-                        ? "bg-[#116149] text-white"
-                        : "bg-amber-50 text-amber-800 hover:bg-amber-100"
+                        ? "bg-[#116149] text-white shadow-2xs"
+                        : "bg-amber-50 text-amber-800 border border-amber-100 hover:bg-amber-100"
                     }`}
                   >
                     <AlertTriangle size={12} /> Commonly Confused
@@ -649,8 +673,16 @@ export default function DictionaryPage() {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                DictionaryService.toggleMastered(item.word);
+                                const mastered = DictionaryService.toggleMastered(item.word);
                                 refreshSavedWords();
+                                if (mastered) {
+                                  recordStreakActivity({
+                                    activityType: "dictionary_word_learned",
+                                    details: { word: item.word },
+                                  }).then((res) => {
+                                    if (res) setStreakStatus(res);
+                                  });
+                                }
                               }}
                               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer ${
                                 item.mastered

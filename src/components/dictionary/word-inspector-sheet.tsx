@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Volume2, Bookmark, BookmarkCheck, X, BookOpen, Zap, AlertTriangle, Globe } from "lucide-react";
+import { Volume2, Bookmark, BookmarkCheck, X, BookOpen, Zap, AlertTriangle, Globe, Flame } from "lucide-react";
 import type { UtmeWordEntry } from "@/lib/dictionary/types";
 import { DictionaryService } from "@/lib/dictionary/dictionary-service";
 import { FreeDictionaryService } from "@/lib/dictionary/free-dictionary-service";
+import { recordStreakActivity } from "@/lib/dictionary/streak-activation";
 
 interface WordInspectorSheetProps {
   wordEntry: UtmeWordEntry | null;
@@ -46,6 +47,10 @@ export function WordInspectorSheet({ wordEntry, isOpen, onClose }: WordInspector
 
   const playPronunciation = () => {
     setIsPlayingAudio(true);
+    recordStreakActivity({
+      activityType: "dictionary_word_learned",
+      details: { word: current.word },
+    });
 
     if (liveAudioUrl) {
       const audio = new Audio(liveAudioUrl);
@@ -80,6 +85,12 @@ export function WordInspectorSheet({ wordEntry, isOpen, onClose }: WordInspector
   const handleToggleSave = () => {
     const newState = DictionaryService.toggleSaveWord(current);
     setIsSaved(newState);
+    if (newState) {
+      recordStreakActivity({
+        activityType: "dictionary_word_learned",
+        details: { word: current.word },
+      });
+    }
   };
 
   return (

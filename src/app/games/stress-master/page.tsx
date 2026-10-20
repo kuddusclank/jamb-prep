@@ -14,7 +14,9 @@ import {
   RotateCcw,
   Sparkles,
   Trophy,
+  Flame,
 } from "lucide-react";
+import { recordStreakActivity, type StreakActivationResult } from "@/lib/dictionary/streak-activation";
 
 export default function StressMasterGamePage() {
   const [mode, setMode] = useState<"syllable" | "emphatic">("syllable");
@@ -24,6 +26,7 @@ export default function StressMasterGamePage() {
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [streakInfo, setStreakInfo] = useState<StreakActivationResult | null>(null);
 
   const currentSyllableItem = STRESS_GAME_ITEMS[currentIndex];
   const currentEmphaticItem = EMPHATIC_STRESS_ITEMS[currentIndex];
@@ -74,6 +77,12 @@ export default function StressMasterGamePage() {
       setIsAnswered(false);
     } else {
       setIsCompleted(true);
+      recordStreakActivity({
+        activityType: "dictionary_game_completed",
+        details: { game: `Stress Master (${mode})`, score },
+      }).then((res) => {
+        if (res) setStreakInfo(res);
+      });
     }
   };
 
@@ -159,6 +168,12 @@ export default function StressMasterGamePage() {
                 You scored <span className="font-bold text-[#116149]">{score} points</span> in{" "}
                 {mode === "syllable" ? "Syllable Stress" : "Emphatic Stress"}!
               </p>
+              <div className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-amber-500/10 px-4 py-2 border border-amber-500/30 text-amber-900 text-xs font-bold">
+                <Flame size={16} className="fill-current text-amber-500 animate-pulse" />
+                <span>
+                  Daily Study Streak Active! {streakInfo ? `You're on a ${streakInfo.currentStreak}-day streak!` : "Today's fire is locked in!"}
+                </span>
+              </div>
               <div className="mt-6 flex flex-wrap justify-center gap-3">
                 <button
                   type="button"

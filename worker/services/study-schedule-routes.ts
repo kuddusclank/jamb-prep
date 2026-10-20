@@ -8,6 +8,7 @@ import type { RouteDefinition, RouteRequestContext } from '../api/router';
 import {
   deleteUserPushSubscription,
   getStudyScheduleState,
+  recordLearningActivityStreakQualification,
   sendUserTestReminder,
   updateStudyScheduleSettings,
   upsertUserPushSubscription,
@@ -359,6 +360,39 @@ export const STUDY_SCHEDULE_ROUTES: RouteDefinition[] = [
           pushSender,
         }
       );
+
+      return {
+        status: 200,
+        body: result,
+      };
+    },
+  },
+  {
+    id: 'study-schedule.activity.post',
+    method: 'POST',
+    pattern: '/api/v1/study-schedule/activity',
+    auth: 'student',
+    idempotency: 'optional',
+    maxBodyBytes: 8192,
+    handler: async (ctx) => {
+      const { data } = await readBoundedJsonBody(ctx.request, { maxBytes: 8192 });
+      const body = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>;
+
+      const activityType = typeof body.activityType === 'string' ? body.activityType.trim() : '';
+      if (!['dictionary_word_learned', 'dictionary_game_completed', 'dictionary_study'].includes(activityType)) {
+        throw new ApiError({
+          status: 422,
+          code: 'VALIDATION_FAILED',
+          message: 'Invalid activityType. Must be dictionary_word_learned, dictionary_game_completed, or dictionary_study.',
+        });
+      }
+
+      const result = await recordLearningActivityStreakQualification(ctx.getDb().sql, {
+        userId: ctx.actor!.userId,
+        activityType: activityType as any,
+        details: typeof body.details === 'object' && body.details !== null ? body.details as any : undefined,
+        now: ctx.now,
+      });
 
       return {
         status: 200,
