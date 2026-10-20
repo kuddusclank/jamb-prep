@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { StudyWorkspace } from "@/components/study-workspace";
 import { ProFeatureGate } from "@/components/dictionary/pro-feature-gate";
-import { STRESS_GAME_ITEMS, EMPHATIC_STRESS_ITEMS } from "@/lib/dictionary/game-data";
+import {
+  STRESS_GAME_ITEMS,
+  EMPHATIC_STRESS_ITEMS,
+  getRandomGameItems,
+} from "@/lib/dictionary/game-data";
+import type { StressGameItem, EmphaticGameItem } from "@/lib/dictionary/types";
 import {
   Target,
   ArrowLeft,
@@ -28,10 +33,26 @@ export default function StressMasterGamePage() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [streakInfo, setStreakInfo] = useState<StreakActivationResult | null>(null);
 
-  const currentSyllableItem = STRESS_GAME_ITEMS[currentIndex];
-  const currentEmphaticItem = EMPHATIC_STRESS_ITEMS[currentIndex];
+  const [syllableDeck, setSyllableDeck] = useState<StressGameItem[]>([]);
+  const [emphaticDeck, setEmphaticDeck] = useState<EmphaticGameItem[]>([]);
 
-  const totalQuestions = mode === "syllable" ? STRESS_GAME_ITEMS.length : EMPHATIC_STRESS_ITEMS.length;
+  useEffect(() => {
+    setSyllableDeck(getRandomGameItems(STRESS_GAME_ITEMS, 10));
+    setEmphaticDeck(getRandomGameItems(EMPHATIC_STRESS_ITEMS, 10));
+  }, []);
+
+  const activeDeck = mode === "syllable" ? syllableDeck : emphaticDeck;
+  const currentSyllableItem =
+    (syllableDeck.length > 0 ? syllableDeck : STRESS_GAME_ITEMS)[currentIndex] || STRESS_GAME_ITEMS[0];
+  const currentEmphaticItem =
+    (emphaticDeck.length > 0 ? emphaticDeck : EMPHATIC_STRESS_ITEMS)[currentIndex] || EMPHATIC_STRESS_ITEMS[0];
+
+  const totalQuestions =
+    activeDeck.length > 0
+      ? activeDeck.length
+      : mode === "syllable"
+        ? Math.min(10, STRESS_GAME_ITEMS.length)
+        : Math.min(10, EMPHATIC_STRESS_ITEMS.length);
 
   const playAudio = (text: string) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
@@ -103,6 +124,8 @@ export default function StressMasterGamePage() {
   };
 
   const restartGame = () => {
+    setSyllableDeck(getRandomGameItems(STRESS_GAME_ITEMS, 10));
+    setEmphaticDeck(getRandomGameItems(EMPHATIC_STRESS_ITEMS, 10));
     setCurrentIndex(0);
     setSelectedAnswer(null);
     setIsAnswered(false);

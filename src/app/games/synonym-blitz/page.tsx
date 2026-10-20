@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { StudyWorkspace } from "@/components/study-workspace";
 import { ProFeatureGate } from "@/components/dictionary/pro-feature-gate";
-import { SYN_ANTONYM_ITEMS } from "@/lib/dictionary/game-data";
+import { SYN_ANTONYM_ITEMS, getRandomGameItems } from "@/lib/dictionary/game-data";
+import type { SynAntonymGameItem } from "@/lib/dictionary/types";
 import {
   Zap,
   ArrowLeft,
@@ -25,9 +26,16 @@ export default function SynonymBlitzGamePage() {
   const [streak, setStreak] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [streakInfo, setStreakInfo] = useState<StreakActivationResult | null>(null);
+  const [deck, setDeck] = useState<SynAntonymGameItem[]>([]);
 
-  const currentItem = SYN_ANTONYM_ITEMS[currentIndex];
-  const totalQuestions = SYN_ANTONYM_ITEMS.length;
+  useEffect(() => {
+    setDeck(getRandomGameItems(SYN_ANTONYM_ITEMS, 10));
+  }, []);
+
+  const currentItem =
+    (deck.length > 0 ? deck : SYN_ANTONYM_ITEMS)[currentIndex] || SYN_ANTONYM_ITEMS[0];
+  const totalQuestions =
+    deck.length > 0 ? deck.length : Math.min(10, SYN_ANTONYM_ITEMS.length);
 
   const handleSelect = (option: string) => {
     if (isAnswered) return;
@@ -68,6 +76,7 @@ export default function SynonymBlitzGamePage() {
   };
 
   const restartGame = () => {
+    setDeck(getRandomGameItems(SYN_ANTONYM_ITEMS, 10));
     setCurrentIndex(0);
     setSelectedAnswer(null);
     setIsAnswered(false);

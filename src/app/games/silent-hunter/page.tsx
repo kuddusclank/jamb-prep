@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { StudyWorkspace } from "@/components/study-workspace";
 import { ProFeatureGate } from "@/components/dictionary/pro-feature-gate";
-import { SILENT_LETTER_ITEMS } from "@/lib/dictionary/game-data";
+import { SILENT_LETTER_ITEMS, getRandomGameItems } from "@/lib/dictionary/game-data";
+import type { SilentLetterGameItem } from "@/lib/dictionary/types";
 import {
   EyeOff,
   ArrowLeft,
@@ -26,9 +27,16 @@ export default function SilentHunterGamePage() {
   const [streak, setStreak] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [streakInfo, setStreakInfo] = useState<StreakActivationResult | null>(null);
+  const [deck, setDeck] = useState<SilentLetterGameItem[]>([]);
 
-  const currentItem = SILENT_LETTER_ITEMS[currentIndex];
-  const totalQuestions = SILENT_LETTER_ITEMS.length;
+  useEffect(() => {
+    setDeck(getRandomGameItems(SILENT_LETTER_ITEMS, 10));
+  }, []);
+
+  const currentItem =
+    (deck.length > 0 ? deck : SILENT_LETTER_ITEMS)[currentIndex] || SILENT_LETTER_ITEMS[0];
+  const totalQuestions =
+    deck.length > 0 ? deck.length : Math.min(10, SILENT_LETTER_ITEMS.length);
 
   const playAudio = (text: string) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
@@ -79,6 +87,7 @@ export default function SilentHunterGamePage() {
   };
 
   const restartGame = () => {
+    setDeck(getRandomGameItems(SILENT_LETTER_ITEMS, 10));
     setCurrentIndex(0);
     setSelectedLetterIdx(null);
     setIsAnswered(false);

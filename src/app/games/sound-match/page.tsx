@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { StudyWorkspace } from "@/components/study-workspace";
 import { ProFeatureGate } from "@/components/dictionary/pro-feature-gate";
-import { SOUND_MATCH_ITEMS } from "@/lib/dictionary/game-data";
+import { SOUND_MATCH_ITEMS, getRandomGameItems } from "@/lib/dictionary/game-data";
+import type { SoundMatchGameItem } from "@/lib/dictionary/types";
 import {
   Ear,
   ArrowLeft,
@@ -26,9 +27,16 @@ export default function SoundMatchGamePage() {
   const [streak, setStreak] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [streakInfo, setStreakInfo] = useState<StreakActivationResult | null>(null);
+  const [deck, setDeck] = useState<SoundMatchGameItem[]>([]);
 
-  const currentItem = SOUND_MATCH_ITEMS[currentIndex];
-  const totalQuestions = SOUND_MATCH_ITEMS.length;
+  useEffect(() => {
+    setDeck(getRandomGameItems(SOUND_MATCH_ITEMS, 10));
+  }, []);
+
+  const currentItem =
+    (deck.length > 0 ? deck : SOUND_MATCH_ITEMS)[currentIndex] || SOUND_MATCH_ITEMS[0];
+  const totalQuestions =
+    deck.length > 0 ? deck.length : Math.min(10, SOUND_MATCH_ITEMS.length);
 
   const playAudio = (text: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -80,6 +88,7 @@ export default function SoundMatchGamePage() {
   };
 
   const restartGame = () => {
+    setDeck(getRandomGameItems(SOUND_MATCH_ITEMS, 10));
     setCurrentIndex(0);
     setSelectedAnswer(null);
     setIsAnswered(false);
