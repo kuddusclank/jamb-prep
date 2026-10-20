@@ -24,6 +24,7 @@ import type { UtmeWordEntry, UserSavedWord, DailyFivePack, WordCategory } from "
 import { DictionaryService } from "@/lib/dictionary/dictionary-service";
 import { UTME_LEXICON } from "@/lib/dictionary/utme-lexicon-data";
 import { WordInspectorSheet } from "@/components/dictionary/word-inspector-sheet";
+import { ProFeatureGate } from "@/components/dictionary/pro-feature-gate";
 
 export default function DictionaryPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -73,8 +74,9 @@ export default function DictionaryPage() {
   };
 
   return (
-    <StudyWorkspace>
-      <main className="shell section-space">
+    <ProFeatureGate>
+      <StudyWorkspace>
+        <main className="shell section-space">
         <div className="mx-auto max-w-5xl space-y-8">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 pb-6">
@@ -595,5 +597,6 @@ export default function DictionaryPage() {
         />
       </main>
     </StudyWorkspace>
+  </ProFeatureGate>
   );
 }

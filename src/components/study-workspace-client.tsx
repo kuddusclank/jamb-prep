@@ -16,7 +16,7 @@ const destinations = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/practice', label: 'Practice', icon: Layers },
   { href: '/mock', label: 'Mock exams', icon: Clock },
-  { href: '/dictionary', label: 'Dictionary & Games', icon: BookA },
+  { href: '/dictionary', label: 'Dictionary & Games', icon: BookA, isPro: true },
   { href: '/analytics', label: 'Performance', icon: ChartNoAxesCombined },
   { href: '/referrals', label: 'Invite friends', icon: Users },
   { href: '/profile', label: 'My profile', icon: UserRound },
@@ -60,7 +60,27 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     <aside className={styles.sidebar}>
       <p className={styles.caption}>YOUR STUDY SPACE</p>
       <nav aria-label="Study navigation" className={styles.navigation}>
-        {visibleDestinations.map(({ href, label, icon: Icon }) => <Link key={href} href={href} aria-current={current?.href === href ? 'page' : undefined} className={styles.navLink}><Icon size={19} aria-hidden="true" /><span>{label}</span></Link>)}
+        {visibleDestinations.map(({ href, label, icon: Icon, isPro }) => {
+          const isLocked = isPro && profile.data?.subscription.isPremium === false;
+          const targetHref = isLocked ? '/pricing' : href;
+          return (
+            <Link
+              key={href}
+              href={targetHref}
+              aria-current={current?.href === href ? 'page' : undefined}
+              className={styles.navLink}
+              title={isLocked ? `${label} is a Pro feature — click to upgrade` : label}
+            >
+              <Icon size={19} aria-hidden="true" />
+              <span>{label}</span>
+              {isLocked && (
+                <span className="ml-auto text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded-sm">
+                  PRO
+                </span>
+              )}
+            </Link>
+          );
+        })}
       </nav>
       <div className={styles.sidebarFooter}>
         <p>A little progress, every day.</p>

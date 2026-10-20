@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { StudyWorkspace } from "@/components/study-workspace";
+import { ProFeatureGate } from "@/components/dictionary/pro-feature-gate";
 import { SILENT_LETTER_ITEMS } from "@/lib/dictionary/game-data";
 import {
   EyeOff,
@@ -72,8 +73,12 @@ export default function SilentHunterGamePage() {
     selectedLetterIdx !== null && currentItem.silentIndices.includes(selectedLetterIdx);
 
   return (
-    <StudyWorkspace>
-      <main className="shell section-space">
+    <ProFeatureGate
+      title="Silent Hunter Game"
+      description="Identify silent letters in tricky English words and avoid common UTME spelling and phonetic traps."
+    >
+      <StudyWorkspace>
+        <main className="shell section-space">
         <div className="mx-auto max-w-2xl space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -230,5 +235,6 @@ export default function SilentHunterGamePage() {
         </div>
       </main>
     </StudyWorkspace>
+  </ProFeatureGate>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { UtmeWordEntry } from "@/lib/dictionary/types";
 import { DictionaryService } from "@/lib/dictionary/dictionary-service";
 import { WordInspectorSheet } from "./word-inspector-sheet";
@@ -8,9 +9,11 @@ import { WordInspectorSheet } from "./word-inspector-sheet";
 interface InspectableTextProps {
   content: string;
   className?: string;
+  isPremium?: boolean;
 }
 
-export function InspectableText({ content, className = "" }: InspectableTextProps) {
+export function InspectableText({ content, className = "", isPremium = true }: InspectableTextProps) {
+  const router = useRouter();
   const [activeWord, setActiveWord] = useState<UtmeWordEntry | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isLookingUp, setIsLookingUp] = useState(false);
@@ -18,6 +21,12 @@ export function InspectableText({ content, className = "" }: InspectableTextProp
   const handleWordClick = async (rawToken: string) => {
     const cleanWord = rawToken.replace(/[^a-zA-Z]/g, "").toLowerCase();
     if (cleanWord.length < 3) return; // Skip tiny stop words
+
+    // If not premium, immediately navigate to pricing page
+    if (!isPremium) {
+      router.push("/pricing");
+      return;
+    }
 
     // Check local bank first
     const local = DictionaryService.getWord(cleanWord);
@@ -59,7 +68,7 @@ export function InspectableText({ content, className = "" }: InspectableTextProp
                   ? "underline decoration-emerald-400/60 decoration-dotted underline-offset-3"
                   : ""
               }`}
-              title="Click or tap to inspect definition & phonetics"
+              title={isPremium ? "Click or tap to inspect definition & phonetics" : "Upgrade to Pro to inspect words and phonetics"}
             >
               {token}
             </span>

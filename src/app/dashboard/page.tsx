@@ -429,7 +429,15 @@ export default function DashboardPage() {
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="max-w-xl">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-200 text-[11px] font-bold uppercase tracking-wider mb-2 border border-emerald-400/20">
-                  <Sparkles size={12} className="text-emerald-300" /> UTME Lexis & Oral English
+                  {isPremium ? (
+                    <>
+                      <Sparkles size={12} className="text-emerald-300" /> UTME Lexis & Oral English
+                    </>
+                  ) : (
+                    <>
+                      <Lock size={12} className="text-amber-300" /> PRO FEATURE · UTME Lexis & Oral English
+                    </>
+                  )}
                 </div>
                 <h3 className="text-xl sm:text-2xl font-bold tracking-tight">
                   Master Vocabulary & Speech Sounds
@@ -445,18 +453,37 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 shrink-0">
-                <Link
-                  href="/dictionary"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-xs font-bold text-[#092E28] hover:bg-emerald-50 transition shadow-sm"
-                >
-                  <BookA size={14} /> Open Dictionary Hub
-                </Link>
-                <Link
-                  href="/games/stress-master"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-800/40 px-6 py-3 text-xs font-semibold text-emerald-100 hover:bg-emerald-800/70 transition"
-                >
-                  <Gamepad2 size={14} /> Play Word Games <ArrowRight size={14} />
-                </Link>
+                {isPremium ? (
+                  <>
+                    <Link
+                      href="/dictionary"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-xs font-bold text-[#092E28] hover:bg-emerald-50 transition shadow-sm"
+                    >
+                      <BookA size={14} /> Open Dictionary Hub
+                    </Link>
+                    <Link
+                      href="/games/stress-master"
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-800/40 px-6 py-3 text-xs font-semibold text-emerald-100 hover:bg-emerald-800/70 transition"
+                    >
+                      <Gamepad2 size={14} /> Play Word Games <ArrowRight size={14} />
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/pricing"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 text-amber-950 px-6 py-3 text-xs font-bold hover:bg-amber-300 transition shadow-sm cursor-pointer"
+                    >
+                      <Lock size={14} /> Unlock with Pro (₦1,000)
+                    </Link>
+                    <Link
+                      href="/pricing"
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-800/40 px-6 py-3 text-xs font-semibold text-emerald-100 hover:bg-emerald-800/70 transition cursor-pointer"
+                    >
+                      View Pro Plans <ArrowRight size={14} />
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>

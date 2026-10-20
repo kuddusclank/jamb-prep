@@ -11,10 +11,11 @@ import { MathRenderer } from '@/components/math-renderer';
 import { isArabicText } from '@/lib/utils';
 import { MockResultRatingPrompt } from '@/components/mock-result-rating-prompt';
 interface ResultData {subjectScores?:{code:string;name:string;count:number;score:number}[];totalScore:number;englishScore:number;subject2Score:number;subject3Score:number;subject4Score:number;timeSpentSeconds:number;completedAt:string;}
-import { CheckCircle2, XCircle, AlertCircle, HelpCircle, ChevronDown, ChevronUp, Sparkles, Filter, Bookmark, BookA } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, HelpCircle, ChevronDown, ChevronUp, Sparkles, Filter, Bookmark, BookA, Lock } from 'lucide-react';
 import { ReportQuestionDialog } from '@/components/report-question-dialog';
 import { QuestionDiagram } from '@/components/question-diagram';
 import { InspectableText } from '@/components/dictionary/inspectable-text';
+import type { ProfileData } from '@/lib/api/app-dtos';
 
 interface ReviewQuestion {
   id: string;
@@ -39,6 +40,8 @@ interface ReviewData {
 
 function Review({ attemptId }: { attemptId: string }) {
   const resource = useApiResource<ReviewData>(`/api/v1/exams/attempts/${attemptId}/review`);
+  const profile = useApiResource<ProfileData>("/api/v1/profile");
+  const isPremium = profile.data?.subscription.isPremium ?? false;
   const [statusFilter, setStatusFilter] = useState<'all' | 'incorrect' | 'unanswered' | 'correct'>('all');
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
   const [showPalette, setShowPalette] = useState(false);
@@ -383,14 +386,26 @@ function Review({ attemptId }: { attemptId: string }) {
                       </span>
                     ) : <span />}
                     {!isQArabic && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full">
-                        <BookA size={11} /> Tap words to inspect
-                      </span>
+                      isPremium ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full">
+                          <BookA size={11} /> Tap words to inspect
+                        </span>
+                      ) : (
+                        <Link
+                          href="/pricing"
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-900 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full hover:bg-amber-200 transition-colors cursor-pointer"
+                          title="Vocabulary Inspector is a Pro feature — click to unlock"
+                        >
+                          <Lock size={10} />
+                          <span>Tap to inspect</span>
+                          <span className="text-[9px] font-extrabold uppercase bg-amber-200/90 text-amber-950 px-1 rounded">PRO</span>
+                        </Link>
+                      )
                     )}
                   </div>
                   <div className="text-slate-800 whitespace-pre-wrap">
                     {!isQArabic ? (
-                      <InspectableText content={question.passage.content} />
+                      <InspectableText content={question.passage.content} isPremium={isPremium} />
                     ) : (
                       <MathRenderer content={question.passage.content} />
                     )}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { StudyWorkspace } from "@/components/study-workspace";
+import { ProFeatureGate } from "@/components/dictionary/pro-feature-gate";
 import { SYN_ANTONYM_ITEMS } from "@/lib/dictionary/game-data";
 import {
   Zap,
@@ -59,8 +60,12 @@ export default function SynonymBlitzGamePage() {
   };
 
   return (
-    <StudyWorkspace>
-      <main className="shell section-space">
+    <ProFeatureGate
+      title="Synonym & Antonym Blitz"
+      description="Rapid-fire nearest in meaning and opposite in meaning challenges from authentic UTME past questions."
+    >
+      <StudyWorkspace>
+        <main className="shell section-space">
         <div className="mx-auto max-w-2xl space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -207,5 +212,6 @@ export default function SynonymBlitzGamePage() {
         </div>
       </main>
     </StudyWorkspace>
+  </ProFeatureGate>
   );
 }

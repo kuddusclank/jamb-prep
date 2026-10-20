@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { StudyWorkspace } from "@/components/study-workspace";
+import { ProFeatureGate } from "@/components/dictionary/pro-feature-gate";
 import { STRESS_GAME_ITEMS, EMPHATIC_STRESS_ITEMS } from "@/lib/dictionary/game-data";
 import {
   Target,
@@ -86,8 +87,12 @@ export default function StressMasterGamePage() {
   };
 
   return (
-    <StudyWorkspace>
-      <main className="shell section-space">
+    <ProFeatureGate
+      title="Stress Master Game"
+      description="Practice syllable stress and emphatic sentence contrast drills tested in UTME Use of English."
+    >
+      <StudyWorkspace>
+        <main className="shell section-space">
         <div className="mx-auto max-w-2xl space-y-6">
           {/* Top Bar Navigation */}
           <div className="flex items-center justify-between">
@@ -354,5 +359,6 @@ export default function StressMasterGamePage() {
         </div>
       </main>
     </StudyWorkspace>
+  </ProFeatureGate>
   );
 }
