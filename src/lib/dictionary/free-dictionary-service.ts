@@ -29,11 +29,13 @@ const memoryCache = new Map<string, UtmeWordEntry | null>();
 
 export class FreeDictionaryService {
   /**
-   * Fetch and parse an English word from the Free Dictionary API
+   * Fetch and parse an English word from the Free Dictionary API,
+   * with automatic fallback to Datamuse / Wiktionary if dictionaryapi.dev
+   * is slow, down, or returns Cloudflare 530/500 errors.
    */
   static async lookup(rawWord: string): Promise<UtmeWordEntry | null> {
-    const word = rawWord.trim().toLowerCase().replace(/[^a-z-]/g, '');
-    if (!word) return null;
+    const word = rawWord.trim().toLowerCase().replace(/[^a-z\s-]/g, '').trim();
+    if (!word || word.length < 2) return null;
 
     // Check memory cache
     if (memoryCache.has(word)) {
@@ -54,41 +56,228 @@ export class FreeDictionaryService {
       }
     }
 
+    // 1. Try Primary: Free Dictionary API (api.dictionaryapi.dev)
     try {
-      const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`;
+      const primaryEntry = await this.fetchWithTimeout(
+        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,
+        3500
+      );
+
+      if (primaryEntry && Array.isArray(primaryEntry) && primaryEntry.length > 0) {
+        const entry = this.mapToUtmeWordEntry(primaryEntry[0], word);
+        this.cacheResult(word, entry);
+        return entry;
+      }
+    } catch {
+      // Failed or timed out, proceed to fallback
+    }
+
+    // 2. Fallback: Datamuse API (high-availability global dictionary API)
+    try {
+      const datamuseEntry = await this.fetchFromDatamuse(word);
+      if (datamuseEntry) {
+        this.cacheResult(word, datamuseEntry);
+        return datamuseEntry;
+      }
+    } catch {
+      // Proceed to tertiary fallback
+    }
+
+    // 3. Fallback: Wiktionary REST API
+    try {
+      const wiktionaryEntry = await this.fetchFromWiktionary(word);
+      if (wiktionaryEntry) {
+        this.cacheResult(word, wiktionaryEntry);
+        return wiktionaryEntry;
+      }
+    } catch {
+      // Not found
+    }
+
+    // Genuinely not found across all available sources
+    memoryCache.set(word, null);
+    return null;
+  }
+
+  /**
+   * Helper to fetch with an abort timeout
+   */
+  private static async fetchWithTimeout(url: string, timeoutMs: number): Promise<any | null> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
       const response = await fetch(url, {
         headers: { Accept: 'application/json' },
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        // Not found or rate-limited
-        memoryCache.set(word, null);
-        return null;
+      if (!response.ok) return null;
+      return await response.json();
+    } catch {
+      clearTimeout(timeoutId);
+      return null;
+    }
+  }
+
+  /**
+   * Fallback using Datamuse definitions and synonyms
+   */
+  private static async fetchFromDatamuse(word: string): Promise<UtmeWordEntry | null> {
+    const data = await this.fetchWithTimeout(
+      `https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&md=dpsf&max=1`,
+      3500
+    );
+
+    if (!Array.isArray(data) || data.length === 0) return null;
+    const item = data[0];
+    if (item.word.toLowerCase() !== word.toLowerCase() || !Array.isArray(item.defs) || item.defs.length === 0) {
+      return null;
+    }
+
+    // Parse definitions and parts of speech
+    const meaningsList: DictionaryMeaningDetail[] = [];
+    const synonymsList: string[] = [];
+    let primaryDef = '';
+    let primaryPos: PartOfSpeech = 'noun';
+
+    // Group definitions by part of speech
+    const posGroups = new Map<string, string[]>();
+    for (const rawDef of item.defs) {
+      const parts = rawDef.split('\t');
+      const posCode = parts[0] || 'n';
+      const cleanDef = (parts[1] || '').trim();
+      if (!cleanDef) continue;
+
+      if (!primaryDef) {
+        primaryDef = cleanDef;
+        primaryPos = this.codeToPartOfSpeech(posCode);
       }
 
-      const data = (await response.json()) as FreeDictionaryRawEntry[];
-      if (!Array.isArray(data) || data.length === 0) {
-        memoryCache.set(word, null);
-        return null;
+      const existing = posGroups.get(posCode) || [];
+      if (existing.length < 4) {
+        existing.push(cleanDef);
+        posGroups.set(posCode, existing);
       }
+    }
 
-      const primary = data[0];
-      const entry = this.mapToUtmeWordEntry(primary, word);
+    // Query synonyms in parallel
+    try {
+      const synData = await this.fetchWithTimeout(
+        `https://api.datamuse.com/words?rel_syn=${encodeURIComponent(word)}&max=6`,
+        2000
+      );
+      if (Array.isArray(synData)) {
+        synData.forEach((s) => {
+          if (s.word && !synonymsList.includes(s.word)) {
+            synonymsList.push(s.word);
+          }
+        });
+      }
+    } catch {
+      // Synonyms query optional
+    }
 
-      // Cache result
-      memoryCache.set(word, entry);
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem(`${CACHE_PREFIX}${word}`, JSON.stringify(entry));
-        } catch {
-          // Ignore storage quota limits
+    posGroups.forEach((defs, posCode) => {
+      const posLabel = this.codeToPartOfSpeech(posCode);
+      meaningsList.push({
+        partOfSpeech: posLabel,
+        definitions: defs,
+        synonyms: synonymsList.slice(0, 4),
+        antonyms: [],
+      });
+    });
+
+    const syllables = this.estimateSyllables(word);
+
+    return {
+      id: `dict-${word}`,
+      word: word,
+      partOfSpeech: primaryPos,
+      definition: primaryDef || `The word "${word}".`,
+      contextSentence: `In Use of English examinations, candidates are expected to understand the contextual usage of "${word}".`,
+      examNote: `Commonly tested vocabulary term.`,
+      synonyms: synonymsList.slice(0, 6),
+      antonyms: [],
+      phonetics: {
+        ipa: `/${word}/`,
+        syllables: syllables,
+        primaryStressIndex: 0,
+        rhymesWith: [],
+      },
+      source: 'free_dictionary',
+      category: 'oral_english',
+      jambFrequency: 'medium',
+      meaningsList: meaningsList,
+    };
+  }
+
+  /**
+   * Tertiary Fallback: Wiktionary REST API
+   */
+  private static async fetchFromWiktionary(word: string): Promise<UtmeWordEntry | null> {
+    const data = await this.fetchWithTimeout(
+      `https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`,
+      3500
+    );
+
+    if (!data || !Array.isArray(data.en) || data.en.length === 0) return null;
+
+    let primaryDef = '';
+    let primaryPos: PartOfSpeech = 'noun';
+    const meaningsList: DictionaryMeaningDetail[] = [];
+
+    for (const section of data.en) {
+      const pos = this.normalizePartOfSpeech(section.partOfSpeech || 'noun');
+      const defs: string[] = [];
+
+      if (Array.isArray(section.definitions)) {
+        for (const d of section.definitions) {
+          // Strip HTML tags from Wiktionary HTML definition string
+          const plain = (d.definition || '').replace(/<[^>]*>?/gm, '').trim();
+          if (plain && !plain.startsWith('Alternative form') && plain.length > 5) {
+            defs.push(plain);
+            if (!primaryDef) {
+              primaryDef = plain;
+              primaryPos = pos;
+            }
+          }
         }
       }
 
-      return entry;
-    } catch {
-      return null;
+      if (defs.length > 0) {
+        meaningsList.push({
+          partOfSpeech: pos,
+          definitions: defs.slice(0, 3),
+          synonyms: [],
+          antonyms: [],
+        });
+      }
     }
+
+    if (!primaryDef) return null;
+
+    return {
+      id: `wikt-${word}`,
+      word: word,
+      partOfSpeech: primaryPos,
+      definition: primaryDef,
+      contextSentence: `Carefully examine the nuances of "${word}" in sentence construction.`,
+      examNote: `Standard English lexicon term.`,
+      synonyms: [],
+      antonyms: [],
+      phonetics: {
+        ipa: `/${word}/`,
+        syllables: this.estimateSyllables(word),
+        primaryStressIndex: 0,
+        rhymesWith: [],
+      },
+      source: 'free_dictionary',
+      category: 'oral_english',
+      jambFrequency: 'medium',
+      meaningsList: meaningsList,
+    };
   }
 
   /**
@@ -189,10 +378,9 @@ export class FreeDictionaryService {
       primaryDef = `The English word "${cleanWord}".`;
     }
     if (!primaryExample) {
-      primaryExample = `The lecturer asked students to consult their dictionary for the meaning of "${cleanWord}".`;
+      primaryExample = `The student checked their vocabulary notes for the accurate meaning of "${cleanWord}".`;
     }
 
-    // 4. Basic syllable estimation
     const syllables = this.estimateSyllables(cleanWord);
 
     return {
@@ -201,7 +389,7 @@ export class FreeDictionaryService {
       partOfSpeech: primaryPartOfSpeech,
       definition: primaryDef,
       contextSentence: primaryExample,
-      examNote: 'Definition fetched directly from Free English Dictionary API.',
+      examNote: `Standard English dictionary vocabulary entry.`,
       synonyms: Array.from(allSynonyms).slice(0, 6),
       antonyms: Array.from(allAntonyms).slice(0, 6),
       phonetics: {
@@ -219,8 +407,19 @@ export class FreeDictionaryService {
     };
   }
 
+  private static cacheResult(word: string, entry: UtmeWordEntry) {
+    memoryCache.set(word, entry);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`${CACHE_PREFIX}${word}`, JSON.stringify(entry));
+      } catch {
+        // Ignore storage quota
+      }
+    }
+  }
+
   private static normalizePartOfSpeech(pos: string): PartOfSpeech {
-    const lower = pos.toLowerCase();
+    const lower = (pos || '').toLowerCase();
     if (lower.includes('verb')) return 'verb';
     if (lower.includes('adj')) return 'adjective';
     if (lower.includes('adv')) return 'adverb';
@@ -230,9 +429,25 @@ export class FreeDictionaryService {
     return 'noun';
   }
 
+  private static codeToPartOfSpeech(code: string): PartOfSpeech {
+    switch (code) {
+      case 'v':
+        return 'verb';
+      case 'adj':
+        return 'adjective';
+      case 'adv':
+        return 'adverb';
+      case 'prep':
+        return 'preposition';
+      case 'conj':
+        return 'conjunction';
+      default:
+        return 'noun';
+    }
+  }
+
   private static estimateSyllables(word: string): string[] {
     if (word.length <= 4) return [word];
-    // Simple vowel cluster hyphenation for visual hint
     const parts = word.match(/[^aeiouy]*[aeiouy]+(?:[^aeiouy]+(?=$|[^aeiouy]))?/gi);
     return parts && parts.length > 0 ? parts : [word];
   }

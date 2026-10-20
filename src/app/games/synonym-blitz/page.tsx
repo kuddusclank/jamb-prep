@@ -96,10 +96,10 @@ export default function SynonymBlitzGamePage() {
           {/* Header */}
           <div className="flex items-center justify-between">
             <Link
-              href="/dictionary"
+              href="/dictionary?tab=games"
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition"
             >
-              <ArrowLeft size={14} /> Back to Dictionary
+              <ArrowLeft size={14} /> Back to Games
             </Link>
 
             <div className="flex items-center gap-2">

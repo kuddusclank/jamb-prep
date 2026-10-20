@@ -13,7 +13,6 @@ import {
   Flame,
   CheckCircle2,
   ArrowRight,
-  ArrowLeft,
   Filter,
   Zap,
   Ear,
@@ -51,6 +50,13 @@ export default function DictionaryPage() {
   useEffect(() => {
     setDailyFive(DictionaryService.getDailyFive());
     setSavedWords(DictionaryService.getSavedWords());
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("tab") === "games") {
+        setActiveTab("games");
+      }
+    }
 
     // Learning dictionary words / reviewing Daily 5 activates daily streak
     recordStreakActivity({
@@ -102,13 +108,17 @@ export default function DictionaryPage() {
     });
   }, [searchQuery, selectedCategory]);
 
-  // Debounced search on Free Dictionary API when user enters a query
+  // Debounced search on English Dictionary when user enters a query
   useEffect(() => {
     const q = searchQuery.trim().toLowerCase();
     if (q.length < 2) {
       setOnlineResult(null);
       setIsSearchingOnline(false);
       setSearchedOnlineTerm("");
+      return;
+    }
+
+    if (onlineResult && onlineResult.word.toLowerCase() === q) {
       return;
     }
 
@@ -123,10 +133,10 @@ export default function DictionaryPage() {
       } finally {
         setIsSearchingOnline(false);
       }
-    }, 450);
+    }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, onlineResult]);
 
   const handleManualOnlineSearch = async () => {
     const q = searchQuery.trim().toLowerCase();
@@ -290,7 +300,7 @@ export default function DictionaryPage() {
           )}
 
           {/* Navigation Tabs (Responsive 2-Tab Segmented Control for Dictionary and Word Bank) */}
-          {activeTab !== "games" ? (
+          {activeTab !== "games" && (
             <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-100 border border-slate-200/70 gap-1 sm:flex sm:bg-transparent sm:p-0 sm:border-0 sm:border-b sm:border-slate-200 sm:rounded-none">
               <button
                 type="button"
@@ -323,19 +333,6 @@ export default function DictionaryPage() {
                   {savedWords.length}
                 </span>
               </button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <button
-                type="button"
-                onClick={() => setActiveTab("browse")}
-                className="inline-flex items-center gap-2 text-sm font-bold text-[#116149] hover:text-[#0d4d3a] transition cursor-pointer"
-              >
-                <ArrowLeft size={16} /> Back to Dictionary
-              </button>
-              <span className="text-xs font-semibold text-slate-500">
-                Oral English & Lexis Drills
-              </span>
             </div>
           )}
 
@@ -464,7 +461,7 @@ export default function DictionaryPage() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-emerald-100">
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-2xs">
-                        <Globe size={13} /> Free English Dictionary API
+                        <BookOpen size={13} /> Dictionary Result
                       </span>
                       <span className="text-xs font-semibold text-slate-500 capitalize bg-white px-2.5 py-0.5 rounded-full border border-slate-200">
                         {onlineResult.partOfSpeech}
@@ -634,14 +631,27 @@ export default function DictionaryPage() {
                 </div>
               )}
 
-              {/* Empty state when no local or online matches */}
+              {/* Loading state when searching dictionary */}
+              {filteredWords.length === 0 && isSearchingOnline && (
+                <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center">
+                  <Loader2 size={32} className="animate-spin text-[#116149] mx-auto mb-3" />
+                  <p className="text-base font-bold text-slate-900">
+                    Searching dictionary...
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500 max-w-md mx-auto">
+                    Looking up definition, phonetics, and usage for "{searchQuery}"
+                  </p>
+                </div>
+              )}
+
+              {/* Empty state when no matches */}
               {filteredWords.length === 0 && !onlineResult && !isSearchingOnline && (
                 <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center">
                   <p className="text-base font-bold text-slate-900">
-                    No words found for "{searchQuery}"
+                    Word not found
                   </p>
                   <p className="mt-1 text-sm text-slate-500 max-w-md mx-auto">
-                    Neither the local UTME bank nor the Free Dictionary API returned a match. Check your spelling or try another term.
+                    Check your spelling or try another term.
                   </p>
                   <div className="mt-4 flex items-center justify-center gap-2">
                     <button
@@ -754,25 +764,16 @@ export default function DictionaryPage() {
           {activeTab === "games" && (
             <div className="space-y-6">
               <div className="rounded-3xl border border-emerald-200 bg-gradient-to-r from-emerald-800 to-[#116149] p-8 text-white shadow-md">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="max-w-xl space-y-3">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-emerald-100 backdrop-blur-xs border border-white/20">
-                      <Gamepad2 size={14} /> Interactive Oral English & Lexis Drills
-                    </span>
-                    <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                      Level Up Your UTME English Score
-                    </h2>
-                    <p className="text-sm text-emerald-100/90 leading-relaxed">
-                      Test your mastery of word stress patterns, vowel and consonant phonetics, silent letters, and synonyms with rapid-fire UTME drills.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("browse")}
-                    className="self-start sm:self-center inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-xs font-bold text-[#116149] hover:bg-emerald-50 transition shadow-xs cursor-pointer shrink-0"
-                  >
-                    <BookOpen size={15} /> Back to Dictionary
-                  </button>
+                <div className="max-w-xl space-y-3">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-emerald-100 backdrop-blur-xs border border-white/20">
+                    <Gamepad2 size={14} /> Interactive Oral English & Lexis Drills
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                    Level Up Your UTME English Score
+                  </h2>
+                  <p className="text-sm text-emerald-100/90 leading-relaxed">
+                    Test your mastery of word stress patterns, vowel and consonant phonetics, silent letters, and synonyms with rapid-fire UTME drills.
+                  </p>
                 </div>
               </div>
 

@@ -17,7 +17,7 @@ import {
   CheckCircle2,
   XCircle,
   RotateCcw,
-  Sparkles,
+  HelpCircle,
   Trophy,
   Flame,
 } from "lucide-react";
@@ -145,10 +145,10 @@ export default function StressMasterGamePage() {
           {/* Top Bar Navigation */}
           <div className="flex items-center justify-between">
             <Link
-              href="/dictionary"
+              href="/dictionary?tab=games"
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition"
             >
-              <ArrowLeft size={14} /> Back to Dictionary
+              <ArrowLeft size={14} /> Back to Games
             </Link>
 
             {/* Score & Streak */}
@@ -339,8 +339,8 @@ export default function StressMasterGamePage() {
               </div>
 
               <div className="space-y-2">
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-[#116149]">
-                  <Sparkles size={13} /> Which question does this statement answer?
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-[#116149]">
+                  <HelpCircle size={14} /> Which question does this statement answer?
                 </span>
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-lg font-bold text-slate-900 leading-relaxed">
                   {currentEmphaticItem.sentence}
