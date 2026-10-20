@@ -22,10 +22,7 @@ export async function recordStreakActivity(params: {
       "/api/v1/study-schedule/activity",
       {
         method: "POST",
-        body: JSON.stringify(params),
-        headers: {
-          "Content-Type": "application/json",
-        },
+        body: params, // Native client serializes this automatically
       }
     );
 

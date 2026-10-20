@@ -46,12 +46,21 @@ export default function SoundMatchGamePage() {
     setIsAnswered(true);
 
     const isMatch = currentItem.options[idx].isMatch;
+    const nextScore = isMatch ? score + 10 + streak * 2 : score;
     if (isMatch) {
-      setScore((s) => s + 10 + streak * 2);
+      setScore(nextScore);
       setStreak((st) => st + 1);
     } else {
       setStreak(0);
     }
+
+    // Playing the game activates the daily streak immediately
+    recordStreakActivity({
+      activityType: "dictionary_game_completed",
+      details: { game: "Sound Match", score: nextScore },
+    }).then((res) => {
+      if (res) setStreakInfo(res);
+    });
   };
 
   const handleNext = () => {

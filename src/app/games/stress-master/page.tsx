@@ -48,12 +48,20 @@ export default function StressMasterGamePage() {
     setIsAnswered(true);
 
     const isCorrect = idx === currentSyllableItem.stressedIndex;
+    const nextScore = isCorrect ? score + 10 + streak * 2 : score;
     if (isCorrect) {
-      setScore((s) => s + 10 + streak * 2);
+      setScore(nextScore);
       setStreak((st) => st + 1);
     } else {
       setStreak(0);
     }
+
+    recordStreakActivity({
+      activityType: "dictionary_game_completed",
+      details: { game: "Stress Master (Syllables)", score: nextScore },
+    }).then((res) => {
+      if (res) setStreakInfo(res);
+    });
   };
 
   const handleEmphaticSelect = (idx: number) => {
@@ -62,12 +70,20 @@ export default function StressMasterGamePage() {
     setIsAnswered(true);
 
     const isCorrect = currentEmphaticItem.options[idx].isCorrect;
+    const nextScore = isCorrect ? score + 10 + streak * 2 : score;
     if (isCorrect) {
-      setScore((s) => s + 10 + streak * 2);
+      setScore(nextScore);
       setStreak((st) => st + 1);
     } else {
       setStreak(0);
     }
+
+    recordStreakActivity({
+      activityType: "dictionary_game_completed",
+      details: { game: "Stress Master (Emphatic)", score: nextScore },
+    }).then((res) => {
+      if (res) setStreakInfo(res);
+    });
   };
 
   const handleNext = () => {

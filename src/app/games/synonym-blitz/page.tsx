@@ -35,12 +35,20 @@ export default function SynonymBlitzGamePage() {
     setIsAnswered(true);
 
     const isCorrect = option === currentItem.correctOption;
+    const nextScore = isCorrect ? score + 10 + streak * 2 : score;
     if (isCorrect) {
-      setScore((s) => s + 10 + streak * 2);
+      setScore(nextScore);
       setStreak((st) => st + 1);
     } else {
       setStreak(0);
     }
+
+    recordStreakActivity({
+      activityType: "dictionary_game_completed",
+      details: { game: "Synonym Blitz", score: nextScore },
+    }).then((res) => {
+      if (res) setStreakInfo(res);
+    });
   };
 
   const handleNext = () => {

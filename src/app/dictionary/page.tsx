@@ -50,6 +50,23 @@ export default function DictionaryPage() {
   useEffect(() => {
     setDailyFive(DictionaryService.getDailyFive());
     setSavedWords(DictionaryService.getSavedWords());
+
+    // Learning dictionary words / reviewing Daily 5 activates daily streak
+    recordStreakActivity({
+      activityType: "dictionary_study",
+      details: { wordsStudiedCount: 5 },
+    }).then((res) => {
+      if (res) setStreakStatus(res);
+    });
+
+    const handleStreakEvent = (e: Event) => {
+      const custom = e as CustomEvent<StreakActivationResult>;
+      if (custom.detail) {
+        setStreakStatus(custom.detail);
+      }
+    };
+    window.addEventListener("study-streak-updated", handleStreakEvent);
+    return () => window.removeEventListener("study-streak-updated", handleStreakEvent);
   }, []);
 
   const refreshSavedWords = () => {

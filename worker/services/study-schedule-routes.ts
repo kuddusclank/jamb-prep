@@ -376,7 +376,16 @@ export const STUDY_SCHEDULE_ROUTES: RouteDefinition[] = [
     maxBodyBytes: 8192,
     handler: async (ctx) => {
       const { data } = await readBoundedJsonBody(ctx.request, { maxBytes: 8192 });
-      const body = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>;
+      let body: Record<string, unknown> = {};
+      if (typeof data === 'string') {
+        try {
+          body = JSON.parse(data);
+        } catch {
+          body = {};
+        }
+      } else if (data && typeof data === 'object') {
+        body = data as Record<string, unknown>;
+      }
 
       const activityType = typeof body.activityType === 'string' ? body.activityType.trim() : '';
       if (!['dictionary_word_learned', 'dictionary_game_completed', 'dictionary_study'].includes(activityType)) {

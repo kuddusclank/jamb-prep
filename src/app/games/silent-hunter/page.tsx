@@ -45,12 +45,21 @@ export default function SilentHunterGamePage() {
     setIsAnswered(true);
 
     const isSilent = currentItem.silentIndices.includes(charIdx);
+    const nextScore = isSilent ? score + 10 + streak * 2 : score;
     if (isSilent) {
-      setScore((s) => s + 10 + streak * 2);
+      setScore(nextScore);
       setStreak((st) => st + 1);
     } else {
       setStreak(0);
     }
+
+    // Playing the game activates the daily streak immediately
+    recordStreakActivity({
+      activityType: "dictionary_game_completed",
+      details: { game: "Silent Hunter", score: nextScore },
+    }).then((res) => {
+      if (res) setStreakInfo(res);
+    });
   };
 
   const handleNext = () => {
