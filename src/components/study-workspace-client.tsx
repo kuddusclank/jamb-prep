@@ -156,7 +156,7 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     return (
       <div className={styles.workspace}>
         <header className={styles.header}>
-          <Link href="/dashboard" className={styles.brand}><BrandMark size={32}/> jambprep.</Link>
+          <Link href="/dashboard" className={styles.brand}><BrandMark size={32}/> JAMBPrep</Link>
           <span className={styles.context}>Your study space</span>
         </header>
         <div id="study-content" tabIndex={-1} className={styles.content}>
@@ -179,7 +179,7 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
   return <div className={styles.workspace}>
     <a href="#study-content" className="skip-link">Skip to study content</a>
     <header className={styles.header}>
-      <Link href="/dashboard" className={styles.brand}><BrandMark size={32}/> jambprep.</Link>
+      <Link href="/dashboard" className={styles.brand}><BrandMark size={32}/> JAMBPrep</Link>
       <span className={styles.context}>{current?.label || 'Your study space'}</span>
 
       {streak && (

@@ -100,11 +100,11 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-[#F6F8F5] text-[#092E28] flex flex-col justify-between">
       <header className="shell flex items-center justify-between py-6">
-        <Link href="/" className="flex items-center gap-2 text-xl font-bold tracking-tight">
+        <Link href="/" aria-label="JAMBPrep home" className="flex items-center gap-2 text-xl font-bold tracking-tight">
           <span className="flex size-8 items-center justify-center rounded-xl bg-[#116149] text-white">
             <BrandMark size={32}/>
           </span>
-          <span>jambprep<span className="text-[#116149]">.</span></span>
+          <span>JAMBPrep</span>
         </Link>
         <div className="flex items-center gap-4 text-xs font-semibold">
           <Link href="/login" className="text-slate-600 hover:text-slate-900">Sign in</Link>

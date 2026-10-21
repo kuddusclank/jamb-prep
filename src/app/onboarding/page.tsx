@@ -15,7 +15,7 @@ export default function OnboardingPage() {
           <span className="flex size-8 items-center justify-center rounded-xl bg-[#116149] text-white">
             <BrandMark size={32}/>
           </span>
-          <span>jambprep<span className="text-[#116149]">.</span></span>
+          <span>JAMBPrep</span>
         </div>
         <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-100 text-[#116149]">
           Your study profile

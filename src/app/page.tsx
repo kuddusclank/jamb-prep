@@ -42,11 +42,11 @@ export default function Home() {
       {/* Header Navigation */}
       <header className="sticky top-0 z-40 border-b border-emerald-950/10 bg-[#fafbf7]/95 backdrop-blur-lg">
         <div className="shell flex h-20 items-center justify-between gap-4">
-          <Link href={user ? "/dashboard" : "/"} aria-label="JambPrep home" className="flex items-center gap-2 text-xl font-bold tracking-tight">
+          <Link href={user ? "/dashboard" : "/"} aria-label="JAMBPrep home" className="flex items-center gap-2 text-xl font-bold tracking-tight">
             <span className="flex size-9 items-center justify-center rounded-xl bg-[#116149] text-white">
               <BrandMark size={36}/>
             </span>
-            <span>jambprep<span className="text-[#116149]">.</span></span>
+            <span>JAMBPrep</span>
           </Link>
 
           {user ? (
@@ -604,7 +604,7 @@ export default function Home() {
       </main>
 
       <footer className="shell flex flex-col justify-between gap-5 py-9 text-xs text-slate-500 sm:flex-row">
-        <span className="text-lg font-bold text-[#102f29]">jambprep.</span>
+        <span className="text-lg font-bold text-[#102f29]">JAMBPrep</span>
         <p className="max-w-lg leading-relaxed">
           An independent UTME preparation platform. Not affiliated with the Joint Admissions and Matriculation Board.
         </p>

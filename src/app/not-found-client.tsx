@@ -43,12 +43,12 @@ export default function NotFoundPage() {
   return (
     <div className="min-h-screen bg-[#F6F8F5] text-[#092E28] flex flex-col justify-between">
       <header className="shell py-6 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5">
+        <Link href="/" aria-label="JAMBPrep home" className="flex items-center gap-2.5">
           <span className="flex size-9 items-center justify-center rounded-xl bg-[#116149] text-white">
             <BrandMark size={36}/>
           </span>
           <span className="text-lg font-bold tracking-tight">
-            jamb<span className="text-[#116149]">prep</span>.
+            JAMBPrep
           </span>
         </Link>
         <Link
