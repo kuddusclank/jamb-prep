@@ -4,6 +4,7 @@ import { getDefaultBrowserSessionManager } from "@/lib/auth/session-manager";
 import { interruptionTransition } from "@/features/exam-engine/domain/interruption";
 import { useEffect, useState } from "react";
 import { recordMockInterruption } from "@/lib/client-actions";
+import { AlertTriangle } from "lucide-react";
 
 export function ExamConditions({ attemptId, enabled, active }: { attemptId: string; enabled: boolean; active: boolean }) {
   const [interrupted, setInterrupted] = useState(false);
@@ -43,18 +44,41 @@ export function ExamConditions({ attemptId, enabled, active }: { attemptId: stri
     };
   }, [attemptId, enabled, active]);
 
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white px-5 py-2 text-xs text-slate-600">
-      <p>{enabled ? "Exam Conditions · interruptions recorded separately from your score" : "Standard mock · no interruption monitoring"}</p>
-      {enabled && interrupted && active && <div role="status" className="mt-3 rounded-xl bg-amber-100 p-4 text-amber-950">
-        <p className="font-semibold">Your mock was interrupted. The timer is still running.</p>
-        <p className="mt-1">Return to fullscreen when ready. This event does not establish malpractice.</p>
-      </div>}
-      <button type="button" className="min-h-11 rounded-full border border-slate-200 px-4 text-slate-700" onClick={() => {
-        if (!document.documentElement.requestFullscreen) { setMessage("Fullscreen is unavailable on this browser."); return; }
-        document.documentElement.requestFullscreen().catch(() => setMessage("Fullscreen was declined. You can retry; your timer continues."));
-      }}>Enter / return to fullscreen</button>
-      {message && <p role="status" className="mt-2">{message}</p>}
-    </div>
-  );
+  if (enabled && interrupted && active) {
+    return (
+      <div role="status" className="bg-amber-100 border-b border-amber-300 px-4 py-2.5 text-xs text-amber-950 flex flex-wrap items-center justify-between gap-2 z-20 shadow-xs">
+        <div className="flex items-center gap-2">
+          <AlertTriangle size={15} className="text-amber-800 shrink-0" />
+          <span><strong>Mock interrupted</strong> · Timer is still running. Return to fullscreen when ready.</span>
+        </div>
+        <button
+          type="button"
+          className="px-3.5 py-1.5 rounded-lg bg-amber-900 hover:bg-amber-800 text-white font-bold text-xs shrink-0 cursor-pointer transition active:scale-95"
+          onClick={() => {
+            const el = document.documentElement as unknown as { requestFullscreen?: () => Promise<void>; webkitRequestFullscreen?: () => void };
+            if (el.requestFullscreen) {
+              el.requestFullscreen().catch(() => setMessage("Fullscreen was declined. You can retry; your timer continues."));
+            } else if (el.webkitRequestFullscreen) {
+              el.webkitRequestFullscreen();
+            } else {
+              setMessage("Fullscreen is unavailable on this browser.");
+            }
+          }}
+        >
+          Return to fullscreen
+        </button>
+      </div>
+    );
+  }
+
+  if (message) {
+    return (
+      <div role="status" className="bg-slate-100 border-b border-slate-200 px-4 py-1.5 text-xs text-slate-600 flex items-center justify-between">
+        <span>{message}</span>
+        <button type="button" onClick={() => setMessage("")} className="text-slate-400 hover:text-slate-700 text-sm cursor-pointer font-bold">×</button>
+      </div>
+    );
+  }
+
+  return null;
 }

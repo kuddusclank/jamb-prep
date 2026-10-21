@@ -23,7 +23,9 @@ import {
   AlertTriangle,
   Send,
   Loader2,
-
+  Calculator,
+  Maximize,
+  Minimize,
   Wifi,
   WifiOff
 } from "lucide-react";
@@ -79,6 +81,62 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
     isOnline,
     status,
   } = state;
+
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fullscreenSupported, setFullscreenSupported] = useState(true);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const supported = Boolean(
+      document.fullscreenEnabled ||
+      (document as unknown as { webkitFullscreenEnabled?: boolean }).webkitFullscreenEnabled
+    );
+    setFullscreenSupported(supported);
+
+    const handleFullscreenChange = () => {
+      const activeFs = Boolean(
+        document.fullscreenElement ||
+        (document as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement
+      );
+      setIsFullscreen(activeFs);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    if (typeof document === "undefined") return;
+    const doc = document as unknown as {
+      fullscreenElement?: Element;
+      webkitFullscreenElement?: Element;
+      exitFullscreen?: () => Promise<void>;
+      webkitExitFullscreen?: () => void;
+    };
+    const el = document.documentElement as unknown as {
+      requestFullscreen?: () => Promise<void>;
+      webkitRequestFullscreen?: () => void;
+    };
+
+    if (!doc.fullscreenElement && !doc.webkitFullscreenElement) {
+      if (el.requestFullscreen) {
+        el.requestFullscreen().catch(() => {});
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+      }
+    } else {
+      if (doc.exitFullscreen) {
+        doc.exitFullscreen().catch(() => {});
+      } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
+      }
+    }
+  }, []);
 
   // 1. Reactive 8-Key Desktop Hotkeys (A, B, C, D, P, N, R, S)
   useEffect(() => {
@@ -193,60 +251,102 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
   return (
     <div className="min-h-screen bg-[#F4F5F7] text-slate-900 flex flex-col">
 
-      {/* 1. TOP EXAM HEADER */}
-      <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 sm:px-8 py-3.5 flex flex-wrap gap-3 items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="flex size-8 items-center justify-center rounded-xl bg-[#116149] text-white">
-            <BrandMark size={32}/>
+      {/* 1. TOP EXAM HEADER (Unified, Compact, Single Row on Mobile) */}
+      <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-2 shadow-2xs">
+        {/* Left: Brand & Candidate Info */}
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+          <span className="flex size-8 items-center justify-center rounded-xl bg-[#116149] text-white shrink-0 shadow-2xs">
+            <BrandMark size={28}/>
           </span>
-          <div>
-            <div className="text-xs font-bold tracking-wider text-[#116149] uppercase">
-              JAMB UTME CBT SIMULATOR
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs sm:text-sm font-black tracking-tight text-[#116149]">
+                JAMB CBT
+              </span>
+              <span className="hidden md:inline-flex text-[9px] font-bold text-slate-400 border border-slate-200 px-1.5 py-0.2 rounded uppercase">
+                {initialPayload.examConditions ? "Monitored" : "Standard"}
+              </span>
             </div>
-            <div className="text-sm font-semibold text-slate-800">
-              Candidate: <span className="text-slate-700">{studentName}</span>
+            <div className="text-[11px] font-medium text-slate-500 truncate max-w-[90px] xs:max-w-[130px] sm:max-w-xs leading-tight">
+              {studentName || "Candidate"}
             </div>
           </div>
         </div>
 
-        {/* Synchronized Timer & Connectivity */}
-        <div className="flex items-center gap-3 sm:gap-4">
-          {/* Network status */}
-          <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200">
+        {/* Right: Actions (Fullscreen, Calculator, Timer, Submit) */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Fullscreen Button */}
+          {fullscreenSupported && (
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              aria-label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+              className="flex size-9 sm:size-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 active:scale-95 transition cursor-pointer"
+            >
+              {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+            </button>
+          )}
+
+          {/* Calculator Button */}
+          <button
+            type="button"
+            onClick={() => setCalculatorOpen((prev) => !prev)}
+            aria-label={calculatorOpen ? "Close Calculator" : "Open Calculator"}
+            title={calculatorOpen ? "Close Calculator" : "Calculator (All subjects)"}
+            className={`flex size-9 sm:size-10 items-center justify-center rounded-xl border transition active:scale-95 cursor-pointer ${
+              calculatorOpen
+                ? "bg-[#116149] border-[#116149] text-white shadow-xs"
+                : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+            }`}
+          >
+            <Calculator size={16} />
+          </button>
+
+          {/* Network status (desktop only) */}
+          <div className="hidden lg:flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200">
             {isOnline ? (
               <>
                 <Wifi size={12} className="text-[#116149]" />
                 <span className="text-slate-600">
-                  {syncStatus === 'syncing' ? 'Saving…' : syncStatus === 'error' ? 'Save needs retry' : 'Answers saved'}
+                  {syncStatus === 'syncing' ? 'Saving…' : syncStatus === 'error' ? 'Save needs retry' : 'Saved'}
                 </span>
               </>
             ) : (
               <>
                 <WifiOff size={12} className="text-amber-700" />
-                <span className="text-amber-800">Offline (Outbox queued)</span>
+                <span className="text-amber-800">Offline</span>
               </>
             )}
           </div>
 
+          {/* Timer Display */}
           <div
-            className={`flex items-center gap-2 px-4 py-2 rounded-2xl border font-mono font-bold text-base transition-colors ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border font-mono font-bold text-xs sm:text-sm transition-colors ${
               isCriticalTime
-                ? "bg-red-50 border-red-300 text-red-700"
+                ? "bg-red-50 border-red-300 text-red-700 animate-pulse"
                 : isLowTime
                 ? "bg-amber-50 border-amber-300 text-amber-800"
                 : "bg-slate-100 border-slate-200 text-slate-900"
             }`}
+            role="timer"
+            aria-label="Time remaining"
+            title="Time remaining"
           >
-            <Clock size={16} />
-            <span className="tabular-nums" role="timer" aria-label="Time remaining"><span className="block text-[10px] font-sans uppercase tracking-wider">Time left</span>{timerString}</span>
+            <Clock size={14} className="shrink-0 text-slate-500" />
+            <span className="tabular-nums">{timerString}</span>
           </div>
 
+          {/* Submit Button */}
           <button
             type="button"
             onClick={() => setSubmitModalOpen(true)}
-            className="inline-flex min-h-11 items-center gap-1.5 px-5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs tracking-wider uppercase transition-colors cursor-pointer shadow-sm"
+            className="inline-flex min-h-9 sm:min-h-10 items-center gap-1 px-3 sm:px-4 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs tracking-wider uppercase transition shadow-xs cursor-pointer"
+            title="Submit exam (Hot key: S)"
           >
-            <Send size={14} /> Submit (S)
+            <Send size={12} className="shrink-0" />
+            <span className="hidden xs:inline sm:inline">Submit</span>
+            <span className="xs:hidden">Done</span>
           </button>
         </div>
       </header>
@@ -254,9 +354,10 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
       {submitError && <div role="alert" className="bg-red-50 p-4 text-red-800"><p>{submitError}</p><button type="button" disabled={isPending} onClick={handleFinalSubmit}>Retry submission</button></div>}
       {flagError && <p role="status" className="rounded-xl bg-amber-50 p-3 text-amber-900">{flagError}</p>}
       <ExamConditions attemptId={initialPayload.attemptId} enabled={initialPayload.examConditions} active={!isPending && status !== "expired"} />
-      <ExamCalculator />
+      <ExamCalculator open={calculatorOpen} onClose={() => setCalculatorOpen(false)} />
+
       {/* 2. SUBJECT TABS BAR */}
-      <div className="bg-white border-b border-slate-200 px-4 sm:px-8 flex items-center gap-2 overflow-x-auto py-2 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="bg-white border-b border-slate-200 px-3 sm:px-6 flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-1.5 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {subjectTabs.map((tab) => {
           const isTabActive = currentQ.subjectCode === tab.code;
           const subjectQuestions = questions.slice(tab.startIndex, tab.startIndex + tab.count);
@@ -294,25 +395,25 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
         {/* LEFT / CENTER: Question Pane (8 cols) */}
         <div className="lg:col-span-8 flex flex-col gap-4">
           {/* Question Meta Header */}
-          <div className="flex flex-wrap gap-3 items-center justify-between text-xs text-slate-600 bg-white px-4 py-3 rounded-2xl border border-slate-200">
+          <div className="flex flex-wrap gap-2 items-center justify-between text-xs text-slate-600 bg-white px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl border border-slate-200">
             <span className="font-bold tracking-wider uppercase text-slate-800">
-              {currentQ.subjectName} · Question {subjectPosition} of {palette.length}
+              {currentQ.subjectName} · Q{subjectPosition} of {palette.length}
             </span>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <ReportQuestionDialog key={currentQ.id} questionId={currentQ.id} attemptId={initialPayload.attemptId} />
-              <span className="text-slate-500 font-mono text-[11px]">
+              <span className="text-slate-500 font-mono text-[11px] hidden sm:inline">
                 {syncStatus === 'syncing' ? 'Syncing...' : syncStatus === 'offline' ? 'Saved on device' : syncStatus === 'error' ? 'Save needs retry' : 'Saved'}
               </span>
               <button
                 type="button"
                 onClick={toggleFlag}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
                   isFlagged
                     ? "bg-amber-400 text-slate-900"
                     : "bg-slate-100 text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <Flag size={13} /> {isFlagged ? "Flagged for Review" : "Flag"}
+                <Flag size={12} /> {isFlagged ? "Flagged" : "Flag"}
               </button>
             </div>
           </div>
@@ -344,7 +445,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
               currentQ.options.some((o) => isArabicText(o.content));
 
             return (
-              <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+              <div className="bg-white p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-2xs space-y-4 sm:space-y-6">
                 <div
                   dir={isQArabic ? "rtl" : undefined}
                   className={`text-base sm:text-lg font-medium text-slate-900 leading-relaxed ${
@@ -357,7 +458,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
                 <QuestionDiagram url={currentQ.imageUrl} alt={currentQ.imageAlt} />
 
                 {/* Options List A, B, C, D */}
-                <div className="space-y-3 pt-2">
+                <div className="space-y-2.5 sm:space-y-3 pt-1 sm:pt-2">
                   {currentQ.options.map((opt) => {
                     const isSelected = selectedOptId === opt.id;
                     const isOptArabic = isQArabic || isArabicText(opt.content);
@@ -369,18 +470,18 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
                         aria-pressed={isSelected}
                         onClick={() => selectOption(opt.id, opt.label)}
                         dir={isOptArabic ? "rtl" : undefined}
-                        className={`w-full flex items-start gap-3.5 p-4 rounded-2xl border font-medium transition-all cursor-pointer ${
+                        className={`w-full flex items-start gap-3 sm:gap-3.5 p-3 sm:p-4 rounded-xl sm:rounded-2xl border font-medium transition-all cursor-pointer ${
                           isOptArabic
                             ? "flex-row text-right [direction:rtl]"
                             : "text-left"
                         } text-sm sm:text-base ${
                           isSelected
-                            ? "bg-[#116149] border-emerald-400 text-white ring-2 ring-emerald-400 shadow-md"
+                            ? "bg-[#116149] border-emerald-400 text-white ring-2 ring-emerald-400 shadow-sm"
                             : "bg-slate-50 border-slate-200 text-slate-700 hover:border-emerald-700 hover:bg-slate-100"
                         }`}
                       >
                         <span
-                          className={`flex size-7 shrink-0 items-center justify-center rounded-xl border text-xs font-bold transition-colors ${
+                          className={`flex size-6.5 sm:size-7 shrink-0 items-center justify-center rounded-lg sm:rounded-xl border text-xs font-bold transition-colors ${
                             isSelected
                               ? "bg-white text-[#116149] border-white"
                               : "bg-slate-100 text-slate-600 border-slate-300"
@@ -400,19 +501,22 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
           })()}
 
           {/* 4. REACTIVE BOTTOM NAVIGATION BAR */}
-          <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 flex flex-wrap gap-2 items-center justify-between">
+          <div className="bg-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl border border-slate-200 flex items-center justify-between gap-2">
             {/* Previous Button (P) */}
             <button
               type="button"
               onClick={goToPrevious}
               disabled={!canGoPrevious}
-              className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold transition-all ${
+              className={`inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs font-semibold transition-all ${
                 canGoPrevious
-                  ? "bg-emerald-800 hover:bg-emerald-700 text-white cursor-pointer"
-                  : "bg-slate-100 text-slate-500 cursor-not-allowed opacity-40"
+                  ? "bg-emerald-800 hover:bg-emerald-700 text-white cursor-pointer active:scale-95"
+                  : "bg-slate-100 text-slate-400 cursor-not-allowed opacity-50"
               }`}
+              title="Previous question (Hot key: P)"
             >
-              <ArrowLeft size={14} /> Previous (P)
+              <ArrowLeft size={14} />
+              <span className="hidden sm:inline">Previous</span>
+              <span className="sm:hidden">Prev</span> (P)
             </button>
 
             {/* Reverse / Deselect Button (R) */}
@@ -420,14 +524,16 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
               type="button"
               onClick={reverseOption}
               disabled={!selectedOptId}
-              className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-semibold transition-all ${
+              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-full text-xs font-semibold transition-all ${
                 selectedOptId
-                  ? "text-amber-800 hover:text-amber-900 hover:bg-slate-100 cursor-pointer"
-                  : "text-slate-500 cursor-not-allowed opacity-40"
+                  ? "text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 cursor-pointer active:scale-95"
+                  : "text-slate-400 cursor-not-allowed opacity-50"
               }`}
               title="Reverse / Deselect chosen answer (Hot key: R)"
             >
-              <RotateCcw size={13} /> Deselect (R)
+              <RotateCcw size={13} />
+              <span className="hidden sm:inline">Deselect</span>
+              <span className="sm:hidden">Clear</span> (R)
             </button>
 
             {/* Next Button (N) */}
@@ -435,19 +541,22 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
               type="button"
               onClick={goToNext}
               disabled={!canGoNext}
-              className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-semibold transition-all ${
+              className={`inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs font-semibold transition-all ${
                 canGoNext
-                  ? "bg-[#116149] hover:bg-emerald-600 text-white cursor-pointer shadow-sm"
-                  : "bg-slate-100 text-slate-500 cursor-not-allowed opacity-40"
+                  ? "bg-[#116149] hover:bg-emerald-600 text-white cursor-pointer shadow-xs active:scale-95"
+                  : "bg-slate-100 text-slate-400 cursor-not-allowed opacity-50"
               }`}
+              title="Next question (Hot key: N)"
             >
-              Next (N) <ArrowRight size={14} />
+              <span className="hidden sm:inline">Next</span>
+              <span className="sm:hidden">Next</span> (N)
+              <ArrowRight size={14} />
             </button>
           </div>
         </div>
 
         {/* RIGHT: 180-Question Grid Palette (4 cols) */}
-        <div className="lg:col-span-4 bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5">
+        <div className="lg:col-span-4 bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-2xs space-y-4 sm:space-y-5">
           <div className="flex items-center justify-between border-b border-slate-200 pb-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">
               {currentQ.subjectCode} questions ({subjectAnswered}/{palette.length})

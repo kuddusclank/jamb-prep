@@ -2,9 +2,26 @@
 import styles from "./exam-calculator.module.css";
 import { useState } from "react";
 import { calculate } from "@/features/exam-engine/domain/calculator";
+import { Calculator } from "lucide-react";
 
-export function ExamCalculator() {
-  const [open, setOpen] = useState(false);
+export function ExamCalculator({
+  open: controlledOpen,
+  onClose: controlledOnClose,
+}: {
+  open?: boolean;
+  onClose?: () => void;
+} = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const handleClose = () => {
+    if (controlledOnClose) {
+      controlledOnClose();
+    } else {
+      setInternalOpen(false);
+    }
+  };
+
   const [display, setDisplay] = useState('0');
   const [left, setLeft] = useState<number | null>(null);
   const [operator, setOperator] = useState('');
@@ -30,17 +47,77 @@ export function ExamCalculator() {
       setReplace(true);
     } catch (e) { setError(e instanceof Error ? e.message : 'Calculation failed'); }
   }
-  return <div data-calculator className="border-b border-slate-200 bg-white px-5 py-2">
-    <button type="button" aria-expanded={open} aria-controls="exam-calculator" onClick={() => setOpen(!open)} className="min-h-11 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-800">{open ? 'Close calculator' : 'Calculator'} <span className="font-normal text-slate-500">· All subjects</span></button>
-    {open && <section id="exam-calculator" aria-label="Calculator" className={styles.panel} onKeyDown={e => {
-      const key = ({'*':'×','/':'÷','-':'−','Enter':'=','Backspace':'⌫','Escape':'AC'} as Record<string,string>)[e.key] || e.key;
-      if (/^[0-9.]$/.test(key) || ['+','−','×','÷','=','⌫','AC','%'].includes(key)) { e.preventDefault(); e.stopPropagation(); press(key); }
-    }}>
-      <div className="mb-3 flex items-center justify-between text-sm font-semibold"><span>Calculator</span><button type="button" className="min-h-11 px-3" onClick={() => setOpen(false)}>Close</button></div>
-      <div className="rounded-xl bg-slate-100 p-3 text-right"><p className="h-5 text-xs text-slate-500">{left !== null ? `${left} ${operator}` : 'Basic arithmetic'}</p><output className="block overflow-x-auto text-2xl tabular-nums text-slate-900">{display}</output></div>
-      {error && <p role="alert" className="py-2 text-sm text-red-700">{error}</p>}
-      <div className={styles.keypad}>{['AC','⌫','%','÷','7','8','9','×','4','5','6','−','1','2','3','+','±','0','.','='].map(key => <button type="button" key={key} aria-label={key === '⌫' ? 'Delete digit' : key === '±' ? 'Change sign' : key} onClick={() => press(key)} className={`${styles.key} ${key === '=' ? styles.equals : ['+','−','×','÷'].includes(key) ? styles.operator : ''}`}>{key}</button>)}</div>
-      <p className="mt-3 text-xs text-slate-500">Calculates in entry order. % divides by 100.</p>
-    </section>}
-  </div>;
+
+  return (
+    <>
+      {!isControlled && (
+        <div data-calculator className="border-b border-slate-200 bg-white px-5 py-2">
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls="exam-calculator"
+            onClick={() => setInternalOpen(!open)}
+            className="min-h-11 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-800"
+          >
+            {open ? 'Close calculator' : 'Calculator'}{' '}
+            <span className="font-normal text-slate-500">· All subjects</span>
+          </button>
+        </div>
+      )}
+      {open && (
+        <section
+          id="exam-calculator"
+          aria-label="Calculator"
+          className={styles.panel}
+          onKeyDown={(e) => {
+            const key = ({ '*':'×', '/':'÷', '-':'−', 'Enter':'=', 'Backspace':'⌫', 'Escape':'AC' } as Record<string, string>)[e.key] || e.key;
+            if (/^[0-9.]$/.test(key) || ['+','−','×','÷','=','⌫','AC','%'].includes(key)) {
+              e.preventDefault();
+              e.stopPropagation();
+              press(key);
+            }
+          }}
+        >
+          <div className="mb-3 flex items-center justify-between text-sm font-semibold">
+            <span className="flex items-center gap-1.5 text-slate-800">
+              <Calculator size={16} className="text-[#116149]" /> Calculator
+            </span>
+            <button
+              type="button"
+              className="size-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 text-lg leading-none cursor-pointer"
+              onClick={handleClose}
+              aria-label="Close calculator"
+            >
+              ×
+            </button>
+          </div>
+          <div className="rounded-xl bg-slate-100 p-3 text-right">
+            <p className="h-5 text-xs text-slate-500">
+              {left !== null ? `${left} ${operator}` : 'Basic arithmetic'}
+            </p>
+            <output className="block overflow-x-auto text-2xl tabular-nums text-slate-900 no-scrollbar">
+              {display}
+            </output>
+          </div>
+          {error && <p role="alert" className="py-2 text-sm text-red-700">{error}</p>}
+          <div className={styles.keypad}>
+            {['AC','⌫','%','÷','7','8','9','×','4','5','6','−','1','2','3','+','±','0','.','='].map((key) => (
+              <button
+                type="button"
+                key={key}
+                aria-label={key === '⌫' ? 'Delete digit' : key === '±' ? 'Change sign' : key}
+                onClick={() => press(key)}
+                className={`${styles.key} ${
+                  key === '=' ? styles.equals : ['+','−','×','÷'].includes(key) ? styles.operator : ''
+                }`}
+              >
+                {key}
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-slate-500">Calculates in entry order. % divides by 100.</p>
+        </section>
+      )}
+    </>
+  );
 }
