@@ -4,6 +4,8 @@ import { getAccountCoordinator } from '../auth/account-coordinator';
 import { useBrowserAccount } from '../../components/browser-account-boundary';
 import StudySkeleton from '../../components/study-skeleton';
 import { saveProfileSnapshot, getProfileSnapshot } from '../offline/idb-storage';
+import { saveOfflineProfile, getOfflineProfile } from '../offline/offline-profile-cache';
+import type { ProfileData } from './app-dtos';
 
 export function useApiResource<T>(path: string | null) {
   const { session } = useBrowserAccount();
@@ -19,10 +21,8 @@ export function useApiResource<T>(path: string | null) {
         if (active) {
           setValue({ userId, path, revision, data });
           if (path === '/api/v1/profile' && data && typeof data === 'object') {
-            const prof = data as {
-              profile?: { id: string; display_name: string; email: string };
-              preferences?: { target_score: number };
-            };
+            const prof = data as unknown as ProfileData;
+            saveOfflineProfile({ profile: prof });
             void saveProfileSnapshot({
               userId,
               displayName: prof.profile?.display_name || null,
@@ -38,6 +38,40 @@ export function useApiResource<T>(path: string | null) {
         // Check offline snapshot fallback
         if (typeof navigator !== 'undefined' && !navigator.onLine && path === '/api/v1/profile') {
           try {
+            const cachedOffline = getOfflineProfile(userId);
+            if (cachedOffline && active) {
+              const fallback = {
+                profile: {
+                  id: cachedOffline.userId,
+                  display_name: cachedOffline.displayName || 'Student',
+                  email: cachedOffline.email || '',
+                  role: cachedOffline.role,
+                },
+                preferences: {
+                  target_score: cachedOffline.targetScore,
+                  target_institution: null,
+                  target_course: null,
+                },
+                subscription: {
+                  isPremium: cachedOffline.subscription.isPremium,
+                  expiresAt: cachedOffline.subscription.expiresAt ? new Date(cachedOffline.subscription.expiresAt) : null,
+                  daysRemaining: cachedOffline.subscription.expiresAt
+                    ? Math.max(0, Math.ceil((new Date(cachedOffline.subscription.expiresAt).getTime() - Date.now()) / 86400000))
+                    : 0,
+                  planCode: cachedOffline.subscription.planCode,
+                  autoRenew: cachedOffline.subscription.autoRenew,
+                  cancelledAt: null,
+                },
+                studyStreak: {
+                  currentStreak: cachedOffline.streak.currentStreak,
+                  longestStreak: cachedOffline.streak.longestStreak,
+                  lastStudiedDate: cachedOffline.streak.lastActiveDate,
+                },
+              } as unknown as T;
+              setValue({ userId, path, revision, data: fallback });
+              return;
+            }
+
             const cached = await getProfileSnapshot(userId);
             if (cached && active) {
               const fallback = {

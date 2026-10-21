@@ -10,6 +10,8 @@ import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
 import type { PracticeCatalogue } from "@/lib/api/practice-dtos";
 import { getWeeklyPackFromIdb } from "@/lib/offline/idb-storage";
 import { getCurrentWeekKey } from "@/lib/offline/weekly-pack-client";
+import { getOfflineProfile, isOfflineAccessValid } from "@/lib/offline/offline-profile-cache";
+import { OfflineGatedNotice } from "@/app/dashboard/offline-gated-notice";
 
 function PracticePageContent() {
   const searchParams = useSearchParams();
@@ -49,23 +51,39 @@ function PracticePageContent() {
       });
   }, [userId]);
 
-  // Seamless offline fallback: if offline or catalogue request failed while offline,
-  // load the cached practice pack without showing offline status to the user.
-  if ((isOffline || (catalogue.error && !catalogue.data)) && hasCachedPack) {
-    return <WeeklyPracticeClient />;
-  }
+  const offlineProfile = getOfflineProfile(userId);
+  const offlineValidity = isOfflineAccessValid(offlineProfile);
 
-  if (!catalogue.data) {
-    if (isOffline && checkedCache && !hasCachedPack) {
+  // If offline or catalogue request failed while offline
+  if (isOffline || (catalogue.error && !catalogue.data)) {
+    // If user is not valid paid/active offline subscriber, display gated notice
+    if (!offlineValidity.valid) {
+      return (
+        <OfflineGatedNotice
+          reason={offlineValidity.reason}
+          profile={offlineValidity.profile}
+          onRetry={catalogue.retry}
+        />
+      );
+    }
+
+    if (hasCachedPack) {
+      return <WeeklyPracticeClient />;
+    }
+
+    if (checkedCache && !hasCachedPack) {
       return (
         <div className="rounded-3xl border border-amber-200 bg-amber-50/70 p-8 text-center max-w-lg mx-auto space-y-4">
           <h2 className="text-xl font-bold text-[#092E28]">No Offline Questions Cached</h2>
           <p className="text-sm text-slate-600">
-            Please connect to the internet once to automatically download your practice questions for offline use.
+            Please connect to the internet once to automatically download your 250-question practice pack for offline use.
           </p>
         </div>
       );
     }
+  }
+
+  if (!catalogue.data) {
     return <ResourceStatus error={catalogue.error} retry={catalogue.retry} />;
   }
 

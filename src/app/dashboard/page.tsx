@@ -63,6 +63,9 @@ import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
 import StudyLoading from "@/components/study-loading";
 import { BrowserAccountBoundary, useBrowserAccount } from "@/components/browser-account-boundary";
 import type { DashboardData } from "@/lib/api/app-dtos";
+import { OfflineDashboard } from "./offline-dashboard";
+import { OfflineGatedNotice } from "./offline-gated-notice";
+import { getOfflineProfile, isOfflineAccessValid, saveOfflineProfile } from "@/lib/offline/offline-profile-cache";
 
 export default function DashboardPage() {
   const resource = useApiResource<DashboardData>('/api/v1/dashboard');
@@ -118,6 +121,78 @@ export default function DashboardPage() {
       clearTimeout(t4);
     };
   }, [resource.data?.studyStreak]);
+
+  const [isOffline, setIsOffline] = useState(false);
+  useEffect(() => {
+    if (typeof navigator !== "undefined") {
+      setIsOffline(!navigator.onLine);
+    }
+    const onOnline = () => setIsOffline(false);
+    const onOffline = () => setIsOffline(true);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
+
+  // Update offline snapshot when live dashboard data is available
+  useEffect(() => {
+    if (resource.data?.subscription) {
+      saveOfflineProfile({
+        profile: {
+          profile: account.identity?.user
+            ? {
+                id: account.identity.user.id,
+                display_name: account.identity.user.displayName || "Student",
+                email: account.identity.user.email || "",
+                role: account.identity.user.role,
+              }
+            : null,
+          preferences: {
+            target_score: resource.data.coach?.targetScore || 250,
+            target_institution: null,
+            target_course: null,
+          },
+          subscription: {
+            isPremium: resource.data.subscription.isPremium,
+            expiresAt: resource.data.subscription.expiresAt,
+            daysRemaining: resource.data.subscription.daysRemaining,
+            planCode: resource.data.subscription.planCode,
+            autoRenew: resource.data.subscription.autoRenew,
+            cancelledAt: null,
+          },
+          studyStreak: resource.data.studyStreak,
+        },
+      });
+    }
+  }, [resource.data, account.identity]);
+
+  const userId = account.identity?.user?.id || account.session.user?.id;
+  const offlineProfile = getOfflineProfile(userId);
+  const offlineValidity = isOfflineAccessValid(offlineProfile);
+
+  // If offline or request failed while offline, render adaptive offline experience
+  if (isOffline || (!resource.data && resource.error && typeof navigator !== "undefined" && !navigator.onLine)) {
+    if (offlineValidity.valid) {
+      return (
+        <StudyWorkspace>
+          <OfflineDashboard profile={offlineValidity.profile} />
+        </StudyWorkspace>
+      );
+    }
+    return (
+      <StudyWorkspace>
+        <OfflineGatedNotice
+          reason={offlineValidity.reason}
+          profile={offlineValidity.profile}
+          onRetry={resource.retry}
+        />
+      </StudyWorkspace>
+    );
+  }
+
   if (!resource.data && !resource.error) return <BrowserAccountBoundary><StudyLoading /></BrowserAccountBoundary>;
   if (!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry} /></StudyWorkspace>;
   const { subscription, coach, qualifiedReferrals, has50PercentReward } = resource.data;

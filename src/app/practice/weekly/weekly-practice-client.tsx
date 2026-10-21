@@ -12,6 +12,8 @@ import {
   flushPendingSync,
 } from "@/lib/offline/weekly-pack-client";
 import type { StoredWeeklyPack } from "@/lib/offline/idb-storage";
+import { getOfflineProfile, isOfflineAccessValid } from "@/lib/offline/offline-profile-cache";
+import { OfflineGatedNotice } from "@/app/dashboard/offline-gated-notice";
 import { MathRenderer } from "@/components/math-renderer";
 import { QuestionDiagram } from "@/components/question-diagram";
 import {
@@ -293,6 +295,19 @@ export function WeeklyPracticeClient() {
       setAnswerResult(null);
     }
   };
+
+  // Offline access verification
+  if (!isOnline) {
+    const offlineValidity = isOfflineAccessValid(getOfflineProfile(userId));
+    if (!offlineValidity.valid) {
+      return (
+        <OfflineGatedNotice
+          reason={offlineValidity.reason}
+          profile={offlineValidity.profile}
+        />
+      );
+    }
+  }
 
   // Gated for Pro / Premium subscribers only — no free trials
   if (profile.data && profile.data.subscription.isPremium === false) {

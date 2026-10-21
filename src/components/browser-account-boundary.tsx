@@ -9,6 +9,7 @@ import { accountDestination, getAccountCoordinator } from '../lib/auth/account-c
 import { BrowserSessionSnapshot } from '../lib/auth/session-manager';
 import { SessionIdentityResponse } from '../lib/api/native-client';
 import { buildLoginRedirectUrl } from '../lib/auth/redirect';
+import { saveOfflineProfile, getOfflineProfile } from '@/lib/offline/offline-profile-cache';
 
 const initial: BrowserSessionSnapshot = { status: 'loading', user: null, accessToken: null, expiresAt: null, provisioned: false, role: null, error: null };
 export function useBrowserAccount() {
@@ -27,7 +28,34 @@ export function useBrowserAccount() {
     let active = true;
     setIdentity(null); setError(null);
     if (session.status === 'authenticated' && session.user) {
-      void getAccountCoordinator().loadIdentity().then((value) => { if (active) setIdentity(value); }).catch((err: unknown) => { if (active) setError(err instanceof Error ? err.message : 'Unable to load your account.'); });
+      void getAccountCoordinator().loadIdentity().then((value) => {
+        if (active) {
+          setIdentity(value);
+          saveOfflineProfile({ identity: value });
+        }
+      }).catch((err: unknown) => {
+        if (!active) return;
+        if (typeof navigator !== 'undefined' && !navigator.onLine && session.user) {
+          const cached = getOfflineProfile(session.user.id);
+          if (cached) {
+            const offlineIdentity: SessionIdentityResponse = {
+              authenticated: true,
+              user: {
+                id: cached.userId,
+                email: cached.email,
+                displayName: cached.displayName,
+                role: cached.role,
+              },
+              provisioned: true,
+              onboardingCompleted: true,
+              referralCode: null,
+            };
+            setIdentity(offlineIdentity);
+            return;
+          }
+        }
+        setError(err instanceof Error ? err.message : 'Unable to load your account.');
+      });
     }
     return () => { active = false; };
   }, [session.status, session.user?.id, retry]);
