@@ -13,23 +13,60 @@ import { saveOfflineProfile, getOfflineProfile } from '@/lib/offline/offline-pro
 import { getNetworkStateManager, isNetworkOrTimeoutError } from '@/lib/offline/network-state';
 
 const initial: BrowserSessionSnapshot = { status: 'loading', user: null, accessToken: null, expiresAt: null, provisioned: false, role: null, error: null };
+
+function getInitialAccountIdentity(userId: string | undefined): SessionIdentityResponse | null {
+  if (!userId || typeof window === 'undefined') return null;
+  const coordinator = getAccountCoordinator();
+  const cached = coordinator.getCachedIdentity();
+  if (cached && cached.user.id === userId) return cached;
+  const offline = getOfflineProfile(userId);
+  if (offline) {
+    return {
+      authenticated: true,
+      user: {
+        id: offline.userId,
+        email: offline.email,
+        displayName: offline.displayName,
+        role: offline.role,
+      },
+      provisioned: true,
+      onboardingCompleted: true,
+      referralCode: null,
+    };
+  }
+  return null;
+}
+
 export function useBrowserAccount() {
-  const [session, setSession] = useState(initial);
-  const [identity, setIdentity] = useState<SessionIdentityResponse | null>(null);
+  const coordinator = getAccountCoordinator();
+  const manager = coordinator.manager;
+  const [session, setSession] = useState<BrowserSessionSnapshot>(() => {
+    return typeof window !== 'undefined' ? manager.getState() : initial;
+  });
+  const [identity, setIdentity] = useState<SessionIdentityResponse | null>(() => {
+    const currentUserId = typeof window !== 'undefined' ? manager.getState().user?.id : undefined;
+    return getInitialAccountIdentity(currentUserId);
+  });
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
   useEffect(() => {
-    const manager = getAccountCoordinator().manager;
     const unsubscribe = manager.subscribe(setSession);
     setSession(manager.getState());
     if (manager.getState().status === 'loading') void manager.initialize();
     return unsubscribe;
-  }, []);
+  }, [manager]);
   useEffect(() => {
     let active = true;
-    setIdentity(null); setError(null);
+    const currentUserId = session.user?.id;
+    const cached = coordinator.getCachedIdentity();
+    if (cached && cached.user.id === currentUserId) {
+      setIdentity(cached);
+    } else if (session.status !== 'authenticated' || !currentUserId) {
+      setIdentity(null);
+    }
+    setError(null);
     if (session.status === 'authenticated' && session.user) {
-      void getAccountCoordinator().loadIdentity().then((value) => {
+      void coordinator.loadIdentity().then((value) => {
         if (active) {
           setIdentity(value);
           saveOfflineProfile({ identity: value });
@@ -43,15 +80,15 @@ export function useBrowserAccount() {
           getNetworkStateManager().markOffline(err instanceof Error ? err.message : String(err));
         }
         if (isOfflineOrNetworkFailure && session.user) {
-          const cached = getOfflineProfile(session.user.id);
-          if (cached) {
+          const cachedProfile = getOfflineProfile(session.user.id);
+          if (cachedProfile) {
             const offlineIdentity: SessionIdentityResponse = {
               authenticated: true,
               user: {
-                id: cached.userId,
-                email: cached.email,
-                displayName: cached.displayName,
-                role: cached.role,
+                id: cachedProfile.userId,
+                email: cachedProfile.email,
+                displayName: cachedProfile.displayName,
+                role: cachedProfile.role,
               },
               provisioned: true,
               onboardingCompleted: true,
@@ -65,9 +102,9 @@ export function useBrowserAccount() {
       });
     }
     return () => { active = false; };
-  }, [session.status, session.user?.id, retry]);
+  }, [coordinator, session.status, session.user?.id, retry]);
   return { session, identity: identity?.user.id === session.user?.id ? identity : null, error: error ?? session.error,
-    retry: () => { getAccountCoordinator().clear(); void getAccountCoordinator().manager.initialize(); setRetry((value) => value + 1); } };
+    retry: () => { coordinator.clear(); void manager.initialize(); setRetry((value) => value + 1); } };
 }
 
 type BoundaryProps = { children: ReactNode; mode?: 'protected' | 'auth' | 'public'; returnPath?: string };

@@ -69,6 +69,22 @@ export function createAccountCoordinator(manager: BrowserSessionManager, api: Na
   });
   return {
     manager, api,
+    getCachedIdentity: (): SessionIdentityResponse | null => {
+      const userId = manager.getState().user?.id;
+      if (!userId) return null;
+      const scopedKey = `${userId}:identity`;
+      const cached = cache.get(scopedKey);
+      if (cached) return cached.value as SessionIdentityResponse;
+      return null;
+    },
+    getCachedResource: <T>(path: string): T | null => {
+      const userId = manager.getState().user?.id;
+      if (!userId) return null;
+      const scopedKey = `${userId}:${path}`;
+      const cached = cache.get(scopedKey);
+      if (cached) return cached.value as T;
+      return null;
+    },
     loadResource: async <T>(path: string) => {
       if (path === '/api/v1/referrals') await loadIdentity();
       return load<T>(path, async () => (await api.request<T>(path)).data);

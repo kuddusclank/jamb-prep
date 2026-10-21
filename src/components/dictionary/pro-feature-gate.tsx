@@ -6,7 +6,7 @@ import { Lock, ArrowRight, CheckCircle2, Sparkles, BookOpen } from "lucide-react
 import { useApiResource } from "@/lib/api/use-api-resource";
 import type { ProfileData } from "@/lib/api/app-dtos";
 import { StudyWorkspace } from "@/components/study-workspace";
-import StudyLoading from "@/components/study-loading";
+import StudySkeleton from "@/components/study-skeleton";
 import { useBrowserAccount } from "@/components/browser-account-boundary";
 import { useNetworkStatus, isNetworkOrTimeoutError } from "@/lib/offline/network-state";
 import { getOfflineProfile, isOfflineAccessValid } from "@/lib/offline/offline-profile-cache";
@@ -51,7 +51,9 @@ export function ProFeatureGate({
     }
     return (
       <StudyWorkspace>
-        <StudyLoading />
+        <main className="shell section-space">
+          <StudySkeleton />
+        </main>
       </StudyWorkspace>
     );
   }

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { StudyWorkspace } from "@/components/study-workspace";
+import StudySkeleton from "@/components/study-skeleton";
 import { PracticeClient } from "./practice-client";
 import { WeeklyPracticeClient } from "./weekly/weekly-practice-client";
 import { useBrowserAccount } from "@/components/browser-account-boundary";
@@ -104,13 +105,7 @@ export default function PracticePage() {
   return (
     <StudyWorkspace>
       <main className="shell section-space">
-        <Suspense
-          fallback={
-            <div className="rounded-3xl border border-emerald-950/10 bg-white p-8 text-center text-xs text-slate-500 max-w-2xl mx-auto">
-              Loading practice workspace...
-            </div>
-          }
-        >
+        <Suspense fallback={<StudySkeleton />}>
           <PracticePageContent />
         </Suspense>
       </main>

@@ -111,7 +111,8 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     void ensureWeeklyPackDownloaded(studentId).catch(() => {});
   }, [profile.data?.profile?.id, profile.data?.subscription?.isPremium, isOffline]);
 
-  const offlineSnapshot = getOfflineProfile(profile.data?.profile?.id);
+  const currentUserId = profile.data?.profile?.id || (typeof window !== "undefined" ? getOfflineProfile()?.userId : undefined);
+  const offlineSnapshot = getOfflineProfile(currentUserId);
   const effectiveProfile: ProfileData | null = profile.data || (offlineSnapshot ? {
     profile: {
       id: offlineSnapshot.userId,
@@ -152,7 +153,17 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
         </div>
       );
     }
-    return <ResourceStatus error={profile.error} retry={profile.retry} />;
+    return (
+      <div className={styles.workspace}>
+        <header className={styles.header}>
+          <Link href="/dashboard" className={styles.brand}><BrandMark size={32}/> jambprep.</Link>
+          <span className={styles.context}>Your study space</span>
+        </header>
+        <div id="study-content" tabIndex={-1} className={styles.content}>
+          <ResourceStatus error={profile.error} retry={profile.retry} />
+        </div>
+      </div>
+    );
   }
 
   const streak = effectiveProfile.studyStreak?.streak;

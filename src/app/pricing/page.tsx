@@ -13,8 +13,20 @@ export default function PricingPage() {
   const account = useBrowserAccount();
   const resource = useApiResource<CheckoutPricing>('/api/v1/pricing');
   const user = account.session.user;
-  if (account.session.status === 'loading') return <ResourceStatus error={null} retry={account.retry} />;
-  if (account.session.status === 'error') return <ResourceStatus error={account.error ?? 'Unable to check your account. Please retry.'} retry={account.retry} />;
+  if (account.session.status === 'loading') {
+    return user ? (
+      <StudyWorkspace><ResourceStatus error={null} retry={account.retry} /></StudyWorkspace>
+    ) : (
+      <ResourceStatus error={null} retry={account.retry} />
+    );
+  }
+  if (account.session.status === 'error') {
+    return user ? (
+      <StudyWorkspace><ResourceStatus error={account.error ?? 'Unable to check your account. Please retry.'} retry={account.retry} /></StudyWorkspace>
+    ) : (
+      <ResourceStatus error={account.error ?? 'Unable to check your account. Please retry.'} retry={account.retry} />
+    );
+  }
   if (!user) return <main className="shell section-space"><section className="mx-auto max-w-3xl rounded-3xl border border-emerald-900/15 bg-white p-6 shadow-sm sm:p-10"><span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#116149]">Launch offer · 50% off through December 31, 2026</span><h1 className="mt-5 text-3xl font-bold text-[#092E28]">Premium study access</h1><div className="mt-4 flex flex-wrap items-baseline gap-3"><span className="text-5xl font-extrabold text-[#116149]">₦1,000</span><span className="text-xl font-semibold text-slate-400 line-through">₦2,000</span><span className="text-sm text-slate-500">/ 30 days</span></div><p className="mt-4 max-w-xl text-slate-600">Unlock unlimited practice, full mock exams and detailed coaching at half price during our launch offer.</p><Link href="/login?redirectTo=/pricing" className="mt-6 inline-flex min-h-12 items-center rounded-full bg-[#116149] px-6 font-semibold text-white">Sign in to get Premium</Link></section></main>;
   if (!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry} /></StudyWorkspace>;
   const pricing = resource.data;

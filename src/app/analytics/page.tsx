@@ -97,7 +97,6 @@ export default function AnalyticsPage() {
     return (
       <StudyWorkspace>
         <ResourceStatus error={resource.error} retry={resource.retry} />
-        <Link href="/pricing">View plans</Link>
       </StudyWorkspace>
     );
   }

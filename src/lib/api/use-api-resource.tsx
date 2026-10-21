@@ -10,10 +10,17 @@ import type { ProfileData } from './app-dtos';
 
 export function useApiResource<T>(path: string | null) {
   const { session } = useBrowserAccount();
-  const [value, setValue] = useState<{ userId: string; path: string; revision: number; data: T } | null>(null);
+  const userId = session.user?.id ?? null;
+  const coordinator = getAccountCoordinator();
+
+  const [value, setValue] = useState<{ userId: string; path: string; revision: number; data: T } | null>(() => {
+    if (typeof window === 'undefined' || !path || !userId) return null;
+    const cached = coordinator.getCachedResource<T>(path);
+    if (cached !== null) return { userId, path, revision: 0, data: cached };
+    return null;
+  });
   const [failure, setFailure] = useState<{ userId: string; path: string; revision: number; message: string } | null>(null);
   const [revision, setRevision] = useState(0);
-  const userId = session.user?.id ?? null;
 
   // Automatically re-fetch when internet connectivity is restored
   useEffect(() => {
@@ -32,9 +39,15 @@ export function useApiResource<T>(path: string | null) {
   }, []);
   useEffect(() => {
     let active = true;
-    setValue(null); setFailure(null);
+    const cached = path && userId ? coordinator.getCachedResource<T>(path) : null;
+    if (cached !== null && userId && path) {
+      setValue({ userId, path, revision, data: cached });
+    } else {
+      setValue(null);
+    }
+    setFailure(null);
     if (path && session.status === 'authenticated' && userId) {
-      void getAccountCoordinator().loadResource<T>(path).then((data) => {
+      void coordinator.loadResource<T>(path).then((data) => {
         if (active) {
           setValue({ userId, path, revision, data });
           if (path === '/api/v1/profile' && data && typeof data === 'object') {

@@ -1,1 +1,1 @@
-export { default } from "@/components/study-loading";
+export { default } from "@/components/workspace-loading";
