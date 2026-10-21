@@ -2,9 +2,8 @@
 'use strict';
 const BUILD_ID = '__PWA_BUILD_ID__';
 const CACHE_NAME = `jambprep-public-${BUILD_ID}`;
-const ESSENTIALS = ['/offline.html', '/icon-192.png', '/icon-512.png', '/lecterniq-mark.svg', '/index.html'];
+const ESSENTIALS = ['/offline.html', '/icon-192.png', '/icon-512.png', '/lecterniq-mark.svg'];
 const PUBLIC_ASSETS = new Set(ESSENTIALS);
-PUBLIC_ASSETS.add('/');
 
 function cacheableRequest(request) {
   if (BUILD_ID.startsWith('__')) return false;
@@ -24,15 +23,17 @@ function validAsset(response, path) {
     }
   }
   const mime = response.headers.get('content-type') || '';
-  if (path.endsWith('.html') || mime.includes('text/html')) return mime.includes('text/html');
-  if (path.endsWith('.svg')) return mime.includes('image/svg+xml');
-  if (path.endsWith('.png')) return mime.includes('image/png');
   if (path.endsWith('.js')) return /javascript/.test(mime);
   if (path.endsWith('.css')) return mime.includes('text/css');
+  if (path.endsWith('.svg')) return mime.includes('image/svg+xml');
+  if (path.endsWith('.png')) return mime.includes('image/png');
+  if (path.endsWith('.html') || path === '/' || path.endsWith('/')) return mime.includes('text/html');
   return /font|woff|octet-stream/.test(mime);
 }
 self.addEventListener('install', event => {
-  self.skipWaiting();
+  if (typeof self.skipWaiting === 'function') {
+    self.skipWaiting();
+  }
   event.waitUntil((async () => {
     if (BUILD_ID.startsWith('__')) return;
     const responses = await Promise.all(ESSENTIALS.map(async path => {
@@ -46,16 +47,20 @@ self.addEventListener('install', event => {
     }));
     const cache = await caches.open(CACHE_NAME);
     await Promise.all(responses.map(([path, response]) => cache.put(path, response)));
-    const indexResp = await cache.match('/index.html');
-    if (indexResp) {
-      await cache.put('/', indexResp.clone());
-      await cache.put('/dashboard', indexResp.clone());
-      await cache.put('/dashboard/', indexResp.clone());
-      await cache.put('/practice', indexResp.clone());
-      await cache.put('/practice/', indexResp.clone());
-      await cache.put('/profile', indexResp.clone());
-      await cache.put('/profile/', indexResp.clone());
-    }
+    try {
+      const indexReq = new Request(new URL('/index.html', self.location.origin), { cache: 'reload', credentials: 'omit' });
+      const indexRes = await fetch(indexReq);
+      if (validAsset(indexRes, '/index.html')) {
+        await cache.put('/index.html', indexRes.clone());
+        await cache.put('/', indexRes.clone());
+        await cache.put('/dashboard', indexRes.clone());
+        await cache.put('/dashboard/', indexRes.clone());
+        await cache.put('/practice', indexRes.clone());
+        await cache.put('/practice/', indexRes.clone());
+        await cache.put('/profile', indexRes.clone());
+        await cache.put('/profile/', indexRes.clone());
+      }
+    } catch { /* optional app shell prefetch */ }
   })());
 });
 self.addEventListener('activate', event => {
@@ -63,7 +68,9 @@ self.addEventListener('activate', event => {
     for (const name of await caches.keys()) {
       if (name.startsWith('jambprep-public-') && name !== CACHE_NAME) await caches.delete(name);
     }
-    await self.clients.claim();
+    if (self.clients && typeof self.clients.claim === 'function') {
+      await self.clients.claim();
+    }
   })());
 });
 self.addEventListener('fetch', event => {
