@@ -2,8 +2,9 @@
 'use strict';
 const BUILD_ID = '__PWA_BUILD_ID__';
 const CACHE_NAME = `jambprep-public-${BUILD_ID}`;
-const ESSENTIALS = ['/offline.html', '/icon-192.png', '/icon-512.png', '/lecterniq-mark.svg'];
+const ESSENTIALS = ['/offline.html', '/icon-192.png', '/icon-512.png', '/lecterniq-mark.svg', '/index.html'];
 const PUBLIC_ASSETS = new Set(ESSENTIALS);
+PUBLIC_ASSETS.add('/');
 
 function cacheableRequest(request) {
   if (BUILD_ID.startsWith('__')) return false;
@@ -23,7 +24,7 @@ function validAsset(response, path) {
     }
   }
   const mime = response.headers.get('content-type') || '';
-  if (path.endsWith('.html')) return mime.includes('text/html');
+  if (path.endsWith('.html') || mime.includes('text/html')) return mime.includes('text/html');
   if (path.endsWith('.svg')) return mime.includes('image/svg+xml');
   if (path.endsWith('.png')) return mime.includes('image/png');
   if (path.endsWith('.js')) return /javascript/.test(mime);
@@ -31,6 +32,7 @@ function validAsset(response, path) {
   return /font|woff|octet-stream/.test(mime);
 }
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil((async () => {
     if (BUILD_ID.startsWith('__')) return;
     const responses = await Promise.all(ESSENTIALS.map(async path => {
@@ -44,17 +46,19 @@ self.addEventListener('install', event => {
     }));
     const cache = await caches.open(CACHE_NAME);
     await Promise.all(responses.map(([path, response]) => cache.put(path, response)));
+    const indexResp = await cache.match('/index.html');
+    if (indexResp) {
+      await cache.put('/', indexResp.clone());
+    }
   })());
-  // No skipWaiting: active exams must never be replaced by a new worker.
 });
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
-    // Normal activation occurs after previous controlled windows close.
     for (const name of await caches.keys()) {
       if (name.startsWith('jambprep-public-') && name !== CACHE_NAME) await caches.delete(name);
     }
+    await self.clients.claim();
   })());
-  // No clients.claim: leave already-open pages on their current lifecycle.
 });
 self.addEventListener('fetch', event => {
   const request = event.request;
@@ -84,14 +88,64 @@ self.addEventListener('fetch', event => {
     })());
     return;
   }
-  // Only generic document recovery. API, RSC and financial/auth requests are never cached.
+  // Document navigation handling with offline resilience
   if (request.mode === 'navigate' && request.method === 'GET' && url.origin === self.location.origin && !request.headers.has('authorization')) {
     if (/^\/(?:api|admin)(?:\/|$)/.test(url.pathname)) return;
-    event.respondWith(fetch(request).catch(async () => {
-      let offline;
-      try { offline = await (await caches.open(CACHE_NAME)).match('/offline.html'); } catch { /* Storage may be unavailable. */ }
-      return offline || new Response('You are offline. Reconnect and reload.', { status: 503, headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' } });
-    }));
+    event.respondWith((async () => {
+      let cache = null;
+      try {
+        cache = await caches.open(CACHE_NAME);
+      } catch { /* Storage unavailable */ }
+
+      try {
+        // Network-first navigation
+        const networkResponse = await fetch(request);
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type !== 'opaque' && cache) {
+          try {
+            await cache.put(request, networkResponse.clone());
+            if (url.pathname) {
+              await cache.put(url.pathname, networkResponse.clone());
+              const altPath = url.pathname.endsWith('/') ? url.pathname.slice(0, -1) : `${url.pathname}/`;
+              if (altPath) {
+                await cache.put(altPath, networkResponse.clone());
+              }
+            }
+          } catch { /* Cache write failure */ }
+        }
+        return networkResponse;
+      } catch (networkError) {
+        // Network failed (offline, DNS resolution failed, timeout, or connection reset)
+        if (cache) {
+          try {
+            // 1. Try matching the exact requested URL
+            let cached = await cache.match(request);
+            if (cached) return cached;
+
+            // 2. Try matching the pathname
+            cached = await cache.match(url.pathname);
+            if (cached) return cached;
+
+            const altPath = url.pathname.endsWith('/') ? url.pathname.slice(0, -1) : `${url.pathname}/`;
+            cached = await cache.match(altPath);
+            if (cached) return cached;
+
+            // 3. Fall back to cached dashboard or app shell
+            cached = await cache.match('/dashboard') || await cache.match('/dashboard/') || await cache.match('/') || await cache.match('/index.html');
+            if (cached) return cached;
+
+            // 4. Fall back to offline.html
+            const offline = await cache.match('/offline.html');
+            if (offline) return offline;
+          } catch { /* Storage read failure */ }
+        }
+
+        return new Response('You are offline. Reconnect and reload.', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' },
+        });
+      }
+    })());
+    return;
   }
 });
 
