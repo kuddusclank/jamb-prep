@@ -21,11 +21,11 @@ import {
   WifiOff,
   Loader2,
   HelpCircle,
+  RotateCcw,
   Sparkles,
-  Bookmark,
-  Grid,
-  X,
+  Layers,
   Award,
+  Bookmark,
 } from "lucide-react";
 
 interface QuestionOption {
@@ -57,15 +57,27 @@ export function WeeklyPracticeClient() {
 
   const [pack, setPack] = useState<StoredWeeklyPack | null>(null);
   const [selectedSubjectCode, setSelectedSubjectCode] = useState<string>("");
-  const [questionIndexInSubject, setQuestionIndexInSubject] = useState<number>(0);
+  const [questionCount, setQuestionCount] = useState<number>(5);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [syncedNotice, setSyncedNotice] = useState<string | null>(null);
-  const [isGridOpen, setIsGridOpen] = useState<boolean>(false);
   const [flaggedIds, setFlaggedIds] = useState<Set<string>>(new Set());
-  const [showSummary, setShowSummary] = useState<boolean>(false);
+
+  // Active Session State (just like normal practice)
+  const [activeQuestions, setActiveQuestions] = useState<QuestionItem[]>([]);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [selectedOption, setSelectedOption] = useState<"A" | "B" | "C" | "D" | null>(null);
+  const [answerResult, setAnswerResult] = useState<{
+    isCorrect: boolean;
+    correctOption: string;
+    explanation: string;
+  } | null>(null);
+  const [sessionAnswers, setSessionAnswers] = useState<
+    Record<string, { isCorrect: boolean; selectedOption: string; explanation: string }>
+  >({});
+  const [isSessionCompleted, setIsSessionCompleted] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Monitor network status
   useEffect(() => {
@@ -93,7 +105,7 @@ export function WeeklyPracticeClient() {
     };
   }, [userId]);
 
-  // Load or download weekly pack
+  // Load weekly pack from IndexedDB / Server
   useEffect(() => {
     if (!userId) return;
     let active = true;
@@ -125,7 +137,7 @@ export function WeeklyPracticeClient() {
     };
   }, [userId]);
 
-  // Questions filtered by the currently selected subject
+  // All questions in the pack for the selected subject
   const subjectQuestions = useMemo(() => {
     if (!pack || !selectedSubjectCode) return [];
     return (pack.questions as unknown as QuestionItem[]).filter(
@@ -133,18 +145,15 @@ export function WeeklyPracticeClient() {
     );
   }, [pack, selectedSubjectCode]);
 
-  const currentQuestion = subjectQuestions[questionIndexInSubject] || null;
+  // Unanswered questions in the pack for the selected subject
+  const unansweredSubjectQuestions = useMemo(() => {
+    if (!pack) return [];
+    return subjectQuestions.filter((q) => !pack.answers?.[q.id]);
+  }, [subjectQuestions, pack]);
 
-  // Selected answer from saved answers
-  const currentAnswer = currentQuestion && pack?.answers?.[currentQuestion.id]
-    ? pack.answers[currentQuestion.id].selectedOption
-    : null;
-
-  const currentFeedback = currentQuestion && pack?.feedback?.[currentQuestion.id]
-    ? pack.feedback[currentQuestion.id]
-    : null;
-
-  const isCurrentFlagged = currentQuestion ? flaggedIds.has(currentQuestion.id) : false;
+  const availableCount = unansweredSubjectQuestions.length > 0
+    ? unansweredSubjectQuestions.length
+    : subjectQuestions.length;
 
   const toggleFlag = (qId: string) => {
     setFlaggedIds((prev) => {
@@ -155,25 +164,60 @@ export function WeeklyPracticeClient() {
     });
   };
 
-  const handleSelectOption = async (optionLabel: "A" | "B" | "C" | "D") => {
-    if (!pack || !currentQuestion || currentAnswer || isSubmitting) return;
+  // Start a focused practice session (e.g. 5, 10, 15, 20 questions)
+  const handleStartSession = () => {
+    if (!pack || subjectQuestions.length === 0) return;
+
+    // Prioritize unanswered questions first, or cycle through all if all are answered
+    const pool = unansweredSubjectQuestions.length > 0 ? unansweredSubjectQuestions : subjectQuestions;
+    const countToPick = Math.min(questionCount, pool.length);
+    const picked = pool.slice(0, countToPick);
+
+    setActiveQuestions(picked);
+    setCurrentIndex(0);
+    setSelectedOption(null);
+    setAnswerResult(null);
+    setSessionAnswers({});
+    setIsSessionCompleted(false);
+  };
+
+  const currentQ = activeQuestions[currentIndex] || null;
+  const isCurrentFlagged = currentQ ? flaggedIds.has(currentQ.id) : false;
+
+  const handleSelectOption = (label: "A" | "B" | "C" | "D") => {
+    if (answerResult || isSubmitting) return;
+    setSelectedOption(label);
+  };
+
+  const handleSubmitAnswer = async () => {
+    if (!pack || !currentQ || !selectedOption || answerResult || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
-      await submitPackAnswer({
+      const res = await submitPackAnswer({
         userId,
         packId: pack.packId,
-        questionId: currentQuestion.id,
-        selectedOption: optionLabel,
+        questionId: currentQ.id,
+        selectedOption,
       });
 
-      // Update pack in local React state
+      setAnswerResult(res);
+      setSessionAnswers((prev) => ({
+        ...prev,
+        [currentQ.id]: {
+          isCorrect: res.isCorrect,
+          selectedOption,
+          explanation: res.explanation,
+        },
+      }));
+
+      // Update answers count in pack
       setPack((prev) => {
         if (!prev) return prev;
         const nextAnswers = {
           ...prev.answers,
-          [currentQuestion.id]: {
-            selectedOption: optionLabel,
+          [currentQ.id]: {
+            selectedOption,
             answeredAt: new Date().toISOString(),
           },
         };
@@ -210,25 +254,43 @@ export function WeeklyPracticeClient() {
     }
   };
 
-  const handleNextUnanswered = () => {
-    if (!pack) return;
-    const nextIdx = subjectQuestions.findIndex((q) => !pack.answers?.[q.id]);
-    if (nextIdx >= 0) {
-      setQuestionIndexInSubject(nextIdx);
-    } else {
-      // Look across other subjects
-      for (const sub of pack.subjects) {
-        if (sub.code === selectedSubjectCode) continue;
-        const subQs = (pack.questions as unknown as QuestionItem[]).filter(
-          (q) => q.subjectCode === sub.code
-        );
-        const subUnanswered = subQs.findIndex((q) => !pack.answers?.[q.id]);
-        if (subUnanswered >= 0) {
-          setSelectedSubjectCode(sub.code);
-          setQuestionIndexInSubject(subUnanswered);
-          return;
-        }
+  const handleNextQuestion = () => {
+    if (currentIndex < activeQuestions.length - 1) {
+      const nextIdx = currentIndex + 1;
+      setCurrentIndex(nextIdx);
+      const nextQ = activeQuestions[nextIdx];
+      const saved = sessionAnswers[nextQ?.id || ""];
+      if (saved) {
+        setSelectedOption(saved.selectedOption as "A" | "B" | "C" | "D");
+        setAnswerResult({
+          isCorrect: saved.isCorrect,
+          correctOption: saved.isCorrect ? saved.selectedOption : (pack?.feedback?.[nextQ.id]?.correctOption || "A"),
+          explanation: saved.explanation,
+        });
+      } else {
+        setSelectedOption(null);
+        setAnswerResult(null);
       }
+    } else {
+      setIsSessionCompleted(true);
+    }
+  };
+
+  const handleJumpToQuestion = (targetIndex: number) => {
+    if (targetIndex < 0 || targetIndex >= activeQuestions.length) return;
+    setCurrentIndex(targetIndex);
+    const targetQ = activeQuestions[targetIndex];
+    const saved = sessionAnswers[targetQ?.id || ""];
+    if (saved) {
+      setSelectedOption(saved.selectedOption as "A" | "B" | "C" | "D");
+      setAnswerResult({
+        isCorrect: saved.isCorrect,
+        correctOption: saved.isCorrect ? saved.selectedOption : (pack?.feedback?.[targetQ.id]?.correctOption || "A"),
+        explanation: saved.explanation,
+      });
+    } else {
+      setSelectedOption(null);
+      setAnswerResult(null);
     }
   };
 
@@ -237,7 +299,7 @@ export function WeeklyPracticeClient() {
       <div className="shell section-space min-h-[50vh] flex flex-col items-center justify-center gap-4">
         <Loader2 size={36} className="text-[#116149] animate-spin" />
         <p className="text-sm font-medium text-slate-600">
-          Preparing your 250-question weekly practice pack...
+          Loading your weekly offline practice pack...
         </p>
       </div>
     );
@@ -268,21 +330,297 @@ export function WeeklyPracticeClient() {
     );
   }
 
+  // 1. SESSION COMPLETED SCREEN
+  if (isSessionCompleted) {
+    const sessionScore = Object.values(sessionAnswers).filter((a) => a.isCorrect).length;
+    const sessionTotal = activeQuestions.length;
+    const sessionPct = Math.round((sessionScore / sessionTotal) * 100);
+    const flaggedInSession = activeQuestions.filter((q) => flaggedIds.has(q.id)).length;
+
+    return (
+      <div className="shell section-space max-w-2xl mx-auto space-y-6">
+        <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center space-y-6 shadow-sm">
+          <div className="size-16 rounded-full bg-emerald-100 text-[#116149] flex items-center justify-center mx-auto">
+            <Award size={32} />
+          </div>
+
+          <div className="space-y-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+              Session Finished
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#092E28] pt-2">
+              Great Practice Session!
+            </h2>
+            <p className="text-sm text-slate-500">
+              Your answers have been saved to offline storage and queued for sync.
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 border border-slate-200 p-6 max-w-md mx-auto grid grid-cols-3 gap-3">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400">Score</div>
+              <div className="text-2xl font-bold text-[#092E28]">{sessionScore} / {sessionTotal}</div>
+            </div>
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400">Accuracy</div>
+              <div className="text-2xl font-bold text-emerald-700">{sessionPct}%</div>
+            </div>
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400">Flagged</div>
+              <div className="text-2xl font-bold text-amber-700">{flaggedInSession}</div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveQuestions([]);
+                setIsSessionCompleted(false);
+              }}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-[#116149] text-white text-sm font-bold shadow-sm hover:bg-[#0b4936] transition flex items-center justify-center gap-2"
+            >
+              <RotateCcw size={16} />
+              <span>Start Another Practice Set</span>
+            </button>
+            <Link
+              href="/dashboard"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition text-center"
+            >
+              Return to Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. ACTIVE PRACTICE RUNNER SCREEN
+  if (activeQuestions.length > 0 && currentQ) {
+    const isAnswered = Boolean(answerResult);
+
+    return (
+      <div className="shell section-space max-w-3xl mx-auto space-y-6 pb-20">
+        {/* Top Session Progress Bar & Palette */}
+        <div className="space-y-3 border-b border-slate-200 pb-4">
+          <div className="flex items-center justify-between gap-4">
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm("End this practice set and return to weekly practice selection?")) {
+                  setActiveQuestions([]);
+                }
+              }}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
+            >
+              <ArrowLeft size={15} />
+              <span>Quit Set</span>
+            </button>
+
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              {selectedSubjectCode} · Question {currentIndex + 1} of {activeQuestions.length}
+            </span>
+
+            <span className="text-xs text-slate-400 font-medium truncate max-w-[150px]">
+              {currentQ.topicTitle}
+            </span>
+          </div>
+
+          {/* Quick Question Chips (Palette for this set) */}
+          <div className="flex items-center gap-2 overflow-x-auto py-1">
+            {activeQuestions.map((q, idx) => {
+              const isCur = idx === currentIndex;
+              const ans = sessionAnswers[q.id];
+              const isFlag = flaggedIds.has(q.id);
+
+              let chipStyle = "bg-white border-slate-200 text-slate-600 hover:border-slate-300";
+              if (ans) {
+                chipStyle = ans.isCorrect
+                  ? "bg-emerald-100 border-emerald-400 text-emerald-950 font-bold"
+                  : "bg-rose-100 border-rose-400 text-rose-950 font-bold";
+              }
+              if (isCur) {
+                chipStyle += " ring-2 ring-[#116149] ring-offset-1 font-bold";
+              }
+
+              return (
+                <button
+                  key={q.id}
+                  type="button"
+                  onClick={() => handleJumpToQuestion(idx)}
+                  className={`size-8 rounded-xl border text-xs font-medium flex items-center justify-center shrink-0 relative transition cursor-pointer ${chipStyle}`}
+                  title={`Question ${idx + 1}${isFlag ? " (Flagged)" : ""}`}
+                >
+                  <span>{idx + 1}</span>
+                  {isFlag && (
+                    <span className="absolute -top-1 -right-1 size-2 rounded-full bg-amber-500 border border-white" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Question Container */}
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+          {/* Header with Question Number and Flag Bookmark Toggle */}
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Question {currentIndex + 1} of {activeQuestions.length}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => toggleFlag(currentQ.id)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition ${
+                isCurrentFlagged
+                  ? "bg-amber-50 text-amber-800 border-amber-300 shadow-xs"
+                  : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+              }`}
+              title={isCurrentFlagged ? "Remove review flag" : "Flag question for review"}
+            >
+              <Bookmark
+                size={13}
+                className={isCurrentFlagged ? "fill-amber-500 text-amber-600" : "text-slate-400"}
+              />
+              <span>{isCurrentFlagged ? "Flagged for Review" : "Flag for Review"}</span>
+            </button>
+          </div>
+
+          {/* Passage Container (if applicable for English Comprehension / Cloze) */}
+          {currentQ.passage && (
+            <div className="rounded-2xl bg-amber-50/70 border border-amber-200/70 p-5 space-y-2 text-slate-800 text-sm leading-relaxed max-h-72 overflow-y-auto">
+              {currentQ.passage.title && (
+                <div className="font-bold text-[#092E28] flex items-center gap-2">
+                  <BookOpen size={16} className="text-amber-800" />
+                  <span>{currentQ.passage.title}</span>
+                </div>
+              )}
+              <div className="whitespace-pre-line text-xs sm:text-sm">
+                {currentQ.passage.content}
+              </div>
+            </div>
+          )}
+
+          {/* Diagram (if image) */}
+          {currentQ.imageUrl && (
+            <QuestionDiagram
+              url={currentQ.imageUrl}
+              alt={currentQ.imageAlt || "Question illustration"}
+            />
+          )}
+
+          {/* Question Stem */}
+          <div className="text-base sm:text-lg font-medium text-slate-900 leading-relaxed">
+            <MathRenderer content={currentQ.stem} />
+          </div>
+
+          {/* Options List */}
+          <div className="space-y-3 pt-2">
+            {currentQ.options.map((opt) => {
+              const isSelected = selectedOption === opt.label;
+              const isCorrectOpt = answerResult?.correctOption === opt.label;
+
+              let optionStyle =
+                "bg-white border-slate-200 text-slate-800 hover:border-slate-300 hover:bg-slate-50/50";
+              let badgeStyle = "bg-slate-100 text-slate-700 border-slate-200";
+
+              if (isAnswered) {
+                if (isSelected && isCorrectOpt) {
+                  optionStyle = "bg-emerald-50/90 border-emerald-500 text-emerald-950 font-semibold";
+                  badgeStyle = "bg-emerald-600 text-white border-emerald-600";
+                } else if (isSelected && !isCorrectOpt) {
+                  optionStyle = "bg-rose-50/90 border-rose-400 text-rose-950 font-semibold";
+                  badgeStyle = "bg-rose-600 text-white border-rose-600";
+                } else if (isCorrectOpt) {
+                  optionStyle = "bg-emerald-50/50 border-emerald-400 text-emerald-900 font-semibold";
+                  badgeStyle = "bg-emerald-500 text-white border-emerald-500";
+                } else {
+                  optionStyle = "bg-slate-50/60 border-slate-200 text-slate-400 opacity-60";
+                  badgeStyle = "bg-slate-200 text-slate-500 border-slate-300";
+                }
+              } else if (isSelected) {
+                optionStyle = "bg-emerald-50/70 border-[#116149] text-emerald-950 ring-1 ring-[#116149]";
+                badgeStyle = "bg-[#116149] text-white border-[#116149]";
+              }
+
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  disabled={isAnswered || isSubmitting}
+                  onClick={() => handleSelectOption(opt.label)}
+                  className={`w-full text-left p-4 rounded-2xl border transition-all duration-200 flex items-start gap-3.5 ${optionStyle} ${
+                    !isAnswered ? "cursor-pointer active:scale-[0.99]" : "cursor-default"
+                  }`}
+                >
+                  <span
+                    className={`size-7 rounded-xl font-bold text-xs flex items-center justify-center shrink-0 border transition ${badgeStyle}`}
+                  >
+                    {opt.label}
+                  </span>
+                  <div className="flex-1 text-sm sm:text-base leading-relaxed pt-0.5">
+                    <MathRenderer content={opt.content} />
+                  </div>
+                  {isAnswered && isSelected && isCorrectOpt && (
+                    <CheckCircle2 size={18} className="text-emerald-600 shrink-0 mt-1" />
+                  )}
+                  {isAnswered && isSelected && !isCorrectOpt && (
+                    <XCircle size={18} className="text-rose-500 shrink-0 mt-1" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Explanation Box (Revealed after question is answered) */}
+          {answerResult && (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 space-y-2 animate-fade-in">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-900">
+                <HelpCircle size={15} />
+                <span>Explanation · Correct Option: {answerResult.correctOption}</span>
+              </div>
+              <div className="text-xs sm:text-sm text-emerald-950 leading-relaxed">
+                <MathRenderer content={answerResult.explanation} />
+              </div>
+            </div>
+          )}
+
+          {/* Bottom Action Button */}
+          <div className="pt-4 border-t border-slate-100 flex justify-end">
+            {!isAnswered ? (
+              <button
+                type="button"
+                disabled={!selectedOption || isSubmitting}
+                onClick={handleSubmitAnswer}
+                className="px-7 py-3 rounded-full bg-[#116149] text-white text-sm font-bold shadow-sm hover:bg-[#0b4936] transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? "Checking..." : "Submit Answer"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleNextQuestion}
+                className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-[#116149] text-white text-sm font-bold shadow-sm hover:bg-[#0b4936] transition"
+              >
+                <span>{currentIndex < activeQuestions.length - 1 ? "Next Question" : "Finish Set"}</span>
+                <ArrowRight size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. SELECTION / LOBBY SCREEN (Matches normal practice structure)
   const answeredTotal = pack?.progress?.answered ?? 0;
   const totalQuestions = pack?.progress?.total ?? 250;
   const percentTotal = Math.min(100, Math.round((answeredTotal / totalQuestions) * 100));
 
-  // Compute accuracy across answered questions
-  const totalCorrect = pack
-    ? Object.entries(pack.answers || {}).filter(([qId, ans]) => {
-        const fb = pack.feedback?.[qId];
-        return fb && fb.correctOption === ans.selectedOption;
-      }).length
-    : 0;
-
   return (
-    <div className="shell section-space max-w-4xl mx-auto space-y-6 pb-20">
-      {/* Top Bar: Back Link, Network Status, and Week Key */}
+    <div className="shell section-space max-w-3xl mx-auto space-y-6 pb-20">
+      {/* Top Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="flex items-center gap-3">
           <Link
@@ -319,415 +657,139 @@ export function WeeklyPracticeClient() {
         </div>
       </div>
 
-      {/* Summary View Modal / Toggle */}
-      {showSummary ? (
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 animate-fade-in">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+      {/* Overview Progress Card */}
+      <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
             <div className="flex items-center gap-2">
-              <Award size={22} className="text-amber-500" />
-              <h2 className="text-xl font-bold text-[#092E28]">Weekly Pack Progress Summary</h2>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide uppercase bg-emerald-100 text-[#116149]">
+                <Sparkles size={11} className="text-amber-600" />
+                250-QUESTION PACK
+              </span>
+              <span className="text-xs text-slate-400">Offline Ready</span>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowSummary(false)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
-              aria-label="Close summary"
-            >
-              <X size={20} />
-            </button>
+            <h1 className="text-xl sm:text-2xl font-bold text-[#092E28] mt-1">
+              Weekly Practice Set
+            </h1>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-center">
-              <div className="text-xs font-bold uppercase tracking-wider text-emerald-800">Answered</div>
-              <div className="text-2xl font-bold text-emerald-950 mt-1">{answeredTotal} / {totalQuestions}</div>
-              <div className="text-xs text-emerald-700 mt-0.5">{percentTotal}% completed</div>
-            </div>
-
-            <div className="rounded-2xl bg-blue-50 border border-blue-200 p-4 text-center">
-              <div className="text-xs font-bold uppercase tracking-wider text-blue-800">Correct Answers</div>
-              <div className="text-2xl font-bold text-blue-950 mt-1">{totalCorrect}</div>
-              <div className="text-xs text-blue-700 mt-0.5">
-                {answeredTotal > 0 ? Math.round((totalCorrect / answeredTotal) * 100) : 0}% accuracy
-              </div>
-            </div>
-
-            <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 text-center">
-              <div className="text-xs font-bold uppercase tracking-wider text-amber-800">Flagged For Review</div>
-              <div className="text-2xl font-bold text-amber-950 mt-1">{flaggedIds.size}</div>
-              <div className="text-xs text-amber-700 mt-0.5">Questions marked</div>
-            </div>
-          </div>
-
-          {/* Subject Breakdown Table */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Subject Breakdown</h3>
-            <div className="rounded-2xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
-              {pack?.subjects?.map((sub) => {
-                const subQs = (pack.questions as unknown as QuestionItem[]).filter(q => q.subjectCode === sub.code);
-                const subAnswered = subQs.filter(q => pack.answers?.[q.id]).length;
-                const subCorrect = subQs.filter(q => {
-                  const ans = pack.answers?.[q.id];
-                  const fb = pack.feedback?.[q.id];
-                  return ans && fb && ans.selectedOption === fb.correctOption;
-                }).length;
-                const subPct = subQs.length > 0 ? Math.round((subAnswered / subQs.length) * 100) : 0;
-
-                return (
-                  <div key={sub.code} className="p-4 flex items-center justify-between text-sm">
-                    <div>
-                      <span className="font-bold text-[#092E28]">{sub.name}</span>
-                      <span className="text-xs text-slate-400 ml-2">({sub.code})</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-semibold text-slate-700">{subAnswered} of {subQs.length}</span>
-                      <span className="text-xs text-slate-400 ml-2">({subCorrect} correct · {subPct}%)</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-2">
-            <button
-              type="button"
-              onClick={() => setShowSummary(false)}
-              className="px-6 py-2.5 rounded-xl bg-[#116149] text-white text-sm font-bold hover:bg-[#0b4936] transition"
-            >
-              Continue Practice
-            </button>
+          <div className="text-right">
+            <span className="text-sm font-semibold text-slate-600">
+              {answeredTotal} of {totalQuestions} answered
+            </span>
+            <div className="text-xs text-emerald-700 font-bold">{percentTotal}% completed</div>
           </div>
         </div>
-      ) : null}
 
-      {/* Overall Progress Ribbon */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden border border-slate-200">
+          <div
+            className="h-full bg-[#116149] transition-all duration-500 rounded-full"
+            style={{ width: `${percentTotal}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Main Selection Form (Just like normal practice, but topic selection disabled) */}
+      <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+        {/* Step 1: Choose Subject */}
         <div>
-          <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            Weekly Progress
-          </div>
-          <div className="text-xl font-bold text-[#092E28]">
-            {answeredTotal} of {totalQuestions} answered{" "}
-            <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-              {percentTotal}%
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setShowSummary(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition active:scale-95"
-          >
-            <Award size={14} className="text-amber-500" />
-            <span>Summary</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleNextUnanswered}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition active:scale-95"
-          >
-            <Sparkles size={14} className="text-amber-600" />
-            <span>Next Unanswered</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Subject Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-1 max-w-full">
-        {pack?.subjects?.map((sub) => {
-          const isSelected = sub.code === selectedSubjectCode;
-          const subProgress = pack.progress?.bySubject?.[sub.code];
-          const answered = subProgress?.answered ?? 0;
-          const total = subProgress?.total ?? sub.questionCount;
-          return (
-            <button
-              key={sub.code}
-              type="button"
-              onClick={() => {
-                setSelectedSubjectCode(sub.code);
-                setQuestionIndexInSubject(0);
-                setIsGridOpen(false);
-              }}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold tracking-tight shrink-0 transition flex items-center gap-2 ${
-                isSelected
-                  ? "bg-[#116149] text-white shadow-sm"
-                  : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
-              }`}
-            >
-              <span>{sub.name}</span>
-              <span
-                className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                  isSelected
-                    ? "bg-emerald-950/40 text-emerald-200"
-                    : "bg-slate-100 text-slate-600"
-                }`}
-              >
-                {answered}/{total}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Question Palette / Quick Jump Grid (Collapsible) */}
-      {isGridOpen && (
-        <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm space-y-4 animate-fade-in">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Jump to Question in {selectedSubjectCode} ({subjectQuestions.length} Total)
-            </span>
-            <button
-              type="button"
-              onClick={() => setIsGridOpen(false)}
-              className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-              aria-label="Close question grid"
-            >
-              <X size={16} />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-6 sm:grid-cols-10 md:grid-cols-12 gap-2 max-h-60 overflow-y-auto p-1">
-            {subjectQuestions.map((q, idx) => {
-              const isCur = idx === questionIndexInSubject;
-              const ans = pack?.answers?.[q.id];
-              const fb = pack?.feedback?.[q.id];
-              const isFlag = flaggedIds.has(q.id);
-
-              let chipStyle = "bg-white border-slate-200 text-slate-700 hover:border-slate-400";
-              if (ans && fb) {
-                if (ans.selectedOption === fb.correctOption) {
-                  chipStyle = "bg-emerald-100 border-emerald-400 text-emerald-950 font-bold";
-                } else {
-                  chipStyle = "bg-rose-100 border-rose-400 text-rose-950 font-bold";
-                }
-              }
-
-              if (isCur) {
-                chipStyle += " ring-2 ring-[#116149] ring-offset-1";
-              }
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2.5">
+            1. Choose Subject
+          </label>
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            {pack?.subjects?.map((sub) => {
+              const isSelected = selectedSubjectCode === sub.code;
+              const subProgress = pack.progress?.bySubject?.[sub.code];
+              const answered = subProgress?.answered ?? 0;
+              const total = subProgress?.total ?? sub.questionCount;
 
               return (
                 <button
-                  key={q.id}
+                  key={sub.code}
                   type="button"
-                  onClick={() => {
-                    setQuestionIndexInSubject(idx);
-                    setIsGridOpen(false);
-                  }}
-                  className={`size-9 rounded-xl border text-xs font-semibold flex items-center justify-center relative transition ${chipStyle}`}
-                >
-                  <span>{idx + 1}</span>
-                  {isFlag && (
-                    <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-amber-500 border border-white" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center gap-4 text-[11px] text-slate-500 pt-2 border-t border-slate-100">
-            <span className="flex items-center gap-1">
-              <span className="size-2 rounded-full bg-emerald-500" /> Correct
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="size-2 rounded-full bg-rose-500" /> Incorrect
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="size-2 rounded-full bg-amber-500" /> Flagged
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="size-2 rounded-full bg-slate-300" /> Unanswered
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Main Question Runner Card */}
-      {currentQuestion ? (
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
-          {/* Question Metadata Header */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsGridOpen((prev) => !prev)}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition"
-                title="Click to view all questions"
-              >
-                <Grid size={13} />
-                <span>Q {questionIndexInSubject + 1} of {subjectQuestions.length}</span>
-              </button>
-              <span className="text-slate-300">·</span>
-              <span className="text-xs font-semibold text-slate-600">
-                {currentQuestion.topicTitle}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => toggleFlag(currentQuestion.id)}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition ${
-                  isCurrentFlagged
-                    ? "bg-amber-50 text-amber-800 border-amber-300"
-                    : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
-                }`}
-                title={isCurrentFlagged ? "Remove review flag" : "Flag question for review"}
-              >
-                <Bookmark size={12} className={isCurrentFlagged ? "fill-current text-amber-500" : ""} />
-                <span>{isCurrentFlagged ? "Flagged" : "Flag"}</span>
-              </button>
-
-              {currentAnswer && (
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                  <CheckCircle2 size={13} className="text-emerald-600" />
-                  <span>Answered</span>
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Passage Container (if applicable for English Comprehension / Cloze) */}
-          {currentQuestion.passage && (
-            <div className="rounded-2xl bg-amber-50/70 border border-amber-200/70 p-5 space-y-2 text-slate-800 text-sm leading-relaxed max-h-72 overflow-y-auto">
-              {currentQuestion.passage.title && (
-                <div className="font-bold text-[#092E28] flex items-center gap-2">
-                  <BookOpen size={16} className="text-amber-800" />
-                  <span>{currentQuestion.passage.title}</span>
-                </div>
-              )}
-              <div className="whitespace-pre-line text-xs sm:text-sm">
-                {currentQuestion.passage.content}
-              </div>
-            </div>
-          )}
-
-          {/* Diagram (if question has an image) */}
-          {currentQuestion.imageUrl && (
-            <QuestionDiagram
-              url={currentQuestion.imageUrl}
-              alt={currentQuestion.imageAlt || "Question illustration"}
-            />
-          )}
-
-          {/* Question Stem */}
-          <div className="text-base sm:text-lg font-medium text-slate-900 leading-relaxed">
-            <MathRenderer content={currentQuestion.stem} />
-          </div>
-
-          {/* Options List */}
-          <div className="space-y-3 pt-2">
-            {currentQuestion.options.map((opt) => {
-              const isSelected = currentAnswer === opt.label;
-              const isCorrectOpt = currentFeedback?.correctOption === opt.label;
-              const isAnswered = Boolean(currentAnswer);
-
-              let optionStyle =
-                "bg-white border-slate-200 text-slate-800 hover:border-slate-300 hover:bg-slate-50/50";
-              let badgeStyle = "bg-slate-100 text-slate-700 border-slate-200";
-
-              if (isAnswered) {
-                if (isSelected && isCorrectOpt) {
-                  optionStyle = "bg-emerald-50/90 border-emerald-500 text-emerald-950 font-semibold";
-                  badgeStyle = "bg-emerald-600 text-white border-emerald-600";
-                } else if (isSelected && !isCorrectOpt) {
-                  optionStyle = "bg-rose-50/90 border-rose-400 text-rose-950 font-semibold";
-                  badgeStyle = "bg-rose-600 text-white border-rose-600";
-                } else if (isCorrectOpt) {
-                  optionStyle = "bg-emerald-50/50 border-emerald-400 text-emerald-900 font-semibold";
-                  badgeStyle = "bg-emerald-500 text-white border-emerald-500";
-                } else {
-                  optionStyle = "bg-slate-50/60 border-slate-200 text-slate-400 opacity-60";
-                  badgeStyle = "bg-slate-200 text-slate-500 border-slate-300";
-                }
-              }
-
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  disabled={isAnswered || isSubmitting}
-                  onClick={() => handleSelectOption(opt.label)}
-                  className={`w-full text-left p-4 rounded-2xl border transition-all duration-200 flex items-start gap-3.5 group ${optionStyle} ${
-                    !isAnswered ? "cursor-pointer active:scale-[0.99]" : "cursor-default"
+                  onClick={() => setSelectedSubjectCode(sub.code)}
+                  className={`flex items-center justify-between p-4 rounded-2xl border text-left text-sm font-medium transition-all cursor-pointer ${
+                    isSelected
+                      ? "border-[#116149] bg-emerald-50 text-[#092E28] ring-1 ring-[#116149]"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
                   }`}
                 >
-                  <span
-                    className={`size-7 rounded-xl font-bold text-xs flex items-center justify-center shrink-0 border transition ${badgeStyle}`}
-                  >
-                    {opt.label}
-                  </span>
-                  <div className="flex-1 text-sm sm:text-base leading-relaxed pt-0.5">
-                    <MathRenderer content={opt.content} />
+                  <div>
+                    <span className="font-semibold block">{sub.name}</span>
+                    <small className="text-xs text-slate-500">
+                      {sub.isCompulsory ? "Compulsory" : "Elective"} ({sub.code})
+                    </small>
+                    <span className="mt-1 block text-xs font-semibold text-emerald-800">
+                      {answered} of {total} answered
+                    </span>
                   </div>
-                  {isAnswered && isSelected && isCorrectOpt && (
-                    <CheckCircle2 size={18} className="text-emerald-600 shrink-0 mt-1" />
-                  )}
-                  {isAnswered && isSelected && !isCorrectOpt && (
-                    <XCircle size={18} className="text-rose-500 shrink-0 mt-1" />
+                  {isSelected && (
+                    <span className="flex size-6 items-center justify-center rounded-full bg-[#116149] text-white">
+                      <CheckCircle2 size={14} />
+                    </span>
                   )}
                 </button>
               );
             })}
           </div>
+        </div>
 
-          {/* Explanation Box (Revealed after question is answered) */}
-          {currentAnswer && currentFeedback && (
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 space-y-2 animate-fade-in">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-900">
-                <HelpCircle size={15} />
-                <span>Explanation · Correct Option: {currentFeedback.correctOption}</span>
-              </div>
-              <div className="text-xs sm:text-sm text-emerald-950 leading-relaxed">
-                <MathRenderer content={currentFeedback.explanation} />
-              </div>
+        {/* Step 2: Topic Selection (Disabled for Weekly Practice) */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+            2. Topic Selection
+          </label>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs sm:text-sm text-slate-600 leading-relaxed flex items-center gap-3">
+            <span className="flex size-8 items-center justify-center rounded-xl bg-slate-200 text-slate-600 shrink-0">
+              <Layers size={16} />
+            </span>
+            <div>
+              <p className="font-semibold text-slate-800">Mixed Topics (Random Syllabus Coverage)</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Topic selection is disabled for weekly practice sets. Questions are drawn randomly across your syllabus pack for comprehensive revision.
+              </p>
             </div>
-          )}
-
-          {/* Bottom Navigation Toolbar */}
-          <div className="flex items-center justify-between gap-3 pt-4 border-t border-slate-100">
-            <button
-              type="button"
-              disabled={questionIndexInSubject === 0}
-              onClick={() => setQuestionIndexInSubject((prev) => Math.max(0, prev - 1))}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsGridOpen((prev) => !prev)}
-              className="text-xs text-slate-500 font-medium hover:text-[#116149] transition inline-flex items-center gap-1"
-            >
-              <Grid size={13} />
-              <span>{questionIndexInSubject + 1} / {subjectQuestions.length}</span>
-            </button>
-
-            <button
-              type="button"
-              disabled={questionIndexInSubject >= subjectQuestions.length - 1}
-              onClick={() =>
-                setQuestionIndexInSubject((prev) =>
-                  Math.min(subjectQuestions.length - 1, prev + 1)
-                )
-              }
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#116149] text-white text-xs font-bold hover:bg-[#0b4936] transition disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <span>Next</span>
-              <ArrowRight size={14} />
-            </button>
           </div>
         </div>
-      ) : (
-        <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center space-y-3">
-          <p className="text-slate-600 font-medium">No questions found for this subject.</p>
+
+        {/* Step 3: Number of Questions */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2.5">
+            3. Number of Questions
+          </label>
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
+            {[5, 10, 15, 20, 25].map((cnt) => (
+              <button
+                key={cnt}
+                type="button"
+                onClick={() => setQuestionCount(cnt)}
+                className={`py-3 rounded-2xl border text-sm font-semibold transition-all cursor-pointer ${
+                  questionCount === cnt
+                    ? "border-[#116149] bg-[#116149] text-white"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                }`}
+              >
+                {cnt} Qs
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            {availableCount > 0
+              ? `${availableCount} question${availableCount === 1 ? "" : "s"} ready in this subject.`
+              : "All questions in this subject have been answered. You can continue practicing to revise."}
+          </p>
         </div>
-      )}
+
+        {/* Launch Button */}
+        <button
+          type="button"
+          onClick={handleStartSession}
+          disabled={subjectQuestions.length === 0}
+          className="w-full flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 py-4 text-sm font-semibold text-white shadow-sm hover:bg-[#0b4936] transition-all cursor-pointer disabled:opacity-50"
+        >
+          <span>Start Practice Set ({Math.min(questionCount, subjectQuestions.length)} Questions)</span>
+          <ArrowRight size={16} />
+        </button>
+      </div>
     </div>
   );
 }
