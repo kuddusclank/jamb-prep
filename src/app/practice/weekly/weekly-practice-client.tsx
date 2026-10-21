@@ -484,7 +484,7 @@ export function WeeklyPracticeClient() {
           </div>
 
           {/* Quick Question Chips (Palette for this set) */}
-          <div className="flex items-center gap-2 overflow-x-auto py-1">
+          <div className="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {activeQuestions.map((q, idx) => {
               const isCur = idx === currentIndex;
               const ans = sessionAnswers[q.id];

@@ -114,3 +114,15 @@ select[aria-invalid="true"] { border-color: #dc2626; }
     padding-inline: .875rem;
   }
 }
+
+/* Hide scrollbars for clean UI while preserving touch/wheel scrolling */
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}

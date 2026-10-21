@@ -151,7 +151,7 @@ function Review({ attemptId }: { attemptId: string }) {
       {/* Unified Minimalist Filter Bar */}
       <div className="space-y-2.5 rounded-2xl border border-slate-200/90 bg-white p-3 sm:p-4 shadow-xs">
         {/* Status Filter Tabs (Unified & Responsive Horizontal Scroll) */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <button
             type="button"
             onClick={() => { setStatusFilter('all'); setVisibleLimit(30); }}
@@ -200,7 +200,7 @@ function Review({ attemptId }: { attemptId: string }) {
 
         {/* Subject Filter Chips (Smooth Horizontal Scroll on Mobile) */}
         {subjects.length > 1 && (
-          <div className="flex items-center gap-1.5 pt-2.5 border-t border-slate-100 overflow-x-auto pb-1 scrollbar-none">
+          <div className="flex items-center gap-1.5 pt-2.5 border-t border-slate-100 overflow-x-auto pb-1 scrollbar-none no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <button
               type="button"
               onClick={() => { setSubjectFilter('all'); setVisibleLimit(30); }}

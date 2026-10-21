@@ -716,7 +716,7 @@ export function ScheduleSection() {
             {data.streak.recentDays && data.streak.recentDays.length > 0 && (
               <div
                 ref={flameScrollRef}
-                className="flex items-center gap-1.5 sm:gap-2 shrink-0 overflow-x-auto pb-1 max-w-full sm:max-w-xs md:max-w-sm flex-nowrap scroll-smooth"
+                className="flex items-center gap-1.5 sm:gap-2 shrink-0 overflow-x-auto pb-1 max-w-full sm:max-w-xs md:max-w-sm flex-nowrap scroll-smooth no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                 tabIndex={0}
                 aria-label="Daily study streak flame history"
               >

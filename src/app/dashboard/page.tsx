@@ -298,7 +298,7 @@ export default function DashboardPage() {
                   {/* Flame Calendar Strip (Scrollable from registration date to today) */}
                   <div
                     ref={flameScrollRef}
-                    className="flex items-center gap-2 sm:gap-3 pt-1 overflow-x-auto pb-1 max-w-full flex-nowrap"
+                    className="flex items-center gap-2 sm:gap-3 pt-1 overflow-x-auto pb-1 max-w-full flex-nowrap no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                     tabIndex={0}
                     aria-label="Daily study streak calendar"
                   >

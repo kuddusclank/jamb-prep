@@ -256,7 +256,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
       <ExamConditions attemptId={initialPayload.attemptId} enabled={initialPayload.examConditions} active={!isPending && status !== "expired"} />
       <ExamCalculator />
       {/* 2. SUBJECT TABS BAR */}
-      <div className="bg-white border-b border-slate-200 px-4 sm:px-8 flex items-center gap-2 overflow-x-auto py-2">
+      <div className="bg-white border-b border-slate-200 px-4 sm:px-8 flex items-center gap-2 overflow-x-auto py-2 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {subjectTabs.map((tab) => {
           const isTabActive = currentQ.subjectCode === tab.code;
           const subjectQuestions = questions.slice(tab.startIndex, tab.startIndex + tab.count);
