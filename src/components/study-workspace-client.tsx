@@ -6,7 +6,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "@/components/pending-link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Layers, Clock, ChartNoAxesCombined, Users, UserRound, CreditCard, LogOut, Flame, BookA, WifiOff } from "lucide-react";
+import { LayoutDashboard, Layers, Clock, ChartNoAxesCombined, Users, UserRound, CreditCard, LogOut, Flame, BookA, WifiOff, CheckCircle2 } from "lucide-react";
 import { signOutAction } from "@/lib/client-actions";
 import { purgeAllActorOfflineData } from "@/lib/offline/idb-storage";
 import { flushPendingSync } from "@/lib/offline/weekly-pack-client";
@@ -28,6 +28,7 @@ const destinations = [
 export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
   const profile = useApiResource<ProfileData>("/api/v1/profile");
   const [isOnline, setIsOnline] = useState(true);
+  const [syncToast, setSyncToast] = useState<string | null>(null);
   const showFreeLinks = profile.data?.subscription.isPremium === false;
   const pathname = usePathname();
 
@@ -35,11 +36,25 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     if (typeof navigator !== 'undefined') {
       setIsOnline(navigator.onLine);
     }
+
+    const triggerSync = (studentId: string) => {
+      void flushPendingSync(studentId).then((count) => {
+        if (count > 0) {
+          setSyncToast(`Synced ${count} offline ${count === 1 ? 'answer' : 'answers'} to your account`);
+          setTimeout(() => setSyncToast(null), 4500);
+        }
+      });
+    };
+
+    const studentId = profile.data?.profile?.id;
+    if (studentId && typeof navigator !== 'undefined' && navigator.onLine) {
+      triggerSync(studentId);
+    }
+
     const handleOnline = () => {
       setIsOnline(true);
-      const studentId = profile.data?.profile?.id;
       if (studentId) {
-        void flushPendingSync(studentId);
+        triggerSync(studentId);
       }
     };
     const handleOffline = () => setIsOnline(false);
@@ -137,5 +152,16 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     </aside>
     <div id="study-content" tabIndex={-1} className={styles.content}>{children}</div>
     <footer className={styles.footer}><p>JAMBPrep · Your subjects. Your pace. Your next step.</p><PolicyLinks className="mt-3 justify-center"/></footer>
+
+    {syncToast && (
+      <div
+        role="status"
+        aria-live="polite"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-[#092E28] text-white text-xs font-semibold shadow-xl border border-emerald-700/60 animate-fade-in"
+      >
+        <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+        <span>{syncToast}</span>
+      </div>
+    )}
   </div>;
 }
