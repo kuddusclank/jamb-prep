@@ -55,6 +55,7 @@ function getStorage(): Storage | null {
  * Persists or updates the offline snapshot of the student's profile & subscription.
  */
 export function saveOfflineProfile(data: {
+  userId?: string;
   profile?: ProfileData | null;
   identity?: SessionIdentityResponse | null;
   enrolledSubjects?: Array<{
@@ -67,7 +68,7 @@ export function saveOfflineProfile(data: {
   const storage = getStorage();
   if (!storage) return;
 
-  const userId = data.profile?.profile?.id || data.identity?.user?.id;
+  const userId = data.userId || data.profile?.profile?.id || data.identity?.user?.id;
   if (!userId) return;
 
   const existing = getOfflineProfile(userId);

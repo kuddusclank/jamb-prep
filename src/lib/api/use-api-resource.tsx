@@ -23,7 +23,7 @@ export function useApiResource<T>(path: string | null) {
           setValue({ userId, path, revision, data });
           if (path === '/api/v1/profile' && data && typeof data === 'object') {
             const prof = data as unknown as ProfileData;
-            saveOfflineProfile({ profile: prof });
+            saveOfflineProfile({ profile: prof, userId });
             void saveProfileSnapshot({
               userId,
               displayName: prof.profile?.display_name || null,
@@ -32,6 +32,19 @@ export function useApiResource<T>(path: string | null) {
               subjects: [],
               lastSyncedAt: new Date().toISOString(),
             }).catch(() => { /* non-blocking */ });
+          } else if (path === '/api/v1/practice/subjects' && data && typeof data === 'object') {
+            const subjectsData = data as unknown as { subjects?: Array<{ subject_id: string; subject_code: string; subject_name: string; is_compulsory: boolean }> };
+            if (Array.isArray(subjectsData.subjects)) {
+              saveOfflineProfile({
+                userId,
+                enrolledSubjects: subjectsData.subjects.map((s) => ({
+                  id: s.subject_id,
+                  code: s.subject_code,
+                  name: s.subject_name,
+                  isCompulsory: s.is_compulsory,
+                })),
+              });
+            }
           }
         }
       }).catch(async (error: unknown) => {
@@ -89,6 +102,26 @@ export function useApiResource<T>(path: string | null) {
                 preferences: { target_score: cached.targetScore, target_institution: null, target_course: null },
                 subscription: { isPremium: true },
                 studyStreak: null,
+              } as unknown as T;
+              setValue({ userId, path, revision, data: fallback });
+              return;
+            }
+          } catch {
+            // Proceed to failure message
+          }
+        }
+
+        if (isOfflineOrNetworkFailure && path === '/api/v1/practice/subjects') {
+          try {
+            const cachedOffline = getOfflineProfile(userId);
+            if (cachedOffline && active) {
+              const fallback = {
+                subjects: (cachedOffline.enrolledSubjects || []).map((s) => ({
+                  subject_id: s.id,
+                  subject_code: s.code,
+                  subject_name: s.name,
+                  is_compulsory: s.isCompulsory,
+                })),
               } as unknown as T;
               setValue({ userId, path, revision, data: fallback });
               return;
