@@ -103,18 +103,18 @@ export default function Home() {
                   Ready for your<br/>next study <span className="serif-accent text-[#116149]">session?</span>
                 </h1>
                 <p className="entrance delay-2 mt-7 max-w-lg text-lg leading-relaxed text-slate-600">
-                  Pick up right where you left off. Jump into your daily topic-practice session, test your timing in a full CBT simulation, or review weak topics with your coach.
+                  Pick up right where you left off. Jump into topic practice, test your timing in a full CBT simulation, or review weak topics with your coach.
                 </p>
                 <div className="entrance delay-3 mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
                   <Link href="/dashboard" className={button}>
                     Open Dashboard <ArrowRight size={17}/>
                   </Link>
                   <Link href="/practice" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-emerald-950/20 bg-white px-6 text-sm font-semibold text-[#116149] hover:bg-emerald-50 transition">
-                    Start Daily Practice <ArrowUpRight size={16}/>
+                    Start Practice <ArrowUpRight size={16}/>
                   </Link>
                 </div>
                 <p className="entrance delay-3 mt-5 text-xs text-slate-500">
-                  Signed in as <strong className="text-slate-700 font-semibold">{user.email}</strong> · {isPremium ? "Premium Active (Unlimited CBT Mocks)" : "Free Tier Active (one session/day)"}
+                  Signed in as <strong className="text-slate-700 font-semibold">{user.email}</strong> · {isPremium ? "Premium Active (Unlimited CBT Mocks)" : "Free Tier Active (1 free practice session & mock)"}
                 </p>
               </>
             ) : (
@@ -441,10 +441,10 @@ export default function Home() {
                 price: '₦0',
                 regularPrice: null,
                 period: 'to get started',
-                desc: 'Find your starting point and build a daily revision habit.',
+                desc: 'Find your starting point and try out JAMBPrep.',
                 features: [
                   'One full diagnostic mock exam',
-                  'One daily session: 5, 10 or 15 questions',
+                  'One practice session: 5, 10 or 15 questions',
                   'Explanations during topic practice',
                   'Score breakdown and weak-topic feedback'
                 ],
@@ -458,7 +458,7 @@ export default function Home() {
                 desc: 'Full access to practise, review and simulate CBT exams.',
                 features: [
                   'Unlimited 180-question full mock exams',
-                  'Unlimited daily topic practice',
+                  'Unlimited topic practice across all subjects',
                   'Full mock answer reviews and explanations',
                   'Advanced performance and mastery analytics'
                 ],

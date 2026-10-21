@@ -108,7 +108,7 @@ export function VerifyClient({ reference }: VerifyClientProps) {
       </h2>
 
       <p className="text-xs sm:text-sm text-slate-600 mt-3 leading-relaxed max-w-md mx-auto">
-        Your account now has <strong>unlimited access</strong> to authentic 180-question UTME CBT simulations, KaTeX step-by-step solutions, and daily practice until <strong>{formattedExpiry}</strong>.
+        Your account now has <strong>unlimited access</strong> to authentic 180-question UTME CBT simulations, KaTeX step-by-step solutions, and unlimited practice until <strong>{formattedExpiry}</strong>.
       </p>
 
       <div className="my-6 p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-slate-500 max-w-md mx-auto flex items-center justify-between">

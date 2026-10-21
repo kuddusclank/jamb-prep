@@ -16,7 +16,8 @@ function practiceAdapter({used=0,count=5,premium=false,overlap=false,issued=true
  if(text.includes('FROM profiles'))return [{id:user}];
  if(text.includes('FROM subscription_entitlements'))return premium?[{expires_at:'2027-01-01',auto_renew:false}]:[];
  if(text.includes('FROM subjects s JOIN student_subjects'))return [{id:option}];
- if(text.includes('SELECT user_id FROM daily_practice_sessions'))return used?[{user_id:user}]:[];
+ if(text.includes("status='in_progress'") && text.includes("mode='practice'"))return [];
+ if(text.includes('SELECT user_id FROM daily_practice_sessions') || (text.includes('SELECT id FROM attempts WHERE user_id=') && text.includes("mode='practice'")))return used?[{id:attempt,user_id:user}]:[];
  if(text.includes('SELECT t.id FROM topics'))return [{id:option}];
  if(text.includes('FROM study_question_pool'))return Array.from({length:count},()=>({id:question,subject_id:option,topic_id:question,snapshot:safe,correct_option_id:option,explanation:'Explanation'}));
  if(text.includes('INSERT INTO attempts'))return [{id:attempt}];
@@ -27,7 +28,7 @@ function practiceAdapter({used=0,count=5,premium=false,overlap=false,issued=true
  });}
 test('WAT allowance switches precisely at 23:00 UTC',()=>{assert.equal(watDate(new Date('2026-10-10T22:59:59Z')),'2026-10-10');assert.equal(watDate(new Date('2026-10-10T23:00:00Z')),'2026-10-11');});
 test('practice issues the exact requested batch and claims one daily session without exposing keys',async()=>{const db=practiceAdapter({count:5});const result=await allocatePractice(db.sql,user,{subjectCode:'ENG',count:5},now);assert.equal(result.remaining,0);assert.equal(result.questions.length,5);assert.ok(db.calls.some(c=>c.text.includes('INSERT INTO daily_practice_sessions')));assert.equal(/correct_option_id|explanation/.test(JSON.stringify(result)),false);});
-test('used daily free session rejects before question allocation or mutation',async()=>{const db=practiceAdapter({used:5});await assert.rejects(allocatePractice(db.sql,user,{subjectCode:'ENG',count:5},now),e=>e.status===429);assert.equal(db.calls.some(c=>c.text.includes('FROM study_question_pool')),false);});
+test('used free practice session rejects before question allocation or mutation',async()=>{const db=practiceAdapter({used:5});await assert.rejects(allocatePractice(db.sql,user,{subjectCode:'ENG',count:5},now),e=>e.status===403&&e.code==='FORBIDDEN_ENTITLEMENT_REQUIRED');assert.equal(db.calls.some(c=>c.text.includes('FROM study_question_pool')),false);});
 test('undersized bank consumes no daily session',async()=>{const db=practiceAdapter({count:2});await assert.rejects(allocatePractice(db.sql,user,{subjectCode:'ENG',count:5},now),e=>e.status===409);assert.equal(db.calls.some(c=>c.text.includes('INSERT INTO daily_practice_sessions')),false);});
 test('free students can select a canonical enrolled topic',async()=>{const db=practiceAdapter();const result=await allocatePractice(db.sql,user,{subjectCode:'ENG',topicSlug:'test-topic',count:5},now);assert.equal(result.questions.length,5);});
 test('practice feedback requires an issued owned session and blocks active mock overlap',async()=>{for(const config of [{issued:false},{overlap:true}]){const db=practiceAdapter(config);await assert.rejects(checkIssuedPractice(db.sql,user,{sessionId:attempt,questionId:question,selectedOption:'A'},now),e=>[403,404].includes(e.status));assert.ok(!db.calls.some(c=>c.text.includes('INSERT INTO attempt_answers')));}});

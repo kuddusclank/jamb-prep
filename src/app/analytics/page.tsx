@@ -213,7 +213,7 @@ export default function AnalyticsPage() {
                   Detailed Topic Diagnostics
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Prioritized by accuracy to guide focused daily practice.
+                  Prioritized by accuracy to guide focused practice.
                 </p>
               </div>
             </div>

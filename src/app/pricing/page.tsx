@@ -30,7 +30,7 @@ export default function PricingPage() {
           Simple, transparent pricing to <span className="serif-accent text-[#116149]">reach your goal score.</span>
         </h1>
         <p className="mt-3 text-sm text-slate-600 leading-relaxed">
-          Start with free daily questions, or upgrade to unlimited practice and authentic timed CBT hall simulations for less than ₦34 per day.
+          Start with a free diagnostic mock and practice session, or upgrade to unlimited practice and authentic timed CBT hall simulations for less than ₦34 per day.
         </p>
       </div>
 

@@ -326,7 +326,7 @@ export default function DashboardPage() {
                 <div className="flex flex-wrap items-start justify-between gap-5">
                   <div className="max-w-xl">
                     <h4 className="text-lg font-semibold">Build a more focused revision plan</h4>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-600">Premium highlights the topics to revisit using your practice and mock results. Your free daily practice and diagnostic mock are still available.</p>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">Premium highlights the topics to revisit using your practice and mock results. Your free practice session and diagnostic mock are available.</p>
                   </div>
                   <Link href="/pricing" className="inline-flex min-h-12 items-center rounded-full border border-slate-300 px-5 text-sm font-semibold">Explore Premium <ArrowRight size={16} className="ml-2" /></Link>
                 </div>

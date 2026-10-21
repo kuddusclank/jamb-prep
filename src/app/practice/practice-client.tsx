@@ -180,18 +180,27 @@ export function PracticeClient({
             }
           />
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              onClick={() => {
-                setQuestions([]);
-                setIsCompleted(false);
-                currentSessionRef.current=null;setSessionId(null);
-                writeUrl(selectedSubject,selectedTopic?.slug);
-                refreshCatalogue();
-              }}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              <RotateCcw size={16} /> Choose Another Topic
-            </button>
+            {isPremium ? (
+              <button
+                onClick={() => {
+                  setQuestions([]);
+                  setIsCompleted(false);
+                  currentSessionRef.current=null;setSessionId(null);
+                  writeUrl(selectedSubject,selectedTopic?.slug);
+                  refreshCatalogue();
+                }}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                <RotateCcw size={16} /> Choose Another Topic
+              </button>
+            ) : (
+              <Link
+                href="/pricing"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-6 py-3.5 text-sm font-semibold text-amber-900 hover:bg-amber-100 transition-colors"
+              >
+                <Sparkles size={16} className="text-amber-600" /> Upgrade for Unlimited Practice
+              </Link>
+            )}
             <Link
               href="/dashboard"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 py-3.5 text-sm font-semibold text-white hover:bg-[#0e523e] transition-colors"
@@ -297,12 +306,12 @@ export function PracticeClient({
             </div>
             <p className="mt-2 text-xs text-slate-500">
               {isPremium
-                ? "Pro includes unlimited practice sessions."
+                ? "Pro includes unlimited practice sessions across all subjects."
                 : dailySessionUsed
                 ? activeSessionId
-                  ? "Your daily free session has been used. Resume your saved session below or upgrade to Pro."
-                  : "Your daily free session has been used. Upgrade to Pro for unlimited sessions or return after midnight WAT."
-                : "Free includes one session daily: choose 5, 10 or 15 questions. Resets midnight WAT."}
+                  ? "Your free practice session is in progress. Resume your saved session below or upgrade to Pro."
+                  : "Your free practice session has been used. Upgrade to Pro for unlimited practice sessions."
+                : "Free tier includes one practice session: choose 5, 10 or 15 questions. Upgrade to Pro for unlimited practice."}
             </p>
           </div>
 
@@ -313,7 +322,7 @@ export function PracticeClient({
               href="/pricing"
               className="w-full flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 py-4 text-sm font-semibold text-white shadow-sm hover:bg-[#0e523e] transition-all cursor-pointer text-center"
             >
-              <Sparkles size={18} className="text-[#E7B85A]" /> Upgrade to Pro <ArrowRight size={16} />
+              <Sparkles size={18} className="text-[#E7B85A]" /> Upgrade to Pro for Unlimited Practice <ArrowRight size={16} />
             </Link>
           ) : (
             <button
