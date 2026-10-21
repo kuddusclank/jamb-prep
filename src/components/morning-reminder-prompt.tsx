@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, CheckCircle2, Clock, X, Sparkles } from "lucide-react";
+import { Bell, CheckCircle2, Clock, X } from "lucide-react";
 import { createNativeApiClient } from "@/lib/api/native-client";
 import {
   detectPushCapability,
@@ -186,20 +186,20 @@ export function MorningReminderPrompt() {
     <div
       role="region"
       aria-label="Morning study reminder setup"
-      className="rounded-3xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50/90 via-white to-teal-50/50 p-5 sm:p-6 shadow-sm relative overflow-hidden transition-all duration-300"
+      className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm relative transition-all duration-300"
     >
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-start gap-3.5 max-w-xl">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm shadow-emerald-600/30">
-            <Bell size={20} className="animate-pulse" />
+          <div className="flex size-10 sm:size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-[#116149] border border-emerald-100">
+            <Bell size={18} />
           </div>
 
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-[#116149]">
-                <Clock size={11} /> DAILY HABIT BUILDER
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-700">
+                <Clock size={11} className="text-slate-500" /> DAILY HABIT BUILDER
               </span>
-              <span className="text-xs font-semibold text-emerald-800/80">7:00 AM WAT</span>
+              <span className="text-xs font-semibold text-slate-500">7:00 AM WAT</span>
             </div>
 
             <h3 className="text-base sm:text-lg font-bold text-[#092E28]">
@@ -216,8 +216,8 @@ export function MorningReminderPrompt() {
               <div
                 className={`mt-2 inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium ${
                   statusMessage.type === "success"
-                    ? "bg-emerald-100 text-[#116149]"
-                    : "bg-red-100 text-red-700"
+                    ? "bg-emerald-50 border border-emerald-200 text-[#116149]"
+                    : "bg-red-50 border border-red-200 text-red-700"
                 }`}
               >
                 {statusMessage.type === "success" && <CheckCircle2 size={14} />}
@@ -232,7 +232,7 @@ export function MorningReminderPrompt() {
             type="button"
             onClick={() => void handleEnableReminder()}
             disabled={isSubscribing || statusMessage?.type === "success"}
-            className="flex-1 sm:flex-none min-h-10 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-5 text-xs font-bold text-white hover:bg-[#0b4936] transition shadow-md shadow-[#116149]/20 disabled:opacity-50 cursor-pointer"
+            className="flex-1 sm:flex-none min-h-10 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-5 text-xs font-bold text-white hover:bg-[#0b4936] transition shadow-sm disabled:opacity-50 cursor-pointer"
           >
             {isSubscribing ? (
               <>
@@ -246,7 +246,7 @@ export function MorningReminderPrompt() {
               </>
             ) : (
               <>
-                <Sparkles size={14} className="text-amber-300" />
+                <Bell size={14} />
                 Enable 7:00 AM Reminder
               </>
             )}
