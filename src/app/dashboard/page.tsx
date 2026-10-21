@@ -67,6 +67,7 @@ import { OfflineDashboard } from "./offline-dashboard";
 import { OfflineGatedNotice } from "./offline-gated-notice";
 import { getOfflineProfile, isOfflineAccessValid, saveOfflineProfile } from "@/lib/offline/offline-profile-cache";
 import { useNetworkStatus, isNetworkOrTimeoutError } from "@/lib/offline/network-state";
+import { MorningReminderPrompt } from "@/components/morning-reminder-prompt";
 
 export default function DashboardPage() {
   const resource = useApiResource<DashboardData>('/api/v1/dashboard');
@@ -257,6 +258,9 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+
+          {/* Morning Reminder Opt-in Prompt */}
+          <MorningReminderPrompt />
 
           {/* Daily Study Streak Fire Motivation Card */}
           {resource.data.studyStreak && (

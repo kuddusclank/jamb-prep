@@ -80,8 +80,7 @@ function createScheduleMockSql() {
 
     // 2. Select study_schedules by user_id
     if (
-      q.startsWith('SELECT * FROM public.study_schedules WHERE user_id =') ||
-      q.startsWith('SELECT enabled, reminder_enabled, revision, daily_goal FROM public.study_schedules WHERE user_id =')
+      q.includes('FROM public.study_schedules WHERE user_id =')
     ) {
       const userId = String(values[0]);
       const row = state.schedules.get(userId);
@@ -802,11 +801,12 @@ test('S01/S02/S04/S06: End-to-end Premium ownership, frozen goal transition, pra
     { status: 'active', expires_at: '2026-11-17T10:00:00.000Z' },
   ]);
 
-  // 1. Free user sees free_locked and cannot activate Schedule or subscribe push
+  // 1. Free user sees free_locked and cannot activate custom Schedule
   const freeView = await getStudyScheduleState(sql, freeUserId, { now });
   assert.equal(freeView.accessState, 'free_locked');
   assert.equal(freeView.canActivateOrEdit, false);
 
+  // Custom goal rejected on Free tier
   await assert.rejects(
     () =>
       updateStudyScheduleSettings(
@@ -816,6 +816,44 @@ test('S01/S02/S04/S06: End-to-end Premium ownership, frozen goal transition, pra
         { now }
       ),
     (err) => err.status === 403 && err.code === 'FORBIDDEN_ENTITLEMENT_REQUIRED'
+  );
+
+  // Custom time rejected on Free tier
+  await assert.rejects(
+    () =>
+      updateStudyScheduleSettings(
+        sql,
+        freeUserId,
+        { enabled: true, dailyGoal: 15, reminderLocalTime: '08:00' },
+        { now }
+      ),
+    (err) => err.status === 403 && err.code === 'FORBIDDEN_ENTITLEMENT_REQUIRED'
+  );
+
+  // Default 7:00 AM reading reminder with 15 questions allowed on Free tier
+  const freeDefaultActivated = await updateStudyScheduleSettings(
+    sql,
+    freeUserId,
+    {
+      enabled: true,
+      dailyGoal: 15,
+      reminderEnabled: true,
+      reminderLocalTime: '07:00',
+      timeZone: 'Africa/Lagos',
+    },
+    { now }
+  );
+  assert.equal(freeDefaultActivated.schedule.enabled, true);
+  assert.equal(freeDefaultActivated.schedule.dailyGoal, 15);
+  assert.equal(freeDefaultActivated.schedule.reminderLocalTime, '07:00');
+  assert.equal(freeDefaultActivated.schedule.reminderEnabled, true);
+
+  // Disabling allowed on Free tier
+  await updateStudyScheduleSettings(
+    sql,
+    freeUserId,
+    { enabled: false },
+    { now }
   );
 
   // 2. Active Premium user activates Schedule with dailyGoal = 2 and reminder at 19:00 Africa/Lagos

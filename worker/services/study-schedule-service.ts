@@ -471,7 +471,11 @@ export async function recordAcceptedStudyGoalEvent(
     }
 
     const subscription = await getUserSubscriptionStatus(tx, params.userId, now);
-    if (!subscription.isPremium) {
+    const isFreeEligible =
+      rawSchedule?.enabled &&
+      rawSchedule?.reminder_local_time === '07:00';
+
+    if (!subscription.isPremium && !isFreeEligible) {
       return { accrued: false, reason: 'not_premium' };
     }
 
@@ -747,8 +751,6 @@ export async function recordCompletedMockStreakQualification(
 
   try {
     const subscription = await getUserSubscriptionStatus(tx, params.userId, now);
-    if (!subscription.isPremium) return;
-
     const scheduleRows = await tx<Array<RawStudyScheduleRow>>`
       SELECT *
       FROM public.study_schedules
@@ -757,6 +759,12 @@ export async function recordCompletedMockStreakQualification(
     `;
     const rawSchedule = scheduleRows[0];
     if (rawSchedule && !rawSchedule.enabled) return;
+
+    const isFreeEligible =
+      rawSchedule?.enabled &&
+      rawSchedule?.reminder_local_time === '07:00';
+
+    if (!subscription.isPremium && !isFreeEligible) return;
 
     const timeZone =
       rawSchedule && isValidIanaTimeZone(rawSchedule.time_zone)
@@ -1183,36 +1191,46 @@ export async function getStudyScheduleState(
       ? Math.min(100, Math.round((acceptedCount / targetQuestions) * 100))
       : 0;
 
+  const isFreeEligible =
+    !subscription.isPremium &&
+    Boolean(
+      rawSchedule?.enabled &&
+      rawSchedule?.reminder_local_time === '07:00'
+    );
+
+  const isScheduleActive = Boolean(
+    rawSchedule?.enabled && (subscription.isPremium || isFreeEligible)
+  );
+
   return {
     accessState,
     isPremium: subscription.isPremium,
     expiresAt: subscription.expiresAt,
     canActivateOrEdit: subscription.isPremium,
     canDisableOrDetach: true,
-    vapidPublicKey: subscription.isPremium ? (options?.vapidPublicKey ?? null) : null,
+    vapidPublicKey: options?.vapidPublicKey ?? null,
     schedule: {
       exists: Boolean(rawSchedule),
-      enabled: Boolean(rawSchedule?.enabled && subscription.isPremium),
+      enabled: isScheduleActive,
       goalType: 'questions',
-      dailyGoal: Number(rawSchedule?.daily_goal ?? DEFAULT_DAILY_GOAL),
+      dailyGoal: Number(rawSchedule?.daily_goal ?? (subscription.isPremium ? DEFAULT_DAILY_GOAL : 15)),
       pendingDailyGoal:
         rawSchedule?.pending_daily_goal !== null && rawSchedule?.pending_daily_goal !== undefined
           ? Number(rawSchedule.pending_daily_goal)
           : null,
       pendingGoalEffectiveDate: normalizeDateColumn(rawSchedule?.pending_goal_effective_date),
       reminderEnabled: Boolean(
-        rawSchedule?.enabled && rawSchedule?.reminder_enabled && subscription.isPremium
+        isScheduleActive && rawSchedule?.reminder_enabled
       ),
-      reminderLocalTime: rawSchedule?.reminder_local_time ?? DEFAULT_REMINDER_LOCAL_TIME,
+      reminderLocalTime: rawSchedule?.reminder_local_time ?? (subscription.isPremium ? DEFAULT_REMINDER_LOCAL_TIME : '07:00'),
       timeZone: effectiveTimeZone,
       pendingTimeZone: rawSchedule?.pending_time_zone ?? null,
       pendingTimeZoneEffectiveDate: normalizeDateColumn(
         rawSchedule?.pending_time_zone_effective_date
       ),
       nextReminderAt:
-        rawSchedule?.enabled &&
+        isScheduleActive &&
         rawSchedule?.reminder_enabled &&
-        subscription.isPremium &&
         rawSchedule?.next_reminder_at
           ? new Date(rawSchedule.next_reminder_at).toISOString()
           : null,
@@ -1299,41 +1317,47 @@ export async function updateStudyScheduleSettings(
     });
   }
 
-  // Expired or Free users can always disable Schedule or turn off reminders without payment,
-  // but cannot activate Schedule or modify active goals/reminders without active Premium.
+  // Expired or Free users can always disable Schedule or turn off reminders without payment.
+  // Free users are also permitted to activate the default 7:00 AM reading reminder (15 questions/day at 07:00 WAT).
+  // Custom reminder times and custom daily goals require active Premium.
   if (!subscription.isPremium) {
     const isDisablingOnly =
       input.enabled === false ||
       (existing && input.enabled === existing.enabled && input.reminderEnabled === false);
 
-    if (!isDisablingOnly) {
+    if (isDisablingOnly) {
+      if (existing) {
+        await sql`
+          UPDATE public.study_schedules
+          SET
+            enabled = ${input.enabled === false ? false : existing.enabled},
+            reminder_enabled = false,
+            next_reminder_at = NULL,
+            revision = revision + 1,
+            updated_at = ${now.toISOString()}::timestamptz
+          WHERE user_id = ${userId}::uuid
+        `;
+      }
+
+      return getStudyScheduleState(sql, userId, options);
+    }
+
+    const requestedGoal = input.dailyGoal !== undefined ? input.dailyGoal : 15;
+    const requestedTime = input.reminderLocalTime !== undefined ? input.reminderLocalTime : '07:00';
+
+    if (requestedGoal !== 15 || requestedTime !== '07:00') {
       throw new ApiError({
         status: 403,
         code: 'FORBIDDEN_ENTITLEMENT_REQUIRED',
-        message: 'An active JAMBPrep Premium subscription is required to activate or edit Study Schedule.',
+        message: 'An active JAMBPrep Premium subscription is required to activate custom Study Schedule times or goals.',
       });
     }
-
-    if (existing) {
-      await sql`
-        UPDATE public.study_schedules
-        SET
-          enabled = ${input.enabled === false ? false : existing.enabled},
-          reminder_enabled = false,
-          next_reminder_at = NULL,
-          revision = revision + 1,
-          updated_at = ${now.toISOString()}::timestamptz
-        WHERE user_id = ${userId}::uuid
-      `;
-    }
-
-    return getStudyScheduleState(sql, userId, options);
   }
 
   const requestedGoal =
     input.dailyGoal !== undefined
       ? normalizeDailyGoal(input.dailyGoal)
-      : Number(existing?.daily_goal ?? DEFAULT_DAILY_GOAL);
+      : Number(existing?.daily_goal ?? (subscription.isPremium ? DEFAULT_DAILY_GOAL : 15));
 
   const requestedReminderEnabled =
     input.enabled && Boolean(input.reminderEnabled ?? existing?.reminder_enabled ?? false);
@@ -1341,7 +1365,7 @@ export async function updateStudyScheduleSettings(
   const requestedReminderTime =
     input.reminderLocalTime !== undefined
       ? normalizeReminderLocalTime(input.reminderLocalTime)
-      : existing?.reminder_local_time ?? DEFAULT_REMINDER_LOCAL_TIME;
+      : existing?.reminder_local_time ?? (subscription.isPremium ? DEFAULT_REMINDER_LOCAL_TIME : '07:00');
 
   const requestedTimeZone =
     input.timeZone !== undefined
@@ -1500,15 +1524,6 @@ export async function upsertUserPushSubscription(
   }
 ): Promise<StudyScheduleDeviceSummary> {
   const now = options?.now ?? new Date();
-  const subscription = await getUserSubscriptionStatus(sql, userId, now);
-  if (!subscription.isPremium) {
-    throw new ApiError({
-      status: 403,
-      code: 'FORBIDDEN_ENTITLEMENT_REQUIRED',
-      message: 'An active JAMBPrep Premium subscription is required to register push reminders.',
-    });
-  }
-
   const validated = await validateWebPushSubscriptionInput(rawInput, {
     allowedHostSuffixes: options?.allowedHostSuffixes,
   });
@@ -2082,8 +2097,9 @@ export async function runStudyReminderSchedulerTick(
       reminder_enabled: boolean;
       revision: number;
       daily_goal: number;
+      reminder_local_time: string;
     }>>`
-      SELECT enabled, reminder_enabled, revision, daily_goal
+      SELECT enabled, reminder_enabled, revision, daily_goal, reminder_local_time
       FROM public.study_schedules
       WHERE user_id = ${item.userId}::uuid
       LIMIT 1
@@ -2108,20 +2124,50 @@ export async function runStudyReminderSchedulerTick(
       return;
     }
 
-    // 3. Re-verify authoritative active Premium entitlement before send
+    // 3. Re-verify authoritative active Premium or Free-tier 7:00 AM eligibility before send
     const subscription = await getUserSubscriptionStatus(sql, item.userId, now);
     if (!subscription.isPremium) {
-      await sql`
-        UPDATE public.study_reminder_occurrences
-        SET
-          state = 'skipped',
-          skip_reason = 'entitlement_inactive',
-          leased_until = NULL,
-          updated_at = ${now.toISOString()}::timestamptz
-        WHERE id = ${item.occurrenceId}::uuid
+      const isFreeDefaultEligible =
+        currentSched.reminder_local_time === '07:00' &&
+        currentSched.enabled &&
+        currentSched.reminder_enabled;
+
+      if (!isFreeDefaultEligible) {
+        await sql`
+          UPDATE public.study_reminder_occurrences
+          SET
+            state = 'skipped',
+            skip_reason = 'entitlement_inactive',
+            leased_until = NULL,
+            updated_at = ${now.toISOString()}::timestamptz
+          WHERE id = ${item.occurrenceId}::uuid
+        `;
+        summary.skippedNotPremium += 1;
+        return;
+      }
+
+      // Check 14-day inactivity cutoff for Free tier to avoid sending stale reminders
+      const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+      const activeRows = await sql<Array<{ id: string }>>`
+        SELECT id FROM public.web_push_subscriptions
+        WHERE user_id = ${item.userId}::uuid
+          AND enabled = true
+          AND last_seen_at >= ${fourteenDaysAgo.toISOString()}::timestamptz
+        LIMIT 1
       `;
-      summary.skippedNotPremium += 1;
-      return;
+      if (activeRows.length === 0) {
+        await sql`
+          UPDATE public.study_reminder_occurrences
+          SET
+            state = 'skipped',
+            skip_reason = 'free_tier_inactive',
+            leased_until = NULL,
+            updated_at = ${now.toISOString()}::timestamptz
+          WHERE id = ${item.occurrenceId}::uuid
+        `;
+        summary.skippedNotPremium += 1;
+        return;
+      }
     }
 
     // 4. Check whether today's daily study goal is already completed
