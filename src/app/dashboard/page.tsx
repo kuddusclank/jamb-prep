@@ -395,51 +395,129 @@ export default function DashboardPage() {
 
           {/* Enrolled Subjects Cards */}
           <div>
-            <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
               <div>
-                <h3 className="text-lg font-semibold text-[#092E28]">Your 4 UTME Subjects</h3>
-                <p className="text-xs text-slate-500">Your examination profile and current subject performance.</p>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-[#092E28] tracking-tight">Your 4 UTME Subjects</h3>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-100/90 text-[#116149] text-[11px] font-extrabold uppercase tracking-wide">
+                    400 Pts Total
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Target mastery breakdown and diagnostic performance across your registered subjects.
+                </p>
               </div>
-              <Link href={SUBJECT_COMBINATION_EDIT_URL} className="text-xs font-semibold text-[#116149] hover:underline">
-                Change combination
+
+              <Link
+                href={SUBJECT_COMBINATION_EDIT_URL}
+                className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:text-[#116149] hover:border-emerald-300 hover:bg-emerald-50/50 transition-all shadow-2xs"
+              >
+                Change combination <ArrowUpRight size={13} />
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
-              {subjectSummaries.map((sub) => (
-                <div
-                  key={sub.subjectCode}
-                  className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-emerald-300 transition-colors"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-mono text-xs font-bold text-[#116149] bg-emerald-50 px-2 py-0.5 rounded">
-                      {sub.subjectCode}
-                    </span>
-                    {sub.isCompulsory ? (
-                      <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
-                        Compulsory
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-slate-400">
-                        Elective
-                      </span>
-                    )}
-                  </div>
-                  <h4 className="font-semibold text-sm text-[#092E28]">{sub.subjectName}</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              {subjectSummaries.map((sub) => {
+                const hasScore = sub.estimatedScore !== null && sub.estimatedScore > 0;
+                const scoreValue = sub.estimatedScore ?? 0;
 
-                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-400 font-medium">Est. Score</span>
-                    <span className="font-bold text-[#092E28]">{sub.estimatedScore===null?"No mock score":`${sub.estimatedScore} / 100`}</span>
-                  </div>
-
-                  <Link
-                    href={`/practice?subject=${sub.subjectCode}`}
-                    className="mt-3 block text-center py-1.5 rounded-lg bg-emerald-50 text-[11px] font-semibold text-[#116149] hover:bg-emerald-100 transition-colors"
+                return (
+                  <div
+                    key={sub.subjectCode}
+                    className="group relative rounded-3xl border border-slate-200/90 bg-white p-5 shadow-xs hover:shadow-md hover:border-emerald-300 transition-all duration-200 flex flex-col justify-between"
                   >
-                    Practice {sub.subjectCode}
-                  </Link>
-                </div>
-              ))}
+                    <div>
+                      {/* Top Badges */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono text-xs font-black tracking-wider text-[#116149] bg-emerald-50 border border-emerald-200/70 px-2.5 py-1 rounded-xl">
+                          {sub.subjectCode}
+                        </span>
+
+                        {sub.isCompulsory ? (
+                          <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                            Compulsory
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                            Elective
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Subject Name */}
+                      <h4 className="mt-3.5 font-bold text-base text-[#092E28] tracking-tight group-hover:text-[#116149] transition-colors truncate" title={sub.subjectName}>
+                        {sub.subjectName}
+                      </h4>
+
+                      {/* Performance / Score Section */}
+                      <div className="mt-4 pt-3.5 border-t border-slate-100 space-y-2">
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-[11px] font-medium text-slate-500">
+                            {hasScore ? "Estimated Score" : "Diagnostic Status"}
+                          </span>
+                          <div>
+                            {hasScore ? (
+                              <span className="text-xl font-extrabold text-[#092E28] tracking-tight">
+                                {scoreValue} <span className="text-xs font-normal text-slate-400">/ 100</span>
+                              </span>
+                            ) : (
+                              <span className="text-[11px] font-semibold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/70">
+                                {sub.questionsAttempted > 0 ? "Calibrating..." : "Pending Mock"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Visual Progress Gauge */}
+                        <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              hasScore && scoreValue >= 70
+                                ? "bg-gradient-to-r from-emerald-500 to-[#116149]"
+                                : hasScore && scoreValue >= 50
+                                  ? "bg-gradient-to-r from-teal-500 to-emerald-600"
+                                  : hasScore
+                                    ? "bg-gradient-to-r from-amber-400 to-amber-500"
+                                    : sub.questionsAttempted > 0
+                                      ? "bg-emerald-400"
+                                      : "bg-slate-200"
+                            }`}
+                            style={{
+                              width: `${hasScore ? Math.min(100, Math.max(6, scoreValue)) : sub.questionsAttempted > 0 ? 15 : 0}%`,
+                            }}
+                          />
+                        </div>
+
+                        {/* Practice Activity Micro-stats */}
+                        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                          <span>
+                            {sub.questionsAttempted > 0 ? (
+                              <span><strong>{sub.questionsAttempted}</strong> Qs solved</span>
+                            ) : (
+                              <span className="text-slate-400">0 questions answered</span>
+                            )}
+                          </span>
+                          <span>
+                            {sub.questionsAttempted > 0 ? (
+                              <span className="font-semibold text-emerald-800">{sub.accuracyPercent}% accuracy</span>
+                            ) : (
+                              <span className="text-slate-400">Untested</span>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Button */}
+                    <Link
+                      href={`/practice?subject=${sub.subjectCode}`}
+                      className="mt-4 flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-emerald-50 text-[#116149] font-bold text-xs border border-emerald-200/80 hover:bg-[#116149] hover:text-white hover:border-transparent transition-all shadow-2xs group-hover:bg-[#116149] group-hover:text-white"
+                    >
+                      Practice {sub.subjectCode} <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
