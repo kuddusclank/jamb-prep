@@ -3,6 +3,7 @@ import { ApiError } from '../api/errors';
 import { assertValidUuid } from '../api/contracts';
 import { recordTopicMasteryBatch } from './coach-service';
 import { recordAcceptedStudyGoalEvent } from './study-schedule-service';
+import { getUserSubscriptionStatus } from './subscription-service';
 
 export interface WeeklyPackSubject {
   id: string;
@@ -82,6 +83,17 @@ export async function getOrIssueWeeklyPack(
   now: Date
 ): Promise<WeeklyPackPayload> {
   assertValidUuid(userId);
+
+  // Gated for Premium / Pro only — no free trials
+  const subscription = await getUserSubscriptionStatus(tx, userId, now);
+  if (!subscription.isPremium) {
+    throw new ApiError({
+      status: 403,
+      code: 'FORBIDDEN_ENTITLEMENT_REQUIRED',
+      message: 'Offline weekly practice packs are exclusive to Pro subscribers. Upgrade to Pro to download 250 offline questions every week.',
+    });
+  }
+
   const weekKey = getWatWeekKey(now);
   const weekExpiry = getWatWeekExpiry(now);
 
@@ -373,6 +385,16 @@ export async function syncWeeklyPackAnswers(
 ): Promise<WeeklyPackSyncResult> {
   assertValidUuid(userId);
   assertValidUuid(payload.packId);
+
+  // Gated for Premium / Pro only — no free trials
+  const subscription = await getUserSubscriptionStatus(tx, userId, now);
+  if (!subscription.isPremium) {
+    throw new ApiError({
+      status: 403,
+      code: 'FORBIDDEN_ENTITLEMENT_REQUIRED',
+      message: 'Offline weekly practice sync requires an active Pro subscription.',
+    });
+  }
 
   if (!Array.isArray(payload.answers)) {
     throw new ApiError({

@@ -3,6 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "@/components/pending-link";
 import { useBrowserAccount } from "@/components/browser-account-boundary";
+import { useApiResource } from "@/lib/api/use-api-resource";
+import type { ProfileData } from "@/lib/api/app-dtos";
 import {
   ensureWeeklyPackDownloaded,
   getCurrentWeekKey,
@@ -26,6 +28,7 @@ import {
   Layers,
   Award,
   Bookmark,
+  Lock,
 } from "lucide-react";
 
 interface QuestionOption {
@@ -53,6 +56,7 @@ interface QuestionItem {
 
 export function WeeklyPracticeClient() {
   const account = useBrowserAccount();
+  const profile = useApiResource<ProfileData>("/api/v1/profile");
   const userId = account.identity?.user.id || account.session.user?.id || "";
 
   const [pack, setPack] = useState<StoredWeeklyPack | null>(null);
@@ -294,6 +298,48 @@ export function WeeklyPracticeClient() {
       setAnswerResult(null);
     }
   };
+
+  // Gated for Pro / Premium subscribers only — no free trials
+  if (profile.data && profile.data.subscription.isPremium === false) {
+    return (
+      <div className="shell section-space max-w-xl mx-auto">
+        <div className="rounded-3xl border border-amber-200 bg-gradient-to-b from-amber-50/80 to-white p-8 text-center space-y-5 shadow-sm">
+          <div className="size-16 rounded-full bg-amber-100 text-amber-900 border border-amber-200 flex items-center justify-center mx-auto shadow-sm">
+            <Lock size={28} />
+          </div>
+
+          <div className="space-y-2">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-900 bg-amber-100 border border-amber-300 px-3 py-1 rounded-full">
+              PRO FEATURE
+            </span>
+            <h2 className="text-2xl font-bold text-[#092E28] pt-1">
+              Offline Practice is a Pro Feature
+            </h2>
+            <p className="text-sm text-slate-600 leading-relaxed max-w-md mx-auto">
+              Download 250 reviewed UTME questions every week across your 4 subjects. Practice anywhere without data or internet connection.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
+            <Link
+              href="/pricing"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-[#116149] text-white text-sm font-bold shadow-md hover:bg-[#0b4936] transition"
+            >
+              <Sparkles size={16} className="text-[#E7B85A]" />
+              <span>Upgrade to Pro</span>
+              <ArrowRight size={16} />
+            </Link>
+            <Link
+              href="/dashboard"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3.5 rounded-full bg-white border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition"
+            >
+              Back to Overview
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

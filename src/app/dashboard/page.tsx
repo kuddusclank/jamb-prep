@@ -292,7 +292,7 @@ export default function DashboardPage() {
 
           {/* Weekly 250-Question Offline Practice Pack */}
           {account.session.user?.id && (
-            <WeeklyPracticeCard userId={account.session.user.id} />
+            <WeeklyPracticeCard userId={account.session.user.id} isPremium={isPremium} />
           )}
 
           {/* Your next revision priorities Section */}

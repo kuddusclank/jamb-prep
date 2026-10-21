@@ -9,6 +9,7 @@ import {
   Loader2,
   Layers,
   Sparkles,
+  Lock,
 } from "lucide-react";
 import {
   getWeeklyPackFromIdb,
@@ -21,14 +22,16 @@ import {
 
 interface WeeklyPracticeCardProps {
   userId: string;
+  isPremium?: boolean;
 }
 
-export function WeeklyPracticeCard({ userId }: WeeklyPracticeCardProps) {
+export function WeeklyPracticeCard({ userId, isPremium = false }: WeeklyPracticeCardProps) {
   const [pack, setPack] = useState<StoredWeeklyPack | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isPremium) return;
     let active = true;
     const weekKey = getCurrentWeekKey();
     void getWeeklyPackFromIdb(userId, weekKey)
@@ -41,9 +44,10 @@ export function WeeklyPracticeCard({ userId }: WeeklyPracticeCardProps) {
     return () => {
       active = false;
     };
-  }, [userId]);
+  }, [userId, isPremium]);
 
   const handleDownload = async () => {
+    if (!isPremium) return;
     setIsDownloading(true);
     setError(null);
     try {
@@ -76,7 +80,13 @@ export function WeeklyPracticeCard({ userId }: WeeklyPracticeCardProps) {
               <Sparkles size={12} className="text-amber-300" />
               WEEKLY OFFLINE PACK
             </span>
-            {pack ? (
+
+            {!isPremium ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-950 border border-amber-300">
+                <Lock size={11} />
+                PRO ONLY
+              </span>
+            ) : pack ? (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 <CheckCircle2 size={12} />
                 Ready offline
@@ -89,11 +99,12 @@ export function WeeklyPracticeCard({ userId }: WeeklyPracticeCardProps) {
           </h2>
 
           <p className="text-sm text-emerald-100/80 leading-relaxed">
-            Practice at your own pace without data or internet. 85 English and
-            165 elective questions frozen for this week.
+            {!isPremium
+              ? "Download 250 practice questions every week across your 4 UTME subjects and practice anywhere without data or internet. Exclusive to Pro subscribers."
+              : "Practice at your own pace without data or internet. 85 English and 165 elective questions frozen for this week."}
           </p>
 
-          {pack && (
+          {isPremium && pack && (
             <div className="pt-2">
               <div className="flex items-center justify-between text-xs text-emerald-200 font-medium mb-1.5">
                 <span>Overall Completion</span>
@@ -132,7 +143,16 @@ export function WeeklyPracticeCard({ userId }: WeeklyPracticeCardProps) {
 
         {/* Action Button */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-          {pack ? (
+          {!isPremium ? (
+            <Link
+              href="/pricing"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-amber-400 text-amber-950 font-bold text-sm shadow-md hover:bg-amber-300 transition active:scale-95"
+            >
+              <Lock size={15} />
+              <span>Upgrade to Pro for Offline</span>
+              <ArrowRight size={16} />
+            </Link>
+          ) : pack ? (
             <Link
               href="/practice/weekly"
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-white text-emerald-950 font-bold text-sm shadow-md hover:bg-emerald-50 transition active:scale-95"
