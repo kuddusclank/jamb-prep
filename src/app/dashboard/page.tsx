@@ -524,78 +524,139 @@ export default function DashboardPage() {
           {/* Past CBT Mock History */}
           {recentMockHistory.length > 0 && (
             <div>
-              <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-[#092E28] flex flex-wrap items-center gap-2">
-                    <Calendar size={18} className="text-[#116149]" />
-                    Mock Simulation History
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Review your completed simulations and question solutions.
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-[#092E28] tracking-tight flex items-center gap-2">
+                      <Calendar size={18} className="text-[#116149]" />
+                      Mock Simulation History
+                    </h3>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-100/90 text-[#116149] text-[11px] font-extrabold uppercase tracking-wide">
+                      {recentMockHistory.length} {recentMockHistory.length === 1 ? "Completed" : "Completed"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Review your completed CBT mock scores, answer rationales, and subject breakdowns.
                   </p>
                 </div>
+
+                <Link
+                  href="/mock"
+                  className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#116149] hover:bg-[#0b4936] text-white text-xs font-bold transition-all shadow-2xs hover:-translate-y-0.5"
+                >
+                  Take New Mock <ArrowRight size={13} />
+                </Link>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-                <div className="divide-y divide-slate-100">
-                  {recentMockHistory.map((mock, idx) => {
-                    const mins = Math.floor(mock.timeSpentSeconds / 60);
-                    const formattedDate = new Date(mock.completedAt).toLocaleDateString("en-NG", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    });
+              <div className="space-y-3">
+                {recentMockHistory.map((mock, idx) => {
+                  const mins = Math.floor(mock.timeSpentSeconds / 60);
+                  const timeLabel = mock.timeSpentSeconds < 60 ? "< 1 min" : `${mins} mins`;
+                  const formattedDate = new Date(mock.completedAt).toLocaleDateString("en-NG", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  });
 
-                    return (
-                      <div
-                        key={mock.attemptId}
-                        className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/70 transition-colors"
-                      >
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <span className="text-xs font-bold uppercase tracking-wider text-[#116149]">
-                              Mock Attempt #{recentMockHistory.length - idx}
-                            </span>
-                            <span className="text-xs text-slate-400">• {formattedDate}</span>
-                            <span className="text-xs text-slate-400">• {mins} mins spent</span>
-                          </div>
+                  // Resolve actual elective subject codes from subjectSummaries
+                  const electiveSubs = subjectSummaries.filter((s) => !s.isCompulsory);
+                  const sub2Code = electiveSubs[0]?.subjectCode ?? "Sub 2";
+                  const sub3Code = electiveSubs[1]?.subjectCode ?? "Sub 3";
+                  const sub4Code = electiveSubs[2]?.subjectCode ?? "Sub 4";
 
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-bold text-[#092E28]">
+                  const scoreTier =
+                    mock.totalScore >= 250
+                      ? "high"
+                      : mock.totalScore >= 180
+                        ? "mid"
+                        : mock.totalScore > 0
+                          ? "low"
+                          : "zero";
+
+                  return (
+                    <div
+                      key={mock.attemptId}
+                      className="group rounded-3xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-xs hover:border-emerald-300 hover:shadow-sm transition-all duration-200"
+                    >
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        {/* Score Stamp + Summary */}
+                        <div className="flex items-start sm:items-center gap-4">
+                          {/* Score Stamp Card */}
+                          <div
+                            className={`flex flex-col items-center justify-center size-16 sm:size-17 rounded-2xl shrink-0 border transition-all ${
+                              scoreTier === "high"
+                                ? "bg-emerald-50 border-emerald-200 text-[#116149]"
+                                : scoreTier === "mid"
+                                  ? "bg-teal-50 border-teal-200 text-teal-800"
+                                  : scoreTier === "low"
+                                    ? "bg-amber-50 border-amber-200 text-amber-900"
+                                    : "bg-slate-50 border-slate-200 text-slate-500"
+                            }`}
+                          >
+                            <span className="text-xl sm:text-2xl font-black tracking-tight leading-none">
                               {mock.totalScore}
                             </span>
-                            <span className="text-xs text-slate-400">/ 400 points</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1">
+                              / 400
+                            </span>
                           </div>
 
-                          {/* Quick 4-subject breakdown pills */}
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
-                              ENG: {mock.englishScore}/100
-                            </span>
-                            <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
-                              Sub 2: {mock.subject2Score}/100
-                            </span>
-                            <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
-                              Sub 3: {mock.subject3Score}/100
-                            </span>
-                            <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
-                              Sub 4: {mock.subject4Score}/100
-                            </span>
+                          {/* Attempt Meta & Subject Score Badges */}
+                          <div className="space-y-1.5 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-mono text-xs font-black tracking-wider uppercase px-2.5 py-0.5 rounded-lg bg-emerald-100 text-[#116149]">
+                                Attempt #{recentMockHistory.length - idx}
+                              </span>
+                              <span className="text-xs text-slate-500 font-medium">
+                                • {formattedDate}
+                              </span>
+                              <span className="text-xs text-slate-400 font-medium">
+                                • {timeLabel} spent
+                              </span>
+                            </div>
+
+                            {/* 4 Subjects Performance Badges */}
+                            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+                                <strong className="font-mono text-[11px] text-[#116149]">ENG</strong>
+                                <span className="font-extrabold text-[#092E28]">{mock.englishScore}</span>
+                                <span className="text-[10px] text-slate-400">/100</span>
+                              </span>
+
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+                                <strong className="font-mono text-[11px] text-slate-700">{sub2Code}</strong>
+                                <span className="font-extrabold text-[#092E28]">{mock.subject2Score}</span>
+                                <span className="text-[10px] text-slate-400">/100</span>
+                              </span>
+
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+                                <strong className="font-mono text-[11px] text-slate-700">{sub3Code}</strong>
+                                <span className="font-extrabold text-[#092E28]">{mock.subject3Score}</span>
+                                <span className="text-[10px] text-slate-400">/100</span>
+                              </span>
+
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+                                <strong className="font-mono text-[11px] text-slate-700">{sub4Code}</strong>
+                                <span className="font-extrabold text-[#092E28]">{mock.subject4Score}</span>
+                                <span className="text-[10px] text-slate-400">/100</span>
+                              </span>
+                            </div>
                           </div>
                         </div>
 
-                        <div className="shrink-0">
+                        {/* Action CTA Button */}
+                        <div className="shrink-0 pt-2 lg:pt-0">
                           <Link
                             href={buildCanonicalResultUrl(mock.attemptId)}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 text-xs font-semibold text-[#092E28] hover:bg-emerald-50 hover:border-emerald-200 hover:text-[#116149] transition-all"
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-50 hover:bg-[#116149] text-slate-700 hover:text-white font-bold text-xs border border-slate-200 hover:border-transparent transition-all shadow-2xs group-hover:bg-[#116149] group-hover:text-white"
                           >
-                            Review Solutions <ArrowUpRight size={13} />
+                            Review Solutions <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
                           </Link>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
