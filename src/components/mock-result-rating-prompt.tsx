@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 import { useApiResource } from "@/lib/api/use-api-resource";
 import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
 
@@ -66,7 +67,14 @@ export function MockResultRatingPrompt({ attemptId }: { attemptId: string }) {
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">One quick question</p>
             <h2 id="app-rating-title" className="mt-1 text-lg font-semibold text-slate-900">How was your mock experience?</h2>
           </div>
-          <button type="button" onClick={dismiss} className="min-h-10 rounded-lg px-2 text-sm text-slate-500 hover:bg-slate-100" aria-label="Close rating prompt">Close</button>
+          <button
+            type="button"
+            onClick={dismiss}
+            className="shrink-0 -mr-1 -mt-1 flex size-8 items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer active:scale-95"
+            aria-label="Close rating prompt"
+          >
+            <X size={18} />
+          </button>
         </div>
         <fieldset className="mt-4">
           <legend className="sr-only">Rate your experience from 1 to 5</legend>
