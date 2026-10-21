@@ -84,9 +84,21 @@ export default function DashboardPage() {
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem("jambprep_lexis_modal_dismissed", "true");
-      } catch {}
+      } catch (err) {
+        console.error("Failed to dismiss modal in localStorage:", err);
+      }
     }
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && showLexisModal) {
+        handleDismissLexisModal();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showLexisModal]);
 
   useEffect(() => {
     const scrollToLast = () => {
@@ -545,67 +557,75 @@ export default function DashboardPage() {
       {/* Lexis & Word Games Pop-up Modal */}
       {showLexisModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs animate-in fade-in duration-200"
           role="dialog"
           aria-modal="true"
           aria-labelledby="lexis-modal-title"
+          onClick={handleDismissLexisModal}
         >
-          <div className="relative w-full max-w-lg rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950 via-[#092E28] to-emerald-900 p-6 sm:p-8 text-white shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div
+            className="relative w-full max-w-lg rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950 via-[#092E28] to-emerald-900 p-6 sm:p-8 text-white shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Background ambient glow */}
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
 
-            {/* Close button */}
-            <button
-              type="button"
-              onClick={handleDismissLexisModal}
-              className="absolute top-5 right-5 p-2 rounded-full text-emerald-200/80 hover:text-white hover:bg-white/10 transition cursor-pointer"
-              aria-label="Close modal"
-            >
-              <X size={20} />
-            </button>
-
             <div className="relative z-10">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-200 text-[11px] font-bold uppercase tracking-wider mb-3 border border-emerald-400/20">
-                {isPremium ? (
-                  <>
-                    <BookOpen size={12} className="text-emerald-300" /> UTME Lexis & Oral English Spotlight
-                  </>
-                ) : (
-                  <>
-                    <Lock size={12} className="text-amber-300" /> PRO FEATURE · UTME Lexis & Oral English
-                  </>
-                )}
+              {/* Header: Badge on left, Close button on right */}
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-200 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider border border-emerald-400/20 min-w-0">
+                  {isPremium ? (
+                    <>
+                      <BookOpen size={12} className="shrink-0 text-emerald-300" />
+                      <span className="truncate">UTME Lexis & Oral English</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock size={12} className="shrink-0 text-amber-300" />
+                      <span className="truncate">Pro · UTME Lexis & Oral English</span>
+                    </>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleDismissLexisModal}
+                  className="shrink-0 flex size-8 sm:size-9 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-emerald-100 hover:text-white transition cursor-pointer active:scale-95 border border-white/10"
+                  aria-label="Close modal"
+                >
+                  <X size={18} />
+                </button>
               </div>
 
-              <h2 id="lexis-modal-title" className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+              <h2 id="lexis-modal-title" className="text-xl sm:text-2xl font-bold tracking-tight text-white">
                 Master Vocabulary & Speech Sounds
               </h2>
 
-              <p className="mt-2.5 text-sm sm:text-base text-emerald-100/90 leading-relaxed">
+              <p className="mt-2 text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
                 Boost your Use of English score with high-yield UTME words, syllable stress drills, silent letter hunting, and rhyme rush games.
               </p>
 
               <div className="mt-4 flex flex-wrap gap-2 text-xs">
                 <span className="px-3 py-1 rounded-lg bg-white/10 text-emerald-100 font-medium">📖 680+ Words & Free Dictionary</span>
                 <span className="px-3 py-1 rounded-lg bg-white/10 text-emerald-100 font-medium">🔊 IPA & Native Audio</span>
-                <span className="px-3 py-1 rounded-lg bg-white/10 text-emerald-100 font-medium">🎮 4 Interactive Games (300 Words Each)</span>
+                <span className="px-3 py-1 rounded-lg bg-white/10 text-emerald-100 font-medium">🎮 4 Games (300 Words Each)</span>
               </div>
 
-              <div className="mt-7 flex flex-col sm:flex-row gap-3">
+              <div className="mt-6 flex flex-col sm:flex-row gap-3">
                 {isPremium ? (
                   <>
                     <Link
                       href="/dictionary"
                       onClick={handleDismissLexisModal}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-[#092E28] hover:bg-emerald-50 transition shadow-md flex-1 text-center"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-xs sm:text-sm font-bold text-[#092E28] hover:bg-emerald-50 transition shadow-md flex-1 text-center"
                     >
                       <BookA size={16} /> Open Dictionary Hub
                     </Link>
                     <Link
                       href="/dictionary?tab=games"
                       onClick={handleDismissLexisModal}
-                      className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-800/40 px-6 py-3.5 text-sm font-semibold text-emerald-100 hover:bg-emerald-800/70 transition flex-1 text-center"
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-800/40 px-5 py-3 text-xs sm:text-sm font-semibold text-emerald-100 hover:bg-emerald-800/70 transition flex-1 text-center"
                     >
                       <Gamepad2 size={16} /> Play Word Games <ArrowRight size={16} />
                     </Link>
@@ -615,14 +635,14 @@ export default function DashboardPage() {
                     <Link
                       href="/pricing"
                       onClick={handleDismissLexisModal}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 text-amber-950 px-6 py-3.5 text-sm font-bold hover:bg-amber-300 transition shadow-md flex-1 text-center cursor-pointer"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 text-amber-950 px-5 py-3 text-xs sm:text-sm font-bold hover:bg-amber-300 transition shadow-md flex-1 text-center cursor-pointer"
                     >
                       <Lock size={16} /> Unlock with Pro (₦1,000)
                     </Link>
                     <Link
                       href="/pricing"
                       onClick={handleDismissLexisModal}
-                      className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-800/40 px-6 py-3.5 text-sm font-semibold text-emerald-100 hover:bg-emerald-800/70 transition flex-1 text-center cursor-pointer"
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-800/40 px-5 py-3 text-xs sm:text-sm font-semibold text-emerald-100 hover:bg-emerald-800/70 transition flex-1 text-center cursor-pointer"
                     >
                       View Pro Plans <ArrowRight size={16} />
                     </Link>
