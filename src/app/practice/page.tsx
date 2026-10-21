@@ -12,30 +12,17 @@ import { getWeeklyPackFromIdb } from "@/lib/offline/idb-storage";
 import { getCurrentWeekKey } from "@/lib/offline/weekly-pack-client";
 import { getOfflineProfile, isOfflineAccessValid } from "@/lib/offline/offline-profile-cache";
 import { OfflineGatedNotice } from "@/app/dashboard/offline-gated-notice";
+import { useNetworkStatus, isNetworkOrTimeoutError } from "@/lib/offline/network-state";
 
 function PracticePageContent() {
   const searchParams = useSearchParams();
   const account = useBrowserAccount();
   const userId = account.identity?.user?.id || account.session.user?.id || "";
-  const [isOffline, setIsOffline] = useState(false);
+  const { isOffline, isOnline } = useNetworkStatus();
   const [hasCachedPack, setHasCachedPack] = useState(false);
   const [checkedCache, setCheckedCache] = useState(false);
 
   const catalogue = useApiResource<PracticeCatalogue>("/api/v1/practice/catalogue");
-
-  useEffect(() => {
-    if (typeof navigator !== "undefined") {
-      setIsOffline(!navigator.onLine);
-    }
-    const onOnline = () => setIsOffline(false);
-    const onOffline = () => setIsOffline(true);
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
-    return () => {
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("offline", onOffline);
-    };
-  }, []);
 
   useEffect(() => {
     if (!userId) return;
@@ -54,8 +41,10 @@ function PracticePageContent() {
   const offlineProfile = getOfflineProfile(userId);
   const offlineValidity = isOfflineAccessValid(offlineProfile);
 
-  // If offline or catalogue request failed while offline
-  if (isOffline || (catalogue.error && !catalogue.data)) {
+  const isNetworkFailure = catalogue.error ? isNetworkOrTimeoutError(catalogue.error) : false;
+
+  // Auto-switch to offline practice the moment internet is lost or request fails with network/timeout error
+  if (isOffline || isNetworkFailure || (catalogue.error && !catalogue.data)) {
     // If user is not valid paid/active offline subscriber, display gated notice
     if (!offlineValidity.valid) {
       return (

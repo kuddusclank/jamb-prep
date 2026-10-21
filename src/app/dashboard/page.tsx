@@ -66,6 +66,7 @@ import type { DashboardData } from "@/lib/api/app-dtos";
 import { OfflineDashboard } from "./offline-dashboard";
 import { OfflineGatedNotice } from "./offline-gated-notice";
 import { getOfflineProfile, isOfflineAccessValid, saveOfflineProfile } from "@/lib/offline/offline-profile-cache";
+import { useNetworkStatus, isNetworkOrTimeoutError } from "@/lib/offline/network-state";
 
 export default function DashboardPage() {
   const resource = useApiResource<DashboardData>('/api/v1/dashboard');
@@ -122,20 +123,7 @@ export default function DashboardPage() {
     };
   }, [resource.data?.studyStreak]);
 
-  const [isOffline, setIsOffline] = useState(false);
-  useEffect(() => {
-    if (typeof navigator !== "undefined") {
-      setIsOffline(!navigator.onLine);
-    }
-    const onOnline = () => setIsOffline(false);
-    const onOffline = () => setIsOffline(true);
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
-    return () => {
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("offline", onOffline);
-    };
-  }, []);
+  const { isOffline, isOnline } = useNetworkStatus();
 
   // Update offline snapshot when live dashboard data is available
   useEffect(() => {
@@ -173,8 +161,10 @@ export default function DashboardPage() {
   const offlineProfile = getOfflineProfile(userId);
   const offlineValidity = isOfflineAccessValid(offlineProfile);
 
-  // If offline or request failed while offline, render adaptive offline experience
-  if (isOffline || (!resource.data && resource.error && typeof navigator !== "undefined" && !navigator.onLine)) {
+  const isNetworkFailure = resource.error ? isNetworkOrTimeoutError(resource.error) : false;
+
+  // Auto-switch to offline UI the moment internet is lost or request fails with network/timeout error
+  if (isOffline || isNetworkFailure) {
     if (offlineValidity.valid) {
       return (
         <StudyWorkspace>

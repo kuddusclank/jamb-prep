@@ -10,6 +10,7 @@ import { BrowserSessionSnapshot } from '../lib/auth/session-manager';
 import { SessionIdentityResponse } from '../lib/api/native-client';
 import { buildLoginRedirectUrl } from '../lib/auth/redirect';
 import { saveOfflineProfile, getOfflineProfile } from '@/lib/offline/offline-profile-cache';
+import { getNetworkStateManager, isNetworkOrTimeoutError } from '@/lib/offline/network-state';
 
 const initial: BrowserSessionSnapshot = { status: 'loading', user: null, accessToken: null, expiresAt: null, provisioned: false, role: null, error: null };
 export function useBrowserAccount() {
@@ -35,7 +36,13 @@ export function useBrowserAccount() {
         }
       }).catch((err: unknown) => {
         if (!active) return;
-        if (typeof navigator !== 'undefined' && !navigator.onLine && session.user) {
+        const isOfflineOrNetworkFailure =
+          (typeof navigator !== 'undefined' && !navigator.onLine) ||
+          isNetworkOrTimeoutError(err);
+        if (isOfflineOrNetworkFailure) {
+          getNetworkStateManager().markOffline(err instanceof Error ? err.message : String(err));
+        }
+        if (isOfflineOrNetworkFailure && session.user) {
           const cached = getOfflineProfile(session.user.id);
           if (cached) {
             const offlineIdentity: SessionIdentityResponse = {

@@ -13,6 +13,8 @@ import { flushPendingSync, ensureWeeklyPackDownloaded } from "@/lib/offline/week
 import styles from "./study-workspace.module.css";
 import { PolicyLinks } from "@/components/legal-page";
 import { ResourceStatus } from "@/lib/api/use-api-resource";
+import { useNetworkStatus, isNetworkOrTimeoutError } from "@/lib/offline/network-state";
+import { getOfflineProfile } from "@/lib/offline/offline-profile-cache";
 
 const destinations = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, requiresOnline: false },
@@ -27,54 +29,71 @@ const destinations = [
 
 export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
   const profile = useApiResource<ProfileData>("/api/v1/profile");
-  const [isOnline, setIsOnline] = useState(true);
-  const showFreeLinks = profile.data?.subscription.isPremium === false;
+  const { isOnline, isOffline } = useNetworkStatus();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (typeof navigator !== 'undefined') {
-      setIsOnline(navigator.onLine);
-    }
-
-    const triggerSync = (studentId: string) => {
-      void flushPendingSync(studentId);
-    };
-
     const studentId = profile.data?.profile?.id;
-    if (studentId && typeof navigator !== 'undefined' && navigator.onLine) {
-      triggerSync(studentId);
+    if (studentId && isOnline) {
+      void flushPendingSync(studentId);
     }
-
-    const handleOnline = () => {
-      setIsOnline(true);
-      if (studentId) {
-        triggerSync(studentId);
-      }
-    };
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [profile.data?.profile?.id]);
+  }, [profile.data?.profile?.id, isOnline]);
 
   // Automatic silent background prefetch of this week's 250-pack for Pro students
   useEffect(() => {
-    if (typeof window === "undefined" || !navigator.onLine) return;
+    if (typeof window === "undefined" || isOffline) return;
     const studentId = profile.data?.profile?.id;
     const isPremium = profile.data?.subscription?.isPremium;
     if (!studentId || !isPremium) return;
 
     void ensureWeeklyPackDownloaded(studentId).catch(() => {});
-  }, [profile.data?.profile?.id, profile.data?.subscription?.isPremium]);
+  }, [profile.data?.profile?.id, profile.data?.subscription?.isPremium, isOffline]);
 
+  const offlineSnapshot = getOfflineProfile(profile.data?.profile?.id);
+  const effectiveProfile: ProfileData | null = profile.data || (offlineSnapshot ? {
+    profile: {
+      id: offlineSnapshot.userId,
+      display_name: offlineSnapshot.displayName,
+      email: offlineSnapshot.email,
+      role: offlineSnapshot.role,
+    },
+    preferences: {
+      target_score: offlineSnapshot.targetScore,
+      target_institution: null,
+      target_course: null,
+    },
+    subscription: {
+      isPremium: offlineSnapshot.subscription.isPremium,
+      expiresAt: offlineSnapshot.subscription.expiresAt,
+      daysRemaining: offlineSnapshot.subscription.expiresAt
+        ? Math.max(0, Math.ceil((new Date(offlineSnapshot.subscription.expiresAt).getTime() - Date.now()) / 86400000))
+        : 0,
+      planCode: offlineSnapshot.subscription.planCode,
+      autoRenew: offlineSnapshot.subscription.autoRenew,
+      cancelledAt: null,
+    },
+    studyStreak: null,
+  } : null);
+
+  const showFreeLinks = effectiveProfile?.subscription.isPremium === false;
   const visibleDestinations = destinations.filter(item => showFreeLinks || !["/referrals", "/pricing"].includes(item.href));
   const current = visibleDestinations.find(item => pathname === item.href || pathname.startsWith(`${item.href}/`));
-  if (!profile.data) return <ResourceStatus error={profile.error} retry={profile.retry} />;
-  const streak = profile.data.studyStreak?.streak;
+
+  if (!effectiveProfile) {
+    if (isOffline) {
+      return (
+        <div className="shell section-space max-w-lg mx-auto text-center space-y-4">
+          <h2 className="text-xl font-bold text-[#092E28]">Offline Study Space</h2>
+          <p className="text-sm text-slate-600">
+            Please connect to the internet once to set up your account and cache your study materials.
+          </p>
+        </div>
+      );
+    }
+    return <ResourceStatus error={profile.error} retry={profile.retry} />;
+  }
+
+  const streak = effectiveProfile.studyStreak?.streak;
 
   const handleSignOut = async () => {
     try {

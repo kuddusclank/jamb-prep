@@ -5,6 +5,7 @@ import { useBrowserAccount } from '../../components/browser-account-boundary';
 import StudySkeleton from '../../components/study-skeleton';
 import { saveProfileSnapshot, getProfileSnapshot } from '../offline/idb-storage';
 import { saveOfflineProfile, getOfflineProfile } from '../offline/offline-profile-cache';
+import { getNetworkStateManager, isNetworkOrTimeoutError } from '../offline/network-state';
 import type { ProfileData } from './app-dtos';
 
 export function useApiResource<T>(path: string | null) {
@@ -35,8 +36,17 @@ export function useApiResource<T>(path: string | null) {
         }
       }).catch(async (error: unknown) => {
         if (!active) return;
+        // Auto-detect offline condition if network/DNS/timeout error occurs or navigator says offline
+        const isOfflineOrNetworkFailure =
+          (typeof navigator !== 'undefined' && !navigator.onLine) ||
+          isNetworkOrTimeoutError(error);
+
+        if (isOfflineOrNetworkFailure) {
+          getNetworkStateManager().markOffline(error instanceof Error ? error.message : String(error));
+        }
+
         // Check offline snapshot fallback
-        if (typeof navigator !== 'undefined' && !navigator.onLine && path === '/api/v1/profile') {
+        if (isOfflineOrNetworkFailure && path === '/api/v1/profile') {
           try {
             const cachedOffline = getOfflineProfile(userId);
             if (cachedOffline && active) {

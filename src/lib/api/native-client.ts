@@ -12,6 +12,7 @@
  */
 
 import { buildLoginRedirectUrl } from '../auth/redirect';
+import { getNetworkStateManager, isNetworkOrTimeoutError } from '../offline/network-state';
 import {
   BrowserSessionManager,
   computeBootstrapIdempotencyKey,
@@ -385,8 +386,13 @@ export function createNativeApiClient(options?: NativeApiClientOptions): NativeA
       }, timeoutMs);
     });
     try {
-      return await Promise.race([performRequest<T>(path, reqOptions, controller, cleanups), deadline]);
+      const res = await Promise.race([performRequest<T>(path, reqOptions, controller, cleanups), deadline]);
+      getNetworkStateManager().markOnline();
+      return res;
     } catch (error) {
+      if (isNetworkOrTimeoutError(error)) {
+        getNetworkStateManager().markOffline(error instanceof Error ? error.message : String(error));
+      }
       if (controller.signal.reason instanceof NativeApiClientError) throw controller.signal.reason;
       throw error;
     } finally {
