@@ -14,6 +14,22 @@ export function useApiResource<T>(path: string | null) {
   const [failure, setFailure] = useState<{ userId: string; path: string; revision: number; message: string } | null>(null);
   const [revision, setRevision] = useState(0);
   const userId = session.user?.id ?? null;
+
+  // Automatically re-fetch when internet connectivity is restored
+  useEffect(() => {
+    const manager = getNetworkStateManager();
+    return manager.subscribe((isOnline) => {
+      if (isOnline) {
+        setFailure((currentFailure) => {
+          if (currentFailure && isNetworkOrTimeoutError(currentFailure.message)) {
+            setRevision((rev) => rev + 1);
+            return null;
+          }
+          return currentFailure;
+        });
+      }
+    });
+  }, []);
   useEffect(() => {
     let active = true;
     setValue(null); setFailure(null);

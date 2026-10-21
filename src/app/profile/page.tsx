@@ -41,8 +41,16 @@ export default function ProfilePage() {
     (profile.error ? isNetworkOrTimeoutError(profile.error) : false) ||
     (enrollment.error ? isNetworkOrTimeoutError(enrollment.error) : false);
 
+  // Automatically refresh online data when connectivity returns
+  useEffect(() => {
+    if (!isOffline && isNetworkFailure) {
+      profile.retry();
+      enrollment.retry();
+    }
+  }, [isOffline, isNetworkFailure, profile.retry, enrollment.retry]);
+
   // Auto-switch to offline profile view when connection drops or requests fail with network/DNS error
-  if (isOffline || isNetworkFailure) {
+  if (isOffline || (isNetworkFailure && (!profile.data || !enrollment.data))) {
     if (offlineValidity.valid) {
       return (
         <StudyWorkspace>

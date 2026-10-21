@@ -49,6 +49,12 @@ self.addEventListener('install', event => {
     const indexResp = await cache.match('/index.html');
     if (indexResp) {
       await cache.put('/', indexResp.clone());
+      await cache.put('/dashboard', indexResp.clone());
+      await cache.put('/dashboard/', indexResp.clone());
+      await cache.put('/practice', indexResp.clone());
+      await cache.put('/practice/', indexResp.clone());
+      await cache.put('/profile', indexResp.clone());
+      await cache.put('/profile/', indexResp.clone());
     }
   })());
 });

@@ -163,8 +163,15 @@ export default function DashboardPage() {
 
   const isNetworkFailure = resource.error ? isNetworkOrTimeoutError(resource.error) : false;
 
+  // Automatically refresh online data when connectivity returns
+  useEffect(() => {
+    if (isOnline && isNetworkFailure) {
+      resource.retry();
+    }
+  }, [isOnline, isNetworkFailure, resource.retry]);
+
   // Auto-switch to offline UI the moment internet is lost or request fails with network/timeout error
-  if (isOffline || isNetworkFailure) {
+  if (isOffline || (isNetworkFailure && !resource.data)) {
     if (offlineValidity.valid) {
       return (
         <StudyWorkspace>

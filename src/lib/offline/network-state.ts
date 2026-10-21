@@ -114,8 +114,14 @@ class NetworkStateManager {
   }
 
   private handleWindowOnline(): void {
-    // When window fires 'online', verify with actual probe before declaring online
+    // When window fires 'online', verify with staggered probes to accommodate DHCP/DNS handshake latency
     void this.probeConnection();
+    setTimeout(() => {
+      if (!this.isOnlineState) void this.probeConnection();
+    }, 800);
+    setTimeout(() => {
+      if (!this.isOnlineState) void this.probeConnection();
+    }, 2000);
   }
 
   private notifyListeners(): void {
@@ -130,14 +136,14 @@ class NetworkStateManager {
 
   private startRecoveryPolling(): void {
     if (this.pingIntervalId) return;
-    // Probe every 8 seconds to automatically recover the moment connection returns
+    // Rapid probe every 2.5 seconds to automatically recover the moment connection returns
     this.pingIntervalId = setInterval(() => {
       if (!this.isOnlineState) {
         void this.probeConnection();
       } else {
         this.stopRecoveryPolling();
       }
-    }, 8000);
+    }, 2500);
   }
 
   private stopRecoveryPolling(): void {

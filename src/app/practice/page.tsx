@@ -43,8 +43,15 @@ function PracticePageContent() {
 
   const isNetworkFailure = catalogue.error ? isNetworkOrTimeoutError(catalogue.error) : false;
 
+  // Automatically refresh online catalogue when connectivity returns
+  useEffect(() => {
+    if (isOnline && isNetworkFailure) {
+      catalogue.retry();
+    }
+  }, [isOnline, isNetworkFailure, catalogue.retry]);
+
   // Auto-switch to offline practice the moment internet is lost or request fails with network/timeout error
-  if (isOffline || isNetworkFailure || (catalogue.error && !catalogue.data)) {
+  if (isOffline || (isNetworkFailure && !catalogue.data) || (catalogue.error && !catalogue.data)) {
     // If user is not valid paid/active offline subscriber, display gated notice
     if (!offlineValidity.valid) {
       return (
