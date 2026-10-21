@@ -165,34 +165,49 @@ export default function StressMasterGamePage() {
           </div>
 
           {/* Mode Switcher */}
-          <div className="flex rounded-2xl bg-slate-100 p-1.5 border border-slate-200">
+          <div className="grid grid-cols-2 rounded-2xl bg-slate-100 p-1.5 border border-slate-200 gap-1.5">
             <button
               type="button"
               onClick={() => {
                 setMode("syllable");
                 restartGame();
               }}
-              className={`flex-1 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
+              className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl transition cursor-pointer text-center ${
                 mode === "syllable"
-                  ? "bg-white text-[#116149] shadow-xs"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-white text-[#116149] shadow-sm font-bold"
+                  : "text-slate-600 hover:text-slate-900 font-medium hover:bg-slate-200/50"
               }`}
             >
-              Mode 1: Syllable Stress Tapping
+              <span className={`text-[10px] uppercase tracking-wider font-extrabold ${
+                mode === "syllable" ? "text-emerald-700/80" : "text-slate-400"
+              }`}>
+                Mode 1
+              </span>
+              <span className="text-xs sm:text-sm font-bold tracking-tight">
+                Syllable Stress
+              </span>
             </button>
+
             <button
               type="button"
               onClick={() => {
                 setMode("emphatic");
                 restartGame();
               }}
-              className={`flex-1 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
+              className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl transition cursor-pointer text-center ${
                 mode === "emphatic"
-                  ? "bg-white text-[#116149] shadow-xs"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-white text-[#116149] shadow-sm font-bold"
+                  : "text-slate-600 hover:text-slate-900 font-medium hover:bg-slate-200/50"
               }`}
             >
-              Mode 2: Emphatic Stress (Contrast)
+              <span className={`text-[10px] uppercase tracking-wider font-extrabold ${
+                mode === "emphatic" ? "text-emerald-700/80" : "text-slate-400"
+              }`}>
+                Mode 2
+              </span>
+              <span className="text-xs sm:text-sm font-bold tracking-tight">
+                Emphatic Stress
+              </span>
             </button>
           </div>
 
