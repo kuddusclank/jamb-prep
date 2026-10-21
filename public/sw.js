@@ -59,6 +59,16 @@ self.addEventListener('install', event => {
         await cache.put('/practice/', indexRes.clone());
         await cache.put('/profile', indexRes.clone());
         await cache.put('/profile/', indexRes.clone());
+        await cache.put('/dictionary', indexRes.clone());
+        await cache.put('/dictionary/', indexRes.clone());
+        await cache.put('/games/stress-master', indexRes.clone());
+        await cache.put('/games/stress-master/', indexRes.clone());
+        await cache.put('/games/sound-match', indexRes.clone());
+        await cache.put('/games/sound-match/', indexRes.clone());
+        await cache.put('/games/silent-hunter', indexRes.clone());
+        await cache.put('/games/silent-hunter/', indexRes.clone());
+        await cache.put('/games/synonym-blitz', indexRes.clone());
+        await cache.put('/games/synonym-blitz/', indexRes.clone());
       }
     } catch { /* optional app shell prefetch */ }
   })());

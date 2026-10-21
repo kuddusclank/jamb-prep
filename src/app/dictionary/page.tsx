@@ -30,8 +30,15 @@ import { UTME_LEXICON } from "@/lib/dictionary/utme-lexicon-data";
 import { WordInspectorSheet } from "@/components/dictionary/word-inspector-sheet";
 import { ProFeatureGate } from "@/components/dictionary/pro-feature-gate";
 import { recordStreakActivity, type StreakActivationResult } from "@/lib/dictionary/streak-activation";
+import { useNetworkStatus } from "@/lib/offline/network-state";
+import { StressMasterGameView } from "@/app/games/stress-master/stress-master-view";
+import { SoundMatchGameView } from "@/app/games/sound-match/sound-match-view";
+import { SilentHunterGameView } from "@/app/games/silent-hunter/silent-hunter-view";
+import { SynonymBlitzGameView } from "@/app/games/synonym-blitz/synonym-blitz-view";
 
 export default function DictionaryPage() {
+  const { isOffline } = useNetworkStatus();
+  const [activeGameId, setActiveGameId] = useState<"stress-master" | "sound-match" | "silent-hunter" | "synonym-blitz" | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<"all" | WordCategory>("all");
   const [activeWord, setActiveWord] = useState<UtmeWordEntry | null>(null);
@@ -219,7 +226,10 @@ export default function DictionaryPage() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setActiveTab(activeTab === "games" ? "browse" : "games")}
+                onClick={() => {
+                  setActiveTab(activeTab === "games" ? "browse" : "games");
+                  setActiveGameId(null);
+                }}
                 className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold transition shadow-xs cursor-pointer ${
                   activeTab === "games"
                     ? "bg-[#116149] text-white hover:bg-[#0d4d3a]"
@@ -763,142 +773,169 @@ export default function DictionaryPage() {
           {/* TAB 3: WORD GAMES HUB */}
           {activeTab === "games" && (
             <div className="space-y-6">
-              <div className="rounded-3xl border border-emerald-200 bg-gradient-to-r from-emerald-800 to-[#116149] p-8 text-white shadow-md">
-                <div className="max-w-xl space-y-3">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-emerald-100 backdrop-blur-xs border border-white/20">
-                    <Gamepad2 size={14} /> Interactive Oral English & Lexis Drills
-                  </span>
-                  <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                    Level Up Your UTME English Score
-                  </h2>
-                  <p className="text-sm text-emerald-100/90 leading-relaxed">
-                    Test your mastery of word stress patterns, vowel and consonant phonetics, silent letters, and synonyms with rapid-fire UTME drills.
-                  </p>
-                </div>
-              </div>
+              {activeGameId === "stress-master" && (
+                <StressMasterGameView isEmbedded={true} onBack={() => setActiveGameId(null)} />
+              )}
+              {activeGameId === "sound-match" && (
+                <SoundMatchGameView isEmbedded={true} onBack={() => setActiveGameId(null)} />
+              )}
+              {activeGameId === "silent-hunter" && (
+                <SilentHunterGameView isEmbedded={true} onBack={() => setActiveGameId(null)} />
+              )}
+              {activeGameId === "synonym-blitz" && (
+                <SynonymBlitzGameView isEmbedded={true} onBack={() => setActiveGameId(null)} />
+              )}
 
-              {/* 4 Games Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Game 1: Stress Master */}
-                <Link
-                  href="/games/stress-master"
-                  className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-emerald-500 hover:shadow-lg transition flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 group-hover:scale-105 transition-transform">
-                        <Zap size={24} />
+              {!activeGameId && (
+                <>
+                  <div className="rounded-3xl border border-emerald-200 bg-gradient-to-r from-emerald-800 to-[#116149] p-8 text-white shadow-md">
+                    <div className="max-w-xl space-y-3">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-emerald-100 backdrop-blur-xs border border-white/20">
+                        <Gamepad2 size={14} /> Interactive Oral English & Lexis Drills
                       </span>
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900">
-                        Syllable Stress
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#116149] transition">
-                        Stress Master
-                      </h3>
-                      <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                        Identify which syllable carries the primary stress in 2-, 3-, and 4-syllable UTME trap words.
+                      <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                        Level Up Your UTME English Score
+                      </h2>
+                      <p className="text-sm text-emerald-100/90 leading-relaxed">
+                        Test your mastery of word stress patterns, vowel and consonant phonetics, silent letters, and synonyms with rapid-fire UTME drills.
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#116149]">
-                    <span>Play Drill</span>
-                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </Link>
-
-                {/* Game 2: Sound Match */}
-                <Link
-                  href="/games/sound-match"
-                  className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-emerald-500 hover:shadow-lg transition flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 border border-blue-200 group-hover:scale-105 transition-transform">
-                        <Ear size={24} />
-                      </span>
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-100 text-blue-900">
-                        Vowels & Consonants
+                  {/* Offline Readiness Notice */}
+                  {isOffline && (
+                    <div className="flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-950 font-medium">
+                      <Zap size={16} className="text-[#116149] shrink-0" />
+                      <span>
+                        <strong>Offline Mode Active:</strong> All 4 word games and British IPA speech audio work 100% offline. Your study streak and game progress save locally.
                       </span>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#116149] transition">
-                        Sound Match
-                      </h3>
-                      <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                        Match words sharing the exact same vowel or consonant sound (e.g., /iː/, /ʃ/, /θ/, /eɪ/).
-                      </p>
+                  )}
+
+                  {/* 4 Games Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Game 1: Stress Master */}
+                    <div
+                      onClick={() => setActiveGameId("stress-master")}
+                      className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-emerald-500 hover:shadow-lg transition flex flex-col justify-between cursor-pointer"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 group-hover:scale-105 transition-transform">
+                            <Zap size={24} />
+                          </span>
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900">
+                            Syllable Stress
+                          </span>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#116149] transition">
+                            Stress Master
+                          </h3>
+                          <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                            Identify which syllable carries the primary stress in 2-, 3-, and 4-syllable UTME trap words.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#116149]">
+                        <span>Play Drill</span>
+                        <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+
+                    {/* Game 2: Sound Match */}
+                    <div
+                      onClick={() => setActiveGameId("sound-match")}
+                      className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-emerald-500 hover:shadow-lg transition flex flex-col justify-between cursor-pointer"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 border border-blue-200 group-hover:scale-105 transition-transform">
+                            <Ear size={24} />
+                          </span>
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-100 text-blue-900">
+                            Vowels & Consonants
+                          </span>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#116149] transition">
+                            Sound Match
+                          </h3>
+                          <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                            Match words sharing the exact same vowel or consonant sound (e.g., /iː/, /ʃ/, /θ/, /eɪ/).
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#116149]">
+                        <span>Play Drill</span>
+                        <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+
+                    {/* Game 3: Synonym Blitz */}
+                    <div
+                      onClick={() => setActiveGameId("synonym-blitz")}
+                      className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-emerald-500 hover:shadow-lg transition flex flex-col justify-between cursor-pointer"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 border border-purple-200 group-hover:scale-105 transition-transform">
+                            <Target size={24} />
+                          </span>
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-900">
+                            Speed Lexis
+                          </span>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#116149] transition">
+                            Synonym Blitz
+                          </h3>
+                          <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                            Test rapid vocabulary recall against a 60-second timer to boost your comprehension speed.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#116149]">
+                        <span>Play Drill</span>
+                        <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+
+                    {/* Game 4: Silent Hunter */}
+                    <div
+                      onClick={() => setActiveGameId("silent-hunter")}
+                      className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-emerald-500 hover:shadow-lg transition flex flex-col justify-between cursor-pointer"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 group-hover:scale-105 transition-transform">
+                            <AlertTriangle size={24} />
+                          </span>
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-900">
+                            Silent Letters
+                          </span>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#116149] transition">
+                            Silent Letter Hunter
+                          </h3>
+                          <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                            Spot the unpronounced silent consonants in notorious JAMB words like &ldquo;debt&rdquo;, &ldquo;doubt&rdquo;, &ldquo;receipt&rdquo;, and &ldquo;corps&rdquo;.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#116149]">
+                        <span>Play Drill</span>
+                        <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                      </div>
                     </div>
                   </div>
-
-                  <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#116149]">
-                    <span>Play Drill</span>
-                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </Link>
-
-                {/* Game 3: Synonym Blitz */}
-                <Link
-                  href="/games/synonym-blitz"
-                  className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-emerald-500 hover:shadow-lg transition flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 border border-purple-200 group-hover:scale-105 transition-transform">
-                        <Target size={24} />
-                      </span>
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-900">
-                        Speed Lexis
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#116149] transition">
-                        Synonym Blitz
-                      </h3>
-                      <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                        Test rapid vocabulary recall against a 60-second timer to boost your comprehension speed.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#116149]">
-                    <span>Play Drill</span>
-                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </Link>
-
-                {/* Game 4: Silent Hunter */}
-                <Link
-                  href="/games/silent-hunter"
-                  className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-emerald-500 hover:shadow-lg transition flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 group-hover:scale-105 transition-transform">
-                        <AlertTriangle size={24} />
-                      </span>
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-900">
-                        Silent Letters
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#116149] transition">
-                        Silent Letter Hunter
-                      </h3>
-                      <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                        Spot the unpronounced silent consonants in notorious JAMB words like "debt", "doubt", "receipt", and "corps".
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#116149]">
-                    <span>Play Drill</span>
-                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </Link>
-              </div>
+                </>
+              )}
             </div>
           )}
         </div>

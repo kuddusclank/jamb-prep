@@ -7,6 +7,10 @@ import { useApiResource } from "@/lib/api/use-api-resource";
 import type { ProfileData } from "@/lib/api/app-dtos";
 import { StudyWorkspace } from "@/components/study-workspace";
 import StudyLoading from "@/components/study-loading";
+import { useBrowserAccount } from "@/components/browser-account-boundary";
+import { useNetworkStatus, isNetworkOrTimeoutError } from "@/lib/offline/network-state";
+import { getOfflineProfile, isOfflineAccessValid } from "@/lib/offline/offline-profile-cache";
+import { OfflineGatedNotice } from "@/app/dashboard/offline-gated-notice";
 
 interface ProFeatureGateProps {
   title?: string;
@@ -20,8 +24,31 @@ export function ProFeatureGate({
   children,
 }: ProFeatureGateProps) {
   const profile = useApiResource<ProfileData>("/api/v1/profile");
+  const account = useBrowserAccount();
+  const { isOffline } = useNetworkStatus();
 
+  const userId = account.identity?.user?.id || account.session.user?.id;
+  const offlineProfile = getOfflineProfile(userId);
+  const offlineValidity = isOfflineAccessValid(offlineProfile);
+
+  // When offline or network request timed out / failed
+  const isNetworkFailure = profile.error ? isNetworkOrTimeoutError(profile.error) : false;
+  if (isOffline || isNetworkFailure) {
+    if (offlineValidity.valid) {
+      return <>{children}</>;
+    }
+    return (
+      <StudyWorkspace>
+        <OfflineGatedNotice reason={offlineValidity.reason} profile={offlineProfile} />
+      </StudyWorkspace>
+    );
+  }
+
+  // Optimistic unlock while online profile is loading if cached profile has valid Pro
   if (!profile.data && !profile.error) {
+    if (offlineValidity.valid) {
+      return <>{children}</>;
+    }
     return (
       <StudyWorkspace>
         <StudyLoading />
