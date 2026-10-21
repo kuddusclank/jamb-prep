@@ -16,10 +16,12 @@ import {
   Building, 
   GraduationCap,
   Sparkles,
-  Lock
+  Lock,
+  RefreshCw
 } from "lucide-react";
 import Link from "@/components/pending-link";
 import { ScheduleSection } from "./schedule-section";
+import { forcePwaReload } from "@/lib/pwa/force-refresh";
 
 interface SubjectSummary {
   name: string;
@@ -69,6 +71,12 @@ export function ProfileClient({
   const [targetScore, setTargetScore] = useState(initialPreferences.targetScore);
   const [targetInstitution, setTargetInstitution] = useState(initialPreferences.targetInstitution || "");
   const [targetCourse, setTargetCourse] = useState(initialPreferences.targetCourse || "");
+  const [isRefreshingPwa, setIsRefreshingPwa] = useState(false);
+
+  const handleForceRefresh = async () => {
+    setIsRefreshingPwa(true);
+    await forcePwaReload();
+  };
 
   const handleCancelSubscription = async () => {
     setIsCancelling(true);
@@ -486,6 +494,39 @@ export function ProfileClient({
             </Link>
           </div>
         )}
+      </div>
+
+      {/* Section 4: App Version & Offline Cache Management */}
+      <div className="space-y-4 pt-4 border-t border-slate-200">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight text-[#092E28]">
+            App Updates & Offline Cache
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Manage your local app updates and offline cached study materials.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1 max-w-xl">
+            <h3 className="text-sm font-bold text-[#092E28]">
+              Force Refresh to Latest Version
+            </h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              If your phone or browser is not showing recent features, question bank updates, or study tools, tap below to purge cached offline bundles and pull the freshest release from the server.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void handleForceRefresh()}
+            disabled={isRefreshingPwa}
+            className="shrink-0 min-h-10 inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={isRefreshingPwa ? "animate-spin text-[#116149]" : "text-slate-500"} />
+            {isRefreshingPwa ? "Refreshing app..." : "Check for Updates & Reload"}
+          </button>
+        </div>
       </div>
 
     </div>

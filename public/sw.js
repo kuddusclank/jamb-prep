@@ -30,6 +30,13 @@ function validAsset(response, path) {
   if (path.endsWith('.html') || path === '/' || path.endsWith('/')) return mime.includes('text/html');
   return /font|woff|octet-stream/.test(mime);
 }
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    if (typeof self.skipWaiting === 'function') {
+      self.skipWaiting();
+    }
+  }
+});
 self.addEventListener('install', event => {
   if (typeof self.skipWaiting === 'function') {
     self.skipWaiting();
