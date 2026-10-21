@@ -856,7 +856,7 @@ export function ScheduleSection() {
                     Send a Daily Study Reminder
                   </label>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Optional. Sends one private reminder at your chosen time if you haven&apos;t met your daily goal yet.
+                    Optional. Sends one private reminder at your chosen time if you haven&apos;t met your daily goal yet. Your custom schedule replaces the default 7:00 AM morning notification.
                   </p>
                 </div>
                 <input
@@ -901,7 +901,7 @@ export function ScheduleSection() {
                       <p>Save your schedule to calculate your next reminder time.</p>
                     )}
                     <p className="text-[11px] text-slate-500">
-                      Automatically skipped on days when your study goal is already completed.
+                      Overrides the default 7:00 AM notification. Automatically skipped on days when your study goal is already completed.
                     </p>
                   </div>
                 </div>

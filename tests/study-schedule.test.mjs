@@ -521,6 +521,19 @@ function createScheduleMockSql() {
       return claimed;
     }
 
+    if (q.startsWith('UPDATE public.study_reminder_occurrences SET state =') && q.includes('WHERE user_id =')) {
+      const [nowIso, userId] = values;
+      for (const occ of state.occurrences.values()) {
+        if (occ.user_id === String(userId) && ['pending', 'leased', 'retryable'].includes(occ.state)) {
+          occ.state = 'skipped';
+          occ.skip_reason = 'schedule_overridden_by_user';
+          occ.leased_until = null;
+          occ.updated_at = String(nowIso);
+        }
+      }
+      return [];
+    }
+
     if (q.startsWith('UPDATE public.study_reminder_occurrences SET state =')) {
       const id = String(values[values.length - 1]);
       const occ = state.occurrences.get(id);
@@ -847,6 +860,27 @@ test('S01/S02/S04/S06: End-to-end Premium ownership, frozen goal transition, pra
   assert.equal(freeDefaultActivated.schedule.dailyGoal, 15);
   assert.equal(freeDefaultActivated.schedule.reminderLocalTime, '07:00');
   assert.equal(freeDefaultActivated.schedule.reminderEnabled, true);
+
+  // When a Pro user sets a custom schedule, it overrides the default 7:00 AM notification
+  state.entitlements.set(freeUserId, [
+    { status: 'active', expires_at: '2026-11-17T10:00:00.000Z' },
+  ]);
+  const proOverridden = await updateStudyScheduleSettings(
+    sql,
+    freeUserId,
+    {
+      enabled: true,
+      dailyGoal: 25,
+      reminderEnabled: true,
+      reminderLocalTime: '20:00',
+      timeZone: 'Africa/Lagos',
+    },
+    { now }
+  );
+  assert.equal(proOverridden.schedule.enabled, true);
+  assert.equal(proOverridden.schedule.reminderLocalTime, '20:00');
+  assert.notEqual(proOverridden.schedule.reminderLocalTime, '07:00');
+  state.entitlements.delete(freeUserId);
 
   // Disabling allowed on Free tier
   await updateStudyScheduleSettings(

@@ -1483,6 +1483,20 @@ export async function updateStudyScheduleSettings(
       updated_at = EXCLUDED.updated_at
   `;
 
+  // When a user updates their schedule (e.g. a Pro user sets a custom reminder time),
+  // immediately skip any pending occurrences from earlier revisions or times so the old schedule
+  // (such as default 7:00 AM) is immediately overridden.
+  await sql`
+    UPDATE public.study_reminder_occurrences
+    SET
+      state = 'skipped',
+      skip_reason = 'schedule_overridden_by_user',
+      leased_until = NULL,
+      updated_at = ${now.toISOString()}::timestamptz
+    WHERE user_id = ${userId}::uuid
+      AND state IN ('pending', 'leased', 'retryable')
+  `;
+
   if (input.enabled) {
     const todayInActiveZone = resolveLocalDate(now, activeTimeZone);
     await sql`
