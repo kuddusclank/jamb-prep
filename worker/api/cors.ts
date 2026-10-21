@@ -83,8 +83,9 @@ export function handleCorsPreflight(
 ): Response {
   const origin = request.headers.get('origin');
   const allowedOrigins = resolveAllowedOrigins(env);
+  const isPagesDev = origin ? /^https:\/\/([a-z0-9-]+\.)?jambprep\.pages\.dev$/.test(origin) : false;
 
-  if (!origin || !allowedOrigins.has(origin)) {
+  if (!origin || (!allowedOrigins.has(origin) && !isPagesDev)) {
     throw new ApiError({
       status: 403,
       code: 'FORBIDDEN_ORIGIN',
