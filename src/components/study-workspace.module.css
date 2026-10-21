@@ -4,7 +4,7 @@
 .context { display: none; color: #64748b; font-size: .875rem; }
 .account { margin-left: auto; display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 44px; padding-inline: .75rem; border: 1px solid #e2e8f0; border-radius: .75rem; font-size: .875rem; }
 .sidebar { background: white; border-bottom: 1px solid #e2e8f0; position: sticky; top: 4rem; z-index: 30; }
-.navigation { display: flex; overflow-x: auto; gap: .25rem; padding: .5rem 1rem; scrollbar-width: thin; }
+.navigation { display: flex; overflow-x: auto; gap: .25rem; padding: .5rem 1rem; scrollbar-width: thin; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
 .navLink { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: .5rem; min-height: 44px; padding: .65rem .8rem; border-radius: .75rem; font-size: .8125rem; font-weight: 550; color: #475569; white-space: nowrap; }
 .navLink:hover { background: #f1f5f9; }
 .navLink[aria-current="page"] { background: #edf4ef; color: #116149; font-weight: 700; }

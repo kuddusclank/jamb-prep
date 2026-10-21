@@ -3,7 +3,7 @@
 import { useApiResource } from "@/lib/api/use-api-resource";
 import type { ProfileData } from "@/lib/api/app-dtos";
 import { BrandMark } from "@/components/brand-mark";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
 import Link from "@/components/pending-link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Layers, Clock, ChartNoAxesCombined, Users, UserRound, CreditCard, LogOut, Flame, BookA, WifiOff, CheckCircle2 } from "lucide-react";
@@ -32,6 +32,67 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
   const profile = useApiResource<ProfileData>("/api/v1/profile");
   const { isOnline, isOffline } = useNetworkStatus();
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
+
+  const handleNavScroll = useCallback(() => {
+    const nav = navRef.current;
+    if (nav && nav.scrollWidth > nav.clientWidth) {
+      try {
+        sessionStorage.setItem("jambprep_study_nav_scroll", String(nav.scrollLeft));
+      } catch {
+        // Ignore storage errors
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+
+    const restoreAndCenter = () => {
+      if (!nav || nav.scrollWidth <= nav.clientWidth) return;
+
+      // 1. Restore exact scroll position if saved
+      try {
+        const saved = sessionStorage.getItem("jambprep_study_nav_scroll");
+        if (saved !== null) {
+          const val = Number(saved);
+          if (!Number.isNaN(val) && val >= 0) {
+            nav.scrollLeft = val;
+          }
+        }
+      } catch {
+        // Ignore
+      }
+
+      // 2. Ensure the active item is visible in view
+      const activeLink = nav.querySelector<HTMLElement>('[aria-current="page"]');
+      if (activeLink) {
+        const navRect = nav.getBoundingClientRect();
+        const linkRect = activeLink.getBoundingClientRect();
+
+        const isClippedLeft = linkRect.left < navRect.left;
+        const isClippedRight = linkRect.right > navRect.right;
+
+        if (isClippedLeft || isClippedRight) {
+          activeLink.scrollIntoView({
+            behavior: "auto",
+            block: "nearest",
+            inline: "center",
+          });
+          try {
+            sessionStorage.setItem("jambprep_study_nav_scroll", String(nav.scrollLeft));
+          } catch {
+            // Ignore
+          }
+        }
+      }
+    };
+
+    restoreAndCenter();
+    const t = requestAnimationFrame(restoreAndCenter);
+    return () => cancelAnimationFrame(t);
+  }, [pathname]);
 
   useEffect(() => {
     const studentId = profile.data?.profile?.id;
@@ -133,7 +194,12 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     </header>
     <aside className={styles.sidebar}>
       <p className={styles.caption}>YOUR STUDY SPACE</p>
-      <nav aria-label="Study navigation" className={styles.navigation}>
+      <nav
+        ref={navRef}
+        onScroll={handleNavScroll}
+        aria-label="Study navigation"
+        className={styles.navigation}
+      >
         {visibleDestinations.map(({ href, label, icon: Icon, isPro, requiresOnline }) => {
           const isLocked = isPro && profile.data?.subscription.isPremium === false;
           const isOfflineDisabled = !isOnline && requiresOnline;
