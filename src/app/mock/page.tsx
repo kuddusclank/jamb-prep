@@ -10,9 +10,13 @@ import {
   Clock,
   Keyboard,
   ShieldAlert,
+  WifiOff,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
 import { MockStartButton } from "./mock-start-button";
-
+import { useNetworkStatus, isNetworkOrTimeoutError } from "@/lib/offline/network-state";
+import Link from "@/components/pending-link";
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
 interface MockReadiness {ready:boolean;isPremium:boolean;activeAttemptId:string|null;message:string;subjects:{code:string;name:string;isCompulsory:boolean;required:number;available:number;ready:boolean;message:string}[];}
 
@@ -40,9 +44,71 @@ function MockRedirectNotice() {
 }
 
 export default function MockLobbyPage() {
-  const resource=useApiResource<MockReadiness>("/api/v1/mock/readiness");
-  if(!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry}/></StudyWorkspace>;
-  const enrolledSubjects=resource.data.subjects;
+  const resource = useApiResource<MockReadiness>("/api/v1/mock/readiness");
+  const { isOffline, isOnline } = useNetworkStatus();
+
+  const isNetworkFailure = resource.error ? isNetworkOrTimeoutError(resource.error) : false;
+
+  if (isOffline || (isNetworkFailure && !resource.data)) {
+    return (
+      <StudyWorkspace>
+        <main className="shell section-space">
+          <div className="max-w-2xl mx-auto rounded-3xl border border-slate-200 bg-white p-6 sm:p-10 shadow-sm text-center space-y-6">
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 border border-amber-200">
+                <WifiOff size={26} />
+              </div>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase bg-amber-100 text-amber-900">
+                <Clock size={12} className="text-amber-700" />
+                Connection Needed for Official Mock
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#092E28]">
+                UTME Mock Requires Server Connection
+              </h1>
+              <p className="text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
+                Full-length 4-subject CBT simulations require a secure server connection to authenticate test conditions and store official scores.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 text-xs text-emerald-950 flex items-center justify-between gap-3 text-left">
+              <div>
+                <strong className="block font-semibold">Weekly Offline Practice is Ready</strong>
+                <span className="text-slate-600">You can practice your 250 offline questions right now without waiting.</span>
+              </div>
+              <Link
+                href="/practice"
+                className="shrink-0 inline-flex items-center gap-1 px-4 py-2 rounded-full bg-[#116149] text-white text-xs font-bold hover:bg-[#0e523e] transition"
+              >
+                Go to Practice <ArrowRight size={13} />
+              </Link>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <Link
+                href="/dashboard"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+              >
+                Return to Dashboard
+              </Link>
+              <button
+                type="button"
+                onClick={() => resource.retry()}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition cursor-pointer"
+              >
+                Retry Connection
+              </button>
+            </div>
+          </div>
+        </main>
+      </StudyWorkspace>
+    );
+  }
+
+  if (!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry}/></StudyWorkspace>;
+  const enrolledSubjects = resource.data.subjects;
   return (
     <StudyWorkspace>
       <main className="shell section-space">

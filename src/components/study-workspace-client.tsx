@@ -15,6 +15,7 @@ import { PolicyLinks } from "@/components/legal-page";
 import { ResourceStatus } from "@/lib/api/use-api-resource";
 import { useNetworkStatus, isNetworkOrTimeoutError } from "@/lib/offline/network-state";
 import { getOfflineProfile } from "@/lib/offline/offline-profile-cache";
+import { NetworkStatusToast } from "@/components/network-status-toast";
 
 const destinations = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, requiresOnline: false },
@@ -167,6 +168,7 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
       </div>
     </aside>
     <div id="study-content" tabIndex={-1} className={styles.content}>{children}</div>
+    <NetworkStatusToast />
     <footer className={styles.footer}><p>JAMBPrep · Your subjects. Your pace. Your next step.</p><PolicyLinks className="mt-3 justify-center"/></footer>
   </div>;
 }

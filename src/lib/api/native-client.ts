@@ -77,6 +77,7 @@ export interface NativeApiRequestOptions {
   idempotencyKey?: string;
   auth?: boolean;
   accessTokenOverride?: string;
+  timeoutMs?: number;
 }
 
 export interface NativeApiClientOptions {
@@ -377,7 +378,8 @@ export function createNativeApiClient(options?: NativeApiClientOptions): NativeA
   async function request<T = unknown>(path: string, reqOptions?: NativeApiRequestOptions): Promise<{ status: number; data: T; replayed: boolean; requestId: string | null }> {
     const controller = new AbortController();
     const cleanups: Array<() => void> = [];
-    const timeoutMs = options?.requestTimeoutMs ?? 30000;
+    const isReadQuery = !reqOptions?.method || reqOptions.method.toUpperCase() === 'GET';
+    const timeoutMs = reqOptions?.timeoutMs ?? options?.requestTimeoutMs ?? (isReadQuery ? 4000 : 30000);
     let timer: ReturnType<typeof setTimeout> | undefined;
     const deadline = new Promise<never>((_, reject) => {
       timer = setTimeout(() => {

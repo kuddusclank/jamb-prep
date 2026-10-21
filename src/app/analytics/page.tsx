@@ -1,42 +1,108 @@
 "use client";
+
+import { useEffect, useState } from "react";
 import { StudyWorkspace } from "@/components/study-workspace";
 import {
-ArrowRight,
-BarChart3,
-Clock
+  ArrowRight,
+  BarChart3,
+  Clock,
+  WifiOff,
+  Sparkles,
 } from "lucide-react";
 import Link from "@/components/pending-link";
-
-interface StaticTopicDiagnostic {
-  topicId: string;
-  topicTitle: string;
-  topicSlug: string;
-  subjectCode: string;
-  subjectName: string;
-  accuracyPercent: number;
-  totalAttempted: number;
-  totalCorrect: number;
-  priority: "critical" | "moderate" | "strong";
-}
-
-interface StaticSubjectSummary {
-  subjectId: string;
-  subjectCode: string;
-  subjectName: string;
-  questionsAttempted: number;
-  questionsCorrect: number;
-  accuracyPercent: number;
-  estimatedScore: number | null;
-  weakTopicsCount: number;
-  masteredTopicsCount: number;
-}
-
+import { useBrowserAccount } from "@/components/browser-account-boundary";
+import { useNetworkStatus, isNetworkOrTimeoutError } from "@/lib/offline/network-state";
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
 import type { CoachInsights } from "@/lib/api/app-dtos";
+
+const ANALYTICS_CACHE_KEY = "jambprep_analytics_cache:";
+
 export default function AnalyticsPage() {
   const resource = useApiResource<CoachInsights>('/api/v1/coach');
-  if (!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry} /><Link href="/pricing">View plans</Link></StudyWorkspace>;
-  const { targetScore, latestScore, bestScore, gapToTarget, weakestTopics, masteredTopics, subjectSummaries, totalMocksCompleted, coachRecommendation } = resource.data;
+  const account = useBrowserAccount();
+  const { isOffline, isOnline } = useNetworkStatus();
+  const userId = account.identity?.user?.id || account.session.user?.id || "guest";
+
+  const [cachedInsights, setCachedInsights] = useState<CoachInsights | null>(null);
+
+  // Cache insights whenever live data is received
+  useEffect(() => {
+    if (resource.data && typeof window !== "undefined") {
+      try {
+        localStorage.setItem(`${ANALYTICS_CACHE_KEY}${userId}`, JSON.stringify(resource.data));
+      } catch {}
+    }
+  }, [resource.data, userId]);
+
+  // Read cached insights on mount or when network fails
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(`${ANALYTICS_CACHE_KEY}${userId}`);
+        if (stored) {
+          setCachedInsights(JSON.parse(stored) as CoachInsights);
+        }
+      } catch {}
+    }
+  }, [userId]);
+
+  const isNetworkFailure = resource.error ? isNetworkOrTimeoutError(resource.error) : false;
+
+  // Auto-retry when connectivity returns
+  useEffect(() => {
+    if (isOnline && isNetworkFailure) {
+      resource.retry();
+    }
+  }, [isOnline, isNetworkFailure, resource.retry]);
+
+  const effectiveData = resource.data || cachedInsights;
+  const isViewingCached = !resource.data && Boolean(cachedInsights);
+
+  if (!effectiveData) {
+    if (isOffline || isNetworkFailure) {
+      return (
+        <StudyWorkspace>
+          <main className="shell section-space">
+            <div className="max-w-2xl mx-auto rounded-3xl border border-slate-200 bg-white p-6 sm:p-10 shadow-sm text-center space-y-6">
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex size-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 border border-amber-200">
+                  <WifiOff size={26} />
+                </div>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase bg-amber-100 text-amber-900">
+                  Performance Analytics
+                </span>
+              </div>
+              <div className="space-y-2">
+                <h1 className="text-2xl sm:text-3xl font-bold text-[#092E28]">
+                  Diagnostics Available Once Reconnected
+                </h1>
+                <p className="text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
+                  Your topic mastery and diagnostic coach analysis synchronize when connected to the internet. Continue practicing offline to bank new question data.
+                </p>
+              </div>
+              <div className="pt-2">
+                <Link
+                  href="/practice"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#116149] text-white text-xs font-bold hover:bg-[#0e523e] transition"
+                >
+                  Practice Offline Questions <ArrowRight size={14} />
+                </Link>
+              </div>
+            </div>
+          </main>
+        </StudyWorkspace>
+      );
+    }
+
+    return (
+      <StudyWorkspace>
+        <ResourceStatus error={resource.error} retry={resource.retry} />
+        <Link href="/pricing">View plans</Link>
+      </StudyWorkspace>
+    );
+  }
+
+  const { targetScore, latestScore, bestScore, gapToTarget, weakestTopics, masteredTopics, subjectSummaries, totalMocksCompleted, coachRecommendation } = effectiveData;
 
   return (
     <StudyWorkspace>
@@ -59,6 +125,24 @@ export default function AnalyticsPage() {
               Data-driven diagnosis to identify which topics will recover the most marks on exam day.
             </p>
           </div>
+
+          {isViewingCached && (
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+              <div className="flex items-center gap-2">
+                <WifiOff size={15} className="text-amber-700 shrink-0" />
+                <span>
+                  <strong>Offline Mode Active</strong> — Displaying diagnostic analysis from your last online session.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => resource.retry()}
+                className="font-bold underline hover:no-underline cursor-pointer"
+              >
+                Refresh
+              </button>
+            </div>
+          )}
 
           {/* Metric Overview Strip */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
