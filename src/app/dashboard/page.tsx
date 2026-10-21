@@ -17,7 +17,8 @@ Users,
 BookA,
 BookOpen,
 Gamepad2,
-Sparkles
+Sparkles,
+X
 } from "lucide-react";
 import Link from "@/components/pending-link";
 
@@ -57,7 +58,7 @@ interface StaticMockHistoryItem {
   subject4Score: number;
 }
 
-import { useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
 import StudyLoading from "@/components/study-loading";
 import { BrowserAccountBoundary, useBrowserAccount } from "@/components/browser-account-boundary";
@@ -67,12 +68,44 @@ export default function DashboardPage() {
   const resource = useApiResource<DashboardData>('/api/v1/dashboard');
   const account = useBrowserAccount();
   const flameScrollRef = useRef<HTMLDivElement>(null);
+  const [showLexisModal, setShowLexisModal] = useState(false);
 
   useEffect(() => {
-    if (flameScrollRef.current) {
-      flameScrollRef.current.scrollLeft = flameScrollRef.current.scrollWidth;
+    if (typeof window !== "undefined") {
+      const dismissed = localStorage.getItem("jambprep_lexis_modal_dismissed");
+      if (!dismissed) {
+        setShowLexisModal(true);
+      }
     }
-  }, [resource.data?.studyStreak?.streak?.recentDays?.length]);
+  }, []);
+
+  const handleDismissLexisModal = () => {
+    setShowLexisModal(false);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("jambprep_lexis_modal_dismissed", "true");
+      } catch {}
+    }
+  };
+
+  useEffect(() => {
+    const scrollToLast = () => {
+      if (flameScrollRef.current) {
+        flameScrollRef.current.scrollLeft = flameScrollRef.current.scrollWidth;
+      }
+    };
+    scrollToLast();
+    const t1 = setTimeout(scrollToLast, 50);
+    const t2 = setTimeout(scrollToLast, 200);
+    const t3 = setTimeout(scrollToLast, 500);
+    const t4 = setTimeout(scrollToLast, 1000);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+    };
+  }, [resource.data?.studyStreak]);
   if (!resource.data && !resource.error) return <BrowserAccountBoundary><StudyLoading /></BrowserAccountBoundary>;
   if (!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry} /></StudyWorkspace>;
   const { subscription, coach, qualifiedReferrals, has50PercentReward } = resource.data;
@@ -99,7 +132,7 @@ export default function DashboardPage() {
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#116149] text-[11px] font-bold uppercase tracking-wider">
                   <Flame size={12} /> STUDY COACH ACTIVE
                 </span>
-                <span className="text-xs text-slate-400 font-medium">2026 UTME</span>
+                <span className="text-xs text-slate-400 font-medium">2027 UTME</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mt-1.5">
                 Let’s make progress, {studentName}
@@ -109,7 +142,7 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            {/* Target, Progress and Streak Gauges */}
+            {/* Target and Progress Gauges */}
             <div className={styles.scoreRow}>
               <div className="rounded-2xl border border-slate-200 bg-white p-3.5 flex items-center gap-3 shadow-sm min-w-0 flex-1">
                 <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-100 text-[#116149]">
@@ -138,33 +171,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
-
-              {resource.data.studyStreak && (
-                <Link
-                  href="/profile#schedule"
-                  className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50 to-orange-50/60 p-3.5 flex items-center gap-3 shadow-sm min-w-0 flex-1 hover:border-amber-300 transition"
-                  title="View Study Streak & Schedule Settings"
-                >
-                  <span className={`flex size-10 items-center justify-center rounded-xl ${
-                    resource.data.studyStreak.streak.currentStreak > 0
-                      ? 'bg-amber-500 text-white shadow-sm shadow-amber-500/30'
-                      : 'bg-amber-100 text-amber-800'
-                  }`}>
-                    <Flame size={20} className={resource.data.studyStreak.streak.currentStreak > 0 ? 'animate-pulse' : ''} />
-                  </span>
-                  <div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1">
-                      Study Streak {resource.data.studyStreak.streak.qualifiedToday && '🔥'}
-                    </div>
-                    <div className="text-xl font-extrabold text-[#092E28]">
-                      {resource.data.studyStreak.streak.currentStreak}{' '}
-                      <span className="text-xs font-normal text-slate-500">
-                        {resource.data.studyStreak.streak.currentStreak === 1 ? 'day' : 'days'}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              )}
             </div>
           </div>
 
@@ -206,7 +212,7 @@ export default function DashboardPage() {
                   {/* Flame Calendar Strip (Scrollable from registration date to today) */}
                   <div
                     ref={flameScrollRef}
-                    className="flex items-center gap-2 sm:gap-3 pt-1 overflow-x-auto pb-1 max-w-full flex-nowrap scroll-smooth"
+                    className="flex items-center gap-2 sm:gap-3 pt-1 overflow-x-auto pb-1 max-w-full flex-nowrap"
                     tabIndex={0}
                     aria-label="Daily study streak calendar"
                   >
@@ -425,70 +431,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Daily 5 Lexis & Word Games Spotlight */}
-          <div className="rounded-3xl border border-emerald-950/10 bg-linear-to-br from-emerald-900 to-[#092E28] p-6 sm:p-8 text-white relative overflow-hidden shadow-sm">
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="max-w-xl">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-200 text-[11px] font-bold uppercase tracking-wider mb-2 border border-emerald-400/20">
-                  {isPremium ? (
-                    <>
-                      <BookOpen size={12} className="text-emerald-300" /> UTME Lexis & Oral English
-                    </>
-                  ) : (
-                    <>
-                      <Lock size={12} className="text-amber-300" /> PRO FEATURE · UTME Lexis & Oral English
-                    </>
-                  )}
-                </div>
-                <h3 className="text-xl sm:text-2xl font-bold tracking-tight">
-                  Master Vocabulary & Speech Sounds
-                </h3>
-                <p className="mt-2 text-sm text-emerald-100/80 leading-relaxed">
-                  Boost your Use of English score with high-yield UTME words, syllable stress drills, silent letter hunting, and rhyme rush games.
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                  <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-100">📖 680+ Words & Free Dictionary</span>
-                  <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-100">🔊 IPA & Native Audio</span>
-                  <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-100">🎮 4 Interactive Games</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 shrink-0">
-                {isPremium ? (
-                  <>
-                    <Link
-                      href="/dictionary"
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-xs font-bold text-[#092E28] hover:bg-emerald-50 transition shadow-sm"
-                    >
-                      <BookA size={14} /> Open Dictionary Hub
-                    </Link>
-                    <Link
-                      href="/games/stress-master"
-                      className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-800/40 px-6 py-3 text-xs font-semibold text-emerald-100 hover:bg-emerald-800/70 transition"
-                    >
-                      <Gamepad2 size={14} /> Play Word Games <ArrowRight size={14} />
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      href="/pricing"
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 text-amber-950 px-6 py-3 text-xs font-bold hover:bg-amber-300 transition shadow-sm cursor-pointer"
-                    >
-                      <Lock size={14} /> Unlock with Pro (₦1,000)
-                    </Link>
-                    <Link
-                      href="/pricing"
-                      className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-800/40 px-6 py-3 text-xs font-semibold text-emerald-100 hover:bg-emerald-800/70 transition cursor-pointer"
-                    >
-                      View Pro Plans <ArrowRight size={14} />
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
           {/* Past CBT Mock History */}
           {recentMockHistory.length > 0 && (
             <div>
@@ -600,6 +542,97 @@ export default function DashboardPage() {
 
       {/* Footer */}
 
+      {/* Lexis & Word Games Pop-up Modal */}
+      {showLexisModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="lexis-modal-title"
+        >
+          <div className="relative w-full max-w-lg rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950 via-[#092E28] to-emerald-900 p-6 sm:p-8 text-white shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Background ambient glow */}
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={handleDismissLexisModal}
+              className="absolute top-5 right-5 p-2 rounded-full text-emerald-200/80 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              aria-label="Close modal"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-200 text-[11px] font-bold uppercase tracking-wider mb-3 border border-emerald-400/20">
+                {isPremium ? (
+                  <>
+                    <BookOpen size={12} className="text-emerald-300" /> UTME Lexis & Oral English Spotlight
+                  </>
+                ) : (
+                  <>
+                    <Lock size={12} className="text-amber-300" /> PRO FEATURE · UTME Lexis & Oral English
+                  </>
+                )}
+              </div>
+
+              <h2 id="lexis-modal-title" className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+                Master Vocabulary & Speech Sounds
+              </h2>
+
+              <p className="mt-2.5 text-sm sm:text-base text-emerald-100/90 leading-relaxed">
+                Boost your Use of English score with high-yield UTME words, syllable stress drills, silent letter hunting, and rhyme rush games.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                <span className="px-3 py-1 rounded-lg bg-white/10 text-emerald-100 font-medium">📖 680+ Words & Free Dictionary</span>
+                <span className="px-3 py-1 rounded-lg bg-white/10 text-emerald-100 font-medium">🔊 IPA & Native Audio</span>
+                <span className="px-3 py-1 rounded-lg bg-white/10 text-emerald-100 font-medium">🎮 4 Interactive Games (300 Words Each)</span>
+              </div>
+
+              <div className="mt-7 flex flex-col sm:flex-row gap-3">
+                {isPremium ? (
+                  <>
+                    <Link
+                      href="/dictionary"
+                      onClick={handleDismissLexisModal}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-[#092E28] hover:bg-emerald-50 transition shadow-md flex-1 text-center"
+                    >
+                      <BookA size={16} /> Open Dictionary Hub
+                    </Link>
+                    <Link
+                      href="/dictionary?tab=games"
+                      onClick={handleDismissLexisModal}
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-800/40 px-6 py-3.5 text-sm font-semibold text-emerald-100 hover:bg-emerald-800/70 transition flex-1 text-center"
+                    >
+                      <Gamepad2 size={16} /> Play Word Games <ArrowRight size={16} />
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/pricing"
+                      onClick={handleDismissLexisModal}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 text-amber-950 px-6 py-3.5 text-sm font-bold hover:bg-amber-300 transition shadow-md flex-1 text-center cursor-pointer"
+                    >
+                      <Lock size={16} /> Unlock with Pro (₦1,000)
+                    </Link>
+                    <Link
+                      href="/pricing"
+                      onClick={handleDismissLexisModal}
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-800/40 px-6 py-3.5 text-sm font-semibold text-emerald-100 hover:bg-emerald-800/70 transition flex-1 text-center cursor-pointer"
+                    >
+                      View Pro Plans <ArrowRight size={16} />
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </StudyWorkspace>
   );
 }
