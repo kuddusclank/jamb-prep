@@ -199,6 +199,55 @@ export async function finishPracticeSession(sessionId:string,abandon=false) {
 export async function checkPracticeAnswer(sessionId:string,questionId:string,selectedOption:string):Promise<PracticeAnswerResult> {
  return getAccountCoordinator().mutate<PracticeAnswerResult>('/api/v1/practice/check',{sessionId,questionId,selectedOption});
 }
+
+/**
+ * Weekly 250-Question Practice Pack API Bridges
+ */
+export interface WeeklyPackResponse {
+  packId: string;
+  weekKey: string;
+  status: string;
+  expiresAt: string;
+  subjects: Array<{ id: string; code: string; name: string; isCompulsory: boolean; questionCount: number }>;
+  questions: Array<PracticeQuestionItem & Record<string, unknown>>;
+  feedback: Record<string, { correctOption: string; explanation: string }>;
+  answers: Record<string, { selectedOption: string; answeredAt: string }>;
+  progress: {
+    total: number;
+    answered: number;
+    bySubject: Record<string, { total: number; answered: number }>;
+  };
+}
+
+export async function fetchWeeklyPackFromServer(): Promise<WeeklyPackResponse> {
+  return getAccountCoordinator().loadResource<WeeklyPackResponse>('/api/v1/practice/weekly-pack');
+}
+
+export interface WeeklyPackSyncPayloadItem {
+  questionId: string;
+  selectedOption: 'A' | 'B' | 'C' | 'D';
+  answeredAt?: string;
+  timeSpentSeconds?: number;
+}
+
+export interface WeeklyPackSyncResultResponse {
+  success: boolean;
+  syncedCount: number;
+  totalAnswered: number;
+  totalQuestions: number;
+  isCompleted: boolean;
+  streakUpdated: boolean;
+}
+
+export async function syncWeeklyPackToServer(
+  packId: string,
+  answers: WeeklyPackSyncPayloadItem[]
+): Promise<WeeklyPackSyncResultResponse> {
+  return getAccountCoordinator().mutate<WeeklyPackSyncResultResponse>('/api/v1/practice/weekly-pack/sync', {
+    packId,
+    answers,
+  });
+}
 export async function getMockPayload(attemptId:string):Promise<ExamSessionPayload & {initialRevisions:Record<string,number>;serverNow:number;status:string}> {
   const result = (await getAccountCoordinator().api.request<{attemptId:string;selectionWarnings?:string[];examConditions:boolean;startedAt:string;expiresAt:string;serverNow:number;status:string;questions:(ExamQuestion & {selectedOptionId?:string;revision:number})[]}>(`/api/v1/exams/attempts/${attemptId}`)).data;
   const initialAnswers:Record<string,string>={},initialLabels:Record<string,'A'|'B'|'C'|'D'>={},initialRevisions:Record<string,number>={};

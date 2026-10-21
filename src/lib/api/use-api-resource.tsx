@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { getAccountCoordinator } from '../auth/account-coordinator';
 import { useBrowserAccount } from '../../components/browser-account-boundary';
 import StudySkeleton from '../../components/study-skeleton';
+import { saveProfileSnapshot, getProfileSnapshot } from '../offline/idb-storage';
+
 export function useApiResource<T>(path: string | null) {
   const { session } = useBrowserAccount();
   const [value, setValue] = useState<{ userId: string; path: string; revision: number; data: T } | null>(null);
@@ -14,9 +16,44 @@ export function useApiResource<T>(path: string | null) {
     setValue(null); setFailure(null);
     if (path && session.status === 'authenticated' && userId) {
       void getAccountCoordinator().loadResource<T>(path).then((data) => {
-        if (active) setValue({ userId, path, revision, data });
-      }).catch((error: unknown) => {
-        if (active) setFailure({ userId, path, revision, message: error instanceof Error ? error.message : 'Unable to load. Please retry.' });
+        if (active) {
+          setValue({ userId, path, revision, data });
+          if (path === '/api/v1/profile' && data && typeof data === 'object') {
+            const prof = data as {
+              profile?: { id: string; display_name: string; email: string };
+              preferences?: { target_score: number };
+            };
+            void saveProfileSnapshot({
+              userId,
+              displayName: prof.profile?.display_name || null,
+              email: prof.profile?.email || null,
+              targetScore: prof.preferences?.target_score || 280,
+              subjects: [],
+              lastSyncedAt: new Date().toISOString(),
+            }).catch(() => { /* non-blocking */ });
+          }
+        }
+      }).catch(async (error: unknown) => {
+        if (!active) return;
+        // Check offline snapshot fallback
+        if (typeof navigator !== 'undefined' && !navigator.onLine && path === '/api/v1/profile') {
+          try {
+            const cached = await getProfileSnapshot(userId);
+            if (cached && active) {
+              const fallback = {
+                profile: { id: cached.userId, display_name: cached.displayName || 'Student', email: cached.email || '', role: 'student' },
+                preferences: { target_score: cached.targetScore, target_institution: null, target_course: null },
+                subscription: { isPremium: true },
+                studyStreak: null,
+              } as unknown as T;
+              setValue({ userId, path, revision, data: fallback });
+              return;
+            }
+          } catch {
+            // Proceed to failure message
+          }
+        }
+        setFailure({ userId, path, revision, message: error instanceof Error ? error.message : 'Unable to load. Please retry.' });
       });
     }
     return () => { active = false; };

@@ -3,39 +3,81 @@
 import { useApiResource } from "@/lib/api/use-api-resource";
 import type { ProfileData } from "@/lib/api/app-dtos";
 import { BrandMark } from "@/components/brand-mark";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "@/components/pending-link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Layers, Clock, ChartNoAxesCombined, Users, UserRound, CreditCard, LogOut, Flame, BookA } from "lucide-react";
+import { LayoutDashboard, Layers, Clock, ChartNoAxesCombined, Users, UserRound, CreditCard, LogOut, Flame, BookA, WifiOff } from "lucide-react";
 import { signOutAction } from "@/lib/client-actions";
+import { purgeAllActorOfflineData } from "@/lib/offline/idb-storage";
+import { flushPendingSync } from "@/lib/offline/weekly-pack-client";
 import styles from "./study-workspace.module.css";
 import { PolicyLinks } from "@/components/legal-page";
 import { ResourceStatus } from "@/lib/api/use-api-resource";
 
 const destinations = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { href: '/practice', label: 'Practice', icon: Layers },
-  { href: '/mock', label: 'Mock exams', icon: Clock },
-  { href: '/dictionary', label: 'Dictionary', icon: BookA, isPro: true },
-  { href: '/analytics', label: 'Performance', icon: ChartNoAxesCombined },
-  { href: '/referrals', label: 'Invite friends', icon: Users },
-  { href: '/profile', label: 'My profile', icon: UserRound },
-  { href: '/pricing', label: 'Plans', icon: CreditCard },
+  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, requiresOnline: false },
+  { href: '/practice', label: 'Practice', icon: Layers, requiresOnline: false },
+  { href: '/mock', label: 'Mock exams', icon: Clock, requiresOnline: true },
+  { href: '/dictionary', label: 'Dictionary', icon: BookA, isPro: true, requiresOnline: false },
+  { href: '/analytics', label: 'Performance', icon: ChartNoAxesCombined, requiresOnline: true },
+  { href: '/referrals', label: 'Invite friends', icon: Users, requiresOnline: true },
+  { href: '/profile', label: 'My profile', icon: UserRound, requiresOnline: false },
+  { href: '/pricing', label: 'Plans', icon: CreditCard, requiresOnline: true },
 ];
 
 export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
   const profile = useApiResource<ProfileData>("/api/v1/profile");
+  const [isOnline, setIsOnline] = useState(true);
   const showFreeLinks = profile.data?.subscription.isPremium === false;
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      setIsOnline(navigator.onLine);
+    }
+    const handleOnline = () => {
+      setIsOnline(true);
+      const studentId = profile.data?.profile?.id;
+      if (studentId) {
+        void flushPendingSync(studentId);
+      }
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [profile.data?.profile?.id]);
+
   const visibleDestinations = destinations.filter(item => showFreeLinks || !["/referrals", "/pricing"].includes(item.href));
   const current = visibleDestinations.find(item => pathname === item.href || pathname.startsWith(`${item.href}/`));
   if (!profile.data) return <ResourceStatus error={profile.error} retry={profile.retry} />;
   const streak = profile.data.studyStreak?.streak;
+
+  const handleSignOut = async () => {
+    try {
+      await purgeAllActorOfflineData();
+    } catch {
+      // non-blocking
+    }
+  };
+
   return <div className={styles.workspace}>
     <a href="#study-content" className="skip-link">Skip to study content</a>
     <header className={styles.header}>
       <Link href="/dashboard" className={styles.brand}><BrandMark size={32}/> jambprep.</Link>
       <span className={styles.context}>{current?.label || 'Your study space'}</span>
+
+      {!isOnline && (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+          <WifiOff size={13} className="text-amber-600" />
+          <span>Offline mode</span>
+        </span>
+      )}
+
       {streak && (
         <Link
           href="/profile#schedule"
@@ -55,21 +97,22 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
         <UserRound size={18} aria-hidden="true" />
         <span className="hidden sm:inline">Account</span>
       </Link>
-      <form action={signOutAction} className={styles.mobileSignout}><button type="submit" aria-label="Sign out" title="Sign out"><LogOut size={18} aria-hidden="true" /></button></form>
+      <form action={signOutAction} onSubmit={handleSignOut} className={styles.mobileSignout}><button type="submit" aria-label="Sign out" title="Sign out"><LogOut size={18} aria-hidden="true" /></button></form>
     </header>
     <aside className={styles.sidebar}>
       <p className={styles.caption}>YOUR STUDY SPACE</p>
       <nav aria-label="Study navigation" className={styles.navigation}>
-        {visibleDestinations.map(({ href, label, icon: Icon, isPro }) => {
+        {visibleDestinations.map(({ href, label, icon: Icon, isPro, requiresOnline }) => {
           const isLocked = isPro && profile.data?.subscription.isPremium === false;
-          const targetHref = isLocked ? '/pricing' : href;
+          const isOfflineDisabled = !isOnline && requiresOnline;
+          const targetHref = isLocked ? '/pricing' : (isOfflineDisabled ? '#' : href);
           return (
             <Link
               key={href}
               href={targetHref}
               aria-current={current?.href === href ? 'page' : undefined}
-              className={styles.navLink}
-              title={isLocked ? `${label} is a Pro feature — click to upgrade` : label}
+              className={`${styles.navLink} ${isOfflineDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title={isLocked ? `${label} is a Pro feature — click to upgrade` : (isOfflineDisabled ? `${label} requires an internet connection` : label)}
             >
               <Icon size={19} aria-hidden="true" />
               <span>{label}</span>
@@ -78,13 +121,18 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
                   PRO
                 </span>
               )}
+              {isOfflineDisabled && (
+                <span className="ml-auto text-[10px] font-medium text-slate-400">
+                  Online
+                </span>
+              )}
             </Link>
           );
         })}
       </nav>
       <div className={styles.sidebarFooter}>
         <p>A little progress, every day.</p>
-        <form action={signOutAction}><button type="submit" className={styles.signout}><LogOut size={17} aria-hidden="true" />Sign out</button></form>
+        <form action={signOutAction} onSubmit={handleSignOut}><button type="submit" className={styles.signout}><LogOut size={17} aria-hidden="true" />Sign out</button></form>
       </div>
     </aside>
     <div id="study-content" tabIndex={-1} className={styles.content}>{children}</div>

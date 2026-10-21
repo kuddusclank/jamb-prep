@@ -5,8 +5,29 @@ import { executeTransactionalIdempotentMutation,extractIdempotencyKey } from '..
 import {loadAssessmentPools,selectAssessmentForm} from './assessment-selector';
 import {getUserSubscriptionStatus} from './subscription-service';
 import { practiceCatalogue } from './practice-catalogue-service';
+import { getOrIssueWeeklyPack, syncWeeklyPackAnswers, type SyncAnswerItem } from './weekly-pack-service';
 
 export const PRACTICE_ROUTES: RouteDefinition[] = [
+  {id:'practice.weekly.get',method:'GET',pattern:'/api/v1/practice/weekly-pack',auth:'student',handler:async ctx=>{
+    const sql=ctx.getDb().sql;
+    const result=await getOrIssueWeeklyPack(sql,ctx.actor!.userId,ctx.now);
+    return {status:200,body:result};
+  }},
+  {id:'practice.weekly.sync',method:'POST',pattern:'/api/v1/practice/weekly-pack/sync',auth:'student',idempotency:'required',handler:async ctx=>{
+    const {data,rawText}=await readBoundedJsonBody(ctx.request);
+    const body=data as {packId:string;answers:SyncAnswerItem[]};
+    const outcome=await executeTransactionalIdempotentMutation({
+      db:ctx.getDb(),
+      userId:ctx.actor!.userId,
+      operation:'practice.weekly.sync',
+      canonicalPayload:JSON.stringify({rawText}),
+      idempotencyKey:extractIdempotencyKey(ctx.request,{required:true})!,
+      execute:async tx=>{
+        return {body:await syncWeeklyPackAnswers(tx,ctx.actor!.userId,body,ctx.now)};
+      }
+    });
+    return {status:200,body:outcome.body,headers:outcome.headers};
+  }},
   {id:'mock.readiness',method:'GET',pattern:'/api/v1/mock/readiness',auth:'student',handler:async ctx=>{
     const sql=ctx.getDb().sql;const userId=ctx.actor!.userId;
     const [profile]=await sql`SELECT exam_year FROM student_preferences WHERE user_id=${userId}::uuid`;

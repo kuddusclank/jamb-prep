@@ -63,6 +63,7 @@ import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
 import StudyLoading from "@/components/study-loading";
 import { BrowserAccountBoundary, useBrowserAccount } from "@/components/browser-account-boundary";
 import type { DashboardData } from "@/lib/api/app-dtos";
+import { WeeklyPracticeCard } from "@/components/weekly-practice-card";
 
 export default function DashboardPage() {
   const resource = useApiResource<DashboardData>('/api/v1/dashboard');
@@ -289,6 +290,10 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {/* Weekly 250-Question Offline Practice Pack */}
+          {account.session.user?.id && (
+            <WeeklyPracticeCard userId={account.session.user.id} />
+          )}
 
           {/* Your next revision priorities Section */}
           <div>
