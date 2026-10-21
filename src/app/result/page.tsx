@@ -11,7 +11,7 @@ import { MathRenderer } from '@/components/math-renderer';
 import { isArabicText } from '@/lib/utils';
 import { MockResultRatingPrompt } from '@/components/mock-result-rating-prompt';
 interface ResultData {subjectScores?:{code:string;name:string;count:number;score:number}[];totalScore:number;englishScore:number;subject2Score:number;subject3Score:number;subject4Score:number;timeSpentSeconds:number;completedAt:string;}
-import { CheckCircle2, XCircle, AlertCircle, HelpCircle, ChevronDown, ChevronUp, Sparkles, Filter, Bookmark, BookA, Lock } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, HelpCircle, ChevronDown, ChevronUp, Sparkles, Filter, Bookmark, BookA, Lock, ArrowRight } from 'lucide-react';
 import { ReportQuestionDialog } from '@/components/report-question-dialog';
 import { QuestionDiagram } from '@/components/question-diagram';
 import { InspectableText } from '@/components/dictionary/inspectable-text';
@@ -119,119 +119,95 @@ function Review({ attemptId }: { attemptId: string }) {
   };
 
   return (
-    <section className="mt-10 space-y-6">
+    <section className="mt-10 space-y-5">
       {/* Section Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-slate-200/80 pb-4">
         <div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-[#116149] border border-emerald-200/80">
-            <Sparkles size={13} /> Detailed Diagnostic Review
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-[#116149] border border-emerald-200/80 uppercase tracking-wide">
+            <Sparkles size={12} /> Diagnostic Solutions
           </span>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">Answer Explanations & Solutions</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Open explanations with question breakdown. Review mistakes and understand every step.
+          <h2 className="mt-1.5 text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+            Answer Explanations & Solutions
+          </h2>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Step-by-step rationales, core concepts, and mistake breakdowns for each question.
           </p>
         </div>
 
-        {/* Quick status pill summary */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
-            {totalCount} Total
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-900 border border-emerald-200">
-            <CheckCircle2 size={12} className="text-emerald-700" /> {correctCount} Correct
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-900 border border-rose-200">
-            <XCircle size={12} className="text-rose-700" /> {incorrectCount} Incorrect
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-200">
-            <AlertCircle size={12} className="text-amber-700" /> {unansweredCount} Unanswered
-          </span>
-        </div>
+        {/* Question Palette Toggle */}
+        <button
+          type="button"
+          onClick={() => setShowPalette(!showPalette)}
+          className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs transition-all cursor-pointer"
+        >
+          {showPalette ? (
+            <>Hide Palette <ChevronUp size={13} /></>
+          ) : (
+            <>Jump to Question ({totalCount}) <ChevronDown size={13} /></>
+          )}
+        </button>
       </div>
 
-      {/* Filter Tag / Pill Navigation Bar */}
-      <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          {/* Status Filter Pills */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mr-1 flex items-center gap-1">
-              <Filter size={12} /> Status:
-            </span>
-            <button
-              type="button"
-              onClick={() => { setStatusFilter('all'); setVisibleLimit(30); }}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                statusFilter === 'all'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              All ({totalCount})
-            </button>
-            <button
-              type="button"
-              onClick={() => { setStatusFilter('incorrect'); setVisibleLimit(30); }}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                statusFilter === 'incorrect'
-                  ? 'bg-rose-600 text-white shadow-xs'
-                  : 'bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100'
-              }`}
-            >
-              <XCircle size={13} /> Incorrect ({incorrectCount})
-            </button>
-            <button
-              type="button"
-              onClick={() => { setStatusFilter('unanswered'); setVisibleLimit(30); }}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                statusFilter === 'unanswered'
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
-              }`}
-            >
-              <AlertCircle size={13} /> Unanswered ({unansweredCount})
-            </button>
-            <button
-              type="button"
-              onClick={() => { setStatusFilter('correct'); setVisibleLimit(30); }}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                statusFilter === 'correct'
-                  ? 'bg-[#116149] text-white shadow-xs'
-                  : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
-              }`}
-            >
-              <CheckCircle2 size={13} /> Correct ({correctCount})
-            </button>
-          </div>
-
-          {/* Toggle Question Number Palette */}
+      {/* Unified Minimalist Filter Bar */}
+      <div className="space-y-2.5 rounded-2xl border border-slate-200/90 bg-white p-3 sm:p-4 shadow-xs">
+        {/* Status Filter Tabs (Unified & Responsive Horizontal Scroll) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
           <button
             type="button"
-            onClick={() => setShowPalette(!showPalette)}
-            className="inline-flex items-center gap-1.5 self-start sm:self-auto text-xs font-semibold text-[#116149] hover:text-[#0e523e] cursor-pointer"
+            onClick={() => { setStatusFilter('all'); setVisibleLimit(30); }}
+            className={`shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+              statusFilter === 'all'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80'
+            }`}
           >
-            {showPalette ? (
-              <>
-                Hide Palette <ChevronUp size={14} />
-              </>
-            ) : (
-              <>
-                Jump to Question <ChevronDown size={14} />
-              </>
-            )}
+            All <span className="font-normal opacity-75">({totalCount})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setStatusFilter('incorrect'); setVisibleLimit(30); }}
+            className={`shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+              statusFilter === 'incorrect'
+                ? 'bg-rose-600 text-white shadow-xs'
+                : 'bg-rose-50 text-rose-800 border border-rose-200/80 hover:bg-rose-100'
+            }`}
+          >
+            <XCircle size={12} /> Incorrect <span className="font-normal opacity-75">({incorrectCount})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setStatusFilter('unanswered'); setVisibleLimit(30); }}
+            className={`shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+              statusFilter === 'unanswered'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'bg-amber-50 text-amber-900 border border-amber-200/80 hover:bg-amber-100'
+            }`}
+          >
+            <AlertCircle size={12} /> Unanswered <span className="font-normal opacity-75">({unansweredCount})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setStatusFilter('correct'); setVisibleLimit(30); }}
+            className={`shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+              statusFilter === 'correct'
+                ? 'bg-[#116149] text-white shadow-xs'
+                : 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100'
+            }`}
+          >
+            <CheckCircle2 size={12} /> Correct <span className="font-normal opacity-75">({correctCount})</span>
           </button>
         </div>
 
-        {/* Subject Filter Pills (if multiple subjects exist) */}
+        {/* Subject Filter Chips (Smooth Horizontal Scroll on Mobile) */}
         {subjects.length > 1 && (
-          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mr-1">Subject:</span>
+          <div className="flex items-center gap-1.5 pt-2.5 border-t border-slate-100 overflow-x-auto pb-1 scrollbar-none">
             <button
               type="button"
               onClick={() => { setSubjectFilter('all'); setVisibleLimit(30); }}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 subjectFilter === 'all'
-                  ? 'bg-emerald-800 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  ? 'bg-emerald-800 text-white shadow-2xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80'
               }`}
             >
               All Subjects
@@ -241,13 +217,13 @@ function Review({ attemptId }: { attemptId: string }) {
                 key={sub.code}
                 type="button"
                 onClick={() => { setSubjectFilter(sub.code); setVisibleLimit(30); }}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                   subjectFilter === sub.code
-                    ? 'bg-emerald-800 text-white'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    ? 'bg-emerald-800 text-white shadow-2xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80'
                 }`}
               >
-                {sub.name} ({sub.count})
+                {sub.name} <span className="text-[10px] opacity-75">({sub.count})</span>
               </button>
             ))}
           </div>
@@ -537,17 +513,165 @@ function Review({ attemptId }: { attemptId: string }) {
   );
 }
 function Scorecard({attemptId}:{attemptId:string}) {
- const resource=useApiResource<ResultData>(`/api/v1/exams/attempts/${attemptId}/results`);
- if(!resource.data)return <ResourceStatus error={resource.error} retry={resource.retry}/>;
- const result=resource.data;
- const subjects=result.subjectScores?.length ? result.subjectScores : [result.englishScore,result.subject2Score,result.subject3Score,result.subject4Score].map((score,index)=>({code:String(index),name:index===0?'Use of English':`Subject ${index+1}`,score}));
- return <main className="shell section-space"><div className="mx-auto max-w-4xl"><p className="text-xs font-semibold uppercase tracking-widest text-emerald-800">Your progress, one session at a time</p><h1 className="mt-3 text-3xl font-semibold tracking-tight">Your mock result</h1><section className="my-6 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8"><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-sm text-slate-500">Total score</p><p className="mt-2 text-6xl font-semibold text-[#116149]">{result.totalScore}<span className="text-xl text-slate-400"> / 400</span></p></div><p className="text-sm text-slate-500">{Math.floor(result.timeSpentSeconds/60)} minutes of practice</p></div><div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">{subjects.map(subject=><div key={subject.code} className="rounded-2xl bg-slate-50 p-4"><p className="text-sm text-slate-600">{subject.name}</p><p className="mt-2 text-2xl font-semibold">{subject.score}<span className="text-sm font-normal text-slate-400"> / 100</span></p></div>)}</div><ResultShare
-  type="mock"
-  totalScore={result.totalScore}
-  timeSpentMinutes={Math.floor(result.timeSpentSeconds/60)}
-  subjects={subjects}
-/></section><div className="flex flex-wrap gap-3"><Link className="inline-flex min-h-11 items-center rounded-full bg-[#116149] px-5 text-sm font-semibold text-white" href="/practice/">Practise a topic</Link><Link className="inline-flex min-h-11 items-center rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold" href="/dashboard/">Back to dashboard</Link></div><Review attemptId={attemptId}/></div><MockResultRatingPrompt attemptId={attemptId}/></main>;
+  const resource=useApiResource<ResultData>(`/api/v1/exams/attempts/${attemptId}/results`);
+  if(!resource.data)return <ResourceStatus error={resource.error} retry={resource.retry}/>;
+  const result=resource.data;
+  const subjects=result.subjectScores?.length ? result.subjectScores : [result.englishScore,result.subject2Score,result.subject3Score,result.subject4Score].map((score,index)=>({code:String(index),name:index===0?'Use of English':`Subject ${index+1}`,score}));
 
+  const mins = Math.floor(result.timeSpentSeconds / 60);
+  const timeFormatted = result.timeSpentSeconds < 60 ? "< 1 min" : `${mins} mins`;
+
+  return (
+    <main className="shell section-space">
+      <div className="mx-auto max-w-4xl space-y-6">
+        {/* Page Title */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-[#116149]">
+              Performance Breakdown
+            </p>
+            <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+              Your Mock Result
+            </h1>
+          </div>
+          <span className="text-xs text-slate-400 font-medium">
+            UTME 4-Subject CBT Simulation
+          </span>
+        </div>
+
+        {/* Minimalist Scorecard Card */}
+        <section className="rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-7 shadow-xs">
+          {/* Top Row: Score Badge + Metadata + Share Button */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 pb-6 border-b border-slate-100">
+            <div className="flex items-center gap-4 sm:gap-5">
+              <div
+                className={`flex flex-col items-center justify-center size-20 sm:size-22 rounded-2xl shrink-0 border transition-all ${
+                  result.totalScore >= 250
+                    ? "bg-emerald-50 border-emerald-200 text-[#116149]"
+                    : result.totalScore >= 180
+                      ? "bg-teal-50 border-teal-200 text-teal-800"
+                      : result.totalScore > 0
+                        ? "bg-amber-50 border-amber-200 text-amber-900"
+                        : "bg-slate-50 border-slate-200 text-slate-600"
+                }`}
+              >
+                <span className="text-3xl sm:text-4xl font-black tracking-tight leading-none">
+                  {result.totalScore}
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1">
+                  / 400
+                </span>
+              </div>
+
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-[#116149]">
+                    Completed Mock
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium">
+                    • {timeFormatted} spent
+                  </span>
+                </div>
+                <h2 className="text-lg sm:text-xl font-bold text-[#092E28] tracking-tight mt-1">
+                  {result.totalScore >= 250
+                    ? "Outstanding Performance!"
+                    : result.totalScore >= 180
+                      ? "Good Progress! Keep Practicing"
+                      : "Diagnostic Recorded"}
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Review subject scores and step-by-step diagnostic solutions below.
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Share Result Button */}
+            <div className="shrink-0 self-start sm:self-auto">
+              <ResultShare
+                type="mock"
+                totalScore={result.totalScore}
+                timeSpentMinutes={mins}
+                subjects={subjects}
+                className="my-0 flex flex-col items-start sm:items-end"
+                buttonClassName="inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-[#0e523e] transition-all cursor-pointer"
+              />
+            </div>
+          </div>
+
+          {/* 4 Subjects Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-5">
+            {subjects.map((subject) => {
+              const pct = Math.min(100, Math.max(0, subject.score));
+              return (
+                <div
+                  key={subject.code}
+                  className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5 sm:p-4 hover:border-emerald-200 transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <p className="text-xs font-bold text-slate-700 truncate" title={subject.name}>
+                      {subject.name}
+                    </p>
+                    <div className="mt-1.5 flex items-baseline gap-1">
+                      <span className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                        {subject.score}
+                      </span>
+                      <span className="text-xs text-slate-400 font-medium">/ 100</span>
+                    </div>
+                  </div>
+
+                  {/* Micro Progress Track */}
+                  <div className="mt-3 h-1.5 w-full rounded-full bg-slate-200/80 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        pct >= 70
+                          ? "bg-emerald-500"
+                          : pct >= 50
+                            ? "bg-teal-500"
+                            : pct > 0
+                              ? "bg-amber-500"
+                              : "bg-slate-300"
+                      }`}
+                      style={{ width: `${Math.max(pct > 0 ? 8 : 0, pct)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Action Row */}
+          <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Link
+                href="/practice"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#116149] hover:bg-[#0b4936] text-white text-xs sm:text-sm font-bold shadow-xs hover:-translate-y-0.5 transition-all"
+              >
+                Practise a Topic <ArrowRight size={14} />
+              </Link>
+              <Link
+                href="/dashboard"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition-all"
+              >
+                Back to Dashboard
+              </Link>
+            </div>
+
+            <Link
+              href="/mock"
+              className="text-xs font-bold text-[#116149] hover:underline self-start sm:self-auto"
+            >
+              Take Another Mock →
+            </Link>
+          </div>
+        </section>
+
+        {/* Detailed Solutions Section */}
+        <Review attemptId={attemptId} />
+      </div>
+
+      <MockResultRatingPrompt attemptId={attemptId} />
+    </main>
+  );
 }
 function ResultContent(){const params=useSearchParams();const parsed=parseAttemptIdFromSearch(params);const router=useRouter();const redirectReason=parsed.valid?null:parsed.reason;useEffect(()=>{if(redirectReason)router.replace(`/mock?error=${redirectReason}`);},[redirectReason,router]);return parsed.valid?<Scorecard attemptId={parsed.attemptId}/>:<p role="status">Checking result link…</p>;}
 export default function ResultPage(){return <StudyWorkspace><Suspense fallback={<p role="status">Loading result…</p>}><ResultContent/></Suspense></StudyWorkspace>;}

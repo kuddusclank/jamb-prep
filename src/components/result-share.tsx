@@ -9,6 +9,8 @@ import { practiceShareText, mockShareText } from "@/lib/share";
 import { generateResultCardImage } from "@/lib/result-card-image";
 
 export interface ResultShareProps {
+  className?: string;
+  buttonClassName?: string;
   text?: string;
   type?: "practice" | "mock";
   subjectName?: string;
@@ -162,25 +164,25 @@ export function ResultShare(props: ResultShareProps) {
   }
 
   return (
-    <div className="my-6 flex flex-col items-center">
+    <div className={props.className ?? "my-6 flex flex-col items-center"}>
       <button
         type="button"
         onClick={() => void handleShare()}
         disabled={isSharing}
-        className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-full bg-[#116149] px-8 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-[#0e523e] transition-all cursor-pointer disabled:opacity-60"
+        className={props.buttonClassName ?? "inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#116149] px-6 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-[#0e523e] transition-all cursor-pointer disabled:opacity-60"}
       >
         {isSharing ? (
           <>
-            <Loader2 size={18} className="animate-spin" /> Preparing share...
+            <Loader2 size={16} className="animate-spin" /> Preparing share...
           </>
         ) : (
           <>
-            <Share2 size={18} /> Share Result
+            <Share2 size={16} /> Share Result
           </>
         )}
       </button>
       {status && (
-        <p role="status" className="mt-2.5 text-center text-xs font-medium text-emerald-800">
+        <p role="status" className="mt-1.5 text-center text-xs font-medium text-emerald-800">
           {status}
         </p>
       )}
