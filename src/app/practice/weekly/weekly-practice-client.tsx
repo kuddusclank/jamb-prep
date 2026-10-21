@@ -63,6 +63,7 @@ export function WeeklyPracticeClient() {
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [syncedNotice, setSyncedNotice] = useState<string | null>(null);
   const [flaggedIds, setFlaggedIds] = useState<Set<string>>(new Set());
+  const [showOverallSummary, setShowOverallSummary] = useState<boolean>(false);
 
   // Active Session State (just like normal practice)
   const [activeQuestions, setActiveQuestions] = useState<QuestionItem[]>([]);
@@ -672,11 +673,20 @@ export function WeeklyPracticeClient() {
               Weekly Practice Set
             </h1>
           </div>
-          <div className="text-right">
+          <div className="text-right flex flex-col items-end gap-1">
             <span className="text-sm font-semibold text-slate-600">
               {answeredTotal} of {totalQuestions} answered
             </span>
-            <div className="text-xs text-emerald-700 font-bold">{percentTotal}% completed</div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-emerald-700 font-bold">{percentTotal}% completed</span>
+              <button
+                type="button"
+                onClick={() => setShowOverallSummary((prev) => !prev)}
+                className="text-xs font-semibold text-[#116149] hover:underline cursor-pointer"
+              >
+                {showOverallSummary ? "Hide Summary" : "View Summary"}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -687,6 +697,101 @@ export function WeeklyPracticeClient() {
           />
         </div>
       </div>
+
+      {/* Dedicated Weekly Practice Completion & Summary View */}
+      {(showOverallSummary || (answeredTotal > 0 && answeredTotal >= totalQuestions)) && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 shadow-sm space-y-5 animate-fade-in">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2">
+              <Award size={20} className="text-amber-500" />
+              <h2 className="text-lg font-bold text-[#092E28]">
+                {answeredTotal >= totalQuestions
+                  ? "🎉 Weekly Practice Pack Completed!"
+                  : "Overall Pack Performance Summary"}
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowOverallSummary(false)}
+              className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-3.5 text-center">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">Answered</div>
+              <div className="text-xl sm:text-2xl font-bold text-emerald-950 mt-0.5">
+                {answeredTotal} / {totalQuestions}
+              </div>
+              <div className="text-[11px] text-emerald-700">{percentTotal}% done</div>
+            </div>
+
+            <div className="rounded-2xl bg-blue-50 border border-blue-200 p-3.5 text-center">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-blue-800">Accuracy</div>
+              <div className="text-xl sm:text-2xl font-bold text-blue-950 mt-0.5">
+                {answeredTotal > 0
+                  ? Math.round(
+                      (Object.entries(pack?.answers || {}).filter(
+                        ([qId, ans]) => pack?.feedback?.[qId]?.correctOption === ans.selectedOption
+                      ).length /
+                        answeredTotal) *
+                        100
+                    )
+                  : 0}
+                %
+              </div>
+              <div className="text-[11px] text-blue-700">across answered</div>
+            </div>
+
+            <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3.5 text-center">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-amber-800">Flagged</div>
+              <div className="text-xl sm:text-2xl font-bold text-amber-950 mt-0.5">{flaggedIds.size}</div>
+              <div className="text-[11px] text-amber-700">for review</div>
+            </div>
+          </div>
+
+          {/* Subject Breakdown */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Subject Score Breakdown
+            </h3>
+            <div className="rounded-2xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
+              {pack?.subjects?.map((sub) => {
+                const subQs = (pack.questions as unknown as QuestionItem[]).filter(
+                  (q) => q.subjectCode === sub.code
+                );
+                const subAnswered = subQs.filter((q) => pack.answers?.[q.id]).length;
+                const subCorrect = subQs.filter((q) => {
+                  const ans = pack.answers?.[q.id];
+                  const fb = pack.feedback?.[q.id];
+                  return ans && fb && ans.selectedOption === fb.correctOption;
+                }).length;
+                const subPct = subQs.length > 0 ? Math.round((subAnswered / subQs.length) * 100) : 0;
+                const subAcc = subAnswered > 0 ? Math.round((subCorrect / subAnswered) * 100) : 0;
+
+                return (
+                  <div key={sub.code} className="p-3.5 flex items-center justify-between text-xs sm:text-sm">
+                    <div>
+                      <span className="font-bold text-[#092E28]">{sub.name}</span>
+                      <span className="text-xs text-slate-400 ml-1.5">({sub.code})</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-semibold text-slate-700">
+                        {subAnswered} of {subQs.length} ({subPct}%)
+                      </span>
+                      <span className="text-xs text-emerald-700 ml-2 font-medium">
+                        {subCorrect} correct ({subAcc}%)
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Selection Form (Just like normal practice, but topic selection disabled) */}
       <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">

@@ -281,7 +281,7 @@ export async function getOrIssueWeeklyPack(
       user_id, mode, status, started_at, expires_at, practice_requested_count, blueprint_manifest
     ) VALUES (
       ${userId}::uuid, 'practice', 'in_progress', ${now.toISOString()}::timestamptz,
-      ${weekExpiry.toISOString()}::timestamptz, 250,
+      ${weekExpiry.toISOString()}::timestamptz, ${selectedQuestions.length},
       ${JSON.stringify(manifest)}::text::jsonb
     ) RETURNING id
   `;
