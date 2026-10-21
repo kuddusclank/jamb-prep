@@ -9,7 +9,7 @@ import { usePathname } from "next/navigation";
 import { LayoutDashboard, Layers, Clock, ChartNoAxesCombined, Users, UserRound, CreditCard, LogOut, Flame, BookA, WifiOff, CheckCircle2 } from "lucide-react";
 import { signOutAction } from "@/lib/client-actions";
 import { purgeAllActorOfflineData } from "@/lib/offline/idb-storage";
-import { flushPendingSync } from "@/lib/offline/weekly-pack-client";
+import { flushPendingSync, ensureWeeklyPackDownloaded } from "@/lib/offline/weekly-pack-client";
 import styles from "./study-workspace.module.css";
 import { PolicyLinks } from "@/components/legal-page";
 import { ResourceStatus } from "@/lib/api/use-api-resource";
@@ -28,7 +28,6 @@ const destinations = [
 export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
   const profile = useApiResource<ProfileData>("/api/v1/profile");
   const [isOnline, setIsOnline] = useState(true);
-  const [syncToast, setSyncToast] = useState<string | null>(null);
   const showFreeLinks = profile.data?.subscription.isPremium === false;
   const pathname = usePathname();
 
@@ -38,12 +37,7 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     }
 
     const triggerSync = (studentId: string) => {
-      void flushPendingSync(studentId).then((count) => {
-        if (count > 0) {
-          setSyncToast(`Synced ${count} offline ${count === 1 ? 'answer' : 'answers'} to your account`);
-          setTimeout(() => setSyncToast(null), 4500);
-        }
-      });
+      void flushPendingSync(studentId);
     };
 
     const studentId = profile.data?.profile?.id;
@@ -67,6 +61,16 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     };
   }, [profile.data?.profile?.id]);
 
+  // Automatic silent background prefetch of this week's 250-pack for Pro students
+  useEffect(() => {
+    if (typeof window === "undefined" || !navigator.onLine) return;
+    const studentId = profile.data?.profile?.id;
+    const isPremium = profile.data?.subscription?.isPremium;
+    if (!studentId || !isPremium) return;
+
+    void ensureWeeklyPackDownloaded(studentId).catch(() => {});
+  }, [profile.data?.profile?.id, profile.data?.subscription?.isPremium]);
+
   const visibleDestinations = destinations.filter(item => showFreeLinks || !["/referrals", "/pricing"].includes(item.href));
   const current = visibleDestinations.find(item => pathname === item.href || pathname.startsWith(`${item.href}/`));
   if (!profile.data) return <ResourceStatus error={profile.error} retry={profile.retry} />;
@@ -85,13 +89,6 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     <header className={styles.header}>
       <Link href="/dashboard" className={styles.brand}><BrandMark size={32}/> jambprep.</Link>
       <span className={styles.context}>{current?.label || 'Your study space'}</span>
-
-      {!isOnline && (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-          <WifiOff size={13} className="text-amber-600" />
-          <span>Offline mode</span>
-        </span>
-      )}
 
       {streak && (
         <Link
@@ -152,16 +149,5 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     </aside>
     <div id="study-content" tabIndex={-1} className={styles.content}>{children}</div>
     <footer className={styles.footer}><p>JAMBPrep · Your subjects. Your pace. Your next step.</p><PolicyLinks className="mt-3 justify-center"/></footer>
-
-    {syncToast && (
-      <div
-        role="status"
-        aria-live="polite"
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-[#092E28] text-white text-xs font-semibold shadow-xl border border-emerald-700/60 animate-fade-in"
-      >
-        <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
-        <span>{syncToast}</span>
-      </div>
-    )}
   </div>;
 }

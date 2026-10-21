@@ -1,17 +1,74 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { StudyWorkspace } from "@/components/study-workspace";
 import { PracticeClient } from "./practice-client";
-
+import { WeeklyPracticeClient } from "./weekly/weekly-practice-client";
+import { useBrowserAccount } from "@/components/browser-account-boundary";
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
 import type { PracticeCatalogue } from "@/lib/api/practice-dtos";
+import { getWeeklyPackFromIdb } from "@/lib/offline/idb-storage";
+import { getCurrentWeekKey } from "@/lib/offline/weekly-pack-client";
 
 function PracticePageContent() {
   const searchParams = useSearchParams();
-  const catalogue=useApiResource<PracticeCatalogue>("/api/v1/practice/catalogue");
-  if(!catalogue.data) return <ResourceStatus error={catalogue.error} retry={catalogue.retry}/>;
+  const account = useBrowserAccount();
+  const userId = account.identity?.user?.id || account.session.user?.id || "";
+  const [isOffline, setIsOffline] = useState(false);
+  const [hasCachedPack, setHasCachedPack] = useState(false);
+  const [checkedCache, setCheckedCache] = useState(false);
+
+  const catalogue = useApiResource<PracticeCatalogue>("/api/v1/practice/catalogue");
+
+  useEffect(() => {
+    if (typeof navigator !== "undefined") {
+      setIsOffline(!navigator.onLine);
+    }
+    const onOnline = () => setIsOffline(false);
+    const onOffline = () => setIsOffline(true);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    const weekKey = getCurrentWeekKey();
+    void getWeeklyPackFromIdb(userId, weekKey)
+      .then((pack) => {
+        setHasCachedPack(Boolean(pack && pack.questions?.length > 0));
+        setCheckedCache(true);
+      })
+      .catch(() => {
+        setHasCachedPack(false);
+        setCheckedCache(true);
+      });
+  }, [userId]);
+
+  // Seamless offline fallback: if offline or catalogue request failed while offline,
+  // load the cached practice pack without showing offline status to the user.
+  if ((isOffline || (catalogue.error && !catalogue.data)) && hasCachedPack) {
+    return <WeeklyPracticeClient />;
+  }
+
+  if (!catalogue.data) {
+    if (isOffline && checkedCache && !hasCachedPack) {
+      return (
+        <div className="rounded-3xl border border-amber-200 bg-amber-50/70 p-8 text-center max-w-lg mx-auto space-y-4">
+          <h2 className="text-xl font-bold text-[#092E28]">No Offline Questions Cached</h2>
+          <p className="text-sm text-slate-600">
+            Please connect to the internet once to automatically download your practice questions for offline use.
+          </p>
+        </div>
+      );
+    }
+    return <ResourceStatus error={catalogue.error} retry={catalogue.retry} />;
+  }
+
   const initialSubjectCode = searchParams.get("subject") || undefined;
   const initialTopicSlug = searchParams.get("topic") || undefined;
 
@@ -20,7 +77,7 @@ function PracticePageContent() {
       enrolledSubjects={catalogue.data.subjects}
       dailySessionUsed={catalogue.data.dailySessionUsed}
       activeSessionId={catalogue.data.activeSessionId}
-      initialSessionId={searchParams.get("session")??undefined}
+      initialSessionId={searchParams.get("session") ?? undefined}
       refreshCatalogue={catalogue.retry}
       initialSubjectCode={initialSubjectCode}
       initialTopicSlug={initialTopicSlug}

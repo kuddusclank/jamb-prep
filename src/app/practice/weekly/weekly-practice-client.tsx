@@ -92,12 +92,7 @@ export function WeeklyPracticeClient() {
     const onOnline = () => {
       setIsOnline(true);
       if (userId) {
-        void flushPendingSync(userId).then((count) => {
-          if (count > 0) {
-            setSyncedNotice(`Synced ${count} offline answers`);
-            setTimeout(() => setSyncedNotice(null), 4000);
-          }
-        });
+        void flushPendingSync(userId);
       }
     };
     const onOffline = () => setIsOnline(false);
@@ -399,7 +394,7 @@ export function WeeklyPracticeClient() {
               Great Practice Session!
             </h2>
             <p className="text-sm text-slate-500">
-              Your answers have been saved to offline storage and queued for sync.
+              Your answers have been saved and recorded to your account.
             </p>
           </div>
 
@@ -679,28 +674,8 @@ export function WeeklyPracticeClient() {
           </Link>
           <span className="text-slate-300">/</span>
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            {pack?.weekKey || getCurrentWeekKey()} Weekly Practice
+            Practice
           </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {!isOnline ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200">
-              <WifiOff size={12} className="text-amber-600" />
-              <span>Offline Mode</span>
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
-              <span className="size-1.5 rounded-full bg-emerald-500" />
-              <span>Online & Synced</span>
-            </span>
-          )}
-
-          {syncedNotice && (
-            <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
-              {syncedNotice}
-            </span>
-          )}
         </div>
       </div>
 
@@ -711,13 +686,15 @@ export function WeeklyPracticeClient() {
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide uppercase bg-emerald-100 text-[#116149]">
                 <Sparkles size={11} className="text-amber-600" />
-                250-QUESTION PACK
+                SELF-PACED PRACTICE
               </span>
-              <span className="text-xs text-slate-400">Offline Ready</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-[#092E28] mt-1">
-              Weekly Practice Set
+              Select a subject to <span className="serif-accent text-[#116149]">practise</span>
             </h1>
+            <p className="mt-1 text-sm text-slate-600">
+              Work through verified questions with step-by-step diagnostic solutions and formulas.
+            </p>
           </div>
           <div className="text-right flex flex-col items-end gap-1">
             <span className="text-sm font-semibold text-slate-600">
@@ -884,7 +861,7 @@ export function WeeklyPracticeClient() {
           </div>
         </div>
 
-        {/* Step 2: Topic Selection (Disabled for Weekly Practice) */}
+        {/* Step 2: Topic Selection */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
             2. Topic Selection
@@ -894,9 +871,9 @@ export function WeeklyPracticeClient() {
               <Layers size={16} />
             </span>
             <div>
-              <p className="font-semibold text-slate-800">Mixed Topics (Random Syllabus Coverage)</p>
+              <p className="font-semibold text-slate-800">All Syllabus Topics</p>
               <p className="text-xs text-slate-500 mt-0.5">
-                Topic selection is disabled for weekly practice sets. Questions are drawn randomly across your syllabus pack for comprehensive revision.
+                Questions are selected across your syllabus topics for comprehensive revision.
               </p>
             </div>
           </div>
