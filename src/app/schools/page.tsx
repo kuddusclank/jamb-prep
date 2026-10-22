@@ -86,11 +86,6 @@ export default function SchoolsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
             {/* Left Column: Clear Value Proposition */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-[#116149] text-xs font-bold tracking-wide">
-                <span className="size-2 rounded-full bg-[#116149] animate-pulse" />
-                INSTITUTIONAL CBT LICENSING
-              </div>
-
               <h1 className="text-3xl sm:text-5xl lg:text-5xl font-bold tracking-tight text-[#092E28] leading-[1.12]">
                 Turn your computer lab into an authentic{" "}
                 <span className="serif-accent text-[#116149]">UTME examination hall.</span>
@@ -611,11 +606,6 @@ export default function SchoolsPage() {
            ======================================================== */}
         <section className="shell pb-20 max-w-4xl mx-auto">
           <div className="rounded-3xl bg-[#092E28] p-8 sm:p-12 text-white text-center space-y-5 shadow-lg">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-900/60 text-emerald-300 text-xs font-semibold">
-              <Sparkles size={13} />
-              Empowering Nigerian Secondary Education
-            </span>
-
             <h3 className="text-2xl sm:text-4xl font-bold tracking-tight">
               Ready to enroll your school or tutorial cohort?
             </h3>
