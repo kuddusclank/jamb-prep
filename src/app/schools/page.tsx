@@ -13,37 +13,48 @@ import {
   ShieldCheck,
   Check,
   Sparkles,
-  Clock,
   Keyboard,
-  WifiOff,
-  Flame,
   Award
 } from "lucide-react";
 
 export const metadata: Metadata = pageMetadata(
   "School & Tutorial Centre Partnerships",
-  "Equip your secondary school or tutorial centre with authentic JAMB UTME computer-based practice and timed mock exams. ₦1,500/student/month.",
+  "The complete CBT assessment platform for Nigerian secondary schools and tutorial centres. ₦1,500/student/month.",
   "/schools/",
   true
 );
 
 export default function SchoolsPage() {
   return (
-    <div className="min-h-screen bg-[#FBFDFB] text-[#092E28] flex flex-col justify-between selection:bg-emerald-200">
-      {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur">
-        <div className="shell flex h-16 items-center justify-between gap-4">
-          <Link href="/" aria-label="JAMBPrep home" className="flex items-center gap-2 text-lg font-bold tracking-tight">
-            <span className="flex size-8 items-center justify-center rounded-xl bg-[#116149] text-white shadow-sm">
-              <BrandMark size={28} />
-            </span>
-            <span>JAMBPrep</span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-              For Schools
-            </span>
-          </Link>
+    <div className="min-h-screen bg-white text-[#092E28] flex flex-col justify-between selection:bg-emerald-200">
+      {/* ========================================================
+          TOP NAVIGATION BAR (Clean with Segmented Switcher)
+         ======================================================== */}
+      <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/95 backdrop-blur-md">
+        <div className="shell flex h-20 items-center justify-between gap-4">
+          <div className="flex items-center gap-5">
+            <Link href="/" aria-label="JAMBPrep home" className="flex items-center gap-2 text-lg font-bold tracking-tight">
+              <span className="flex size-9 items-center justify-center rounded-xl bg-[#116149] text-white shadow-xs">
+                <BrandMark size={30} />
+              </span>
+              <span>JAMBPrep</span>
+            </Link>
 
-          <nav aria-label="Institutional navigation" className="hidden items-center gap-6 text-xs font-semibold text-slate-600 md:flex">
+            {/* Segmented Toggle Pill (like reference screenshot) */}
+            <div className="hidden sm:inline-flex items-center rounded-full bg-slate-100 p-1 border border-slate-200/80 text-xs font-semibold">
+              <Link 
+                href="/" 
+                className="px-3 py-1 rounded-full text-slate-600 hover:text-slate-900 transition"
+              >
+                Candidates
+              </Link>
+              <span className="px-3.5 py-1 rounded-full bg-white text-[#092E28] shadow-xs font-bold">
+                For Schools
+              </span>
+            </div>
+          </div>
+
+          <nav aria-label="Institutional navigation" className="hidden items-center gap-7 text-xs font-semibold text-slate-600 lg:flex">
             <a href="#lab-simulator" className="hover:text-[#116149] transition-colors">
               CBT Lab Simulator
             </a>
@@ -61,7 +72,7 @@ export default function SchoolsPage() {
             </a>
           </nav>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
             <Link
               href="/schools/login"
               className="text-xs font-semibold text-slate-700 hover:text-slate-900 px-3 py-1.5 transition-colors"
@@ -70,7 +81,7 @@ export default function SchoolsPage() {
             </Link>
             <Link
               href="/schools/register"
-              className="rounded-full bg-[#116149] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#0c4a37] transition-colors"
+              className="rounded-full border border-slate-900 bg-slate-900 px-5 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-[#116149] hover:border-[#116149] transition-colors"
             >
               Register School
             </Link>
@@ -80,104 +91,69 @@ export default function SchoolsPage() {
 
       <main id="main" className="flex-1">
         {/* ========================================================
-            RE-ENGINEERED HERO SECTION (Bold Split Layout with Real Lab Visual)
+            HERO SECTION (Centered Editorial Typography with Full-Bleed Lab Image Background)
            ======================================================== */}
-        <section className="shell pt-10 pb-16 sm:pt-16 sm:pb-20">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-            {/* Left Column: Clear Value Proposition */}
-            <div className="lg:col-span-7 space-y-6">
-              <h1 className="text-3xl sm:text-5xl lg:text-5xl font-bold tracking-tight text-[#092E28] leading-[1.12]">
-                Turn your computer lab into an authentic{" "}
-                <span className="serif-accent text-[#116149]">UTME examination hall.</span>
-              </h1>
+        <section className="relative min-h-[85vh] sm:min-h-[90vh] flex flex-col justify-start pt-14 pb-28 sm:pt-20 sm:pb-36 text-center overflow-hidden">
+          {/* Panoramic Lab Image Backdrop with Airy Mist Top Gradient */}
+          <div className="absolute inset-0 z-0 pointer-events-none select-none">
+            <img
+              src="/images/schools/hero-backdrop.jpg"
+              alt="Nigerian secondary school students in modern CBT examination lab"
+              className="w-full h-full object-cover object-[center_35%]"
+              width={1600}
+              height={900}
+              loading="eager"
+            />
+            {/* Soft white mist gradient from top ensuring crisp text readability */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white via-white/85 sm:via-white/75 via-45% to-white/20" />
+            {/* Bottom transition blend into subsequent content */}
+            <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white via-white/80 to-transparent" />
+          </div>
 
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-xl">
-                Equip your secondary school or tutorial centre with authentic timed mock exams, diagnose weak syllabus topics in real time, and prepare your graduating class for top tertiary cut-off marks.
-              </p>
-
-              {/* Pricing & Terms Strip */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 max-w-lg shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-slate-100 pb-3">
-                  <div>
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Institutional Rate</span>
-                    <div className="flex items-baseline gap-1.5 mt-0.5">
-                      <span className="text-2xl sm:text-3xl font-extrabold text-[#116149]">₦1,500</span>
-                      <span className="text-xs text-slate-500 font-medium">/ student / month</span>
-                    </div>
-                  </div>
-                  <div className="text-xs font-medium text-slate-600 sm:text-right">
-                    <span className="text-emerald-800 font-semibold block">1 to 12 Month Flexible Terms</span>
-                    <span className="text-slate-400 text-[11px]">Strictly one-time invoice · No auto-debit</span>
-                  </div>
-                </div>
-
-                <div className="pt-3 grid grid-cols-2 gap-2 text-xs text-slate-600 font-medium">
-                  <div className="flex items-center gap-1.5">
-                    <Check size={14} className="text-[#116149] shrink-0" />
-                    <span>8 Core UTME Subjects</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Check size={14} className="text-[#116149] shrink-0" />
-                    <span>Exact 120-Min Hall Timing</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Check size={14} className="text-[#116149] shrink-0" />
-                    <span>Zero Local Server Setup</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Check size={14} className="text-[#116149] shrink-0" />
-                    <span>Home & Mobile App Sync</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-1 flex flex-wrap items-center gap-3">
-                <Link
-                  href="/schools/register"
-                  className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#116149] px-7 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-[#0c4a37] transition"
-                >
-                  Register Your School <ArrowRight size={15} />
-                </Link>
-                <Link
-                  href="/schools/login"
-                  className="inline-flex min-h-12 items-center rounded-full border border-slate-300 bg-white px-6 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
-                >
-                  School Portal Sign In
-                </Link>
-              </div>
+          <div className="shell relative z-10 max-w-4xl mx-auto space-y-6">
+            {/* Top Announcement Pill */}
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-xs border border-slate-200/90 text-xs font-medium text-slate-700 shadow-xs">
+              <span className="size-2 rounded-full bg-[#116149]" />
+              <span>Bulk Cohort Licensing: ₦1,500 / student / month</span>
             </div>
 
-            {/* Right Column: Hero Photograph with Contextual UI Overlay */}
-            <div className="lg:col-span-5 relative">
-              <div className="relative rounded-3xl overflow-hidden border border-slate-200 bg-slate-100 shadow-xl shadow-emerald-950/5">
-                <img
-                  src="/images/schools/hero-lab.jpg"
-                  alt="Nigerian secondary school students taking JAMB CBT practice in a modern school computer lab"
-                  className="w-full h-auto object-cover aspect-[4/3] block"
-                  width={800}
-                  height={600}
-                  loading="eager"
-                />
+            {/* Editorial Serif Display Headline */}
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-serif font-normal tracking-tight text-[#092E28] leading-[1.08]">
+              The Complete CBT Platform<br className="hidden sm:inline" /> for Modern Nigerian Schools.
+            </h1>
 
-                {/* Simulated Floating UI Overlays */}
-                <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-md border border-slate-200/80 rounded-2xl px-3.5 py-2 shadow-md flex items-center gap-2.5">
-                  <span className="size-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <div className="text-left">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Exam Hall Simulation</span>
-                    <span className="text-xs font-bold text-[#092E28] font-mono">118:42 Remaining</span>
-                  </div>
-                </div>
+            {/* Subtitle */}
+            <p className="max-w-2xl mx-auto text-base sm:text-lg text-slate-700 leading-relaxed font-normal">
+              Turn your computer lab into an authentic UTME hall. Synchronized mock exams, real-time teacher syllabus diagnostics, and bulk student licensing across all 36 states.
+            </p>
 
-                <div className="absolute bottom-4 right-4 bg-[#092E28]/95 backdrop-blur-md text-white border border-emerald-900/40 rounded-2xl p-3 shadow-lg max-w-[210px] text-left">
-                  <div className="flex items-center gap-1.5 text-emerald-300 text-[11px] font-semibold mb-0.5">
-                    <Award size={13} /> Cohort Readiness
-                  </div>
-                  <div className="text-lg font-bold tracking-tight">284 / 400</div>
-                  <p className="text-[10px] text-emerald-100/75 mt-0.5 leading-snug">
-                    Class average tracking +38 pts above last year&apos;s cut-off.
-                  </p>
-                </div>
+            {/* Centered CTA Buttons (matching reference style) */}
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-3.5">
+              <Link
+                href="/schools/register"
+                className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#112F28] px-8 text-xs sm:text-sm font-semibold text-white shadow-md hover:bg-[#071F1A] transition"
+              >
+                Register your school today! <ArrowRight size={15} />
+              </Link>
+              <Link
+                href="/schools/login"
+                className="inline-flex min-h-12 items-center rounded-full border border-slate-300 bg-white/90 backdrop-blur-xs px-7 text-xs sm:text-sm font-semibold text-[#092E28] hover:bg-white transition shadow-xs"
+              >
+                School portal sign in
+              </Link>
+            </div>
+
+            {/* Social Proof / Geographies */}
+            <div className="pt-6 sm:pt-8">
+              <span className="text-[11px] uppercase font-bold text-slate-500 tracking-wider block">
+                Prepared for secondary schools and tutorial centres nationwide
+              </span>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs font-bold text-slate-700">
+                <span className="bg-white/80 backdrop-blur-xs px-3.5 py-1.5 rounded-full border border-slate-200/70 shadow-2xs">Lagos State</span>
+                <span className="bg-white/80 backdrop-blur-xs px-3.5 py-1.5 rounded-full border border-slate-200/70 shadow-2xs">Abuja (FCT)</span>
+                <span className="bg-white/80 backdrop-blur-xs px-3.5 py-1.5 rounded-full border border-slate-200/70 shadow-2xs">Rivers State</span>
+                <span className="bg-white/80 backdrop-blur-xs px-3.5 py-1.5 rounded-full border border-slate-200/70 shadow-2xs">Oyo State</span>
+                <span className="bg-white/80 backdrop-blur-xs px-3.5 py-1.5 rounded-full border border-slate-200/70 shadow-2xs">Ogun & Kano</span>
               </div>
             </div>
           </div>
