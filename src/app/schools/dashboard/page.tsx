@@ -68,57 +68,15 @@ export default function SchoolDashboardPage() {
   // Selection state
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
 
-  // Initial Demo Roster with standard Nigerian secondary school candidate profiles
-  const [students, setStudents] = useState<StudentItem[]>([
-    {
-      id: "std-1",
-      name: "Chinedu Okonkwo",
-      email: "c.okonkwo@school.edu.ng",
-      studentIdentifier: "ST-001",
-      defaultPassword: "OKONKWO",
-      subjects: ["ENG", "MTH", "PHY", "CHM"],
-      licenseStatus: "active",
-      daysLeft: 28,
-      lastActive: "Today, 10:15 AM",
-      averageScore: 284,
-    },
-    {
-      id: "std-2",
-      name: "Amina Bello",
-      email: "a.bello@school.edu.ng",
-      studentIdentifier: "ST-002",
-      defaultPassword: "BELLO",
-      subjects: ["ENG", "LIT", "GOV", "ECN"],
-      licenseStatus: "active",
-      daysLeft: 28,
-      lastActive: "Yesterday",
-      averageScore: 292,
-    },
-    {
-      id: "std-3",
-      name: "Oluwaseun Adeleke",
-      email: "o.adeleke@school.edu.ng",
-      studentIdentifier: "ST-003",
-      defaultPassword: "ADELEKE",
-      subjects: ["ENG", "BIO", "CHM", "PHY"],
-      licenseStatus: "inactive",
-      daysLeft: 0,
-      lastActive: "Not started",
-      averageScore: null,
-    },
-    {
-      id: "std-4",
-      name: "Fatima Danjuma",
-      email: "f.danjuma@school.edu.ng",
-      studentIdentifier: "ST-004",
-      defaultPassword: "DANJUMA",
-      subjects: ["ENG", "MTH", "ECN", "GEO"],
-      licenseStatus: "active",
-      daysLeft: 14,
-      lastActive: "2 days ago",
-      averageScore: 246,
-    },
-  ]);
+  // School cohort roster starts clean for fresh institutional registrations
+  const [students, setStudents] = useState<StudentItem[]>([]);
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setOrigin(window.location.origin);
+    }
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -135,14 +93,30 @@ export default function SchoolDashboardPage() {
       }
       setUser(u);
 
-      // Attempt to load enrolled students from server API
+      const code = (u.user_metadata?.school_code as string) || (u.id ? "SCH-" + u.id.slice(0, 8).toUpperCase() : "SCH-DEFAULT");
+
+      // Load any actual previously added or imported candidates for this school
+      let localCohort: StudentItem[] = [];
+      try {
+        if (typeof window !== "undefined") {
+          const stored = localStorage.getItem(`jambprep_school_students_${code}`);
+          if (stored) {
+            localCohort = JSON.parse(stored);
+          }
+        }
+      } catch (e) {
+        console.warn("Could not read local cohort:", e);
+      }
+
+      // Attempt to load enrolled students from server API if active
       try {
         const listRes = await fetch("/api/schools/students/list/", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
         });
         if (listRes.ok) {
-          const data = await listRes.json();
+          const text = await listRes.text();
+          const data = text ? JSON.parse(text) : {};
           if (data.students && Array.isArray(data.students) && data.students.length > 0) {
             setStudents(data.students.map((s: any) => ({
               id: s.id,
@@ -156,11 +130,14 @@ export default function SchoolDashboardPage() {
               lastActive: "Enrolled",
               averageScore: null,
             })));
+            return;
           }
         }
       } catch (err) {
-        console.warn("Could not load dynamic roster, using local cohort state:", err);
+        console.warn("Could not load dynamic roster, checking local cohort state:", err);
       }
+
+      setStudents(localCohort);
     });
   }, []);
 
@@ -173,8 +150,9 @@ export default function SchoolDashboardPage() {
   const schoolName = (user?.user_metadata?.school_name as string) || "Institutional Partner";
   const state = (user?.user_metadata?.state as string) || "Lagos";
   const schoolType = (user?.user_metadata?.school_type as string) || "secondary_school";
-  const schoolCode = (user?.user_metadata?.school_code as string) || (user?.id ? "SCH-XYZ" + user.id.slice(0, 4).toUpperCase() : "SCH-XYZ0000");
-  const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL || "https://jambprep.com"}/register?school=${schoolCode}`;
+  const schoolCode = (user?.user_metadata?.school_code as string) || (user?.id ? "SCH-" + user.id.slice(0, 8).toUpperCase() : "SCH-XYZ0000");
+  const baseUrl = origin || (typeof window !== "undefined" && window.location.origin ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || "https://jambprep.pages.dev"));
+  const inviteLink = `${baseUrl}/register?school=${schoolCode}`;
 
   const handleCopyInviteLink = async () => {
     try {
@@ -227,7 +205,17 @@ export default function SchoolDashboardPage() {
       averageScore: null,
       enrolmentMethod: "manual",
     };
-    setStudents((prev) => [formatted, ...prev]);
+    setStudents((prev) => {
+      const updated = [formatted, ...prev];
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(`jambprep_school_students_${schoolCode}`, JSON.stringify(updated));
+        }
+      } catch (e) {
+        console.warn("Could not save student to local cohort:", e);
+      }
+      return updated;
+    });
     setSelectedStudentIds((prev) => [...prev, formatted.id]);
   };
 
@@ -246,12 +234,26 @@ export default function SchoolDashboardPage() {
       enrolmentMethod: "csv",
     }));
 
-    setStudents((prev) => [...formatted, ...prev]);
+    setStudents((prev) => {
+      const updated = [...formatted, ...prev];
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(`jambprep_school_students_${schoolCode}`, JSON.stringify(updated));
+        }
+      } catch (e) {
+        console.warn("Could not save imported students to local cohort:", e);
+      }
+      return updated;
+    });
     setSelectedStudentIds((prev) => [...prev, ...formatted.map((f) => f.id)]);
   };
 
   const activeCount = students.filter((s) => s.licenseStatus === "active").length;
   const activeSpend = activeCount * 1500;
+  const studentsWithScores = students.filter((s) => typeof s.averageScore === "number" && s.averageScore !== null);
+  const cohortAvg = studentsWithScores.length > 0 
+    ? Math.round(studentsWithScores.reduce((acc, s) => acc + (s.averageScore as number), 0) / studentsWithScores.length)
+    : null;
 
   return (
     <div className="min-h-screen bg-[#F8FAF7] text-[#092E28] flex flex-col justify-between">
@@ -390,8 +392,12 @@ export default function SchoolDashboardPage() {
               <span className="text-xs font-semibold uppercase tracking-wider">Cohort Avg</span>
               <BarChart3 size={18} className="text-purple-600" />
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-slate-900">274 / 400</p>
-            <span className="text-[11px] text-emerald-700 font-medium block">78% target reach</span>
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900">
+              {cohortAvg !== null ? `${cohortAvg} / 400` : "—"}
+            </p>
+            <span className="text-[11px] text-slate-500 block">
+              {cohortAvg !== null ? `${Math.round((cohortAvg / 400) * 100)}% target reach` : "No mock results yet"}
+            </span>
           </div>
         </div>
 
@@ -579,102 +585,134 @@ export default function SchoolDashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700">
-                    {students.map((std) => {
-                      const isSelected = selectedStudentIds.includes(std.id);
-                      const pwd = std.defaultPassword || "PASSWORD";
-                      const isCopied = copiedPasswordId === std.id;
+                    {students.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-14 px-4 text-center">
+                          <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-emerald-50 text-[#116149] mb-3">
+                            <Users size={24} />
+                          </div>
+                          <h3 className="text-sm font-bold text-slate-900">No candidates enrolled yet</h3>
+                          <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 mb-5 leading-relaxed">
+                            Your school cohort is currently clean. Add candidates manually, upload a school CSV spreadsheet, or share your invite link for student self-registration.
+                          </p>
+                          <div className="flex items-center justify-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setIsAddModalOpen(true)}
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-[#116149] px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#0b4936] transition cursor-pointer"
+                            >
+                              <UserPlus size={14} />
+                              <span>Add Single Candidate</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setIsCsvModalOpen(true)}
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition cursor-pointer"
+                            >
+                              <Upload size={14} />
+                              <span>Upload Student CSV</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      students.map((std) => {
+                        const isSelected = selectedStudentIds.includes(std.id);
+                        const pwd = std.defaultPassword || "PASSWORD";
+                        const isCopied = copiedPasswordId === std.id;
 
-                      return (
-                        <tr 
-                          key={std.id} 
-                          className={`transition ${isSelected ? "bg-emerald-50/40" : "hover:bg-slate-50/50"}`}
-                        >
-                          <td className="py-3 px-4">
-                            <button
-                              type="button"
-                              onClick={() => toggleSelectStudent(std.id)}
-                              className="flex items-center justify-center text-slate-400 hover:text-[#116149] transition cursor-pointer"
-                            >
-                              {isSelected ? (
-                                <CheckSquare size={16} className="text-[#116149]" />
-                              ) : (
-                                <Square size={16} />
-                              )}
-                            </button>
-                          </td>
-                          <td className="py-3 px-4 font-semibold text-slate-900">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedDrilldownStudent(std)}
-                              className="flex items-center gap-2 hover:text-[#116149] hover:underline text-left cursor-pointer"
-                            >
-                              <span>{std.name}</span>
-                              {std.studentIdentifier && (
-                                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-600">
-                                  {std.studentIdentifier}
-                                </span>
-                              )}
-                            </button>
-                          </td>
-                          <td className="py-3 px-4 text-slate-600">
-                            {std.email}
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="inline-flex items-center gap-1.5">
-                              <code className="rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-800">
-                                {pwd}
-                              </code>
+                        return (
+                          <tr 
+                            key={std.id} 
+                            className={`transition ${isSelected ? "bg-emerald-50/40" : "hover:bg-slate-50/50"}`}
+                          >
+                            <td className="py-3 px-4">
                               <button
                                 type="button"
-                                onClick={() => handleCopyPassword(std.id, pwd)}
-                                className="text-slate-400 hover:text-slate-700 transition cursor-pointer p-0.5"
-                                title="Copy default password"
+                                onClick={() => toggleSelectStudent(std.id)}
+                                className="flex items-center justify-center text-slate-400 hover:text-[#116149] transition cursor-pointer"
                               >
-                                {isCopied ? (
-                                  <Check size={12} className="text-emerald-600" />
+                                {isSelected ? (
+                                  <CheckSquare size={16} className="text-[#116149]" />
                                 ) : (
-                                  <Copy size={12} />
+                                  <Square size={16} />
                                 )}
                               </button>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-1">
-                              {(std.subjects || ["ENG", "MTH", "PHY", "CHM"]).map((sub) => (
-                                <span key={sub} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                                  {sub}
+                            </td>
+                            <td className="py-3 px-4 font-semibold text-slate-900">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedDrilldownStudent(std)}
+                                className="flex items-center gap-2 hover:text-[#116149] hover:underline text-left cursor-pointer"
+                              >
+                                <span>{std.name}</span>
+                                {std.studentIdentifier && (
+                                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-600">
+                                    {std.studentIdentifier}
+                                  </span>
+                                )}
+                              </button>
+                            </td>
+                            <td className="py-3 px-4 text-slate-600">
+                              {std.email}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="inline-flex items-center gap-1.5">
+                                <code className="rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-800">
+                                  {pwd}
+                                </code>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyPassword(std.id, pwd)}
+                                  className="text-slate-400 hover:text-slate-700 transition cursor-pointer p-0.5"
+                                  title="Copy default password"
+                                >
+                                  {isCopied ? (
+                                    <Check size={12} className="text-emerald-600" />
+                                  ) : (
+                                    <Copy size={12} />
+                                  )}
+                                </button>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-1">
+                                {(std.subjects || ["ENG", "MTH", "PHY", "CHM"]).map((sub) => (
+                                  <span key={sub} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                                    {sub}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              {std.licenseStatus === "active" ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
+                                  <span className="size-1.5 rounded-full bg-emerald-500" />
+                                  Active ({std.daysLeft ?? 28}d left)
                                 </span>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            {std.licenseStatus === "active" ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
-                                <span className="size-1.5 rounded-full bg-emerald-500" />
-                                Active ({std.daysLeft ?? 28}d left)
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                                Unlicensed
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3 px-4 font-bold text-slate-900">
-                            {std.averageScore ? `${std.averageScore} / 400` : "—"}
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedDrilldownStudent(std)}
-                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#116149] hover:underline cursor-pointer"
-                            >
-                              <span>Inspect</span>
-                              <ChevronRight size={13} />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                  Unlicensed
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 font-bold text-slate-900">
+                              {std.averageScore ? `${std.averageScore} / 400` : "—"}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedDrilldownStudent(std)}
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#116149] hover:underline cursor-pointer"
+                              >
+                                <span>Inspect</span>
+                                <ChevronRight size={13} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
