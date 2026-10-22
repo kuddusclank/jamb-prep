@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { PolicyLinks } from "@/components/legal-page";
 import { pageMetadata } from "@/lib/seo";
-import { SchoolCalculatorClient } from "./school-calculator-client";
 import { 
   CheckCircle2, 
   XCircle, 
@@ -41,9 +39,6 @@ export default function SchoolsPage() {
           <nav aria-label="Institutional navigation" className="hidden items-center gap-6 text-xs font-medium text-slate-600 md:flex">
             <a href="#features" className="hover:text-[#116149] transition-colors">
               Features
-            </a>
-            <a href="#estimator" className="hover:text-[#116149] transition-colors">
-              Pricing Calculator
             </a>
             <a href="#comparison" className="hover:text-[#116149] transition-colors">
               Comparison
@@ -106,13 +101,6 @@ export default function SchoolsPage() {
             <span>• Zero Software Installation</span>
             <span>• Non-Recurring Invoicing</span>
           </div>
-        </section>
-
-        {/* Cohort Investment Calculator */}
-        <section className="shell pb-14 max-w-4xl mx-auto">
-          <Suspense fallback={<div className="h-72 rounded-2xl bg-white border border-slate-200 animate-pulse" />}>
-            <SchoolCalculatorClient />
-          </Suspense>
         </section>
 
         {/* 3 Core Capabilities */}
