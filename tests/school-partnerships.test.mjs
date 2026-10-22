@@ -366,6 +366,66 @@ test("Stage 5 Paystack Webhook: Idempotently settles institutional school cohort
   assert.ok(source.includes("schoolOrderSettled"));
 });
 
+test("Stage 6 CBT Lab Mocks & Teacher Diagnostics: Endpoints and modal components exist", () => {
+  const requiredFiles = [
+    "src/app/api/schools/diagnostics/summary/route.ts",
+    "src/app/api/schools/mocks/schedule/route.ts",
+    "src/app/api/schools/students/drilldown/route.ts",
+    "src/app/schools/dashboard/student-drilldown-modal.tsx",
+    "src/app/schools/dashboard/mock-scheduler-modal.tsx",
+    "src/app/schools/dashboard/syllabus-heatmap-view.tsx",
+  ];
+
+  for (const relPath of requiredFiles) {
+    const fullPath = path.join(ROOT, relPath);
+    assert.ok(fs.existsSync(fullPath), `Expected file to exist: ${relPath}`);
+  }
+});
+
+test("Stage 6 Diagnostic Heatmap: Implements accuracy categorization and remedial schedule", () => {
+  const heatmapFile = path.join(ROOT, "src/app/schools/dashboard/syllabus-heatmap-view.tsx");
+  const source = fs.readFileSync(heatmapFile, "utf8");
+
+  // Status categories
+  assert.ok(source.includes("Urgent Remedial"));
+  assert.ok(source.includes("Revision Recommended"));
+  assert.ok(source.includes("Examination Ready"));
+
+  // Weekly timetable
+  assert.ok(source.includes("Recommended Weekly Remedial Timetable"));
+
+  // Export functionality
+  assert.ok(source.includes("exportDiagnosticLedger"));
+  assert.ok(source.includes("Syllabus_Diagnostic_Ledger.csv"));
+});
+
+test("Stage 6 CBT Lab Mock Controller: Enforces 120-minute simulation and 8-key proctor mode", () => {
+  const mockModalFile = path.join(ROOT, "src/app/schools/dashboard/mock-scheduler-modal.tsx");
+  const source = fs.readFileSync(mockModalFile, "utf8");
+
+  // 120 minute timing
+  assert.ok(source.includes("120 Minutes"));
+  // 180 questions
+  assert.ok(source.includes("180 Questions"));
+  // 8-key hotkey mode
+  assert.ok(source.includes("8-Key Hotkeys") || source.includes("8-key examination navigation"));
+  // Session code and proctor sheet
+  assert.ok(source.includes("Candidate Lab Entry Code"));
+  assert.ok(source.includes("Print Proctoring Sheet"));
+});
+
+test("Stage 6 Student Performance Drilldown: Inspects 4-subject breakdown and candidate percentiles", () => {
+  const drilldownFile = path.join(ROOT, "src/app/schools/dashboard/student-drilldown-modal.tsx");
+  const source = fs.readFileSync(drilldownFile, "utf8");
+
+  assert.ok(source.includes("4-Subject Combination Score Breakdown"));
+  assert.ok(source.includes("Targeted Remedial Priority Topics"));
+  assert.ok(source.includes("Demonstrated Strengths"));
+  assert.ok(source.includes("Laboratory Mock Examination History"));
+  assert.ok(source.includes("Print Slip"));
+});
+
+
 
 
 
