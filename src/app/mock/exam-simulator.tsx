@@ -583,7 +583,7 @@ export function ExamSimulator({ initialPayload, studentName }: ExamSimulatorProp
           </div>
 
           {/* Interactive Palette Grid */}
-          <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-5 gap-2 max-h-96 overflow-y-auto p-1">
+          <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-5 gap-2 max-h-96 overflow-y-auto p-2.5">
             {palette.map(({question:q,globalIndex:idx,number}) => {
               const isCurrent = idx === currentIndex;
               const isAnswered = Boolean(answers[q.id]);
