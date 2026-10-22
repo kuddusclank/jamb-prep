@@ -33,7 +33,10 @@ function validAsset(response, path) {
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     if (typeof self.skipWaiting === 'function') {
-      self.skipWaiting();
+      const p = self.skipWaiting();
+      if (event.waitUntil && p) {
+        event.waitUntil(p);
+      }
     }
   }
 });

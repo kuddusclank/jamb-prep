@@ -22,6 +22,7 @@ export default function PwaProvider() {
   const [update, setUpdate] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
+  const latestBuildIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     // 1. Recover from broken webpack chunks on new deployment
@@ -85,7 +86,12 @@ export default function PwaProvider() {
           registrationRef.current = registration;
 
           if (registration.waiting) {
-            setUpdate(true);
+            const justReloaded = sessionStorage.getItem('jambprep_sw_reloaded');
+            if (justReloaded && Date.now() - Number(justReloaded) < 30000) {
+              registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            } else {
+              setUpdate(true);
+            }
           }
 
           const onFound = () => {
@@ -93,7 +99,12 @@ export default function PwaProvider() {
             if (!worker) return;
             const changed = () => {
               if (active && worker.state === 'installed' && navigator.serviceWorker.controller) {
-                setUpdate(true);
+                const justReloaded = sessionStorage.getItem('jambprep_sw_reloaded');
+                if (justReloaded && Date.now() - Number(justReloaded) < 30000) {
+                  worker.postMessage({ type: 'SKIP_WAITING' });
+                } else {
+                  setUpdate(true);
+                }
               }
             };
             worker.addEventListener('statechange', changed);
@@ -114,7 +125,10 @@ export default function PwaProvider() {
           if (reg) {
             await reg.update();
             if (reg.waiting) {
-              setUpdate(true);
+              const justReloaded = sessionStorage.getItem('jambprep_sw_reloaded');
+              if (!justReloaded || Date.now() - Number(justReloaded) >= 30000) {
+                setUpdate(true);
+              }
             }
           }
 
@@ -123,11 +137,16 @@ export default function PwaProvider() {
           if (res.ok) {
             const data = (await res.json()) as { buildId?: string };
             if (data?.buildId) {
+              latestBuildIdRef.current = data.buildId;
               const currentBuildId = localStorage.getItem(ACTIVE_BUILD_STORAGE_KEY);
               if (!currentBuildId) {
                 localStorage.setItem(ACTIVE_BUILD_STORAGE_KEY, data.buildId);
               } else if (currentBuildId !== data.buildId) {
-                setUpdate(true);
+                const reloadedForBuild = sessionStorage.getItem('jambprep_reloaded_build_' + data.buildId);
+                const dismissedForBuild = Number(localStorage.getItem('jambprep_update_dismissed_' + data.buildId) || 0);
+                if (!reloadedForBuild && (Date.now() - dismissedForBuild > 2 * 60 * 60 * 1000)) {
+                  setUpdate(true);
+                }
               }
             }
           }
@@ -194,45 +213,81 @@ export default function PwaProvider() {
     setInstructions(false);
     try {
       localStorage.setItem('jambprep_install_dismissed', String(Date.now()));
+      if (latestBuildIdRef.current) {
+        localStorage.setItem('jambprep_update_dismissed_' + latestBuildIdRef.current, String(Date.now()));
+      }
     } catch {
       // Storage error ignored
     }
   }
 
   async function applyUpdate() {
+    if (isUpdating) return;
     setIsUpdating(true);
+    setUpdate(false);
+
     try {
-      const reg = registrationRef.current || (await navigator.serviceWorker.getRegistration());
-      if (reg?.waiting) {
-        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-      }
-
-      // Purge public caches
-      if ('caches' in window) {
-        const keys = await caches.keys();
-        for (const k of keys) {
-          if (k.startsWith('jambprep-public-')) {
-            await caches.delete(k);
-          }
-        }
-      }
-
-      // Fetch the latest build ID and sync storage
+      // 1. Fetch latest build ID and sync to storage FIRST
+      let newBuildId = latestBuildIdRef.current;
       try {
         const res = await fetch('/pwa-build.json?t=' + Date.now(), { cache: 'no-store' });
         if (res.ok) {
           const data = (await res.json()) as { buildId?: string };
           if (data?.buildId) {
-            localStorage.setItem(ACTIVE_BUILD_STORAGE_KEY, data.buildId);
+            newBuildId = data.buildId;
           }
         }
       } catch {
-        // Ignore
+        // Storage sync error ignored
       }
-    } finally {
-      setTimeout(() => {
-        window.location.reload();
-      }, 200);
+
+      if (newBuildId) {
+        localStorage.setItem(ACTIVE_BUILD_STORAGE_KEY, newBuildId);
+        sessionStorage.setItem('jambprep_reloaded_build_' + newBuildId, '1');
+      }
+      sessionStorage.setItem('jambprep_sw_reloaded', String(Date.now()));
+
+      // 2. Clear stale public caches
+      if ('caches' in window) {
+        try {
+          const keys = await caches.keys();
+          for (const k of keys) {
+            if (k.startsWith('jambprep-public-')) {
+              await caches.delete(k);
+            }
+          }
+        } catch {
+          // Cache delete error ignored
+        }
+      }
+
+      // 3. Post SKIP_WAITING to waiting worker and wait for controllerchange or timeout
+      const reg = registrationRef.current || (await navigator.serviceWorker.getRegistration());
+      if (reg?.waiting) {
+        let reloaded = false;
+        const onCtrl = () => {
+          if (!reloaded) {
+            reloaded = true;
+            window.location.reload();
+          }
+        };
+        navigator.serviceWorker.addEventListener('controllerchange', onCtrl, { once: true });
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+
+        // Fallback reload if controllerchange doesn't fire within 400ms
+        setTimeout(() => {
+          if (!reloaded) {
+            reloaded = true;
+            window.location.reload();
+          }
+        }, 400);
+        return;
+      }
+
+      // 4. If no waiting worker, reload directly
+      window.location.reload();
+    } catch {
+      window.location.reload();
     }
   }
 
