@@ -383,8 +383,8 @@ export default function SchoolDashboardPage() {
               <span className="text-xs font-semibold uppercase tracking-wider">Lab Simulation</span>
               <Calendar size={18} className="text-blue-600" />
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-slate-900">120:00 Mocks</p>
-            <span className="text-[11px] text-slate-500 block">8-Key hotkey ready</span>
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900">CBT Lab Ready</p>
+            <span className="text-[11px] text-slate-500 block">120-min timed simulation</span>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-1">
@@ -396,7 +396,7 @@ export default function SchoolDashboardPage() {
               {cohortAvg !== null ? `${cohortAvg} / 400` : "—"}
             </p>
             <span className="text-[11px] text-slate-500 block">
-              {cohortAvg !== null ? `${Math.round((cohortAvg / 400) * 100)}% target reach` : "No mock results yet"}
+              {cohortAvg !== null ? `${Math.round((cohortAvg / 400) * 100)}% target reach` : "Students haven't done any activities yet"}
             </span>
           </div>
         </div>

@@ -46,35 +46,40 @@ export function StudentDrilldownModal({ isOpen, onClose, student, schoolName }: 
 
     setLoading(true);
 
+    const nameMap: Record<string, string> = {
+      ENG: "Use of English",
+      MTH: "Mathematics",
+      PHY: "Physics",
+      CHM: "Chemistry",
+      BIO: "Biology",
+      ECN: "Economics",
+      GOV: "Government",
+      LIT: "Literature in English",
+      GEO: "Geography",
+      CRS: "Christian Religious Studies",
+      IRS: "Islamic Religious Studies",
+    };
+
     const fallbackDrilldown = {
       studentId: student.id,
       name: student.name || "Candidate",
-      email: student.email || "candidate@school.edu.ng",
-      studentIdentifier: student.studentIdentifier || "ST-001",
-      licenseStatus: student.licenseStatus || "active",
-      subjects: [
-        { name: "Use of English", code: "ENG", score: 76, maxScore: 100, accuracy: "76%", status: "strong" },
-        { name: "Mathematics", code: "MTH", score: 68, maxScore: 100, accuracy: "68%", status: "moderate" },
-        { name: "Physics", code: "PHY", score: 72, maxScore: 100, accuracy: "72%", status: "strong" },
-        { name: "Chemistry", code: "CHM", score: 68, maxScore: 100, accuracy: "68%", status: "moderate" },
-      ],
-      totalScore: student.averageScore || 284,
+      email: student.email || "",
+      studentIdentifier: student.studentIdentifier || null,
+      licenseStatus: student.licenseStatus || "inactive",
+      subjects: (student.subjects || ["ENG", "MTH", "PHY", "CHM"]).map((sub) => ({
+        name: nameMap[sub] || sub,
+        code: sub.length === 3 ? sub : sub.slice(0, 3).toUpperCase(),
+        score: null,
+        maxScore: 100,
+        accuracy: null,
+        status: "unattempted",
+      })),
+      totalScore: student.averageScore || null,
       maxPossibleScore: 400,
-      percentileRank: "84th Percentile",
-      weakTopics: [
-        { subject: "Chemistry", topic: "Organic Nomenclature", errorRate: "68%" },
-        { subject: "Mathematics", topic: "Calculus (Integration by Parts)", errorRate: "60%" },
-        { subject: "Use of English", topic: "Inversion Idioms & Concord", errorRate: "46%" },
-      ],
-      strongTopics: [
-        { subject: "Physics", topic: "Mechanics & Vector Quantities", accuracy: "88%" },
-        { subject: "Use of English", topic: "Comprehension & Lexis", accuracy: "84%" },
-        { subject: "Mathematics", topic: "Algebra & Quadratic Equations", accuracy: "82%" },
-      ],
-      mockHistory: [
-        { date: "Oct 18, 2026", examName: "SS3 Mid-Term CBT Rehearsal", score: student.averageScore || 284, timeSpent: "114 mins" },
-        { date: "Oct 10, 2026", examName: "Diagnostic Readiness Baseline", score: (student.averageScore || 284) - 22, timeSpent: "119 mins" },
-      ],
+      percentileRank: student.averageScore ? "Active Candidate" : "Awaiting first test",
+      weakTopics: [],
+      strongTopics: [],
+      mockHistory: [],
     };
 
     fetch("/api/schools/students/drilldown/", {
@@ -162,23 +167,32 @@ export function StudentDrilldownModal({ isOpen, onClose, student, schoolName }: 
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 space-y-1">
                 <span className="text-[11px] font-semibold text-[#116149] block">Latest Mock Total</span>
                 <p className="text-2xl font-bold font-serif text-[#092E28]">
-                  {data?.totalScore ?? (student.averageScore || 284)} <span className="text-xs font-normal text-slate-500">/ 400</span>
+                  {data?.totalScore ? `${data.totalScore} ` : "— "}
+                  <span className="text-xs font-normal text-slate-500">/ 400</span>
                 </p>
-                <span className="text-[10px] text-emerald-800 font-medium">Ready for Tier-1 University Cut-Off</span>
+                <span className="text-[10px] text-emerald-800 font-medium">
+                  {data?.totalScore ? "Verified Mock Score" : "Student hasn't done any activities yet"}
+                </span>
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-1">
                 <span className="text-[11px] font-semibold text-slate-600 block">Cohort Standings</span>
                 <p className="text-2xl font-bold text-slate-900">
-                  {data?.percentileRank || "84th Percentile"}
+                  {data?.totalScore ? (data.percentileRank || "Active") : "—"}
                 </p>
-                <span className="text-[10px] text-slate-500">Top 15% in school cohort</span>
+                <span className="text-[10px] text-slate-500">
+                  {data?.totalScore ? "Calculated from recent performance" : "Awaiting first mock attempt"}
+                </span>
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-1">
                 <span className="text-[11px] font-semibold text-slate-600 block">Exam Readiness</span>
-                <p className="text-2xl font-bold text-purple-700">71% Pace</p>
-                <span className="text-[10px] text-purple-900 font-medium">114 mins / 120 mins avg</span>
+                <p className="text-2xl font-bold text-purple-700">
+                  {data?.totalScore ? "71% Pace" : "—"}
+                </p>
+                <span className="text-[10px] text-purple-900 font-medium">
+                  {data?.totalScore ? "114 mins / 120 mins avg" : "No exam timer logged yet"}
+                </span>
               </div>
             </div>
 
@@ -189,31 +203,31 @@ export function StudentDrilldownModal({ isOpen, onClose, student, schoolName }: 
                 4-Subject Combination Score Breakdown
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(data?.subjects || [
-                  { name: "Use of English", code: "ENG", score: 76, accuracy: "76%" },
-                  { name: "Mathematics", code: "MTH", score: 68, accuracy: "68%" },
-                  { name: "Physics", code: "PHY", score: 72, accuracy: "72%" },
-                  { name: "Chemistry", code: "CHM", score: 68, accuracy: "68%" },
-                ]).map((sub: any) => (
-                  <div key={sub.code} className="rounded-2xl border border-slate-200 p-3.5 space-y-2 bg-white">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-800">{sub.name}</span>
-                      <span className="font-bold text-[#116149] font-mono">{sub.score} / 100</span>
+                {(data?.subjects || []).map((sub: any) => {
+                  const hasScore = typeof sub.score === "number" && sub.score !== null;
+                  return (
+                    <div key={sub.code || sub.name} className="rounded-2xl border border-slate-200 p-3.5 space-y-2 bg-white">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-800">{sub.name}</span>
+                        <span className="font-bold text-[#116149] font-mono">
+                          {hasScore ? `${sub.score} / 100` : "— / 100"}
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full ${hasScore ? (sub.score >= 70 ? "bg-emerald-600" : "bg-amber-500") : "bg-slate-200"}`} 
+                          style={{ width: hasScore ? `${sub.score}%` : "0%" }} 
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-slate-500">
+                        <span>Accuracy: {hasScore ? (sub.accuracy ?? `${sub.score}%`) : "—"}</span>
+                        <span className={hasScore ? (sub.score >= 70 ? "text-emerald-700 font-semibold" : "text-amber-800 font-semibold") : "text-slate-400 font-medium"}>
+                          {hasScore ? (sub.score >= 70 ? "Mastered" : "Revision Advised") : "Not yet attempted"}
+                        </span>
+                      </div>
                     </div>
-                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full ${sub.score >= 70 ? "bg-emerald-600" : "bg-amber-500"}`} 
-                        style={{ width: `${sub.score}%` }} 
-                      />
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] text-slate-500">
-                      <span>Accuracy: {sub.accuracy}</span>
-                      <span className={sub.score >= 70 ? "text-emerald-700 font-semibold" : "text-amber-800 font-semibold"}>
-                        {sub.score >= 70 ? "Mastered" : "Revision Advised"}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -225,23 +239,25 @@ export function StudentDrilldownModal({ isOpen, onClose, student, schoolName }: 
                   <AlertTriangle size={14} className="text-red-600 shrink-0" />
                   <span>Targeted Remedial Priority Topics</span>
                 </div>
-                <div className="space-y-2">
-                  {(data?.weakTopics || [
-                    { subject: "Chemistry", topic: "Organic Nomenclature", errorRate: "68%" },
-                    { subject: "Mathematics", topic: "Calculus (Integration)", errorRate: "60%" },
-                    { subject: "Use of English", topic: "Inversion Idioms & Concord", errorRate: "46%" },
-                  ]).map((item: any, idx: number) => (
-                    <div key={idx} className="flex items-center justify-between text-[11px] bg-white/80 p-2 rounded-xl border border-red-200/60">
-                      <div>
-                        <span className="font-bold text-slate-800 block">{item.topic}</span>
-                        <span className="text-[10px] text-slate-500">{item.subject}</span>
+                {(!data?.weakTopics || data.weakTopics.length === 0) ? (
+                  <div className="rounded-xl border border-dashed border-red-200 bg-white/70 p-4 text-center text-xs text-red-800">
+                    Student hasn&apos;t done any activities yet. Weak topics will appear here after their first test.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {data.weakTopics.map((item: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between text-[11px] bg-white/80 p-2 rounded-xl border border-red-200/60">
+                        <div>
+                          <span className="font-bold text-slate-800 block">{item.topic}</span>
+                          <span className="text-[10px] text-slate-500">{item.subject}</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-md">
+                          {item.errorRate} error
+                        </span>
                       </div>
-                      <span className="text-[10px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-md">
-                        {item.errorRate} error
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Strong Topics */}
@@ -250,23 +266,25 @@ export function StudentDrilldownModal({ isOpen, onClose, student, schoolName }: 
                   <Sparkles size={14} className="text-emerald-700 shrink-0" />
                   <span>Demonstrated Strengths</span>
                 </div>
-                <div className="space-y-2">
-                  {(data?.strongTopics || [
-                    { subject: "Physics", topic: "Mechanics & Vectors", accuracy: "88%" },
-                    { subject: "Use of English", topic: "Comprehension & Lexis", accuracy: "84%" },
-                    { subject: "Mathematics", topic: "Algebra & Quadratics", accuracy: "82%" },
-                  ]).map((item: any, idx: number) => (
-                    <div key={idx} className="flex items-center justify-between text-[11px] bg-white/80 p-2 rounded-xl border border-emerald-200/60">
-                      <div>
-                        <span className="font-bold text-slate-800 block">{item.topic}</span>
-                        <span className="text-[10px] text-slate-500">{item.subject}</span>
+                {(!data?.strongTopics || data.strongTopics.length === 0) ? (
+                  <div className="rounded-xl border border-dashed border-emerald-200 bg-white/70 p-4 text-center text-xs text-[#116149]">
+                    Student hasn&apos;t done any activities yet. Strengths will appear here after their first test.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {data.strongTopics.map((item: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between text-[11px] bg-white/80 p-2 rounded-xl border border-emerald-200/60">
+                        <div>
+                          <span className="font-bold text-slate-800 block">{item.topic}</span>
+                          <span className="text-[10px] text-slate-500">{item.subject}</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-[#116149] bg-emerald-100 px-2 py-0.5 rounded-md">
+                          {item.accuracy}
+                        </span>
                       </div>
-                      <span className="text-[10px] font-bold text-[#116149] bg-emerald-100 px-2 py-0.5 rounded-md">
-                        {item.accuracy}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -287,17 +305,22 @@ export function StudentDrilldownModal({ isOpen, onClose, student, schoolName }: 
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700">
-                    {(data?.mockHistory || [
-                      { date: "Oct 18, 2026", examName: "SS3 Mid-Term CBT Rehearsal", score: 284, timeSpent: "114 mins" },
-                      { date: "Oct 10, 2026", examName: "Diagnostic Readiness Baseline", score: 262, timeSpent: "119 mins" },
-                    ]).map((h: any, idx: number) => (
-                      <tr key={idx} className="hover:bg-slate-50/50">
-                        <td className="py-2.5 px-3 text-slate-500">{h.date}</td>
-                        <td className="py-2.5 px-3 font-semibold text-slate-900">{h.examName}</td>
-                        <td className="py-2.5 px-3 font-bold text-[#116149]">{h.score} / 400</td>
-                        <td className="py-2.5 px-3 text-right text-slate-500">{h.timeSpent}</td>
+                    {(!data?.mockHistory || data.mockHistory.length === 0) ? (
+                      <tr>
+                        <td colSpan={4} className="py-6 text-center text-xs text-slate-500">
+                          Student hasn&apos;t completed any mock exams yet.
+                        </td>
                       </tr>
-                    ))}
+                    ) : (
+                      data.mockHistory.map((h: any, idx: number) => (
+                        <tr key={idx} className="hover:bg-slate-50/50">
+                          <td className="py-2.5 px-3 text-slate-500">{h.date}</td>
+                          <td className="py-2.5 px-3 font-semibold text-slate-900">{h.examName}</td>
+                          <td className="py-2.5 px-3 font-bold text-[#116149]">{h.score} / 400</td>
+                          <td className="py-2.5 px-3 text-right text-slate-500">{h.timeSpent}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>

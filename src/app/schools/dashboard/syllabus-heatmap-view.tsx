@@ -45,87 +45,8 @@ export function SyllabusHeatmapView({ schoolName }: SyllabusHeatmapViewProps) {
         setLoading(false);
       })
       .catch(() => {
-        setTopics([
-          {
-            id: "top-1",
-            subject: "Chemistry",
-            topic: "Organic Nomenclature & Functional Groups",
-            accuracyRate: 32,
-            questionsAttempted: 148,
-            status: "urgent_remedial",
-            recommendedAction: "Reteach IUPAC numbering rules for branched alkanes and carboxylic acids before Friday lab.",
-          },
-          {
-            id: "top-2",
-            subject: "Mathematics",
-            topic: "Calculus: Differentiation & Curve Extrema",
-            accuracyRate: 36,
-            questionsAttempted: 160,
-            status: "urgent_remedial",
-            recommendedAction: "Focus Monday tutorial on product and quotient rules with past question drill.",
-          },
-          {
-            id: "top-3",
-            subject: "Use of English",
-            topic: "Grammar: Subject-Verb Concord & Inversion",
-            accuracyRate: 54,
-            questionsAttempted: 220,
-            status: "revision_recommended",
-            recommendedAction: "Provide 20-question practice on indefinite pronouns and 'neither...nor' structures.",
-          },
-          {
-            id: "top-4",
-            subject: "Physics",
-            topic: "Electric Fields, Capacitance & Dielectrics",
-            accuracyRate: 48,
-            questionsAttempted: 132,
-            status: "revision_recommended",
-            recommendedAction: "Review series/parallel capacitor energy storage calculations during revision period.",
-          },
-          {
-            id: "top-5",
-            subject: "Physics",
-            topic: "Mechanics: Vectors & Projectile Motion",
-            accuracyRate: 82,
-            questionsAttempted: 195,
-            status: "exam_ready",
-            recommendedAction: "Cohort demonstrates firm mastery. Maintain retention with weekly speed drills.",
-          },
-          {
-            id: "top-6",
-            subject: "Biology",
-            topic: "Genetics: Mendelian Inheritance & Blood Grouping",
-            accuracyRate: 78,
-            questionsAttempted: 210,
-            status: "exam_ready",
-            recommendedAction: "Exam ready. Reinforce sex-linked inheritance anomalies (haemophilia & colour blindness).",
-          },
-          {
-            id: "top-7",
-            subject: "Economics",
-            topic: "Elasticity of Demand & Market Structures",
-            accuracyRate: 64,
-            questionsAttempted: 115,
-            status: "revision_recommended",
-            recommendedAction: "Differentiate between monopolistic competition and oligopoly price rigidity.",
-          },
-          {
-            id: "top-8",
-            subject: "Government",
-            topic: "Constitutional Development (1922 Clifford to 1999)",
-            accuracyRate: 74,
-            questionsAttempted: 130,
-            status: "exam_ready",
-            recommendedAction: "Strong historical retention. Review key features of the 1979 Presidential Constitution.",
-          },
-        ]);
-        setTimetable([
-          { day: "Monday", time: "09:00 AM - 10:30 AM", subject: "Chemistry", topic: "Organic Nomenclature", priority: "Urgent" },
-          { day: "Tuesday", time: "11:00 AM - 12:30 PM", subject: "Mathematics", topic: "Calculus & Curve Extrema", priority: "Urgent" },
-          { day: "Wednesday", time: "10:00 AM - 11:15 AM", subject: "Use of English", topic: "Subject-Verb Concord", priority: "Revision" },
-          { day: "Thursday", time: "02:00 PM - 03:30 PM", subject: "Physics", topic: "Capacitance & Dielectrics", priority: "Revision" },
-          { day: "Friday", time: "09:30 AM - 11:30 AM", subject: "All Subjects", topic: "120-Min Synchronized CBT Lab Mock Simulation", priority: "Mock" },
-        ]);
+        setTopics([]);
+        setTimetable([]);
         setLoading(false);
       });
   }, []);
@@ -214,7 +135,9 @@ export function SyllabusHeatmapView({ schoolName }: SyllabusHeatmapViewProps) {
             <AlertTriangle size={15} className="text-red-600" />
           </div>
           <p className="text-2xl font-bold text-red-900">{urgentCount} Topics</p>
-          <span className="text-[11px] text-red-700 block">&lt;40% accuracy · Immediate review needed</span>
+          <span className="text-[11px] text-red-700 block">
+            {urgentCount > 0 ? "<40% accuracy · Immediate review needed" : "No urgent remedial topics"}
+          </span>
         </div>
 
         <div 
@@ -232,7 +155,9 @@ export function SyllabusHeatmapView({ schoolName }: SyllabusHeatmapViewProps) {
             <Clock size={15} className="text-amber-700" />
           </div>
           <p className="text-2xl font-bold text-amber-900">{revisionCount} Topics</p>
-          <span className="text-[11px] text-amber-800 block">40% - 69% accuracy · Speed drills suggested</span>
+          <span className="text-[11px] text-amber-800 block">
+            {revisionCount > 0 ? "40% - 69% accuracy · Speed drills suggested" : "No revision topics flagged"}
+          </span>
         </div>
 
         <div 
@@ -250,7 +175,9 @@ export function SyllabusHeatmapView({ schoolName }: SyllabusHeatmapViewProps) {
             <Sparkles size={15} className="text-emerald-700" />
           </div>
           <p className="text-2xl font-bold text-[#092E28]">{readyCount} Topics</p>
-          <span className="text-[11px] text-emerald-800 block">&ge;70% accuracy · High retention</span>
+          <span className="text-[11px] text-emerald-800 block">
+            {readyCount > 0 ? "≥70% accuracy · High retention" : "No completed test data yet"}
+          </span>
         </div>
       </div>
 
@@ -291,7 +218,17 @@ export function SyllabusHeatmapView({ schoolName }: SyllabusHeatmapViewProps) {
       {loading ? (
         <div className="py-12 text-center space-y-2">
           <Loader2 size={30} className="animate-spin text-[#116149] mx-auto" />
-          <p className="text-xs text-slate-500">Aggregating topic mastery metrics...</p>
+          <p className="text-xs text-slate-500">Checking syllabus performance records...</p>
+        </div>
+      ) : filteredTopics.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
+          <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 mb-3">
+            <BarChart3 size={24} />
+          </div>
+          <h3 className="text-sm font-bold text-slate-900">No diagnostic test data yet</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 leading-relaxed">
+            Students haven&apos;t done any test or mock activities yet. Aggregated syllabus mastery and topic weakness heatmaps will appear here once candidates complete tests.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -365,33 +302,43 @@ export function SyllabusHeatmapView({ schoolName }: SyllabusHeatmapViewProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
-          {timetable.map((slot, idx) => (
-            <div key={idx} className="rounded-xl border border-slate-200 bg-[#F8FAF7] p-3 space-y-1.5 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900">{slot.day}</span>
-                <span
-                  className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold ${
-                    slot.priority === "Urgent"
-                      ? "bg-red-100 text-red-800"
-                      : slot.priority === "Mock"
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-amber-100 text-amber-800"
-                  }`}
-                >
-                  {slot.priority}
-                </span>
+        {timetable.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-200 bg-[#F8FAF7] p-8 text-center text-xs text-slate-500">
+            <Calendar size={20} className="mx-auto text-slate-400 mb-2" />
+            <p className="font-semibold text-slate-700">No remedial schedule needed yet</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Students haven&apos;t done any test activities yet. Targeted remedial sessions will appear here as soon as weak syllabus areas are identified.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+            {timetable.map((slot, idx) => (
+              <div key={idx} className="rounded-xl border border-slate-200 bg-[#F8FAF7] p-3 space-y-1.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-900">{slot.day}</span>
+                  <span
+                    className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold ${
+                      slot.priority === "Urgent"
+                        ? "bg-red-100 text-red-800"
+                        : slot.priority === "Mock"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {slot.priority}
+                  </span>
+                </div>
+                <p className="text-slate-500 text-[11px] flex items-center gap-1">
+                  <Clock size={12} />
+                  <span>{slot.time}</span>
+                </p>
+                <div className="pt-1 font-semibold text-slate-800 text-[11px]">
+                  {slot.subject}: <span className="text-[#116149] font-normal">{slot.topic}</span>
+                </div>
               </div>
-              <p className="text-slate-500 text-[11px] flex items-center gap-1">
-                <Clock size={12} />
-                <span>{slot.time}</span>
-              </p>
-              <div className="pt-1 font-semibold text-slate-800 text-[11px]">
-                {slot.subject}: <span className="text-[#116149] font-normal">{slot.topic}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
