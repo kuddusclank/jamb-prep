@@ -162,7 +162,7 @@ export default function SchoolRegisterPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. King's College Lagos"
+                    placeholder="e.g. ABC College or XYZ Schools"
                     value={formData.schoolName}
                     onChange={(e) => setFormData({ ...formData, schoolName: e.target.value })}
                     className="w-full min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
