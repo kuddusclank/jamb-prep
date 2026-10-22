@@ -4,15 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { PolicyLinks } from "@/components/legal-page";
+import { createClient } from "@/lib/supabase/client";
 import { 
   ArrowLeft, 
   ArrowUpRight, 
   Check, 
   Target, 
-  ArrowRight,
-  ShieldCheck,
-  AlertCircle,
-  Loader2,
+  ArrowRight, 
+  ShieldCheck, 
+  AlertCircle, 
+  Loader2, 
   MailCheck 
 } from "lucide-react";
 
@@ -27,21 +28,42 @@ export default function SchoolForgotPasswordPage() {
     setIsPending(true);
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get("email");
+    const cleanEmail = (formData.get("email") as string)?.trim().toLowerCase() || "";
+
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      setError("Please enter a valid administrator email address.");
+      setIsPending(false);
+      return;
+    }
 
     try {
-      const res = await fetch("/api/schools/auth/forgot-password/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+      const supabase = createClient();
+      const redirectUrl = typeof window !== "undefined"
+        ? `${window.location.origin}/schools/reset-password`
+        : "https://jambprep.pages.dev/schools/reset-password";
+
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: redirectUrl,
       });
-      const result = await res.json();
-      if (!res.ok || result.error) {
-        setError(result.error || "Unable to send password reset email.");
+
+      if (resetError) {
+        setError(resetError.message || "Unable to send password reset email.");
         setIsPending(false);
         return;
       }
-      setSuccessMessage(result.message || "Password reset instructions have been dispatched to your email.");
+
+      // Best-effort call to API endpoint if running on SSR
+      try {
+        await fetch("/api/schools/auth/forgot-password/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: cleanEmail }),
+        });
+      } catch {
+        // Silent on static hosts
+      }
+
+      setSuccessMessage("Password reset instructions have been dispatched to your email address.");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "A network error occurred. Please try again.");
     } finally {

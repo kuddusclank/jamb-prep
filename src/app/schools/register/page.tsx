@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { PolicyLinks } from "@/components/legal-page";
+import { createClient } from "@/lib/supabase/client";
 import { 
   ArrowLeft, 
   ArrowUpRight, 
@@ -35,28 +36,79 @@ export default function SchoolRegisterPage() {
     setIsPending(true);
 
     const formData = new FormData(e.currentTarget);
-    const data = {
-      schoolName: formData.get("schoolName"),
-      schoolType: formData.get("schoolType"),
-      state: formData.get("state"),
-      adminName: formData.get("adminName"),
-      email: formData.get("email"),
-      password: formData.get("password"),
-    };
+    const cleanSchoolName = (formData.get("schoolName") as string)?.trim() || "";
+    const schoolType = (formData.get("schoolType") as string)?.trim() || "secondary_school";
+    const state = (formData.get("state") as string)?.trim() || "Lagos";
+    const cleanAdminName = (formData.get("adminName") as string)?.trim() || "";
+    const cleanEmail = (formData.get("email") as string)?.trim().toLowerCase() || "";
+    const password = (formData.get("password") as string) || "";
+
+    if (!cleanSchoolName || cleanSchoolName.length < 2) {
+      setError("Please enter a valid school or institution name.");
+      setIsPending(false);
+      return;
+    }
+    if (!cleanAdminName || cleanAdminName.length < 2) {
+      setError("Please enter the administrator / principal full name.");
+      setIsPending(false);
+      return;
+    }
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      setError("Please enter a valid official email address.");
+      setIsPending(false);
+      return;
+    }
+    if (!password || password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      setIsPending(false);
+      return;
+    }
+
+    const prefix = cleanSchoolName.replace(/[^a-zA-Z0-9]/g, "").slice(0, 4).toUpperCase();
+    const schoolCode = `SCH-${prefix || "XYZ"}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
     try {
-      const res = await fetch("/api/schools/auth/signup/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+      const supabase = createClient();
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password,
+        options: {
+          data: {
+            role: "school_admin",
+            display_name: cleanAdminName,
+            school_name: cleanSchoolName,
+            school_type: schoolType,
+            state,
+            school_code: schoolCode,
+          },
+        },
       });
-      const result = await res.json();
-      if (!res.ok || result.error) {
-        setError(result.error || "Failed to create school account.");
+
+      if (authError) {
+        setError(authError.message || "Failed to create school account.");
         setIsPending(false);
         return;
       }
-      window.location.assign(result.redirectTo || "/schools/dashboard");
+
+      // Best-effort call to backend API if running in an SSR environment
+      try {
+        await fetch("/api/schools/auth/signup/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            schoolName: cleanSchoolName,
+            schoolType,
+            state,
+            adminName: cleanAdminName,
+            email: cleanEmail,
+            password,
+          }),
+        });
+      } catch {
+        // Silent catch on static hosting (e.g. Cloudflare Pages)
+      }
+
+      window.location.assign("/schools/dashboard");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "A network error occurred. Please try again.");
       setIsPending(false);

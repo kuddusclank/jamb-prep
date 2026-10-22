@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { PolicyLinks } from "@/components/legal-page";
+import { createClient } from "@/lib/supabase/client";
 import { 
   ArrowLeft, 
   ArrowUpRight, 
@@ -44,18 +45,27 @@ export default function SchoolResetPasswordPage() {
     }
 
     try {
-      const res = await fetch("/api/schools/auth/reset-password/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password, confirmPassword }),
-      });
-      const result = await res.json();
-      if (!res.ok || result.error) {
-        setError(result.error || "Failed to update password.");
+      const supabase = createClient();
+      const { error: updateError } = await supabase.auth.updateUser({ password });
+
+      if (updateError) {
+        setError(updateError.message || "Failed to update password.");
         setIsPending(false);
         return;
       }
-      window.location.assign(result.redirectTo || "/schools/dashboard");
+
+      // Best-effort call to API endpoint if running on SSR
+      try {
+        await fetch("/api/schools/auth/reset-password/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password, confirmPassword }),
+        });
+      } catch {
+        // Silent on static hosts
+      }
+
+      window.location.assign("/schools/login?message=Password updated successfully. Please sign in with your new credentials.");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "A network error occurred. Please try again.");
       setIsPending(false);

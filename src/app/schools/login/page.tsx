@@ -4,15 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { PolicyLinks } from "@/components/legal-page";
+import { createClient } from "@/lib/supabase/client";
 import { 
   ArrowLeft, 
   ArrowUpRight, 
   Check, 
   Target, 
-  ArrowRight,
+  ArrowRight, 
   Eye, 
-  EyeOff,
-  AlertCircle,
+  EyeOff, 
+  AlertCircle, 
   Loader2 
 } from "lucide-react";
 
@@ -27,24 +28,48 @@ export default function SchoolLoginPage() {
     setIsPending(true);
 
     const formData = new FormData(e.currentTarget);
-    const data = {
-      email: formData.get("email"),
-      password: formData.get("password"),
-    };
+    const cleanEmail = (formData.get("email") as string)?.trim().toLowerCase() || "";
+    const password = (formData.get("password") as string) || "";
+
+    if (!cleanEmail || !password) {
+      setError("Please enter your official administrator email and password.");
+      setIsPending(false);
+      return;
+    }
 
     try {
-      const res = await fetch("/api/schools/auth/signin/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+      const supabase = createClient();
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
       });
-      const result = await res.json();
-      if (!res.ok || result.error) {
-        setError(result.error || "Invalid administrator credentials.");
+
+      if (authError) {
+        setError(authError.message || "Invalid administrator credentials.");
         setIsPending(false);
         return;
       }
-      window.location.assign(result.redirectTo || "/schools/dashboard");
+
+      const role = authData.user?.user_metadata?.role || "student";
+      if (role === "student") {
+        await supabase.auth.signOut();
+        setError("This is a student candidate account. Please use the Student Login Portal.");
+        setIsPending(false);
+        return;
+      }
+
+      // Best-effort call to backend API if running in an SSR environment
+      try {
+        await fetch("/api/schools/auth/signin/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: cleanEmail, password }),
+        });
+      } catch {
+        // Silent catch on static hosting
+      }
+
+      window.location.assign("/schools/dashboard");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "A network error occurred. Please try again.");
       setIsPending(false);
