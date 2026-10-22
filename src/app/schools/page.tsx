@@ -70,9 +70,9 @@ export default function SchoolsPage() {
 
       <main id="main" className="flex-1">
         {/* ========================================================
-            HERO SECTION (Takes Exact Device Viewport Height with Nav)
+            HERO SECTION (Centered & Balanced at Exact Viewport Height)
            ======================================================== */}
-        <section className="relative h-[calc(100dvh-5rem)] min-h-[580px] flex flex-col justify-between pt-6 sm:pt-10 pb-6 sm:pb-8 text-center overflow-hidden bg-slate-50">
+        <section className="relative h-[calc(100dvh-5rem)] min-h-[640px] flex flex-col items-center justify-center text-center overflow-hidden bg-slate-50 px-4">
           {/* Full-Bleed Lab Image Background (No School Name on Walls) */}
           <div className="absolute inset-0 z-0 pointer-events-none select-none">
             <img
@@ -89,41 +89,41 @@ export default function SchoolsPage() {
             <div className="absolute inset-x-0 bottom-0 h-24 sm:h-28 bg-gradient-to-t from-white via-white/80 to-transparent" />
           </div>
 
-          {/* Foreground Editorial Content */}
-          <div className="shell relative z-10 max-w-4xl mx-auto space-y-4 sm:space-y-5">
+          {/* Centered Editorial Content (Balanced in Center of Hero Viewport) */}
+          <div className="shell relative z-10 max-w-4xl mx-auto space-y-5 sm:space-y-6 my-auto">
             {/* Editorial Serif Display Headline */}
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-serif font-normal tracking-tight text-[#092E28] leading-[1.1]">
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-serif font-normal tracking-tight text-[#092E28] leading-[1.08]">
               The Complete CBT Platform<br className="hidden sm:inline" /> for Modern Nigerian Schools.
             </h1>
 
             {/* Subtitle */}
-            <p className="max-w-2xl mx-auto text-sm sm:text-base text-slate-700 leading-relaxed font-normal">
+            <p className="max-w-2xl mx-auto text-base sm:text-lg text-slate-700 leading-relaxed font-normal">
               Turn your computer lab into an authentic UTME hall. Synchronized mock exams, real-time teacher syllabus diagnostics, and bulk student licensing across all 36 states.
             </p>
 
             {/* Centered CTA Buttons */}
-            <div className="pt-1 flex flex-wrap items-center justify-center gap-3">
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-3.5">
               <Link
                 href="/schools/register"
-                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#112F28] px-7 text-xs sm:text-sm font-semibold text-white shadow-md hover:bg-[#071F1A] transition whitespace-nowrap"
+                className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#112F28] px-8 text-sm font-semibold text-white shadow-md hover:bg-[#071F1A] transition whitespace-nowrap"
               >
                 Register your school today! <ArrowRight size={15} />
               </Link>
               <Link
                 href="/schools/login"
-                className="inline-flex min-h-11 items-center rounded-full border border-slate-300 bg-white/95 backdrop-blur-xs px-6 text-xs sm:text-sm font-semibold text-[#092E28] hover:bg-white transition shadow-xs whitespace-nowrap"
+                className="inline-flex min-h-12 items-center rounded-full border border-slate-300 bg-white/95 backdrop-blur-xs px-7 text-sm font-semibold text-[#092E28] hover:bg-white transition shadow-xs whitespace-nowrap"
               >
                 School portal sign in
               </Link>
             </div>
 
             {/* Social Proof / Geographies Row (High-Contrast Protected Backdrop) */}
-            <div className="pt-3 sm:pt-4">
-              <div className="inline-flex flex-col items-center rounded-2xl bg-white/95 backdrop-blur-md px-5 py-2.5 sm:px-6 sm:py-3 border border-slate-200/90 shadow-xs">
-                <span className="text-[10px] sm:text-[11px] uppercase font-bold text-slate-500 tracking-wider block">
+            <div className="pt-4 sm:pt-6">
+              <div className="inline-flex flex-col items-center rounded-2xl bg-white/95 backdrop-blur-md px-6 py-3 border border-slate-200/90 shadow-xs">
+                <span className="text-[11px] uppercase font-bold text-slate-500 tracking-wider block">
                   Prepared for secondary schools and tutorial centres nationwide
                 </span>
-                <div className="mt-1.5 flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-xs sm:text-sm font-bold text-[#092E28]">
+                <div className="mt-2 flex flex-wrap items-center justify-center gap-3.5 sm:gap-6 text-xs sm:text-sm font-bold text-[#092E28]">
                   <span>Lagos State</span>
                   <span className="text-slate-300">•</span>
                   <span>Abuja (FCT)</span>
@@ -140,9 +140,9 @@ export default function SchoolsPage() {
             </div>
           </div>
 
-          {/* Contextual Floating Overlay Badges */}
-          <div className="shell relative z-10 w-full flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 sm:pt-6">
-            <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl px-4 py-2 shadow-lg flex items-center gap-3">
+          {/* Contextual Floating Overlay Badges Anchored to Bottom */}
+          <div className="shell absolute bottom-4 sm:bottom-6 inset-x-0 z-10 w-full flex flex-col sm:flex-row items-center justify-between gap-3 pointer-events-none">
+            <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl px-4 py-2 shadow-lg flex items-center gap-3 pointer-events-auto">
               <span className="size-2.5 rounded-full bg-emerald-500 animate-pulse" />
               <div className="text-left">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Synchronized Hall Simulation</span>
@@ -150,7 +150,7 @@ export default function SchoolsPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-[#092E28]/95 backdrop-blur-md text-white border border-emerald-900/40 rounded-2xl px-4 py-2 shadow-lg text-xs font-semibold">
+            <div className="flex items-center gap-2 bg-[#092E28]/95 backdrop-blur-md text-white border border-emerald-900/40 rounded-2xl px-4 py-2 shadow-lg text-xs font-semibold pointer-events-auto">
               <span className="size-2 rounded-full bg-emerald-400" />
               <span>₦1,500 / student / month · Zero lab servers</span>
             </div>
