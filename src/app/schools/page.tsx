@@ -85,28 +85,22 @@ export default function SchoolsPage() {
                 School portal sign in
               </Link>
             </div>
+          </div>
 
-            {/* Social Proof / Geographies Label Row with Staggered Entry Animation */}
-            <div className="animate-hero-label pt-4 sm:pt-6">
-              <div className="inline-flex flex-col items-center rounded-2xl bg-[#17231b]/85 backdrop-blur-md px-6 py-3 border border-white/10 shadow-lg">
-                <span className="text-[11px] uppercase font-bold text-[#d8dfd5]/80 tracking-wider block">
-                  Prepared for secondary schools and tutorial centres nationwide
-                </span>
-                <div className="mt-2 flex flex-wrap items-center justify-center gap-3.5 sm:gap-6 text-xs sm:text-sm font-bold text-[#f2f3eb]">
-                  <span>Lagos State</span>
-                  <span className="text-[#d6ed9f]">•</span>
-                  <span>Abuja (FCT)</span>
-                  <span className="text-[#d6ed9f]">•</span>
-                  <span>Rivers State</span>
-                  <span className="text-[#d6ed9f]">•</span>
-                  <span>Oyo State</span>
-                  <span className="text-[#d6ed9f]">•</span>
-                  <span>Ogun & Kano</span>
-                  <span className="text-[#d6ed9f]">•</span>
-                  <span>Edo & Kaduna</span>
-                </div>
+          {/* Bouncing Scroll Down Indicator Button */}
+          <div className="absolute bottom-6 sm:bottom-8 inset-x-0 z-10 flex flex-col items-center justify-center pointer-events-auto">
+            <a
+              href="#lab-simulator"
+              aria-label="Scroll down to explore features"
+              className="group inline-flex flex-col items-center gap-1.5 text-xs font-medium text-[#d8dfd5]/80 hover:text-white transition-colors"
+            >
+              <span className="text-[10px] tracking-wider uppercase font-semibold text-[#d8dfd5]/70 group-hover:text-white transition-colors">
+                Explore Platform
+              </span>
+              <div className="size-9 rounded-full border border-white/20 bg-white/10 backdrop-blur-md flex items-center justify-center text-[#d6ed9f] shadow-lg group-hover:bg-white/20 group-hover:scale-105 transition animate-bounce">
+                <ChevronDown size={18} />
               </div>
-            </div>
+            </a>
           </div>
         </section>
 
