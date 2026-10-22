@@ -118,29 +118,45 @@ The following capabilities have been fully built, verified with 25 unit/integrat
    - UI status indicator (`src/components/sync-status-indicator.tsx`) in the workspace header and weekly practice views showing pending offline counts, syncing animations, and click-to-retry.
    - Verified by unit tests: `tests/offline-outbox-sync.test.mjs` (5 passing tests, 30 suite total).
 
----
-
-## 🚀 What's Next: Prioritised Roadmap
-
-Based on the [Future Learning and School Partnerships Plan](future-learning-and-school-partnerships-plan.md) and [Product Requirements](product-requirements.md), the immediate candidate capabilities for the next engineering sprints are:
-
-### 1. School Partnerships & Bulk Institutional Licensing (Features F1 & F6)
-- **Goal**: Enable secondary schools and tutorial centres to onboard cohorts of candidates.
-- **Deliverables**:
-  - Prepaid cohort pricing at **₦1,500 / student / month** (1–12 month terms).
-  - School admin / teacher portal: roster import (CSV/manual), mock exam assignment, and class-level diagnostic reporting.
-  - Multi-tenant data segregation with strict role-based access control.
-
-### 2. Physical Mobile Device Closed-App Push Validation
-- **Goal**: Final QA of push notifications across real Android and iOS devices.
-- **Deliverables**:
-  - Test real Web Push delivery with the PWA completely closed/backgrounded on physical Android (Chrome/PWA) and iOS (Add to Home Screen Web Push).
-  - Verify quiet hours and delivery timing against WAT timezone (`Africa/Lagos`).
-  - Validate that Pro user study schedules reliably override the general 7:00 AM notification reminder.
-
-### 3. Question Bank Expansion & Syllabus Coverage
-- **Goal**: Expand leaf-topic question coverage across all 8 UTME launch subjects.
-- **Deliverables**:
-  - Transition verified held questions to active blueprints (`885-question-draft-transition-plan.md`).
-  - Add remaining literature texts, grammar, and elective question pools.
+120: 
+121: 6. **Offline Mode Network Sensitivity & Flapping Elimination — 22 October 2026**:
+122:    - **Eliminated Hair-Trigger Dropouts**: Replaced single fetch abort triggers with consecutive-failure threshold (2 consecutive failures within 15 seconds) plus non-blocking background heartbeat probe (`probeConnection()`) before switching global state in `src/lib/offline/network-state.ts`.
+123:    - **Relaxed Mobile Read Timeout**: Increased default read query budget in `src/lib/api/native-client.ts` from 4,000ms to 8,000ms, accommodating Nigerian cellular network latency and edge cold starts without aborting legitimate requests.
+124:    - **Preserved In-Memory Rendered Screens**: Guarded `dashboard/page.tsx`, `practice/page.tsx`, and `profile/page.tsx` with `(!resource.data)` checks so already-loaded dashboards and catalogues remain completely visible during momentary network drops rather than being torn down.
+125:    - **Debounced Network Toast**: Added a 1.5s delay to `src/components/network-status-toast.tsx` to completely absorb micro-stalls and prevent toast flickering.
+126: 
+127: 7. **PWA Infinite Update Reload Loop Resolution — 22 October 2026**:
+128:    - **Persistent Update Suppression**: Added `isUpdateSuppressed()` in `src/components/pwa-provider.tsx` checking `jambprep_last_updated_at` (10-minute cooldown) and `jambprep_update_session_dismissed` to ensure clicking "Update & Reload Now" or "X" never re-triggers the update modal on page reloads or tab focus.
+129:    - **Graceful Service Worker Activation with Clean Fallback**: Replaced premature 400ms force-reloads with active `controllerchange` listening, backed by a 1500ms safety timeout that unregisters stubborn waiting workers before reloading to guarantee a fresh, loop-free session.
+130:    - **Production Deployment & Preview Purge**: Deployed latest build to production `https://jambprep.lecterniq.com` and purged 47 stale Cloudflare Pages preview environments.
+131: 
+132: ---
+133: 
+134: ## 🚀 What's Next: Prioritised Roadmap
+135: 
+136: Based on the [Future Learning and School Partnerships Plan](future-learning-and-school-partnerships-plan.md) and [Product Requirements](product-requirements.md), the immediate candidate capabilities for the next engineering sprints are:
+137: 
+138: ### 1. School Partnerships & Bulk Institutional Licensing (Features F1 & F6)
+139: - **Goal**: Enable secondary schools and tutorial centres to onboard cohorts of candidates with unified billing.
+140: - **Deliverables**:
+141:   - School quote generator and prepaid checkout at **₦1,500 / student / month** (1–12 month terms).
+142:   - School admin & teacher portal: bulk student CSV import, class assignment, and diagnostic reporting.
+143:   - Strict multi-tenant data isolation with role-based access control.
+144: 
+145: ### 2. Teacher Diagnostic Dashboard & Teaching Priorities (Feature F7)
+146: - **Goal**: Give teachers actionable diagnostic insights into their students' strengths and weaknesses.
+147: - **Deliverables**:
+148:   - Class-level performance matrices broken down by UTME subjects and leaf syllabus topics.
+149:   - Identified weak areas to prioritize during physical classroom revision.
+150: 
+151: ### 3. Physical Mobile Device Push Notification QA
+152: - **Goal**: Final physical device validation of Web Push reminders.
+153: - **Deliverables**:
+154:   - Test real Web Push delivery with the PWA completely closed/backgrounded on physical Android and iOS devices.
+155:   - Verify Pro study schedule overrides the general 7:00 AM daily notification.
+156: 
+157: ### 4. Question Bank Expansion (885 Draft Transition)
+158: - **Goal**: Expand leaf-topic question coverage across all 8 launch subjects.
+159: - **Deliverables**:
+160:   - Execute the guarded transition of verified held questions to active blueprints (`885-question-draft-transition-plan.md`).
 
