@@ -6,7 +6,7 @@ import {
 // ==========================================
 // Enums
 // ==========================================
-export const userRoleEnum = pgEnum('user_role', ['student', 'admin', 'reviewer']);
+export const userRoleEnum = pgEnum('user_role', ['student', 'admin', 'reviewer', 'school_admin']);
 export const questionStatusEnum = pgEnum('question_status', ['draft', 'reviewed', 'published', 'archived']);
 export const reportStatusEnum = pgEnum('report_status', ['open', 'investigating', 'resolved', 'dismissed']);
 export const difficultyEnum = pgEnum('difficulty_level', ['easy', 'medium', 'hard']);
@@ -499,4 +499,50 @@ export const studyReminderDeliveries = pgTable('study_reminder_deliveries', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   uniqueIndex('study_reminder_deliveries_occurrence_sub_key').on(table.occurrenceId, table.subscriptionId),
+]).enableRLS();
+
+// ==========================================
+// 12. B2B Institutional & School Cohort Models
+// ==========================================
+export const schools = pgTable('schools', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  code: text('code').notNull().unique(), // e.g. 'SCH-XYZ123'
+  type: text('type').default('secondary_school').notNull(), // 'secondary_school' | 'tutorial_centre' | 'cbt_training_hub' | 'state_ministry_partner'
+  state: text('state').notNull(),
+  adminId: uuid('admin_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
+  contactPhone: text('contact_phone'),
+  contactEmail: text('contact_email'),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('schools_slug_idx').on(table.slug),
+  uniqueIndex('schools_code_idx').on(table.code),
+  index('schools_state_idx').on(table.state),
+]).enableRLS();
+
+export const schoolMembers = pgTable('school_members', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  schoolId: uuid('school_id').references(() => schools.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
+  role: text('role').default('owner').notNull(), // 'owner' | 'admin' | 'teacher'
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('school_members_unique_user_idx').on(table.schoolId, table.userId),
+]).enableRLS();
+
+export const schoolStudents = pgTable('school_students', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  schoolId: uuid('school_id').references(() => schools.id, { onDelete: 'cascade' }).notNull(),
+  studentUserId: uuid('student_user_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
+  studentIdentifier: text('student_identifier'), // e.g. admission or roll number
+  ingestionMethod: text('ingestion_method').default('manual').notNull(), // 'manual' | 'csv' | 'link'
+  licenseStatus: text('license_status').default('inactive').notNull(), // 'active' | 'inactive' | 'expired'
+  licenseExpiresAt: timestamp('license_expires_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('school_students_unique_user_idx').on(table.schoolId, table.studentUserId),
+  index('school_students_school_license_idx').on(table.schoolId, table.licenseStatus),
 ]).enableRLS();

@@ -261,13 +261,22 @@ export async function signInAction(prevState: AuthState | null, formData: FormDa
 
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
-  if (error) {
-    return { error: error.message || "Invalid email or password." };
+  if (error || !data?.user) {
+    return { error: error?.message || "Invalid email or password." };
+  }
+
+  // Route non-students to their respective authorized portals
+  const role = data.user.user_metadata?.role;
+  if (role === "school_admin") {
+    redirect("/schools/dashboard");
+  }
+  if (role === "admin") {
+    redirect("/admin");
   }
 
   redirect(redirectTo);

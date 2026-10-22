@@ -125,3 +125,64 @@ test("B2B Pricing: form validation enforces required institutional fields", () =
   assert.equal(invalidPhone.isValid, false);
   assert.ok(invalidPhone.errors.some((e) => e.field === "phone"));
 });
+
+test("RBAC: Middleware partitions student, school, and admin paths with strict role isolation", () => {
+  const middlewareFile = path.join(ROOT, "src/lib/supabase/middleware.ts");
+  const source = fs.readFileSync(middlewareFile, "utf8");
+
+  // Rule 1: Student protected paths definition
+  assert.ok(source.includes("studentProtectedPaths = ["));
+  assert.ok(source.includes('"/dashboard"'));
+
+  // Rule 2: School protected paths definition
+  assert.ok(source.includes("schoolProtectedPaths = ["));
+  assert.ok(source.includes('"/schools/dashboard"'));
+
+  // Rule 3: Admin protected paths definition
+  assert.ok(source.includes('pathname === "/admin" || pathname.startsWith("/admin/")'));
+
+  // Rule 4: Student cannot access school portal (redirects to /dashboard)
+  assert.ok(
+    source.includes('if (isSchoolProtected && userRole === "student")')
+  );
+  assert.ok(source.includes('url.pathname = "/dashboard"'));
+
+  // Rule 5: School admin cannot access student dashboard (redirects to /schools/dashboard)
+  assert.ok(
+    source.includes('if (isStudentProtected && userRole === "school_admin")')
+  );
+  assert.ok(source.includes('url.pathname = "/schools/dashboard"'));
+
+  // Rule 6: Non-admins cannot access /admin
+  assert.ok(
+    source.includes('if (isAdminProtected && userRole !== "admin")')
+  );
+});
+
+test("Institutional Placeholders: Registration form uses neutral placeholder examples", () => {
+  const registerFile = path.join(ROOT, "src/app/schools/register/page.tsx");
+  const source = fs.readFileSync(registerFile, "utf8");
+
+  // Neutral example verification
+  assert.ok(
+    source.includes("ABC College or XYZ Schools") || source.includes("ABC or XYZ"),
+    "Expected neutral placeholder example (ABC College or XYZ Schools)"
+  );
+});
+
+test("School Auth API: Endpoints exist and are correctly registered", () => {
+  const requiredEndpoints = [
+    "src/app/api/schools/auth/signup/route.ts",
+    "src/app/api/schools/auth/signin/route.ts",
+    "src/app/api/schools/auth/forgot-password/route.ts",
+    "src/app/api/schools/auth/reset-password/route.ts",
+    "src/app/api/schools/auth/signout/route.ts",
+    "src/app/api/schools/auth/session/route.ts",
+  ];
+
+  for (const endpoint of requiredEndpoints) {
+    const fullPath = path.join(ROOT, endpoint);
+    assert.ok(fs.existsSync(fullPath), `Expected endpoint to exist: ${endpoint}`);
+  }
+});
+

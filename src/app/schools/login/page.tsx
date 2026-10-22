@@ -11,23 +11,44 @@ import {
   Target, 
   ArrowRight,
   Eye, 
-  EyeOff 
+  EyeOff,
+  AlertCircle,
+  Loader2 
 } from "lucide-react";
 
 export default function SchoolLoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
-    // Prepared for stage 3 portal connection
-    setTimeout(() => {
-      setLoading(false);
-      window.location.href = "/schools/dashboard";
-    }, 600);
+    setError(null);
+    setIsPending(true);
+
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      email: formData.get("email"),
+      password: formData.get("password"),
+    };
+
+    try {
+      const res = await fetch("/api/schools/auth/signin/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const result = await res.json();
+      if (!res.ok || result.error) {
+        setError(result.error || "Invalid administrator credentials.");
+        setIsPending(false);
+        return;
+      }
+      window.location.assign(result.redirectTo || "/schools/dashboard");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "A network error occurred. Please try again.");
+      setIsPending(false);
+    }
   };
 
   return (
@@ -118,44 +139,47 @@ export default function SchoolLoginPage() {
               Sign in with your administrator or exam officer email and password to manage your cohort.
             </p>
 
+            {error && (
+              <div role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-medium text-red-800 flex items-start gap-2.5">
+                <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />
+                <span>{error}</span>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1.5">
                   Official Admin Email
                 </label>
                 <input
+                  id="email"
+                  name="email"
                   type="email"
                   required
                   placeholder="admin@school.edu.ng"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-sm font-medium text-slate-700">
+                  <label htmlFor="password" className="block text-sm font-medium text-slate-700">
                     Administrative Password
                   </label>
-                  <a
-                    href="#forgot"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      alert("Password reset instructions have been forwarded to your institutional domain administrator.");
-                    }}
+                  <Link
+                    href="/schools/forgot-password"
                     className="text-xs font-medium text-[#116149] hover:underline"
                   >
                     Forgot password?
-                  </a>
+                  </Link>
                 </div>
                 <div className="relative">
                   <input
+                    id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
                     required
                     placeholder="Enter administrative password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
                     className="w-full min-h-12 rounded-xl border border-slate-300 bg-white pl-4 pr-11 text-sm text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
                   />
                   <button
@@ -172,11 +196,19 @@ export default function SchoolLoginPage() {
               <div className="pt-2">
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={isPending}
                   className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#116149] px-6 text-sm font-semibold text-white shadow-md hover:bg-[#0c4a37] disabled:opacity-50 transition cursor-pointer"
                 >
-                  {loading ? "Signing in..." : "Sign In to School Portal"}
-                  {!loading && <ArrowRight size={15} />}
+                  {isPending ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      Sign In to School Portal <ArrowRight size={15} />
+                    </>
+                  )}
                 </button>
               </div>
             </form>

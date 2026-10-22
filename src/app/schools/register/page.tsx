@@ -9,10 +9,11 @@ import {
   ArrowUpRight, 
   Check, 
   Target, 
-  ShieldCheck, 
   ArrowRight,
   Eye, 
-  EyeOff 
+  EyeOff,
+  AlertCircle,
+  Loader2
 } from "lucide-react";
 
 const NIGERIAN_STATES = [
@@ -24,27 +25,42 @@ const NIGERIAN_STATES = [
 ];
 
 export default function SchoolRegisterPage() {
-  const [formData, setFormData] = useState({
-    schoolName: "",
-    schoolType: "secondary_school",
-    state: "Lagos",
-    adminName: "",
-    email: "",
-    password: "",
-  });
-
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
-    // Simulates initial school account registration handshake
-    setTimeout(() => {
-      setLoading(false);
-      setSubmitted(true);
-    }, 600);
+    setError(null);
+    setIsPending(true);
+
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      schoolName: formData.get("schoolName"),
+      schoolType: formData.get("schoolType"),
+      state: formData.get("state"),
+      adminName: formData.get("adminName"),
+      email: formData.get("email"),
+      password: formData.get("password"),
+    };
+
+    try {
+      const res = await fetch("/api/schools/auth/signup/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const result = await res.json();
+      if (!res.ok || result.error) {
+        setError(result.error || "Failed to create school account.");
+        setIsPending(false);
+        return;
+      }
+      window.location.assign(result.redirectTo || "/schools/dashboard");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "A network error occurred. Please try again.");
+      setIsPending(false);
+    }
   };
 
   return (
@@ -135,140 +151,137 @@ export default function SchoolRegisterPage() {
               Create an administrative account to enroll students, conduct synchronized computer lab mocks, and track syllabus diagnostics.
             </p>
 
-            {submitted ? (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6 text-center space-y-4">
-                <div className="size-12 rounded-full bg-[#116149] text-white flex items-center justify-center mx-auto shadow-md">
-                  <ShieldCheck size={24} />
-                </div>
-                <h3 className="text-xl font-bold text-[#092E28]">Institution Registered!</h3>
-                <p className="text-sm text-slate-600 leading-relaxed">
-                  Administrative portal account created for <strong>{formData.schoolName || "your institution"}</strong>. You can now sign in and set up your student cohort.
-                </p>
-                <div className="pt-2">
-                  <Link
-                    href="/schools/login"
-                    className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#116149] px-6 text-sm font-semibold text-white shadow-md hover:bg-[#0c4a37] transition"
+            {error && (
+              <div role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-medium text-red-800 flex items-start gap-2.5">
+                <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="schoolName" className="block text-sm font-medium text-slate-700 mb-1.5">
+                  School or Institution Name *
+                </label>
+                <input
+                  id="schoolName"
+                  name="schoolName"
+                  type="text"
+                  required
+                  placeholder="e.g. ABC College or XYZ Schools"
+                  className="w-full min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="schoolType" className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Institution Type
+                  </label>
+                  <select
+                    id="schoolType"
+                    name="schoolType"
+                    defaultValue="secondary_school"
+                    className="w-full min-h-12 rounded-xl border border-slate-300 bg-white px-3 text-sm text-[#092E28] focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors cursor-pointer"
                   >
-                    Proceed to School Portal <ArrowRight size={15} />
-                  </Link>
+                    <option value="secondary_school">Secondary School</option>
+                    <option value="tutorial_centre">Tutorial Centre</option>
+                    <option value="cbt_training_hub">CBT Training Centre</option>
+                    <option value="state_ministry_partner">Government / NGO Cohort</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="state" className="block text-sm font-medium text-slate-700 mb-1.5">
+                    State *
+                  </label>
+                  <select
+                    id="state"
+                    name="state"
+                    defaultValue="Lagos"
+                    className="w-full min-h-12 rounded-xl border border-slate-300 bg-white px-3 text-sm text-[#092E28] focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors cursor-pointer"
+                  >
+                    {NIGERIAN_STATES.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    School or Institution Name *
-                  </label>
+
+              <div>
+                <label htmlFor="adminName" className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Administrator / Principal Full Name *
+                </label>
+                <input
+                  id="adminName"
+                  name="adminName"
+                  type="text"
+                  required
+                  placeholder="e.g. Dr. Olumide Adeleke"
+                  className="w-full min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Official Admin Email *
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="admin@school.edu.ng"
+                  className="w-full min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Administrative Password *
+                </label>
+                <div className="relative">
                   <input
-                    type="text"
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
                     required
-                    placeholder="e.g. ABC College or XYZ Schools"
-                    value={formData.schoolName}
-                    onChange={(e) => setFormData({ ...formData, schoolName: e.target.value })}
-                    className="w-full min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
+                    minLength={8}
+                    placeholder="At least 8 characters"
+                    className="w-full min-h-12 rounded-xl border border-slate-300 bg-white pl-4 pr-11 text-sm text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
                   />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                      Institution Type
-                    </label>
-                    <select
-                      value={formData.schoolType}
-                      onChange={(e) => setFormData({ ...formData, schoolType: e.target.value })}
-                      className="w-full min-h-12 rounded-xl border border-slate-300 bg-white px-3 text-sm text-[#092E28] focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors cursor-pointer"
-                    >
-                      <option value="secondary_school">Secondary School</option>
-                      <option value="tutorial_centre">Tutorial Centre</option>
-                      <option value="cbt_training_hub">CBT Training Centre</option>
-                      <option value="state_ministry_partner">Government / NGO Cohort</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                      State *
-                    </label>
-                    <select
-                      value={formData.state}
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                      className="w-full min-h-12 rounded-xl border border-slate-300 bg-white px-3 text-sm text-[#092E28] focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors cursor-pointer"
-                    >
-                      {NIGERIAN_STATES.map((st) => (
-                        <option key={st} value={st}>
-                          {st}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Administrator / Principal Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Dr. Olumide Adeleke"
-                    value={formData.adminName}
-                    onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}
-                    className="w-full min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Official Admin Email *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="admin@school.edu.ng"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Administrative Password *
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      minLength={8}
-                      placeholder="At least 8 characters"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full min-h-12 rounded-xl border border-slate-300 bg-white pl-4 pr-11 text-sm text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 flex size-9 items-center justify-center text-slate-400 hover:text-slate-700 transition"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="pt-2">
                   <button
-                    type="submit"
-                    disabled={loading}
-                    className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#116149] px-6 text-sm font-semibold text-white shadow-md hover:bg-[#0c4a37] disabled:opacity-50 transition cursor-pointer"
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 flex size-9 items-center justify-center text-slate-400 hover:text-slate-700 transition"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
-                    {loading ? "Creating School Account..." : "Create School Account"}
-                    {!loading && <ArrowRight size={15} />}
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-              </form>
-            )}
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#116149] px-6 text-sm font-semibold text-white shadow-md hover:bg-[#0c4a37] disabled:opacity-50 transition cursor-pointer"
+                >
+                  {isPending ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Creating School Account...
+                    </>
+                  ) : (
+                    <>
+                      Create School Account <ArrowRight size={15} />
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
 
             <p className="mt-7 border-t border-emerald-950/10 pt-6 text-sm text-slate-600">
               Already registered your school?{" "}

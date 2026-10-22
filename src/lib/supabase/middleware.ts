@@ -26,16 +26,54 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  const protectedPaths = ["/dashboard", "/onboarding", "/practice", "/mock", "/exam", "/result", "/results", "/referrals", "/analytics", "/settings", "/profile", "/checkout"];
-  const isProtected = protectedPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
-  const isAuthPage = pathname === "/login" || pathname === "/register";
+  const studentProtectedPaths = [
+    "/dashboard",
+    "/onboarding",
+    "/practice",
+    "/mock",
+    "/exam",
+    "/result",
+    "/results",
+    "/referrals",
+    "/analytics",
+    "/settings",
+    "/profile",
+    "/checkout"
+  ];
+  const isStudentProtected = studentProtectedPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+  const schoolProtectedPaths = [
+    "/schools/dashboard",
+    "/schools/students",
+    "/schools/mocks",
+    "/schools/billing",
+    "/schools/settings",
+    "/schools/roster"
+  ];
+  const isSchoolProtected = schoolProtectedPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+  const isAdminProtected = pathname === "/admin" || pathname.startsWith("/admin/");
+
+  const isProtected = isStudentProtected || isSchoolProtected || isAdminProtected;
+
+  const isStudentAuthPage = pathname === "/login" || pathname === "/register";
+  const isSchoolAuthPage =
+    pathname === "/schools/login" ||
+    pathname === "/schools/register" ||
+    pathname === "/schools/forgot-password" ||
+    pathname === "/schools/reset-password";
+  const isAuthPage = isStudentAuthPage || isSchoolAuthPage;
 
   const hasAuthCookie = request.cookies.getAll().some((c) => c.name.startsWith("sb-"));
 
   // Fast-path: Unauthenticated visitor hitting a protected route
   if (isProtected && !hasAuthCookie) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    if (isSchoolProtected) {
+      url.pathname = "/schools/login";
+    } else {
+      url.pathname = "/login";
+    }
     url.searchParams.set("redirectTo", pathname);
     return NextResponse.redirect(url);
   }
@@ -70,9 +108,14 @@ export async function updateSession(request: NextRequest) {
   const { data, error } = await supabase.auth.getClaims();
   const claims = error ? null : data?.claims;
 
+  // Unauthenticated check
   if (isProtected && !claims?.sub) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    if (isSchoolProtected) {
+      url.pathname = "/schools/login";
+    } else {
+      url.pathname = "/login";
+    }
     url.searchParams.set("redirectTo", pathname);
     const redirectRes = NextResponse.redirect(url);
     supabaseResponse.cookies.getAll().forEach((cookie) => {
@@ -81,10 +124,55 @@ export async function updateSession(request: NextRequest) {
     return redirectRes;
   }
 
-  // Redirect signed-in users away from auth pages
-  if (claims?.sub && isAuthPage) {
+  // Authenticated user role resolution
+  const userRole = (claims?.user_metadata?.role as string) || "student";
+
+  // STRICT RBAC RULE 1: Students can NEVER access the school portal
+  if (isSchoolProtected && userRole === "student") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
+    url.searchParams.set("error", "unauthorized_school_portal");
+    const redirectRes = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectRes.cookies.set(cookie);
+    });
+    return redirectRes;
+  }
+
+  // STRICT RBAC RULE 2: School admins can NEVER access the student dashboard
+  if (isStudentProtected && userRole === "school_admin") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/schools/dashboard";
+    url.searchParams.set("error", "unauthorized_student_portal");
+    const redirectRes = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectRes.cookies.set(cookie);
+    });
+    return redirectRes;
+  }
+
+  // STRICT RBAC RULE 3: None (neither student nor school_admin) can access the admin dashboard
+  if (isAdminProtected && userRole !== "admin") {
+    const url = request.nextUrl.clone();
+    url.pathname = userRole === "school_admin" ? "/schools/dashboard" : "/dashboard";
+    url.searchParams.set("error", "unauthorized_admin_portal");
+    const redirectRes = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectRes.cookies.set(cookie);
+    });
+    return redirectRes;
+  }
+
+  // Redirect signed-in users away from auth pages to their respective dashboards
+  if (claims?.sub && isAuthPage) {
+    const url = request.nextUrl.clone();
+    if (userRole === "school_admin") {
+      url.pathname = "/schools/dashboard";
+    } else if (userRole === "admin") {
+      url.pathname = "/admin";
+    } else {
+      url.pathname = "/dashboard";
+    }
     const redirectRes = NextResponse.redirect(url);
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       redirectRes.cookies.set(cookie);
