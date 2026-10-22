@@ -1,7 +1,9 @@
-import { getCurrentUser } from "@/lib/supabase/current-user";
-import { redirect } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
+import { createClient } from "@/lib/supabase/client";
 import { 
   Users, 
   ShieldCheck, 
@@ -22,23 +24,37 @@ import {
   KeyRound
 } from "lucide-react";
 
-export default async function SchoolDashboardPage() {
-  const user = await getCurrentUser();
+export default function SchoolDashboardPage() {
+  const [user, setUser] = useState<any>(null);
+  const [copied, setCopied] = useState(false);
 
-  if (!user) {
-    redirect("/schools/login?redirectTo=/schools/dashboard");
-  }
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then((res: any) => {
+      const user = res?.data?.user;
+      if (!user) {
+        window.location.assign("/schools/login?redirectTo=/schools/dashboard");
+        return;
+      }
+      const role = user.user_metadata?.role || "student";
+      if (role === "student") {
+        window.location.assign("/dashboard?error=unauthorized_school_portal");
+        return;
+      }
+      setUser(user);
+    });
+  }, []);
 
-  // Strict RBAC Guard: Students cannot access School Dashboard
-  const role = user.user_metadata?.role || "student";
-  if (role === "student") {
-    redirect("/dashboard?error=unauthorized_school_portal");
-  }
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.assign("/schools");
+  };
 
-  const schoolName = (user.user_metadata?.school_name as string) || "Institutional Partner";
-  const state = (user.user_metadata?.state as string) || "Lagos";
-  const schoolType = (user.user_metadata?.school_type as string) || "secondary_school";
-  const schoolCode = "SCH-XYZ" + user.id.slice(0, 4).toUpperCase();
+  const schoolName = (user?.user_metadata?.school_name as string) || "Institutional Partner";
+  const state = (user?.user_metadata?.state as string) || "Lagos";
+  const schoolType = (user?.user_metadata?.school_type as string) || "secondary_school";
+  const schoolCode = user ? "SCH-XYZ" + user.id.slice(0, 4).toUpperCase() : "SCH-XYZ0000";
   const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL || "https://jambprep.com"}/register?school=${schoolCode}`;
 
   // Mock initial demo roster to demonstrate the ingestion pathways and password rules
@@ -113,23 +129,22 @@ export default async function SchoolDashboardPage() {
           <div className="flex items-center gap-3">
             <div className="hidden md:flex flex-col text-right">
               <span className="text-xs font-semibold text-slate-800">
-                {(user.user_metadata?.display_name as string) || user.email}
+                {(user?.user_metadata?.display_name as string) || user?.email || "Administrator"}
               </span>
               <span className="text-[11px] text-slate-500 uppercase tracking-wider">
                 School Administrator
               </span>
             </div>
 
-            <form action="/api/schools/auth/signout/" method="POST">
-              <button
-                type="submit"
-                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 shadow-xs hover:bg-slate-50 hover:text-slate-900 transition cursor-pointer"
-                title="Sign out of school portal"
-              >
-                <LogOut size={14} />
-                <span className="hidden sm:inline">Sign Out</span>
-              </button>
-            </form>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 shadow-xs hover:bg-slate-50 hover:text-slate-900 transition cursor-pointer"
+              title="Sign out of school portal"
+            >
+              <LogOut size={14} />
+              <span className="hidden sm:inline">Sign Out</span>
+            </button>
           </div>
         </div>
       </header>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/supabase/current-user";
 
-export async function GET() {
+export async function POST() {
   const user = await getCurrentUser();
 
   if (!user) {

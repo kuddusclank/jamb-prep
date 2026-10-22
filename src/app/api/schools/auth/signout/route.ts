@@ -18,15 +18,3 @@ export async function POST(request: Request) {
 
   return NextResponse.redirect(new URL("/schools", origin), 303);
 }
-
-export async function GET(request: Request) {
-  try {
-    const supabase = await createClient();
-    await supabase.auth.signOut();
-  } catch (e) {
-    console.warn("Sign out notice:", e);
-  }
-
-  const origin = new URL(request.url).origin;
-  return NextResponse.redirect(new URL("/schools", origin), 303);
-}
