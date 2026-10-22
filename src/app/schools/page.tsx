@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { PolicyLinks } from "@/components/legal-page";
 import { pageMetadata } from "@/lib/seo";
+import { SchoolsNavClient } from "./schools-nav-client";
 import { 
   CheckCircle2, 
   XCircle, 
@@ -28,51 +29,14 @@ export const metadata: Metadata = pageMetadata(
 export default function SchoolsPage() {
   return (
     <div className="min-h-screen bg-white text-[#092E28] flex flex-col justify-between selection:bg-emerald-200">
-      {/* ========================================================
-          TOP NAVIGATION BAR (Matching Hero Dark Green Background)
-         ======================================================== */}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0b100e]/95 backdrop-blur-md">
-        <div className="shell flex h-20 items-center justify-between gap-4">
-          {/* Brand + Segmented Toggle */}
-          <div className="flex items-center gap-4 shrink-0">
-            <Link href="/" aria-label="JAMBPrep home" className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-[#f2f3eb]">
-              <span className="flex size-9 items-center justify-center rounded-xl bg-[#116149] text-white shadow-xs">
-                <BrandMark size={30} />
-              </span>
-              <span className="font-bold tracking-tight">JAMBPrep</span>
-            </Link>
-
-            {/* Segmented Toggle Pill */}
-            <div className="hidden sm:inline-flex items-center rounded-full bg-[#17231b] p-1 border border-white/10 text-xs font-semibold">
-              <Link 
-                href="/" 
-                className="px-3.5 py-1 rounded-full text-[#d8dfd5] hover:text-white transition whitespace-nowrap"
-              >
-                Candidates
-              </Link>
-              <span className="px-3.5 py-1 rounded-full bg-white/15 text-[#f2f3eb] shadow-xs font-bold whitespace-nowrap">
-                For Schools
-              </span>
-            </div>
-          </div>
-
-          {/* Right Action Button */}
-          <div className="flex items-center gap-3 shrink-0">
-            <Link
-              href="/schools/register"
-              className="rounded-full bg-[#d6ed9f] px-5 py-2.5 text-xs sm:text-sm font-semibold text-[#182518] shadow-xs hover:bg-[#e4f5bb] transition-colors whitespace-nowrap"
-            >
-              Register School
-            </Link>
-          </div>
-        </div>
-      </header>
+      {/* Floating elevated navbar with transparent initial state */}
+      <SchoolsNavClient />
 
       <main id="main" className="flex-1">
         {/* ========================================================
-            HERO SECTION (Centered & Balanced at Exact Viewport Height with Dark Green Tint)
+            HERO SECTION (Full 100dvh Bleed with Centered Editorial Content)
            ======================================================== */}
-        <section className="relative h-[calc(100dvh-5rem)] min-h-[640px] flex flex-col items-center justify-center text-center overflow-hidden bg-[#0b100e] px-4">
+        <section className="relative min-h-[100dvh] pt-20 pb-12 flex flex-col items-center justify-center text-center overflow-hidden bg-[#0b100e] px-4">
           {/* Full-Bleed Lab Image Background with LecternIQ Dark Green Tint */}
           <div className="absolute inset-0 z-0 pointer-events-none select-none">
             <picture className="w-full h-full block">
