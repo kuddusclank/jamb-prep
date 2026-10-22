@@ -52,6 +52,29 @@ a, button, summary { -webkit-tap-highlight-color: transparent; }
 .delay-2 { animation-delay: 160ms; }
 .delay-3 { animation-delay: 240ms; }
 .score-bar { transform-origin: left; animation: score-fill .8s .35s ease-out both; }
+
+@keyframes hero-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-hero-heading {
+  animation: hero-fade-up 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.animate-hero-subhead {
+  animation: hero-fade-up 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
+}
+.animate-hero-actions {
+  animation: hero-fade-up 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.22s both;
+}
+.animate-hero-label {
+  animation: hero-fade-up 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.32s both;
+}
 @media (prefers-reduced-motion: reduce) {
  html { scroll-behavior: auto !important; }
  *, *::before, *::after { animation: none !important; transition: none !important; }

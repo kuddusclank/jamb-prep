@@ -95,18 +95,18 @@ export default function SchoolsPage() {
 
           {/* Centered Editorial Content (Balanced in Center of Hero Viewport) */}
           <div className="shell relative z-10 max-w-4xl mx-auto space-y-5 sm:space-y-6 my-auto">
-            {/* Editorial Serif Display Headline */}
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-serif font-normal tracking-tight text-[#092E28] leading-[1.08]">
+            {/* Editorial Serif Display Headline with Entry Animation */}
+            <h1 className="animate-hero-heading text-4xl sm:text-6xl lg:text-7xl font-serif font-normal tracking-tight text-[#092E28] leading-[1.08]">
               The Complete CBT Platform<br className="hidden sm:inline" /> for Modern Nigerian Schools.
             </h1>
 
-            {/* Subtitle */}
-            <p className="max-w-2xl mx-auto text-base sm:text-lg text-slate-700 leading-relaxed font-normal">
+            {/* Subtitle with Staggered Entry Animation */}
+            <p className="animate-hero-subhead max-w-2xl mx-auto text-base sm:text-lg text-slate-700 leading-relaxed font-normal">
               Turn your computer lab into an authentic UTME hall. Synchronized mock exams, real-time teacher syllabus diagnostics, and bulk student licensing across all 36 states.
             </p>
 
-            {/* Centered CTA Buttons */}
-            <div className="pt-2 flex flex-wrap items-center justify-center gap-3.5">
+            {/* Centered CTA Buttons with Staggered Entry Animation */}
+            <div className="animate-hero-actions pt-2 flex flex-wrap items-center justify-center gap-3.5">
               <Link
                 href="/schools/register"
                 className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#112F28] px-8 text-sm font-semibold text-white shadow-md hover:bg-[#071F1A] transition whitespace-nowrap"
@@ -121,8 +121,8 @@ export default function SchoolsPage() {
               </Link>
             </div>
 
-            {/* Social Proof / Geographies Row (High-Contrast Protected Backdrop) */}
-            <div className="pt-4 sm:pt-6">
+            {/* Social Proof / Geographies Label Row with Staggered Entry Animation */}
+            <div className="animate-hero-label pt-4 sm:pt-6">
               <div className="inline-flex flex-col items-center rounded-2xl bg-white/95 backdrop-blur-md px-6 py-3 border border-slate-200/90 shadow-xs">
                 <span className="text-[11px] uppercase font-bold text-slate-500 tracking-wider block">
                   Prepared for secondary schools and tutorial centres nationwide
