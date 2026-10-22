@@ -141,22 +141,6 @@ export default function SchoolsPage() {
               </div>
             </div>
           </div>
-
-          {/* Contextual Floating Overlay Badges Anchored to Bottom */}
-          <div className="shell absolute bottom-4 sm:bottom-6 inset-x-0 z-10 w-full flex flex-col sm:flex-row items-center justify-between gap-3 pointer-events-none">
-            <div className="bg-[#17231b]/90 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-2 shadow-lg flex items-center gap-3 pointer-events-auto">
-              <span className="size-2.5 rounded-full bg-[#d6ed9f] animate-pulse" />
-              <div className="text-left">
-                <span className="text-[10px] uppercase font-bold text-[#d8dfd5]/70 block tracking-wider">Synchronized Hall Simulation</span>
-                <span className="text-xs font-bold text-[#f2f3eb] font-mono">120:00 Countdown · Official 8-Key Controls</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 bg-[#17231b]/90 backdrop-blur-md text-[#f2f3eb] border border-white/10 rounded-2xl px-4 py-2 shadow-lg text-xs font-semibold pointer-events-auto">
-              <span className="size-2 rounded-full bg-[#d6ed9f]" />
-              <span>₦1,500 / student / month · Zero lab servers</span>
-            </div>
-          </div>
         </section>
 
         {/* ========================================================
