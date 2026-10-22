@@ -29,28 +29,28 @@ export default function SchoolsPage() {
   return (
     <div className="min-h-screen bg-white text-[#092E28] flex flex-col justify-between selection:bg-emerald-200">
       {/* ========================================================
-          TOP NAVIGATION BAR (Clean with Segmented Switcher)
+          TOP NAVIGATION BAR (Matching Hero Dark Green Background)
          ======================================================== */}
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0b100e]/95 backdrop-blur-md">
         <div className="shell flex h-20 items-center justify-between gap-4">
           {/* Brand + Segmented Toggle */}
           <div className="flex items-center gap-4 shrink-0">
-            <Link href="/" aria-label="JAMBPrep home" className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-[#092E28]">
+            <Link href="/" aria-label="JAMBPrep home" className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-[#f2f3eb]">
               <span className="flex size-9 items-center justify-center rounded-xl bg-[#116149] text-white shadow-xs">
                 <BrandMark size={30} />
               </span>
               <span className="font-bold tracking-tight">JAMBPrep</span>
             </Link>
 
-            {/* Segmented Toggle Pill (like reference screenshot) */}
-            <div className="hidden sm:inline-flex items-center rounded-full bg-slate-100 p-1 border border-slate-200 text-xs font-semibold">
+            {/* Segmented Toggle Pill */}
+            <div className="hidden sm:inline-flex items-center rounded-full bg-[#17231b] p-1 border border-white/10 text-xs font-semibold">
               <Link 
                 href="/" 
-                className="px-3.5 py-1 rounded-full text-slate-500 hover:text-slate-900 transition whitespace-nowrap"
+                className="px-3.5 py-1 rounded-full text-[#d8dfd5] hover:text-white transition whitespace-nowrap"
               >
                 Candidates
               </Link>
-              <span className="px-3.5 py-1 rounded-full bg-white text-[#092E28] shadow-xs font-bold whitespace-nowrap">
+              <span className="px-3.5 py-1 rounded-full bg-white/15 text-[#f2f3eb] shadow-xs font-bold whitespace-nowrap">
                 For Schools
               </span>
             </div>
@@ -60,7 +60,7 @@ export default function SchoolsPage() {
           <div className="flex items-center gap-3 shrink-0">
             <Link
               href="/schools/register"
-              className="rounded-full bg-slate-900 px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-[#116149] transition-colors whitespace-nowrap"
+              className="rounded-full bg-[#d6ed9f] px-5 py-2.5 text-xs sm:text-sm font-semibold text-[#182518] shadow-xs hover:bg-[#e4f5bb] transition-colors whitespace-nowrap"
             >
               Register School
             </Link>
