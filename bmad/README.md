@@ -81,7 +81,7 @@ User requested a plan and another-agent handoff for Account/My profile Schedule:
 
 ## Completed: Offline PWA, Study Schedule, UI Shimmers & Mobile CBT Redesign — 21–22 October 2026
 
-The following capabilities have been fully built, verified with 25 unit/integration tests, and deployed live to production Cloudflare Pages (`https://jambprep.pages.dev`):
+The following capabilities have been fully built, verified with 25 unit/integration tests, and deployed to the Cloudflare Pages development server (`https://jambprep.pages.dev`):
 
 1. **Offline PWA & Profile Cache**:
    - `src/lib/offline/offline-profile-cache.ts` provides multi-actor isolated caching of user profile, enrolled subjects, streaks, and subscription validity (`expiresAt > now`) with device clock tamper protection.

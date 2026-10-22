@@ -243,5 +243,5 @@ User instructed and approved implementation of offline profile caching, PWA upda
 - **Test Suite**: 25/25 automated unit and regression tests passing (`npm test`).
 - **Static Export**: 45/45 static pages cleanly compiled and verified (`npm run build`).
 - **Git Commit**: `8dcf5ac` pushed to `origin main`.
-- **Live Deployment**: Successfully deployed to Cloudflare Pages (`https://5f971e24.jambprep.pages.dev` and `jambprep.pages.dev`).
+- **Dev Deployment**: Successfully deployed to Cloudflare Pages dev server (`https://5f971e24.jambprep.pages.dev` and `jambprep.pages.dev`).
 
