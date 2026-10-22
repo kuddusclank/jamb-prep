@@ -7,7 +7,9 @@ export function SchoolsScrollObserver() {
     // Enable scroll reveal styles smoothly
     document.documentElement.classList.add("animations-ready");
 
-    const elements = document.querySelectorAll(".reveal-on-scroll");
+    const elements = document.querySelectorAll(
+      ".reveal-on-scroll, .reveal-from-left, .reveal-from-right"
+    );
     if (!elements.length) return;
 
     // Reveal any elements already within the viewport or shortly ahead

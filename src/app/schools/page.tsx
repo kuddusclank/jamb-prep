@@ -107,11 +107,11 @@ export default function SchoolsPage() {
         {/* ========================================================
             FULL-WIDTH FEATURE 1: Computer Lab CBT Simulator
            ======================================================== */}
-        <section id="lab-simulator" className="border-t border-slate-200/80 bg-white py-16 sm:py-24">
+        <section id="lab-simulator" className="border-t border-slate-200/80 bg-white py-16 sm:py-24 overflow-hidden">
           <div className="shell">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
-              {/* Image Left */}
-              <div className="lg:col-span-6 order-2 lg:order-1 relative reveal-on-scroll">
+              {/* Image Left (Slides from Left) */}
+              <div className="lg:col-span-6 order-2 lg:order-1 relative reveal-from-left">
                 <div className="rounded-3xl overflow-hidden border border-slate-200 bg-slate-100 shadow-lg">
                   <img
                     src="/images/schools/hero-lab.jpg"
@@ -143,8 +143,8 @@ export default function SchoolsPage() {
                 </div>
               </div>
 
-              {/* Content Right */}
-              <div className="lg:col-span-6 order-1 lg:order-2 space-y-5 reveal-on-scroll reveal-delay-150">
+              {/* Content Right (Slides from Right) */}
+              <div className="lg:col-span-6 order-1 lg:order-2 space-y-5 reveal-from-right reveal-delay-150">
                 <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#116149]">
                   <Monitor size={15} />
                   <span>Lab & Browser Ready</span>
@@ -203,11 +203,11 @@ export default function SchoolsPage() {
         {/* ========================================================
             FULL-WIDTH FEATURE 2: Teacher Diagnostics & Syllabus Heatmap
            ======================================================== */}
-        <section id="syllabus-diagnostics" className="border-t border-slate-200/80 bg-[#FBFDFB] py-16 sm:py-24">
+        <section id="syllabus-diagnostics" className="border-t border-slate-200/80 bg-[#FBFDFB] py-16 sm:py-24 overflow-hidden">
           <div className="shell">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
-              {/* Content Left */}
-              <div className="lg:col-span-6 space-y-5 reveal-on-scroll">
+              {/* Content Left (Slides from Left) */}
+              <div className="lg:col-span-6 space-y-5 reveal-from-left">
                 <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#116149]">
                   <BarChart3 size={15} />
                   <span>Syllabus Remedial Radar</span>
@@ -260,8 +260,8 @@ export default function SchoolsPage() {
                 </div>
               </div>
 
-              {/* Visual Right: Teacher Photograph + Simulated Diagnostic Heatmap Card */}
-              <div className="lg:col-span-6 relative reveal-on-scroll reveal-delay-150">
+              {/* Visual Right: Teacher Photograph + Simulated Diagnostic Heatmap Card (Slides from Right) */}
+              <div className="lg:col-span-6 relative reveal-from-right reveal-delay-150">
                 <div className="rounded-3xl overflow-hidden border border-slate-200 bg-slate-100 shadow-lg">
                   <img
                     src="/images/schools/teacher-diagnostics.jpg"
@@ -305,11 +305,11 @@ export default function SchoolsPage() {
         {/* ========================================================
             FULL-WIDTH FEATURE 3: Lab to Living Room Mobile Continuity
            ======================================================== */}
-        <section id="mobile-continuity" className="border-t border-slate-200/80 bg-white py-16 sm:py-24">
+        <section id="mobile-continuity" className="border-t border-slate-200/80 bg-white py-16 sm:py-24 overflow-hidden">
           <div className="shell">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
-              {/* Image Left */}
-              <div className="lg:col-span-6 relative reveal-on-scroll">
+              {/* Image Left (Slides from Left) */}
+              <div className="lg:col-span-6 relative reveal-from-left">
                 <div className="rounded-3xl overflow-hidden border border-slate-200 bg-slate-100 shadow-lg">
                   <img
                     src="/images/schools/student-mobile-study.jpg"
@@ -333,8 +333,8 @@ export default function SchoolsPage() {
                 </div>
               </div>
 
-              {/* Content Right */}
-              <div className="lg:col-span-6 space-y-5 reveal-on-scroll reveal-delay-150">
+              {/* Content Right (Slides from Right) */}
+              <div className="lg:col-span-6 space-y-5 reveal-from-right reveal-delay-150">
                 <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#116149]">
                   <Smartphone size={15} />
                   <span>Lab to Living Room</span>

@@ -203,14 +203,36 @@ select[aria-invalid="true"] { border-color: #dc2626; }
   transform: translateY(32px);
 }
 
+.animations-ready .reveal-from-left:not(.is-revealed) {
+  opacity: 0;
+  transform: translateX(-56px);
+}
+
+.animations-ready .reveal-from-right:not(.is-revealed) {
+  opacity: 0;
+  transform: translateX(56px);
+}
+
 .reveal-on-scroll {
   transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.reveal-from-left,
+.reveal-from-right {
+  transition: opacity 0.95s cubic-bezier(0.16, 1, 0.3, 1), transform 0.95s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
 
 .reveal-on-scroll.is-revealed {
   opacity: 1;
   transform: translateY(0);
+}
+
+.reveal-from-left.is-revealed,
+.reveal-from-right.is-revealed {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .reveal-delay-100 { transition-delay: 100ms; }
@@ -227,7 +249,9 @@ select[aria-invalid="true"] { border-color: #dc2626; }
   .animate-hero-subhead,
   .animate-hero-actions,
   .animate-hero-label,
-  .reveal-on-scroll {
+  .reveal-on-scroll,
+  .reveal-from-left,
+  .reveal-from-right {
     animation: none !important;
     transition: none !important;
     opacity: 1 !important;
