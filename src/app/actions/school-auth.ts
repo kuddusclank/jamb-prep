@@ -59,6 +59,9 @@ export async function schoolSignUpAction(
   const supabase = await createClient();
   const adminClient = createAdminClient();
 
+  const code = generateSchoolCode(schoolName);
+  const slug = generateSchoolSlug(schoolName);
+
   let userId: string;
 
   // Path A: Admin API bypasses email confirmation for immediate frictionless onboarding
@@ -72,6 +75,7 @@ export async function schoolSignUpAction(
         display_name: adminName,
         school_name: schoolName,
         school_type: schoolType,
+        school_code: code,
         state,
       },
     });
@@ -110,6 +114,7 @@ export async function schoolSignUpAction(
           display_name: adminName,
           school_name: schoolName,
           school_type: schoolType,
+          school_code: code,
           state,
         },
       },
@@ -149,9 +154,6 @@ export async function schoolSignUpAction(
       });
 
     // 2. Create School Tenant Record
-    const code = generateSchoolCode(schoolName);
-    const slug = generateSchoolSlug(schoolName);
-
     const [newSchool] = await db
       .insert(schools)
       .values({

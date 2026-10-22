@@ -140,9 +140,21 @@ export default function SchoolLoginPage() {
             </p>
 
             {error && (
-              <div role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-medium text-red-800 flex items-start gap-2.5">
-                <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />
-                <span>{error}</span>
+              <div role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-medium text-red-800 space-y-2">
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />
+                  <span className="flex-1">{error}</span>
+                </div>
+                {error.toLowerCase().includes("student") && (
+                  <div className="pt-1 border-t border-red-200/60 pl-6">
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center gap-1.5 font-bold text-red-900 underline hover:text-black transition"
+                    >
+                      Go to Candidate / Student Login Portal <ArrowRight size={13} />
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
 

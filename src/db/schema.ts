@@ -546,3 +546,36 @@ export const schoolStudents = pgTable('school_students', {
   uniqueIndex('school_students_unique_user_idx').on(table.schoolId, table.studentUserId),
   index('school_students_school_license_idx').on(table.schoolId, table.licenseStatus),
 ]).enableRLS();
+
+export const schoolOrders = pgTable('school_orders', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  schoolId: uuid('school_id').references(() => schools.id, { onDelete: 'cascade' }).notNull(),
+  reference: text('reference').notNull().unique(), // Paystack reference e.g. SCH-ORD-...
+  studentCount: integer('student_count').notNull(),
+  durationMonths: integer('duration_months').notNull(),
+  ratePerStudentKobo: integer('rate_per_student_kobo').default(150000).notNull(), // ₦1,500
+  totalAmountKobo: integer('total_amount_kobo').notNull(),
+  status: text('status').default('pending').notNull(), // 'pending' | 'processing' | 'completed' | 'failed'
+  paystackPayload: jsonb('paystack_payload'),
+  metadata: jsonb('metadata'), // Array of target student user IDs
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  settledAt: timestamp('settled_at', { withTimezone: true }),
+}, (table) => [
+  uniqueIndex('school_orders_reference_idx').on(table.reference),
+  index('school_orders_school_idx').on(table.schoolId),
+]).enableRLS();
+
+export const schoolActivationJobs = pgTable('school_activation_jobs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  orderId: uuid('order_id').references(() => schoolOrders.id, { onDelete: 'cascade' }).notNull(),
+  studentUserId: uuid('student_user_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
+  durationMonths: integer('duration_months').notNull(),
+  status: text('status').default('queued').notNull(), // 'queued' | 'processing' | 'completed' | 'failed'
+  retryCount: integer('retry_count').default(0).notNull(),
+  lastError: text('last_error'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('school_activation_jobs_order_idx').on(table.orderId),
+  index('school_activation_jobs_status_idx').on(table.status),
+]).enableRLS();

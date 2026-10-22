@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
 import { useBrowserAccount } from "@/components/browser-account-boundary";
-import { ArrowRight, Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2, Sparkles, Building2 } from "lucide-react";
 
 function RegisterFormContent() {
   const router = useRouter();
@@ -12,12 +12,13 @@ function RegisterFormContent() {
   const recovering = account.session.status === "authenticated";
   const searchParams = useSearchParams();
   const initialReferralCode = searchParams.get("ref") || "";
+  const schoolCode = searchParams.get("school") || "";
   const queryError = searchParams.get("error");
 
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [referralCode, setReferralCode] = useState(initialReferralCode);
+  const [referralCode, setReferralCode] = useState(initialReferralCode || (schoolCode ? schoolCode : ""));
   const [showPassword, setShowPassword] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +69,21 @@ function RegisterFormContent() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5" aria-busy={isPending}>
-      {initialReferralCode && (
+      {schoolCode && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3.5 text-xs text-[#092E28] flex items-center gap-3">
+          <div className="size-8 rounded-xl bg-[#116149] text-white flex items-center justify-center shrink-0 shadow-xs">
+            <Building2 size={16} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="font-semibold block text-slate-900">Institutional Cohort Enrolment</span>
+            <span className="text-slate-600 truncate block text-[11px]">
+              Registering candidate under School Code: <strong className="font-mono font-bold text-[#116149]">{schoolCode.toUpperCase()}</strong>
+            </span>
+          </div>
+        </div>
+      )}
+
+      {initialReferralCode && !schoolCode && (
         <div className="mb-4 rounded-2xl bg-[#F8F2DF] border border-amber-300/40 p-3.5 flex items-start gap-3">
           <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
             <Sparkles size={14} />

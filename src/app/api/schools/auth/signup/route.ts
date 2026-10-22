@@ -61,6 +61,9 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const adminClient = createAdminClient();
 
+    const code = generateSchoolCode(schoolName);
+    const slug = generateSchoolSlug(schoolName);
+
     let userId: string;
 
     if (adminClient) {
@@ -73,6 +76,7 @@ export async function POST(request: Request) {
           display_name: adminName,
           school_name: schoolName,
           school_type: schoolType,
+          school_code: code,
           state,
         },
       });
@@ -118,6 +122,7 @@ export async function POST(request: Request) {
             display_name: adminName,
             school_name: schoolName,
             school_type: schoolType,
+            school_code: code,
             state,
           },
         },
@@ -156,9 +161,6 @@ export async function POST(request: Request) {
             displayName: adminName,
           },
         });
-
-      const code = generateSchoolCode(schoolName);
-      const slug = generateSchoolSlug(schoolName);
 
       const [newSchool] = await db
         .insert(schools)

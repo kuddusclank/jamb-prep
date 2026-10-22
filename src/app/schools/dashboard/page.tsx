@@ -54,8 +54,20 @@ export default function SchoolDashboardPage() {
   const schoolName = (user?.user_metadata?.school_name as string) || "Institutional Partner";
   const state = (user?.user_metadata?.state as string) || "Lagos";
   const schoolType = (user?.user_metadata?.school_type as string) || "secondary_school";
-  const schoolCode = user ? "SCH-XYZ" + user.id.slice(0, 4).toUpperCase() : "SCH-XYZ0000";
+  const schoolCode = (user?.user_metadata?.school_code as string) || (user?.id ? "SCH-XYZ" + user.id.slice(0, 4).toUpperCase() : "SCH-XYZ0000");
   const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL || "https://jambprep.com"}/register?school=${schoolCode}`;
+
+  const handleCopyInviteLink = async () => {
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(inviteLink);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      }
+    } catch (e) {
+      console.warn("Failed to copy link:", e);
+    }
+  };
 
   // Mock initial demo roster to demonstrate the ingestion pathways and password rules
   const demoStudents = [
@@ -175,8 +187,26 @@ export default function SchoolDashboardPage() {
             <div className="text-[11px] text-[#d8dfd5]/80">
               Share this code or registration link with students for instant roster enrollment:
             </div>
-            <div className="flex items-center gap-2 rounded-xl bg-black/30 px-3 py-2 text-xs font-mono text-[#d8dfd5] border border-white/10">
-              <span className="truncate">{inviteLink}</span>
+            <div className="flex items-center gap-2 rounded-xl bg-black/30 p-2 text-xs font-mono text-[#d8dfd5] border border-white/10">
+              <span className="truncate flex-1 pl-1 text-[11px]">{inviteLink}</span>
+              <button
+                type="button"
+                onClick={handleCopyInviteLink}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-xs hover:bg-emerald-500 transition cursor-pointer"
+                title="Copy student invite link"
+              >
+                {copied ? (
+                  <>
+                    <CheckCircle2 size={13} className="text-emerald-100" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={13} />
+                    <span>Copy Link</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

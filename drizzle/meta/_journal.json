@@ -22,6 +22,13 @@
       "when": 1791652645958,
       "tag": "0002_secure-server-only-tables",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792701833545,
+      "tag": "0003_low_morgan_stark",
+      "breakpoints": true
     }
   ]
 }

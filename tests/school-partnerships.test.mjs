@@ -186,3 +186,55 @@ test("School Auth API: Endpoints exist and are correctly registered", () => {
   }
 });
 
+test("Stage 2 BMAD Schema: Complete tables for schools, members, students, orders, and activation jobs", () => {
+  const schemaFile = path.join(ROOT, "src/db/schema.ts");
+  const source = fs.readFileSync(schemaFile, "utf8");
+
+  assert.ok(source.includes("export const schools = pgTable('schools'"));
+  assert.ok(source.includes("export const schoolMembers = pgTable('school_members'"));
+  assert.ok(source.includes("export const schoolStudents = pgTable('school_students'"));
+  assert.ok(source.includes("export const schoolOrders = pgTable('school_orders'"));
+  assert.ok(source.includes("export const schoolActivationJobs = pgTable('school_activation_jobs'"));
+
+  // Check SQL migration file exists
+  const migrationFile = path.join(ROOT, "drizzle/0015_school_partnerships.sql");
+  assert.ok(fs.existsSync(migrationFile), "Expected migration 0015_school_partnerships.sql to exist");
+});
+
+test("Stage 3 School Link Bridge: Candidate register detects ?school= and binds cohort badge", () => {
+  const registerFormFile = path.join(ROOT, "src/app/register/register-form.tsx");
+  const source = fs.readFileSync(registerFormFile, "utf8");
+
+  assert.ok(
+    source.includes('searchParams.get("school")'),
+    "Expected register-form to read searchParams.get('school')"
+  );
+  assert.ok(
+    source.includes("Institutional Cohort Enrolment"),
+    "Expected institutional cohort enrolment badge on candidate registration"
+  );
+});
+
+test("Stage 3 School Portal Shell: Interactive invite link copy button and candidate login redirection", () => {
+  const dashboardFile = path.join(ROOT, "src/app/schools/dashboard/page.tsx");
+  const dashSource = fs.readFileSync(dashboardFile, "utf8");
+
+  assert.ok(
+    dashSource.includes("handleCopyInviteLink"),
+    "Expected interactive copy invite link handler"
+  );
+  assert.ok(
+    dashSource.includes("navigator.clipboard.writeText"),
+    "Expected clipboard copy integration"
+  );
+
+  const loginFile = path.join(ROOT, "src/app/schools/login/page.tsx");
+  const loginSource = fs.readFileSync(loginFile, "utf8");
+
+  assert.ok(
+    loginSource.includes("Go to Candidate / Student Login Portal"),
+    "Expected actionable student login link on student error notice"
+  );
+});
+
+
