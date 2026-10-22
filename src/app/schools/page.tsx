@@ -73,16 +73,20 @@ export default function SchoolsPage() {
             HERO SECTION (Centered & Balanced at Exact Viewport Height)
            ======================================================== */}
         <section className="relative h-[calc(100dvh-5rem)] min-h-[640px] flex flex-col items-center justify-center text-center overflow-hidden bg-slate-50 px-4">
-          {/* Full-Bleed Lab Image Background (No School Name on Walls) */}
+          {/* Full-Bleed Lab Image Background (Optimized WebP with Progressive JPG fallback) */}
           <div className="absolute inset-0 z-0 pointer-events-none select-none">
-            <img
-              src="/images/schools/hero-backdrop.jpg"
-              alt="Modern CBT computer examination laboratory with secondary school students"
-              className="w-full h-full object-cover object-bottom"
-              width={1800}
-              height={1000}
-              loading="eager"
-            />
+            <picture className="w-full h-full block">
+              <source srcSet="/images/schools/hero-backdrop.webp" type="image/webp" />
+              <img
+                src="/images/schools/hero-backdrop.jpg"
+                alt="Modern CBT computer examination laboratory with secondary school students"
+                className="w-full h-full object-cover object-bottom"
+                width={1800}
+                height={1000}
+                loading="eager"
+                fetchPriority="high"
+              />
+            </picture>
             {/* Pure white top backdrop transitioning smoothly to reveal lab in lower half */}
             <div className="absolute inset-0 bg-gradient-to-b from-white via-white via-50% to-white/10" />
             {/* Bottom blend into the subsequent content */}
