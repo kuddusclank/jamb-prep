@@ -4,7 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { PolicyLinks } from "@/components/legal-page";
-import { ArrowLeft, Building2, ShieldCheck, ArrowRight } from "lucide-react";
+import { 
+  ArrowLeft, 
+  ArrowUpRight, 
+  Check, 
+  Target, 
+  ShieldCheck, 
+  ArrowRight,
+  Eye, 
+  EyeOff 
+} from "lucide-react";
 
 const NIGERIAN_STATES = [
   "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno", 
@@ -24,6 +33,7 @@ export default function SchoolRegisterPage() {
     password: "",
   });
 
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -34,175 +44,255 @@ export default function SchoolRegisterPage() {
     setTimeout(() => {
       setLoading(false);
       setSubmitted(true);
-    }, 700);
+    }, 600);
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAF7] text-[#092E28] flex flex-col justify-between">
-      <header className="shell flex h-16 items-center justify-between py-4">
-        <Link href="/schools" aria-label="JAMBPrep schools home" className="flex items-center gap-2 text-lg font-bold tracking-tight">
-          <span className="flex size-8 items-center justify-center rounded-xl bg-[#116149] text-white">
-            <BrandMark size={28} />
+    <div className="min-h-screen bg-[#fafbf7] text-[#092E28]">
+      {/* Header matching student auth-shell */}
+      <header className="shell flex min-h-24 items-center justify-between gap-4 py-4">
+        <Link 
+          href="/schools" 
+          aria-label="JAMBPrep schools home" 
+          className="flex items-center gap-2 text-xl font-bold tracking-tight"
+        >
+          <span className="flex size-9 items-center justify-center rounded-xl bg-[#116149] text-white">
+            <BrandMark size={36} />
           </span>
           <span>JAMBPrep</span>
-          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+          <span className="ml-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-[#116149]">
             For Schools
           </span>
         </Link>
-        <Link
-          href="/schools/login"
-          className="text-xs font-semibold text-slate-700 hover:text-slate-900 px-3 py-1.5 transition"
+        <Link 
+          href="/schools/login" 
+          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-emerald-950/15 px-4 text-sm font-semibold hover:bg-white transition"
         >
-          Already registered? Sign In
+          Sign in to portal <ArrowUpRight size={15} />
         </Link>
       </header>
 
-      <main className="shell flex-1 flex items-center justify-center py-10">
-        <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm">
-          <Link href="/schools" className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 mb-6 transition">
-            <ArrowLeft size={13} /> Back to overview
-          </Link>
-
-          <div className="mb-6">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#116149]">
-              INSTITUTIONAL ONBOARDING
-            </span>
-            <h1 className="text-2xl font-bold text-[#092E28] mt-1">
-              Register Your School
-            </h1>
-            <p className="text-xs text-slate-500 mt-1">
-              Create an administrative account to enroll students, generate school invite codes, and track mock results.
+      {/* Main 2-column grid matching student auth-shell */}
+      <main className="shell grid items-start gap-10 pb-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-20">
+        {/* Left Editorial Card matching AuthShell */}
+        <aside className="relative hidden min-w-0 flex-col gap-10 self-start rounded-[2rem] bg-[#102f29] p-10 text-white lg:flex xl:p-12 shadow-xl">
+          <div className="entrance">
+            <p className="text-[11px] font-semibold tracking-[.16em] text-[#e7b85a]">
+              INSTITUTIONAL COHORT LICENSING
+            </p>
+            <h2 className="mt-8 text-5xl leading-[1.12] font-medium tracking-tight">
+              Equip your hall.<br />
+              <span className="serif-accent text-[#e7b85a]">Empower every candidate.</span>
+            </h2>
+            <p className="mt-6 max-w-sm leading-relaxed text-emerald-50/75">
+              Transform your school computer lab into an authentic UTME mock examination centre with unified scoring and real-time teacher diagnostics.
             </p>
           </div>
 
-          {submitted ? (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-5 text-center space-y-3">
-              <div className="size-10 rounded-full bg-[#116149] text-white flex items-center justify-center mx-auto">
-                <ShieldCheck size={20} />
-              </div>
-              <h3 className="text-base font-bold text-[#092E28]">School Registered</h3>
-              <p className="text-xs text-slate-600">
-                Administrative account created for <strong>{formData.schoolName || "your institution"}</strong>.
-              </p>
-              <div className="pt-2">
-                <Link
-                  href="/schools/login"
-                  className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full bg-[#116149] px-4 text-xs font-semibold text-white shadow-sm hover:bg-[#0c4a37] transition"
-                >
-                  Proceed to School Sign In <ArrowRight size={14} />
-                </Link>
-              </div>
+          <div className="entrance delay-2 rounded-2xl border border-white/15 bg-white/5 p-6">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">3 simple steps to lab launch</p>
+              <Target size={18} className="text-[#e7b85a]" />
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  School or Institution Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. King's College Lagos"
-                  value={formData.schoolName}
-                  onChange={(e) => setFormData({ ...formData, schoolName: e.target.value })}
-                  className="w-full text-xs text-[#092E28] px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#116149]"
-                />
-              </div>
+            <ol className="mt-6 space-y-5">
+              {[
+                "Register your school or tutorial centre",
+                "Import your student roster (CSV, manual, or invite link)",
+                "Activate cohort licenses with one-time Paystack checkout"
+              ].map((step, index) => (
+                <li key={step} className="flex items-center gap-3 text-sm text-emerald-50/90">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-white/20 text-xs text-[#e7b85a]">
+                    0{index + 1}
+                  </span>
+                  {step}
+                </li>
+              ))}
+            </ol>
+          </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Institution Type
-                  </label>
-                  <select
-                    value={formData.schoolType}
-                    onChange={(e) => setFormData({ ...formData, schoolType: e.target.value })}
-                    className="w-full text-xs text-[#092E28] px-2.5 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-[#116149]"
+          <p className="flex items-center gap-2 text-xs text-emerald-50/70">
+            <Check size={15} />
+            ₦1,500 / student / month · Zero lab servers required.
+          </p>
+        </aside>
+
+        {/* Right Form Section matching AuthShell */}
+        <section className="entrance delay-1 flex min-w-0 flex-col self-start py-5 sm:py-8 lg:pr-8">
+          <div className="mx-auto w-full max-w-md">
+            <Link 
+              href="/schools" 
+              className="mb-8 inline-flex min-h-11 items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-800 transition"
+            >
+              <ArrowLeft size={14} /> Back to schools overview
+            </Link>
+
+            <p className="eyebrow">INSTITUTIONAL ONBOARDING</p>
+            <h1 className="mt-4 text-4xl leading-tight font-semibold tracking-[-.045em] sm:text-5xl">
+              Register your<br />
+              <span className="serif-accent text-[#116149]">school or centre.</span>
+            </h1>
+            <p className="mt-4 mb-8 text-sm leading-relaxed text-slate-600">
+              Create an administrative account to enroll students, conduct synchronized computer lab mocks, and track syllabus diagnostics.
+            </p>
+
+            {submitted ? (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6 text-center space-y-4">
+                <div className="size-12 rounded-full bg-[#116149] text-white flex items-center justify-center mx-auto shadow-md">
+                  <ShieldCheck size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-[#092E28]">Institution Registered!</h3>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Administrative portal account created for <strong>{formData.schoolName || "your institution"}</strong>. You can now sign in and set up your student cohort.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    href="/schools/login"
+                    className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#116149] px-6 text-sm font-semibold text-white shadow-md hover:bg-[#0c4a37] transition"
                   >
-                    <option value="secondary_school">Secondary School</option>
-                    <option value="tutorial_centre">Tutorial Centre</option>
-                    <option value="college">College / Academy</option>
-                  </select>
+                    Proceed to School Portal <ArrowRight size={15} />
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    School or Institution Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. King's College Lagos"
+                    value={formData.schoolName}
+                    onChange={(e) => setFormData({ ...formData, schoolName: e.target.value })}
+                    className="w-full min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                      Institution Type
+                    </label>
+                    <select
+                      value={formData.schoolType}
+                      onChange={(e) => setFormData({ ...formData, schoolType: e.target.value })}
+                      className="w-full min-h-12 rounded-xl border border-slate-300 bg-white px-3 text-sm text-[#092E28] focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors cursor-pointer"
+                    >
+                      <option value="secondary_school">Secondary School</option>
+                      <option value="tutorial_centre">Tutorial Centre</option>
+                      <option value="cbt_training_hub">CBT Training Centre</option>
+                      <option value="state_ministry_partner">Government / NGO Cohort</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                      State *
+                    </label>
+                    <select
+                      value={formData.state}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                      className="w-full min-h-12 rounded-xl border border-slate-300 bg-white px-3 text-sm text-[#092E28] focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors cursor-pointer"
+                    >
+                      {NIGERIAN_STATES.map((st) => (
+                        <option key={st} value={st}>
+                          {st}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    State *
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Administrator / Principal Full Name *
                   </label>
-                  <select
-                    value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    className="w-full text-xs text-[#092E28] px-2.5 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-[#116149]"
-                  >
-                    {NIGERIAN_STATES.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Dr. Olumide Adeleke"
+                    value={formData.adminName}
+                    onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}
+                    className="w-full min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
+                  />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Administrator / Principal Full Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Dr. Olumide Adeleke"
-                  value={formData.adminName}
-                  onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}
-                  className="w-full text-xs text-[#092E28] px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#116149]"
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Official Admin Email *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="admin@school.edu.ng"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Admin Official Email *
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder="admin@school.edu.ng"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full text-xs text-[#092E28] px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#116149]"
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Administrative Password *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      minLength={8}
+                      placeholder="At least 8 characters"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="w-full min-h-12 rounded-xl border border-slate-300 bg-white pl-4 pr-11 text-sm text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 flex size-9 items-center justify-center text-slate-400 hover:text-slate-700 transition"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Administrative Password *
-                </label>
-                <input
-                  type="password"
-                  required
-                  placeholder="At least 8 characters"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full text-xs text-[#092E28] px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#116149]"
-                />
-              </div>
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#116149] px-6 text-sm font-semibold text-white shadow-md hover:bg-[#0c4a37] disabled:opacity-50 transition cursor-pointer"
+                  >
+                    {loading ? "Creating School Account..." : "Create School Account"}
+                    {!loading && <ArrowRight size={15} />}
+                  </button>
+                </div>
+              </form>
+            )}
 
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full min-h-11 rounded-full bg-[#116149] text-xs font-semibold text-white shadow-sm hover:bg-[#0c4a37] transition disabled:opacity-60"
-                >
-                  {loading ? "Creating School Account..." : "Create School Account"}
-                </button>
-              </div>
+            <p className="mt-7 border-t border-emerald-950/10 pt-6 text-sm text-slate-600">
+              Already registered your school?{" "}
+              <Link 
+                href="/schools/login" 
+                className="font-semibold text-[#116149] underline decoration-emerald-800/30 underline-offset-4"
+              >
+                Sign in to school portal
+              </Link>
+            </p>
 
-              <p className="text-[11px] text-slate-400 text-center pt-2">
-                By registering, you agree to JAMBPrep’s institutional terms. Student records are encrypted and protected.
-              </p>
-            </form>
-          )}
-        </div>
+            <p className="mt-4 text-xs leading-relaxed text-slate-500">
+              Institutional data is strictly encrypted. Student performance analytics are private to your registered school administrators.
+            </p>
+
+            <PolicyLinks className="mt-6 text-xs text-slate-500" />
+          </div>
+        </section>
       </main>
 
-      <footer className="shell py-6 text-center text-xs text-slate-400">
-        <PolicyLinks className="justify-center" />
+      {/* Footer matching student auth-shell */}
+      <footer className="shell flex flex-col gap-4 pb-6 text-xs leading-relaxed text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <span>JAMBPrep for Schools · Institutional UTME examination & diagnostics platform.</span>
+        <PolicyLinks />
       </footer>
     </div>
   );
