@@ -4,6 +4,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { PolicyLinks } from "@/components/legal-page";
 import { pageMetadata } from "@/lib/seo";
 import { SchoolsNavClient } from "./schools-nav-client";
+import { SchoolsScrollObserver } from "./schools-scroll-observer";
 import { 
   CheckCircle2, 
   XCircle, 
@@ -31,6 +32,8 @@ export default function SchoolsPage() {
     <div className="min-h-screen bg-white text-[#092E28] flex flex-col justify-between selection:bg-emerald-200">
       {/* Floating elevated navbar with transparent initial state */}
       <SchoolsNavClient />
+      {/* Client scroll intersection observer for fluid on-scroll reveals */}
+      <SchoolsScrollObserver />
 
       <main id="main" className="flex-1">
         {/* ========================================================
@@ -39,7 +42,7 @@ export default function SchoolsPage() {
         <section className="relative min-h-[100dvh] pt-20 pb-12 flex flex-col items-center justify-center text-center overflow-hidden bg-[#0b100e] px-4">
           {/* Full-Bleed Lab Image Background with LecternIQ Dark Green Tint */}
           <div className="absolute inset-0 z-0 pointer-events-none select-none">
-            <picture className="w-full h-full block">
+            <picture className="w-full h-full block animate-hero-bg">
               <source srcSet="/images/schools/hero-backdrop.webp" type="image/webp" />
               <img
                 src="/images/schools/hero-backdrop.jpg"
@@ -114,7 +117,7 @@ export default function SchoolsPage() {
           <div className="shell">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
               {/* Image Left */}
-              <div className="lg:col-span-6 order-2 lg:order-1 relative">
+              <div className="lg:col-span-6 order-2 lg:order-1 relative reveal-on-scroll">
                 <div className="rounded-3xl overflow-hidden border border-slate-200 bg-slate-100 shadow-lg">
                   <img
                     src="/images/schools/hero-lab.jpg"
@@ -147,7 +150,7 @@ export default function SchoolsPage() {
               </div>
 
               {/* Content Right */}
-              <div className="lg:col-span-6 order-1 lg:order-2 space-y-5">
+              <div className="lg:col-span-6 order-1 lg:order-2 space-y-5 reveal-on-scroll reveal-delay-150">
                 <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#116149]">
                   <Monitor size={15} />
                   <span>Lab & Browser Ready</span>
@@ -210,7 +213,7 @@ export default function SchoolsPage() {
           <div className="shell">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
               {/* Content Left */}
-              <div className="lg:col-span-6 space-y-5">
+              <div className="lg:col-span-6 space-y-5 reveal-on-scroll">
                 <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#116149]">
                   <BarChart3 size={15} />
                   <span>Syllabus Remedial Radar</span>
@@ -264,7 +267,7 @@ export default function SchoolsPage() {
               </div>
 
               {/* Visual Right: Teacher Photograph + Simulated Diagnostic Heatmap Card */}
-              <div className="lg:col-span-6 relative">
+              <div className="lg:col-span-6 relative reveal-on-scroll reveal-delay-150">
                 <div className="rounded-3xl overflow-hidden border border-slate-200 bg-slate-100 shadow-lg">
                   <img
                     src="/images/schools/teacher-diagnostics.jpg"
@@ -312,7 +315,7 @@ export default function SchoolsPage() {
           <div className="shell">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
               {/* Image Left */}
-              <div className="lg:col-span-6 relative">
+              <div className="lg:col-span-6 relative reveal-on-scroll">
                 <div className="rounded-3xl overflow-hidden border border-slate-200 bg-slate-100 shadow-lg">
                   <img
                     src="/images/schools/student-mobile-study.jpg"
@@ -337,7 +340,7 @@ export default function SchoolsPage() {
               </div>
 
               {/* Content Right */}
-              <div className="lg:col-span-6 space-y-5">
+              <div className="lg:col-span-6 space-y-5 reveal-on-scroll reveal-delay-150">
                 <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#116149]">
                   <Smartphone size={15} />
                   <span>Lab to Living Room</span>
@@ -397,7 +400,7 @@ export default function SchoolsPage() {
             DIRECT COMPARISON MATRIX (High-End SaaS Differences Table)
            ======================================================== */}
         <section id="comparison" className="shell py-20 sm:py-28 border-t border-slate-200/80 bg-slate-50/50">
-          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16 space-y-3">
+          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16 space-y-3 reveal-on-scroll">
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-100 text-[#116149] text-xs font-bold uppercase tracking-wider">
               <Sparkles size={13} />
               <span>Institutional Capability Comparison</span>
@@ -410,7 +413,7 @@ export default function SchoolsPage() {
             </p>
           </div>
 
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-5xl mx-auto reveal-on-scroll reveal-delay-150">
             <div className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[780px]">
@@ -569,7 +572,7 @@ export default function SchoolsPage() {
             COMMON FAQS (Modern Accordion UI with Clean Details)
            ======================================================== */}
         <section id="faqs" className="shell py-20 sm:py-28 border-t border-slate-200/80 bg-white">
-          <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 space-y-3">
+          <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 space-y-3 reveal-on-scroll">
             <span className="text-xs font-bold uppercase tracking-wider text-[#116149]">Institutional FAQs</span>
             <h2 className="text-3xl sm:text-5xl font-serif font-normal text-[#092E28] tracking-tight">
               Frequently asked questions.
@@ -579,7 +582,7 @@ export default function SchoolsPage() {
             </p>
           </div>
 
-          <div className="max-w-3xl mx-auto space-y-3.5">
+          <div className="max-w-3xl mx-auto space-y-3.5 reveal-on-scroll reveal-delay-150">
             <details className="group rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 transition-all duration-200 hover:border-slate-300 open:border-emerald-200 open:bg-emerald-50/20 open:shadow-xs">
               <summary className="flex cursor-pointer items-center justify-between text-base font-semibold text-[#092E28] select-none list-none [&::-webkit-details-marker]:hidden">
                 <span>What are the computer lab hardware and network requirements?</span>
@@ -677,7 +680,7 @@ export default function SchoolsPage() {
           </div>
 
           {/* Need help banner */}
-          <div className="mt-12 max-w-3xl mx-auto rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center space-y-2">
+          <div className="mt-12 max-w-3xl mx-auto rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center space-y-2 reveal-on-scroll reveal-delay-200">
             <h4 className="text-sm font-semibold text-slate-900">Have a unique school requirement or question?</h4>
             <p className="text-xs text-slate-600 max-w-lg mx-auto">
               Our institutional onboarding team works directly with Nigerian school principals, ICT coordinators, and tutorial centres.
@@ -697,7 +700,7 @@ export default function SchoolsPage() {
             FINAL CALL TO ACTION
            ======================================================== */}
         <section className="shell pb-20 max-w-4xl mx-auto">
-          <div className="rounded-3xl bg-[#092E28] p-8 sm:p-12 text-white text-center space-y-5 shadow-lg">
+          <div className="rounded-3xl bg-[#092E28] p-8 sm:p-12 text-white text-center space-y-5 shadow-lg reveal-on-scroll">
             <h3 className="text-2xl sm:text-4xl font-bold tracking-tight">
               Ready to enroll your school or tutorial cohort?
             </h3>
