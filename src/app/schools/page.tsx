@@ -14,7 +14,8 @@ import {
   Check,
   Sparkles,
   Keyboard,
-  Award
+  Award,
+  ChevronDown
 } from "lucide-react";
 
 export const metadata: Metadata = pageMetadata(
@@ -447,133 +448,301 @@ export default function SchoolsPage() {
         </section>
 
         {/* ========================================================
-            DIRECT COMPARISON MATRIX
+            DIRECT COMPARISON MATRIX (High-End SaaS Differences Table)
            ======================================================== */}
-        <section id="comparison" className="shell py-16 sm:py-20 border-t border-slate-200/80">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#116149]">Institutional Evaluation</span>
-            <h2 className="text-2xl sm:text-3xl font-bold text-[#092E28] mt-1">
-              Why top secondary schools choose JAMBPrep
+        <section id="comparison" className="shell py-20 sm:py-28 border-t border-slate-200/80 bg-slate-50/50">
+          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16 space-y-3">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-100 text-[#116149] text-xs font-bold uppercase tracking-wider">
+              <Sparkles size={13} />
+              <span>Institutional Capability Comparison</span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-serif font-normal text-[#092E28] tracking-tight">
+              Why top secondary schools are replacing legacy CD software.
             </h2>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1">
-              Ditch unmaintained offline CD software and photocopied question papers for an authentic digital assessment system.
+            <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
+              Compare how modern browser-based CBT simulation stacks up against outdated desktop CDs and photocopied past question booklets.
             </p>
           </div>
 
-          <div className="max-w-4xl mx-auto overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-bold uppercase tracking-wider">
-                  <th className="p-4">Feature / Capability</th>
-                  <th className="p-4 text-[#116149] bg-emerald-50/60 font-extrabold">JAMBPrep for Schools</th>
-                  <th className="p-4 text-slate-600">Paper Past Question Books</th>
-                  <th className="p-4 text-slate-600">Legacy Desktop CD Software</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                <tr>
-                  <td className="p-4 font-semibold text-slate-900">120-Min Timed CBT Hall Simulation</td>
-                  <td className="p-4 bg-emerald-50/30 text-[#116149] font-semibold flex items-center gap-1.5">
-                    <CheckCircle2 size={14} className="text-emerald-600 shrink-0" /> Full 8-key simulation
-                  </td>
-                  <td className="p-4 text-slate-400 flex items-center gap-1.5">
-                    <XCircle size={14} className="text-slate-400 shrink-0" /> None (paper only)
-                  </td>
-                  <td className="p-4 text-slate-500">Partial or outdated</td>
-                </tr>
+          <div className="max-w-5xl mx-auto">
+            <div className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[680px]">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-700 font-bold">
+                      <th className="py-5 px-6 w-[36%] text-xs uppercase tracking-wider text-slate-400">Capability</th>
+                      <th className="py-5 px-6 w-[28%] bg-emerald-50/80 text-[#092E28] border-x border-emerald-200/80">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-sm text-[#116149]">JAMBPrep for Schools</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider bg-[#116149] text-white px-2 py-0.5 rounded-full">
+                            Modern CBT
+                          </span>
+                        </div>
+                      </th>
+                      <th className="py-5 px-5 w-[18%] text-slate-600 font-semibold text-xs">Legacy Desktop CDs</th>
+                      <th className="py-5 px-5 w-[18%] text-slate-600 font-semibold text-xs">Paper Past Books</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                    <tr className="hover:bg-slate-50/50 transition">
+                      <td className="py-4 px-6 font-semibold text-slate-900">
+                        <span className="block text-sm">Official 8-Key UTME Hall Simulation</span>
+                        <span className="text-xs text-slate-500 font-normal mt-0.5 block">Standardized 120-minute timer with A, B, C, D, P, N, S, R hotkeys</span>
+                      </td>
+                      <td className="py-4 px-6 bg-emerald-50/40 border-x border-emerald-200/80">
+                        <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#116149]">
+                          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                          <span>Authentic 1:1 JAMB Engine</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-5 text-slate-500 text-xs">
+                        <div className="inline-flex items-center gap-1.5 text-slate-500">
+                          <XCircle size={15} className="text-amber-500 shrink-0" />
+                          <span>Mouse-click only</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-5 text-slate-400 text-xs">
+                        <div className="inline-flex items-center gap-1.5 text-slate-400">
+                          <XCircle size={15} className="text-slate-400 shrink-0" />
+                          <span>Zero simulation</span>
+                        </div>
+                      </td>
+                    </tr>
 
-                <tr>
-                  <td className="p-4 font-semibold text-slate-900">Computer Lab Installation</td>
-                  <td className="p-4 bg-emerald-50/30 text-[#116149] font-semibold">
-                    Zero install (runs in Chrome)
-                  </td>
-                  <td className="p-4 text-slate-500">Desks & print printing</td>
-                  <td className="p-4 text-slate-500">Windows PC local setup per device</td>
-                </tr>
+                    <tr className="hover:bg-slate-50/50 transition">
+                      <td className="py-4 px-6 font-semibold text-slate-900">
+                        <span className="block text-sm">Lab Hardware & Installation</span>
+                        <span className="text-xs text-slate-500 font-normal mt-0.5 block">Setup requirements for school computer workstations</span>
+                      </td>
+                      <td className="py-4 px-6 bg-emerald-50/40 border-x border-emerald-200/80">
+                        <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#116149]">
+                          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                          <span>Zero install (Chrome browser)</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-5 text-slate-500 text-xs">
+                        <span>Requires manual Windows setup per PC</span>
+                      </td>
+                      <td className="py-4 px-5 text-slate-500 text-xs">
+                        <span>Desks, pens & print copies</span>
+                      </td>
+                    </tr>
 
-                <tr>
-                  <td className="p-4 font-semibold text-slate-900">Teacher Syllabus Diagnostics</td>
-                  <td className="p-4 bg-emerald-50/30 text-[#116149] font-semibold flex items-center gap-1.5">
-                    <CheckCircle2 size={14} className="text-emerald-600 shrink-0" /> Real-time topic heatmaps
-                  </td>
-                  <td className="p-4 text-slate-400 flex items-center gap-1.5">
-                    <XCircle size={14} className="text-slate-400 shrink-0" /> Manual grading by hand
-                  </td>
-                  <td className="p-4 text-slate-400 flex items-center gap-1.5">
-                    <XCircle size={14} className="text-slate-400 shrink-0" /> No cohort aggregation
-                  </td>
-                </tr>
+                    <tr className="hover:bg-slate-50/50 transition">
+                      <td className="py-4 px-6 font-semibold text-slate-900">
+                        <span className="block text-sm">Teacher Syllabus Diagnostics</span>
+                        <span className="text-xs text-slate-500 font-normal mt-0.5 block">Aggregated topic accuracy heatmaps across entire class</span>
+                      </td>
+                      <td className="py-4 px-6 bg-emerald-50/40 border-x border-emerald-200/80">
+                        <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#116149]">
+                          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                          <span>Real-time topic analytics</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-5 text-slate-500 text-xs">
+                        <div className="inline-flex items-center gap-1.5 text-slate-400">
+                          <XCircle size={15} className="text-slate-400 shrink-0" />
+                          <span>Scores trapped on single PC</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-5 text-slate-500 text-xs">
+                        <div className="inline-flex items-center gap-1.5 text-slate-400">
+                          <XCircle size={15} className="text-slate-400 shrink-0" />
+                          <span>Manual hand grading</span>
+                        </div>
+                      </td>
+                    </tr>
 
-                <tr>
-                  <td className="p-4 font-semibold text-slate-900">Home & Mobile Student Practice</td>
-                  <td className="p-4 bg-emerald-50/30 text-[#116149] font-semibold flex items-center gap-1.5">
-                    <CheckCircle2 size={14} className="text-emerald-600 shrink-0" /> Included for every student
-                  </td>
-                  <td className="p-4 text-slate-500">Physical book must be carried</td>
-                  <td className="p-4 text-slate-400 flex items-center gap-1.5">
-                    <XCircle size={14} className="text-slate-400 shrink-0" /> Lab-locked only
-                  </td>
-                </tr>
+                    <tr className="hover:bg-slate-50/50 transition">
+                      <td className="py-4 px-6 font-semibold text-slate-900">
+                        <span className="block text-sm">Mobile & Home Study Access</span>
+                        <span className="text-xs text-slate-500 font-normal mt-0.5 block">Continuity beyond the school computer lab</span>
+                      </td>
+                      <td className="py-4 px-6 bg-emerald-50/40 border-x border-emerald-200/80">
+                        <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#116149]">
+                          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                          <span>Included on phone & tablet</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-5 text-slate-500 text-xs">
+                        <div className="inline-flex items-center gap-1.5 text-slate-400">
+                          <XCircle size={15} className="text-slate-400 shrink-0" />
+                          <span>Lab-locked only</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-5 text-slate-500 text-xs">
+                        <span>Heavy books must be carried</span>
+                      </td>
+                    </tr>
 
-                <tr>
-                  <td className="p-4 font-semibold text-slate-900">Pricing Structure</td>
-                  <td className="p-4 bg-emerald-50/30 text-[#116149] font-semibold">
-                    ₦1,500 / student / month
-                  </td>
-                  <td className="p-4 text-slate-500">₦2,500 – ₦5,000 / subject book</td>
-                  <td className="p-4 text-slate-500">₦100k+ upfront CD licenses</td>
-                </tr>
-              </tbody>
-            </table>
+                    <tr className="hover:bg-slate-50/50 transition">
+                      <td className="py-4 px-6 font-semibold text-slate-900">
+                        <span className="block text-sm">Question Bank & Syllabus Updates</span>
+                        <span className="text-xs text-slate-500 font-normal mt-0.5 block">New syllabus texts, verified corrections & novel questions</span>
+                      </td>
+                      <td className="py-4 px-6 bg-emerald-50/40 border-x border-emerald-200/80">
+                        <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#116149]">
+                          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                          <span>Continuous cloud updates</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-5 text-slate-500 text-xs">
+                        <span>Static; must buy new CDs</span>
+                      </td>
+                      <td className="py-4 px-5 text-slate-500 text-xs">
+                        <span>New printed edition every year</span>
+                      </td>
+                    </tr>
+
+                    <tr className="hover:bg-slate-50/50 transition bg-emerald-50/10">
+                      <td className="py-4 px-6 font-semibold text-slate-900">
+                        <span className="block text-sm">Pricing Model</span>
+                        <span className="text-xs text-slate-500 font-normal mt-0.5 block">Transparent cohort invoicing</span>
+                      </td>
+                      <td className="py-4 px-6 bg-emerald-100/40 border-x border-emerald-200/80">
+                        <strong className="block text-sm font-bold text-[#116149]">₦1,500 / student / month</strong>
+                        <span className="text-[11px] text-emerald-800">One-time payment, no lock-in</span>
+                      </td>
+                      <td className="py-4 px-5 text-slate-700 text-xs">
+                        <span className="font-semibold text-slate-900">₦100k+ upfront</span>
+                        <span className="block text-slate-400 text-[11px] mt-0.5">+ technician support fees</span>
+                      </td>
+                      <td className="py-4 px-5 text-slate-700 text-xs">
+                        <span className="font-semibold text-slate-900">₦2,500 – ₦5,000</span>
+                        <span className="block text-slate-400 text-[11px] mt-0.5">per subject booklet</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </section>
 
         {/* ========================================================
-            COMMON FAQS
+            COMMON FAQS (Modern Accordion UI with Clean Details)
            ======================================================== */}
-        <section id="faqs" className="shell py-16 sm:py-20 border-t border-slate-200/80">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#116149]">Answers for Administrators</span>
-            <h2 className="text-2xl sm:text-3xl font-bold text-[#092E28] mt-1">
-              Frequently asked questions
+        <section id="faqs" className="shell py-20 sm:py-28 border-t border-slate-200/80 bg-white">
+          <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 space-y-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#116149]">Institutional FAQs</span>
+            <h2 className="text-3xl sm:text-5xl font-serif font-normal text-[#092E28] tracking-tight">
+              Frequently asked questions.
             </h2>
+            <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
+              Everything school administrators, principals, and ICT directors need to know about setting up and running JAMBPrep.
+            </p>
           </div>
 
-          <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-1.5">
-              <strong className="block text-slate-900 text-sm font-semibold">
-                What are the computer lab requirements?
-              </strong>
-              <p>
-                JAMBPrep runs in Google Chrome or any modern browser on standard desktop PCs, laptops, Chromebooks, and tablets. There are no executable files to download and no local servers to configure.
-              </p>
-            </div>
+          <div className="max-w-3xl mx-auto space-y-3.5">
+            <details className="group rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 transition-all duration-200 hover:border-slate-300 open:border-emerald-200 open:bg-emerald-50/20 open:shadow-xs">
+              <summary className="flex cursor-pointer items-center justify-between text-base font-semibold text-[#092E28] select-none list-none [&::-webkit-details-marker]:hidden">
+                <span>What are the computer lab hardware and network requirements?</span>
+                <span className="ml-4 flex size-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-transform duration-200 group-open:rotate-180 group-open:bg-[#116149] group-open:text-white">
+                  <ChevronDown size={18} />
+                </span>
+              </summary>
+              <div className="mt-3.5 pt-3 border-t border-slate-100 text-sm text-slate-600 leading-relaxed space-y-2">
+                <p>
+                  JAMBPrep runs directly inside Google Chrome or any modern web browser. It operates flawlessly on standard school desktop PCs, laptops, Chromebooks, and tablets.
+                </p>
+                <p>
+                  Because it is lightweight, you do not need expensive dedicated lab servers, software dongles, or local database installations. Once loaded, exams run smoothly even over modest school internet connections.
+                </p>
+              </div>
+            </details>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-1.5">
-              <strong className="block text-slate-900 text-sm font-semibold">
-                How do teachers create student accounts?
-              </strong>
-              <p>
-                In the School Portal, administrators can create students one-by-one, upload a class CSV roster for instant batch creation, or share a unique school registration link for students to self-enroll.
-              </p>
-            </div>
+            <details className="group rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 transition-all duration-200 hover:border-slate-300 open:border-emerald-200 open:bg-emerald-50/20 open:shadow-xs">
+              <summary className="flex cursor-pointer items-center justify-between text-base font-semibold text-[#092E28] select-none list-none [&::-webkit-details-marker]:hidden">
+                <span>How do we enroll our students and generate their login accounts?</span>
+                <span className="ml-4 flex size-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-transform duration-200 group-open:rotate-180 group-open:bg-[#116149] group-open:text-white">
+                  <ChevronDown size={18} />
+                </span>
+              </summary>
+              <div className="mt-3.5 pt-3 border-t border-slate-100 text-sm text-slate-600 leading-relaxed space-y-2">
+                <p>
+                  Your School Admin Portal gives you 3 convenient roster ingestion pathways:
+                </p>
+                <ul className="list-disc pl-5 space-y-1 text-slate-700">
+                  <li><strong>Manual Addition:</strong> Quickly type in individual candidate details.</li>
+                  <li><strong>Bulk CSV Upload:</strong> Download our sample CSV template, paste your students&apos; names and emails, and import an entire class of 200+ students in 10 seconds.</li>
+                  <li><strong>Unique School Registration Link:</strong> Share a dedicated school invite link (e.g., <code className="text-xs bg-slate-100 px-1 py-0.5 rounded">/register?school=SCH-XYZ</code>) so candidates can register themselves directly into your roster.</li>
+                </ul>
+              </div>
+            </details>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-1.5">
-              <strong className="block text-slate-900 text-sm font-semibold">
-                What is the default student login password?
-              </strong>
-              <p>
-                For accounts provisioned by the school, the student logs in with their email address and their last name in capital letters (e.g. <code className="bg-slate-100 px-1 py-0.5 rounded text-[11px]">AKANBI</code>). They can customize it upon first sign-in.
-              </p>
-            </div>
+            <details className="group rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 transition-all duration-200 hover:border-slate-300 open:border-emerald-200 open:bg-emerald-50/20 open:shadow-xs">
+              <summary className="flex cursor-pointer items-center justify-between text-base font-semibold text-[#092E28] select-none list-none [&::-webkit-details-marker]:hidden">
+                <span>What is the default student password rule?</span>
+                <span className="ml-4 flex size-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-transform duration-200 group-open:rotate-180 group-open:bg-[#116149] group-open:text-white">
+                  <ChevronDown size={18} />
+                </span>
+              </summary>
+              <div className="mt-3.5 pt-3 border-t border-slate-100 text-sm text-slate-600 leading-relaxed">
+                <p>
+                  To eliminate login confusion during lab mock exams, every account created by the school uses the student&apos;s email address as their username and their <strong>last name in CAPITAL letters</strong> as the initial password (for example, if the student&apos;s name is Chinedu Okonkwo, the default password is <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono font-bold text-slate-800">OKONKWO</code>). Students can change their password at any time from their profile settings.
+                </p>
+              </div>
+            </details>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-1.5">
-              <strong className="block text-slate-900 text-sm font-semibold">
-                How does payment work for schools?
-              </strong>
-              <p>
-                Select the students you wish to activate and choose 1 to 12 months. Pay securely via Paystack using Nigerian debit cards, bank transfer, or institutional EFT. Invoices are strictly one-time with zero recurring debit.
-              </p>
+            <details className="group rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 transition-all duration-200 hover:border-slate-300 open:border-emerald-200 open:bg-emerald-50/20 open:shadow-xs">
+              <summary className="flex cursor-pointer items-center justify-between text-base font-semibold text-[#092E28] select-none list-none [&::-webkit-details-marker]:hidden">
+                <span>How does cohort licensing and Paystack checkout work?</span>
+                <span className="ml-4 flex size-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-transform duration-200 group-open:rotate-180 group-open:bg-[#116149] group-open:text-white">
+                  <ChevronDown size={18} />
+                </span>
+              </summary>
+              <div className="mt-3.5 pt-3 border-t border-slate-100 text-sm text-slate-600 leading-relaxed space-y-2">
+                <p>
+                  In your School Portal, simply select the students you want to activate (or click &quot;Select All&quot;), pick a duration (1 to 12 months at ₦1,500/student/month), and check out securely via Paystack.
+                </p>
+                <p>
+                  You can pay with Nigerian debit cards, bank transfers, or corporate accounts. Once payment is confirmed, an automated background queue immediately activates all student licenses and issues a downloadable PDF invoice for your school bursary. Payments are strictly one-time with zero recurring subscription debits.
+                </p>
+              </div>
+            </details>
+
+            <details className="group rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 transition-all duration-200 hover:border-slate-300 open:border-emerald-200 open:bg-emerald-50/20 open:shadow-xs">
+              <summary className="flex cursor-pointer items-center justify-between text-base font-semibold text-[#092E28] select-none list-none [&::-webkit-details-marker]:hidden">
+                <span>Can candidates practice on their smartphones at home?</span>
+                <span className="ml-4 flex size-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-transform duration-200 group-open:rotate-180 group-open:bg-[#116149] group-open:text-white">
+                  <ChevronDown size={18} />
+                </span>
+              </summary>
+              <div className="mt-3.5 pt-3 border-t border-slate-100 text-sm text-slate-600 leading-relaxed">
+                <p>
+                  Yes, 100%! Every student license provisioned by your school includes unrestricted access across all devices. Students can take full 4-subject mock exams in your school computer lab, and then use their smartphone or tablet at home to review explanations, practice weekly packs, or play educational learning games. Everything syncs to their cloud profile.
+                </p>
+              </div>
+            </details>
+
+            <details className="group rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 transition-all duration-200 hover:border-slate-300 open:border-emerald-200 open:bg-emerald-50/20 open:shadow-xs">
+              <summary className="flex cursor-pointer items-center justify-between text-base font-semibold text-[#092E28] select-none list-none [&::-webkit-details-marker]:hidden">
+                <span>How do teachers use syllabus diagnostics to improve pass rates?</span>
+                <span className="ml-4 flex size-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-transform duration-200 group-open:rotate-180 group-open:bg-[#116149] group-open:text-white">
+                  <ChevronDown size={18} />
+                </span>
+              </summary>
+              <div className="mt-3.5 pt-3 border-t border-slate-100 text-sm text-slate-600 leading-relaxed">
+                <p>
+                  Instead of teachers spending weekends manually marking paper tests, JAMBPrep aggregates student test answers automatically. The teacher dashboard highlights syllabus topics where the cohort is struggling (e.g. <em>&quot;Chemistry: Organic Nomenclature (32% accuracy)&quot;</em>), allowing your instructors to deliver targeted remedial classes before the real examination.
+                </p>
+              </div>
+            </details>
+          </div>
+
+          {/* Need help banner */}
+          <div className="mt-12 max-w-3xl mx-auto rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center space-y-2">
+            <h4 className="text-sm font-semibold text-slate-900">Have a unique school requirement or question?</h4>
+            <p className="text-xs text-slate-600 max-w-lg mx-auto">
+              Our institutional onboarding team works directly with Nigerian school principals, ICT coordinators, and tutorial centres.
+            </p>
+            <div className="pt-2">
+              <Link
+                href="/schools/register"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#116149] hover:underline"
+              >
+                Register your school to get started <ArrowRight size={14} />
+              </Link>
             </div>
           </div>
         </section>
