@@ -449,20 +449,20 @@ export default function SchoolsPage() {
           <div className="max-w-5xl mx-auto">
             <div className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xl">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[680px]">
+                <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[780px]">
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-700 font-bold">
-                      <th className="py-5 px-6 w-[36%] text-xs uppercase tracking-wider text-slate-400">Capability</th>
-                      <th className="py-5 px-6 w-[28%] bg-emerald-50/80 text-[#092E28] border-x border-emerald-200/80">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-bold text-sm text-[#116149]">JAMBPrep for Schools</span>
-                          <span className="text-[10px] font-bold uppercase tracking-wider bg-[#116149] text-white px-2 py-0.5 rounded-full">
+                      <th className="py-5 px-6 w-[32%] text-xs uppercase tracking-wider text-slate-400">Capability</th>
+                      <th className="py-5 px-6 w-[34%] bg-emerald-50/80 text-[#092E28] border-x border-emerald-200/80">
+                        <div className="flex items-center gap-2.5 whitespace-nowrap">
+                          <span className="font-bold text-sm text-[#116149] whitespace-nowrap">JAMBPrep for Schools</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider bg-[#116149] text-white px-2.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
                             Modern CBT
                           </span>
                         </div>
                       </th>
-                      <th className="py-5 px-5 w-[18%] text-slate-600 font-semibold text-xs">Legacy Desktop CDs</th>
-                      <th className="py-5 px-5 w-[18%] text-slate-600 font-semibold text-xs">Paper Past Books</th>
+                      <th className="py-5 px-5 w-[17%] text-slate-600 font-semibold text-xs whitespace-nowrap">Legacy Desktop CDs</th>
+                      <th className="py-5 px-5 w-[17%] text-slate-600 font-semibold text-xs whitespace-nowrap">Paper Past Books</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700">
