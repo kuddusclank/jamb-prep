@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { 
   X, 
   Upload, 
@@ -161,10 +162,25 @@ Fatima,Danjuma,f.danjuma@school.edu.ng,ST-104,08045678901,2026`;
     try {
       let result = null;
       try {
-        const res = await fetch("/api/schools/students/import/", {
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
+        const supabase = createClient();
+        const sessionRes = await supabase.auth.getSession();
+        const token = sessionRes?.data?.session?.access_token;
+
+        const res = await fetch(`${apiBase}/api/v1/schools/students`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ students: validRows }),
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { "Authorization": `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            students: validRows.map((r) => ({
+              name: `${r.firstName} ${r.lastName}`.trim(),
+              email: r.email,
+              studentIdentifier: r.studentIdentifier || null,
+              ingestionMethod: "csv",
+            })),
+          }),
         });
 
         if (res.ok) {

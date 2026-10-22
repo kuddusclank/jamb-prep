@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { X, UserPlus, CheckCircle2, Copy, AlertCircle, Loader2, ArrowRight } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 interface AddStudentModalProps {
   isOpen: boolean;
@@ -37,22 +38,31 @@ export function AddStudentModal({ isOpen, onClose, onStudentAdded, schoolCode }:
     try {
       let created = null;
       try {
-        const res = await fetch("/api/schools/students/create/", {
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
+        const supabase = createClient();
+        const sessionRes = await supabase.auth.getSession();
+        const token = sessionRes?.data?.session?.access_token;
+
+        const res = await fetch(`${apiBase}/api/v1/schools/students`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { "Authorization": `Bearer ${token}` } : {})
+          },
           body: JSON.stringify({
             firstName,
             lastName,
             email,
             studentIdentifier: studentIdentifier || null,
             phone: phone || null,
+            ingestionMethod: "manual",
           }),
         });
 
         if (res.ok) {
           const data = await res.json();
-          if (data?.student) {
-            created = data.student;
+          if (data?.students && data.students[0]) {
+            created = data.students[0];
           }
         }
       } catch {

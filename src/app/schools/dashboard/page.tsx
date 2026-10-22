@@ -121,17 +121,24 @@ export default function SchoolDashboardPage() {
         console.warn("Could not read local cohort:", e);
       }
 
-      // Attempt to load enrolled students from server API if active
+      // Attempt to load enrolled students from native worker API or fallback to local
       try {
-        const listRes = await fetch("/api/schools/students/list/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
+        const sessionRes = await supabase.auth.getSession();
+        const token = sessionRes?.data?.session?.access_token;
+
+        const listRes = await fetch(`${apiBase}/api/v1/schools/students`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { "Authorization": `Bearer ${token}` } : {})
+          },
         });
+
         if (listRes.ok) {
-          const text = await listRes.text();
-          const data = text ? JSON.parse(text) : {};
-          if (data.students && Array.isArray(data.students) && data.students.length > 0) {
-            setStudents(data.students.map((s: any) => ({
+          const data = await listRes.json();
+          if (data.students && Array.isArray(data.students)) {
+            const mappedStudents: StudentItem[] = data.students.map((s: any) => ({
               id: s.id,
               name: s.name,
               email: s.email,
@@ -140,14 +147,32 @@ export default function SchoolDashboardPage() {
               subjects: s.subjects || ["ENG", "MTH", "PHY", "CHM"],
               licenseStatus: s.licenseStatus || "inactive",
               daysLeft: s.licenseExpiresAt ? Math.max(0, Math.ceil((new Date(s.licenseExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0,
-              lastActive: "Enrolled",
+              lastActive: s.ingestionMethod === "link" ? "Self-Registered (Link)" : "Enrolled",
               averageScore: null,
-            })));
+              enrolmentMethod: s.ingestionMethod || "link",
+            }));
+
+            // Merge with local cohort to preserve any offline items
+            const serverIds = new Set(mappedStudents.map((s) => s.id));
+            const serverEmails = new Set(mappedStudents.map((s) => s.email?.toLowerCase()));
+            const localOnly = localCohort.filter(
+              (item) => !serverIds.has(item.id) && !serverEmails.has(item.email?.toLowerCase())
+            );
+            const combined = [...mappedStudents, ...localOnly];
+
+            setStudents(combined);
+            try {
+              if (typeof window !== "undefined") {
+                localStorage.setItem(`jambprep_school_students_${code}`, JSON.stringify(combined));
+              }
+            } catch (e) {
+              console.warn("Could not cache cohort:", e);
+            }
             return;
           }
         }
       } catch (err) {
-        console.warn("Could not load dynamic roster, checking local cohort state:", err);
+        console.warn("Could not load dynamic roster from native API, checking local cohort state:", err);
       }
 
       setStudents(localCohort);

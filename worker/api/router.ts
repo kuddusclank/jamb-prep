@@ -10,6 +10,7 @@ import { allocatePractice, checkIssuedPractice, startFrozenMock } from '../servi
 import { saveStudentOnboardingAtomic } from '../services/onboarding-service';
 import { APP_RATING_ROUTES } from '../services/app-rating-service';
 import { STUDY_SCHEDULE_ROUTES } from '../services/study-schedule-routes';
+import { SCHOOL_ROUTES } from '../services/school-routes';
 import { getStudyScheduleState, type StudyScheduleViewResponse } from '../services/study-schedule-service';
 /**
  * Typed Native Worker API Router & Foundation Endpoint Registry (T03)
@@ -844,6 +845,7 @@ export const ENABLED_PRODUCTION_ROUTE_IDS: ReadonlySet<string> = new Set([
   ...STUDY_SCHEDULE_ROUTES.map(route => route.id),
   ...ASSESSMENT_ADMIN_ROUTES.map(route=>route.id),
   ...PRACTICE_ROUTES.map(route=>route.id),
+  ...SCHOOL_ROUTES.map(route => route.id),
   'system.health',
   ...ADMIN_CURRICULUM_ROUTES.map(route => route.id),
   ...ADMIN_WORKFLOW_ROUTES.map(route => route.id),
@@ -901,6 +903,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
   ...ADMIN_CURRICULUM_ROUTES,
   ...ADMIN_WORKFLOW_ROUTES,
   ...ADMIN_MEDIA_ROUTES,
+  ...SCHOOL_ROUTES,
   // 0. Health / Readiness (Public, zero DB allocation)
   {
     id: 'system.health',

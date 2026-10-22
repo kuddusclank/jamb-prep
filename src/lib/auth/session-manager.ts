@@ -754,13 +754,14 @@ export function createBrowserSessionManager(
         },
       };
     } else {
-      // Security invariant: only pass `display_name` in user_metadata; never pass role or entitlement.
+      // Security invariant: only pass safe metadata; never pass role or entitlement.
       const { data, error: signUpError } = await boundAuth(auth.signUp({
         email: cleanEmail,
         password: params.password,
         options: {
           data: {
             display_name: cleanName,
+            ...(cleanReferral?.startsWith('SCH-') ? { school_code: cleanReferral } : {}),
           },
         },
       }));

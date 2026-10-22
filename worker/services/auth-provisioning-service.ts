@@ -198,32 +198,50 @@ export async function provisionStudentAccountAtomic(
     throw new ApiError({ status: 503, code: 'SERVICE_UNAVAILABLE', message: 'Referral code provisioning could not be confirmed.' });
   }
 
-  // 3. Record referral attribution strictly as 'pending' (never 'qualified', never granting rewards).
+  // 3. Record school cohort affiliation or referral attribution strictly as 'pending'.
   let referralAttribution: ReferralAttributionOutcome = 'none';
   const refInput = input.referralCode?.trim().toUpperCase() || '';
 
   if (refInput.length > 0) {
-    const refRows = await tx<Array<{ user_id: string }>>`
-      SELECT user_id
-      FROM referral_codes
-      WHERE code = ${refInput}
+    // 3a. Check if refInput corresponds to an institutional school code (e.g. SCH-...)
+    const schoolRows = await tx<Array<{ id: string }>>`
+      SELECT id
+      FROM schools
+      WHERE UPPER(code) = ${refInput}
       LIMIT 1
     `;
-    const referrerId = refRows[0]?.user_id;
 
-    if (!referrerId) {
-      referralAttribution = 'code_not_found';
-    } else if (referrerId.toLowerCase() === userId.toLowerCase()) {
-      referralAttribution = 'self_referral_ignored';
-    } else {
-      const insertedReferral = await tx<Array<{ id: string; status: string }>>`
-        INSERT INTO referrals (referrer_id, referred_user_id, status, qualified_at)
-        VALUES (${referrerId}::uuid, ${userId}::uuid, 'pending', NULL)
-        ON CONFLICT (referred_user_id) DO NOTHING
-        RETURNING id, status
+    if (schoolRows[0]?.id) {
+      await tx`
+        INSERT INTO school_students (school_id, student_user_id, ingestion_method, license_status)
+        VALUES (${schoolRows[0].id}::uuid, ${userId}::uuid, 'link', 'inactive')
+        ON CONFLICT (school_id, student_user_id) DO NOTHING
       `;
-      referralAttribution =
-        insertedReferral.length > 0 ? 'pending' : 'already_attributed';
+      referralAttribution = 'pending';
+    } else {
+      // 3b. Standard candidate referral promo code lookup
+      const refRows = await tx<Array<{ user_id: string }>>`
+        SELECT user_id
+        FROM referral_codes
+        WHERE code = ${refInput}
+        LIMIT 1
+      `;
+      const referrerId = refRows[0]?.user_id;
+
+      if (!referrerId) {
+        referralAttribution = 'code_not_found';
+      } else if (referrerId.toLowerCase() === userId.toLowerCase()) {
+        referralAttribution = 'self_referral_ignored';
+      } else {
+        const insertedReferral = await tx<Array<{ id: string; status: string }>>`
+          INSERT INTO referrals (referrer_id, referred_user_id, status, qualified_at)
+          VALUES (${referrerId}::uuid, ${userId}::uuid, 'pending', NULL)
+          ON CONFLICT (referred_user_id) DO NOTHING
+          RETURNING id, status
+        `;
+        referralAttribution =
+          insertedReferral.length > 0 ? 'pending' : 'already_attributed';
+      }
     }
   }
 
