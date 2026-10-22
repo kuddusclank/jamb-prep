@@ -55,33 +55,8 @@ export default function SchoolsPage() {
             </div>
           </div>
 
-          {/* Navigation Links - Single line, spacious, never wrap */}
-          <nav aria-label="Institutional navigation" className="hidden lg:flex items-center gap-8 text-sm font-medium text-slate-600">
-            <a href="#lab-simulator" className="hover:text-[#116149] transition-colors whitespace-nowrap">
-              CBT Lab Simulator
-            </a>
-            <a href="#syllabus-diagnostics" className="hover:text-[#116149] transition-colors whitespace-nowrap">
-              Teacher Diagnostics
-            </a>
-            <a href="#mobile-continuity" className="hover:text-[#116149] transition-colors whitespace-nowrap">
-              Home & Mobile Sync
-            </a>
-            <a href="#comparison" className="hover:text-[#116149] transition-colors whitespace-nowrap">
-              Comparison
-            </a>
-            <a href="#faqs" className="hover:text-[#116149] transition-colors whitespace-nowrap">
-              FAQs
-            </a>
-          </nav>
-
-          {/* Right Action Buttons */}
+          {/* Right Action Button */}
           <div className="flex items-center gap-3 shrink-0">
-            <Link
-              href="/schools/login"
-              className="text-sm font-semibold text-slate-700 hover:text-slate-900 px-3 py-1.5 transition-colors whitespace-nowrap"
-            >
-              School Sign In
-            </Link>
             <Link
               href="/schools/register"
               className="rounded-full bg-slate-900 px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-[#116149] transition-colors whitespace-nowrap"
