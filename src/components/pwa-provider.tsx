@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { usePathname } from 'next/navigation';
+import { X, RefreshCw, Download, WifiOff, Zap, Smartphone } from 'lucide-react';
 import styles from './pwa-provider.module.css';
 
 interface InstallEvent extends Event {
@@ -9,7 +10,7 @@ interface InstallEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-const COOLDOWN = 14 * 24 * 60 * 60 * 1000;
+const COOLDOWN = 3 * 24 * 60 * 60 * 1000; // 3-day cooldown when dismissed
 const ACTIVE_BUILD_STORAGE_KEY = 'jambprep_active_build_id';
 
 export default function PwaProvider() {
@@ -21,8 +22,15 @@ export default function PwaProvider() {
   const [dismissed, setDismissed] = useState(false);
   const [update, setUpdate] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [visible, setVisible] = useState(false);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
   const latestBuildIdRef = useRef<string | null>(null);
+
+  // Smooth entrance delay after page load
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(true), 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     // 1. Recover from broken webpack chunks on new deployment
@@ -185,11 +193,11 @@ export default function PwaProvider() {
   }, [pathname]);
 
   const inExam = pathname.startsWith('/exam');
-  const safePage = ['/', '/dashboard', '/profile'].includes(pathname.replace(/\/$/, '') || '/');
+  const isExcluded = inExam || pathname.startsWith('/admin') || pathname.startsWith('/checkout');
 
-  // If update is ready, show it anywhere outside /exam
-  if (inExam) return null;
-  if (!update && (!safePage || (standalone || dismissed || (!install && !manual)))) return null;
+  if (isExcluded) return null;
+  if (!visible) return null;
+  if (!update && (standalone || dismissed || (!install && !manual))) return null;
 
   async function beginInstall() {
     if (!install) {
@@ -197,11 +205,15 @@ export default function PwaProvider() {
       return;
     }
     const event = install;
-    setInstall(null);
     try {
       await event.prompt();
       const result = await event.userChoice;
-      if (result.outcome === 'dismissed') dismiss();
+      if (result.outcome === 'accepted') {
+        setStandalone(true);
+        setInstall(null);
+      } else {
+        dismiss();
+      }
     } catch {
       setInstructions(true);
     }
@@ -292,41 +304,89 @@ export default function PwaProvider() {
   }
 
   return (
-    <aside className={styles.notice} aria-label="JAMBPrep app notification">
-      <button className={styles.close} onClick={dismiss} aria-label="Dismiss app notice">
-        ×
-      </button>
-      {update ? (
-        <div>
-          <p style={{ fontWeight: 600, marginBottom: 4 }}>New version available</p>
-          <p style={{ fontSize: 13, color: '#52636b', marginBottom: 12 }}>
-            A fresh update of JAMBPrep has been deployed with latest features and fixes.
-          </p>
-          <button
-            className={styles.install}
-            onClick={() => void applyUpdate()}
-            disabled={isUpdating}
-            style={{ width: '100%', cursor: 'pointer' }}
-          >
-            {isUpdating ? 'Updating...' : 'Update & Reload Now'}
-          </button>
-        </div>
-      ) : (
-        <>
-          <p>Keep JAMBPrep close. Add it to your home screen.</p>
-          {instructions ? (
-            <p>
-              On iPhone or iPad, open your browser’s Share menu and choose Add to Home Screen. On
-              supported Mac Safari, use File → Add to Dock. If you are inside WhatsApp, open this link
-              in your browser first.
-            </p>
-          ) : (
-            <button className={styles.install} onClick={() => void beginInstall()}>
-              Add JAMBPrep
-            </button>
-          )}
-        </>
-      )}
-    </aside>
+    <>
+      {/* Mobile Drawer Overlay when Install is available */}
+      {!update && install && <div className={styles.overlay} onClick={dismiss} />}
+
+      <aside className={styles.notice} aria-label="JAMBPrep app notification">
+        <div className={styles.grabBar} />
+        <button className={styles.close} onClick={dismiss} aria-label="Dismiss app notice">
+          <X size={18} />
+        </button>
+
+        {update ? (
+          <div>
+            <div className={styles.headerRow}>
+              <img src="/icon-192.png" alt="JAMBPrep" className={styles.appIcon} />
+              <div className={styles.titleArea}>
+                <span className={styles.badge}>Update Ready</span>
+                <h3 className={styles.title}>New Version Available</h3>
+                <p className={styles.desc}>Latest improvements and offline fixes deployed.</p>
+              </div>
+            </div>
+            <div className={styles.actions}>
+              <button
+                className={styles.installBtn}
+                onClick={() => void applyUpdate()}
+                disabled={isUpdating}
+              >
+                <RefreshCw size={16} className={isUpdating ? 'animate-spin' : ''} />
+                <span>{isUpdating ? 'Updating...' : 'Update & Reload Now'}</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className={styles.headerRow}>
+              <img src="/icon-192.png" alt="JAMBPrep App" className={styles.appIcon} />
+              <div className={styles.titleArea}>
+                <span className={styles.badge}>Official UTME App</span>
+                <h3 className={styles.title}>Install JAMBPrep</h3>
+                <p className={styles.desc}>Fast, full-screen offline practice.</p>
+              </div>
+            </div>
+
+            {instructions ? (
+              <div className={styles.instructionsBox}>
+                <p style={{ margin: '0 0 6px 0', fontWeight: 600 }}>Apple Safari / iOS Instructions:</p>
+                <ol style={{ margin: 0, paddingLeft: 18 }}>
+                  <li>Tap the <strong>Share</strong> button (box with arrow) at the bottom.</li>
+                  <li>Scroll down and select <strong>Add to Home Screen</strong>.</li>
+                  <li>Tap <strong>Add</strong> in the top-right corner.</li>
+                </ol>
+              </div>
+            ) : (
+              <div className={styles.featureList}>
+                <div className={styles.featureItem}>
+                  <WifiOff size={15} className={styles.featureIcon} />
+                  <span>Works 100% offline without mobile data</span>
+                </div>
+                <div className={styles.featureItem}>
+                  <Zap size={15} className={styles.featureIcon} />
+                  <span>Instant question navigation & practice packs</span>
+                </div>
+                <div className={styles.featureItem}>
+                  <Smartphone size={15} className={styles.featureIcon} />
+                  <span>Fullscreen authentic CBT simulation</span>
+                </div>
+              </div>
+            )}
+
+            <div className={styles.actions}>
+              <button
+                className={styles.installBtn}
+                onClick={() => void beginInstall()}
+              >
+                <Download size={17} />
+                <span>{install ? 'Install App (1-Tap)' : 'How to Add to Home Screen'}</span>
+              </button>
+              <button className={styles.dismissBtn} onClick={dismiss}>
+                Maybe Later
+              </button>
+            </div>
+          </div>
+        )}
+      </aside>
+    </>
   );
 }
