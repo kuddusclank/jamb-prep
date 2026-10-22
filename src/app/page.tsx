@@ -79,6 +79,7 @@ export default function Home() {
               <a href="#how-it-works" className="hover:text-[#116149] transition-colors">How it works</a>
               <a href="#subjects" className="hover:text-[#116149] transition-colors">Subjects</a>
               <a href="#pricing" className="hover:text-[#116149] transition-colors">Pricing</a>
+              <Link href="/schools" className="hover:text-[#116149] font-medium text-[#116149] transition-colors">For Schools</Link>
             </nav>
           )}
 

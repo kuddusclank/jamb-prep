@@ -42,6 +42,7 @@ Read [UI design and component guide](ui-design-and-component-guide.md) before fr
   * **Free Tier**: 1 full diagnostic mock + 15 topic practice questions daily.
   * **Premium**: **₦1,000 / month** (30-day access pass) via Paystack.
   * **Referral Discount**: "Invite 2 friends, get 50% off your first month" (**₦500** first payment).
+  * **B2B School Cohort Licensing**: **₦1,500 / student / month** (150,000 integer kobo). Term: 1 to 12 calendar months ($N \ge 1, 1 \le M \le 12$). Non-recurring, one-time prepaid invoice. Benchmark: 50 students × 3 months = ₦225,000. Interactive calculator and application route at `/schools`.
 * **Stack**: Next.js App Router, Supabase (PostgreSQL, Auth, Storage), Drizzle ORM, Tailwind CSS v4, shadcn/ui, Zustand, KaTeX, Paystack.
 * **Environments & Deployment**:
   * **Production**: `https://jambprep.lecterniq.com` (Authoritative production environment, live user database, canonical PWA install origin, production router Worker).

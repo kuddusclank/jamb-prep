@@ -2,7 +2,7 @@
 import { BrandMark } from "@/components/brand-mark";
 import type { CheckoutPricing } from "@/lib/client-actions";
 import { StudyWorkspace } from "@/components/study-workspace";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, Building2, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { CheckoutClient } from "./checkout-client";
 
@@ -48,6 +48,28 @@ export default function PricingPage() {
 
       {/* Checkout Client Component */}
       <CheckoutClient pricing={pricing} />
+
+      {/* Institutional School Partnerships Banner */}
+      <div className="rounded-3xl border border-emerald-900/15 bg-emerald-50/70 p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm">
+        <div className="space-y-1.5 max-w-xl">
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#116149]">
+            <Building2 size={15} />
+            Secondary Schools & Tutorial Centres
+          </span>
+          <h3 className="text-lg font-bold text-[#092E28]">
+            Preparing a class cohort of 5 to 500+ candidates?
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            Equip your computer lab with synchronized UTME timed mock exams and bulk student licensing at ₦1,500/student/month.
+          </p>
+        </div>
+        <Link
+          href="/schools"
+          className="inline-flex min-h-11 items-center justify-center gap-2 shrink-0 rounded-full bg-[#116149] px-6 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-[#0c4a37] transition-colors"
+        >
+          View School Licensing <ArrowRight size={15} />
+        </Link>
+      </div>
 
       {/* FAQs / Guarantees Strip */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 space-y-6">
