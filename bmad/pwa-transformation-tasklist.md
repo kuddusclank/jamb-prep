@@ -239,9 +239,22 @@ User instructed and approved implementation of offline profile caching, PWA upda
    - Responsive question stem card and option pills (`p-4 sm:p-8`, `p-3 sm:p-4`) fitting questions immediately into mobile viewports.
    - Responsive bottom bar (`Prev (P)`, `Clear (R)`, `Next (N)`).
 
+8. **Offline Outbox Synchronization & Durable Answer Reconciliation (Feature F5):**
+   - Implemented unified IndexedDB outbox queue with monotonic revisions and answer coalescing (`src/lib/offline/idb-storage.ts`).
+   - Client-side multi-trigger `SyncManager` (`src/lib/offline/sync-manager.ts`) with Web Locks API cross-tab synchronization.
+   - Server-side idempotent batch endpoint (`worker/services/weekly-pack-service.ts`) returning per-item ACKs.
+   - Non-intrusive UI sync status pill (`SyncStatusIndicator`) embedded in the workspace navigation bar.
+   - Validated with 5 specialized unit tests in `tests/offline-outbox-sync.test.mjs`.
+
+9. **Google Search Console Indexing & SEO Hardening:**
+   - Full public sitemap (`public/sitemap.xml`) registering all 5 indexable pages (`/`, `/pricing/`, `/privacy/`, `/terms/`, `/refund-policy/`) with `<lastmod>`, `<changefreq>`, and `<priority>`.
+   - Hardened `public/robots.txt` disallowing private student workspace and session routes (`/dashboard/`, `/mock/`, `/exam/`, `/result/`, `/practice/`, `/analytics/`, `/profile/`, `/referrals/`, `/onboarding/`, `/checkout/`, `/login/`, `/register/`, `/forgot-password/`, `/reset-password/`, `/games/`, `/dictionary/`, `/404/`, `/offline.html`).
+   - Strict trailing slash consistency matching canonical URLs 1:1.
+
 ### Verification & Deployment Evidence:
-- **Test Suite**: 25/25 automated unit and regression tests passing (`npm test`).
+- **Test Suite**: 30/30 automated unit and regression tests passing (`npm test`).
 - **Static Export**: 45/45 static pages cleanly compiled and verified (`npm run build`).
-- **Git Commit**: `8dcf5ac` pushed to `origin main`.
-- **Dev Deployment**: Successfully deployed to Cloudflare Pages dev server (`https://5f971e24.jambprep.pages.dev` and `jambprep.pages.dev`).
+- **Production Environment**: `https://jambprep.lecterniq.com` — Authoritative production release for students, canonical PWA installation, and Paystack subscriptions.
+- **Preview Environment**: `https://jambprep.pages.dev` (and preview hash deployments e.g. `https://41867379.jambprep.pages.dev`) — Cloudflare Pages preview server for integration QA.
+
 

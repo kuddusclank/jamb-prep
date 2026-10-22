@@ -43,6 +43,10 @@ Read [UI design and component guide](ui-design-and-component-guide.md) before fr
   * **Premium**: **₦1,000 / month** (30-day access pass) via Paystack.
   * **Referral Discount**: "Invite 2 friends, get 50% off your first month" (**₦500** first payment).
 * **Stack**: Next.js App Router, Supabase (PostgreSQL, Auth, Storage), Drizzle ORM, Tailwind CSS v4, shadcn/ui, Zustand, KaTeX, Paystack.
+* **Environments & Deployment**:
+  * **Production**: `https://jambprep.lecterniq.com` (Authoritative production environment, live user database, canonical PWA install origin, production router Worker).
+  * **Preview / Staging**: `https://jambprep.pages.dev` (Cloudflare Pages preview deployments and per-commit preview hashes, used for staging verification, dev testing, and QA).
+
 
 ## Mock integrity handoff
 
