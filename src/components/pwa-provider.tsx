@@ -214,7 +214,7 @@ export default function PwaProvider() {
   }, [pathname]);
 
   const inExam = pathname.startsWith('/exam');
-  const isExcluded = inExam || pathname.startsWith('/admin') || pathname.startsWith('/checkout');
+  const isExcluded = inExam || pathname.startsWith('/admin') || pathname.startsWith('/checkout') || pathname.startsWith('/schools');
 
   if (isExcluded) return null;
   if (!visible) return null;
