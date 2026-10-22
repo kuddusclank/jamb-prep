@@ -7,25 +7,36 @@ import { WifiOff, CheckCircle2, CloudRain } from "lucide-react";
 export function NetworkStatusToast() {
   const { isOffline, isOnline } = useNetworkStatus();
   const [toastState, setToastState] = useState<"idle" | "unstable" | "restored">("idle");
-  const [hasEverBeenOffline, setHasEverBeenOffline] = useState(false);
+  const [hasShownUnstableToast, setHasShownUnstableToast] = useState(false);
 
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+    let dismissTimer: ReturnType<typeof setTimeout> | undefined;
 
     if (isOffline) {
-      setHasEverBeenOffline(true);
-      setToastState("unstable");
-    } else if (hasEverBeenOffline && isOnline) {
-      setToastState("restored");
-      timer = setTimeout(() => {
+      // Debounce entering "unstable" state by 1.5s to absorb micro-stalls
+      debounceTimer = setTimeout(() => {
+        setHasShownUnstableToast(true);
+        setToastState("unstable");
+      }, 1500);
+    } else if (isOnline) {
+      if (hasShownUnstableToast) {
+        setToastState("restored");
+        dismissTimer = setTimeout(() => {
+          setToastState("idle");
+          setHasShownUnstableToast(false);
+        }, 3000);
+      } else {
+        // Micro-drop resolved before toast was shown; stay idle
         setToastState("idle");
-      }, 3500);
+      }
     }
 
     return () => {
-      if (timer) clearTimeout(timer);
+      if (debounceTimer) clearTimeout(debounceTimer);
+      if (dismissTimer) clearTimeout(dismissTimer);
     };
-  }, [isOffline, isOnline, hasEverBeenOffline]);
+  }, [isOffline, isOnline, hasShownUnstableToast]);
 
   if (toastState === "idle") {
     return null;

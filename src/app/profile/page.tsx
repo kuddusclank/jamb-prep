@@ -49,8 +49,8 @@ export default function ProfilePage() {
     }
   }, [isOffline, isNetworkFailure, profile.retry, enrollment.retry]);
 
-  // Auto-switch to offline profile view when connection drops or requests fail with network/DNS error
-  if (isOffline || (isNetworkFailure && (!profile.data || !enrollment.data))) {
+  // Switch to offline profile view only when there is no profile/enrollment data loaded in memory
+  if ((isOffline && (!profile.data || !enrollment.data)) || (isNetworkFailure && (!profile.data || !enrollment.data))) {
     if (offlineValidity.valid) {
       return (
         <StudyWorkspace>

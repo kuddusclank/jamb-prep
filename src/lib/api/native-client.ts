@@ -379,7 +379,7 @@ export function createNativeApiClient(options?: NativeApiClientOptions): NativeA
     const controller = new AbortController();
     const cleanups: Array<() => void> = [];
     const isReadQuery = !reqOptions?.method || reqOptions.method.toUpperCase() === 'GET';
-    const timeoutMs = reqOptions?.timeoutMs ?? options?.requestTimeoutMs ?? (isReadQuery ? 4000 : 30000);
+    const timeoutMs = reqOptions?.timeoutMs ?? options?.requestTimeoutMs ?? (isReadQuery ? 8000 : 30000);
     let timer: ReturnType<typeof setTimeout> | undefined;
     const deadline = new Promise<never>((_, reject) => {
       timer = setTimeout(() => {

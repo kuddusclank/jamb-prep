@@ -170,8 +170,8 @@ export default function DashboardPage() {
     }
   }, [isOnline, isNetworkFailure, resource.retry]);
 
-  // Auto-switch to offline UI the moment internet is lost or request fails with network/timeout error
-  if (isOffline || (isNetworkFailure && !resource.data)) {
+  // Switch to offline dashboard only when there is no online data loaded in memory
+  if ((isOffline && !resource.data) || (isNetworkFailure && !resource.data)) {
     if (offlineValidity.valid) {
       return (
         <StudyWorkspace>

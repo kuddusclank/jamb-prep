@@ -21,6 +21,8 @@ class NetworkStateManager {
   private listeners = new Set<NetworkStatusListener>();
   private pingInFlight: boolean = false;
   private pingIntervalId?: ReturnType<typeof setInterval>;
+  private consecutiveFailures: number = 0;
+  private lastFailureTimestamp: number = 0;
 
   constructor() {
     if (typeof window !== "undefined") {
@@ -59,19 +61,45 @@ class NetworkStateManager {
   }
 
   /**
-   * Immediately switches app to offline state when any fetch fails with a network, DNS, or timeout error.
+   * Switches app to offline state.
+   *
+   * To prevent rapid flapping / oscillation on mobile network jitter:
+   * 1. Browser OS offline events or navigator.onLine === false switch offline immediately.
+   * 2. Transient fetch/network errors require consecutive failures within a 15s window,
+   *    or are verified via a lightweight probe before flipping the global offline state.
    */
   public markOffline(reason?: string): void {
-    if (!this.isOnlineState) return;
-    this.isOnlineState = false;
-    this.notifyListeners();
-    this.startRecoveryPolling();
+    const isOsOffline =
+      reason === "browser_offline_event" ||
+      (typeof navigator !== "undefined" && !navigator.onLine);
+
+    const now = Date.now();
+    if (now - this.lastFailureTimestamp > 15000) {
+      this.consecutiveFailures = 0;
+    }
+    this.lastFailureTimestamp = now;
+    this.consecutiveFailures++;
+
+    if (isOsOffline || this.consecutiveFailures >= 2) {
+      if (!this.isOnlineState) return;
+      this.isOnlineState = false;
+      this.notifyListeners();
+      this.startRecoveryPolling();
+      return;
+    }
+
+    // First isolated fetch failure while OS claims online:
+    // Verify via probe asynchronously before tearing down the user's online session
+    if (this.isOnlineState && !this.pingInFlight) {
+      void this.probeConnection();
+    }
   }
 
   /**
    * Switches app back to online state when verified.
    */
   public markOnline(): void {
+    this.consecutiveFailures = 0;
     if (this.isOnlineState) return;
     this.isOnlineState = true;
     this.stopRecoveryPolling();
@@ -80,6 +108,7 @@ class NetworkStateManager {
 
   /**
    * Actively tests if the device has real internet access by probing the local public origin.
+   * Uses a 5000ms timeout to avoid false negatives on high-latency mobile networks.
    */
   public async probeConnection(): Promise<boolean> {
     if (typeof window === "undefined") return true;
@@ -88,7 +117,7 @@ class NetworkStateManager {
     this.pingInFlight = true;
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 3500);
+      const timer = setTimeout(() => controller.abort(), 5000);
 
       // Probe public asset on the current origin with cache-busting
       const res = await fetch(`/lecterniq-mark.svg?_hb=${Date.now()}`, {
@@ -102,11 +131,21 @@ class NetworkStateManager {
         this.markOnline();
         return true;
       } else {
-        this.markOffline("probe_bad_status");
+        this.consecutiveFailures = Math.max(this.consecutiveFailures, 2);
+        if (this.isOnlineState) {
+          this.isOnlineState = false;
+          this.notifyListeners();
+          this.startRecoveryPolling();
+        }
         return false;
       }
     } catch {
-      this.markOffline("probe_network_failure");
+      this.consecutiveFailures = Math.max(this.consecutiveFailures, 2);
+      if (this.isOnlineState) {
+        this.isOnlineState = false;
+        this.notifyListeners();
+        this.startRecoveryPolling();
+      }
       return false;
     } finally {
       this.pingInFlight = false;
@@ -114,14 +153,14 @@ class NetworkStateManager {
   }
 
   private handleWindowOnline(): void {
-    // When window fires 'online', verify with staggered probes to accommodate DHCP/DNS handshake latency
+    // When window fires 'online', verify with staggered probes
     void this.probeConnection();
     setTimeout(() => {
       if (!this.isOnlineState) void this.probeConnection();
-    }, 800);
+    }, 1500);
     setTimeout(() => {
       if (!this.isOnlineState) void this.probeConnection();
-    }, 2000);
+    }, 4000);
   }
 
   private notifyListeners(): void {
@@ -136,14 +175,14 @@ class NetworkStateManager {
 
   private startRecoveryPolling(): void {
     if (this.pingIntervalId) return;
-    // Rapid probe every 2.5 seconds to automatically recover the moment connection returns
+    // Probe every 5 seconds to automatically recover without hammering jittery connections
     this.pingIntervalId = setInterval(() => {
       if (!this.isOnlineState) {
         void this.probeConnection();
       } else {
         this.stopRecoveryPolling();
       }
-    }, 2500);
+    }, 5000);
   }
 
   private stopRecoveryPolling(): void {
