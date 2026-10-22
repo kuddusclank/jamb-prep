@@ -44,6 +44,7 @@ export async function updateSession(request: NextRequest) {
 
   const schoolProtectedPaths = [
     "/schools/dashboard",
+    "/schools/checkout",
     "/schools/students",
     "/schools/mocks",
     "/schools/billing",

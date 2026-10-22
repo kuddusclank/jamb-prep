@@ -5,9 +5,12 @@ import { db } from "@/db";
 import {
   paymentTransactions,
   paymentWebhookEvents,
-  subscriptionEntitlements
+  subscriptionEntitlements,
+  schoolOrders,
+  schoolStudents,
+  schoolActivationJobs
 } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,6 +40,126 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true, duplicate: true }, { status: 200 });
       }
 
+      // Check if this is an institutional school cohort order
+      if (reference?.startsWith("SCH-") || event.data?.metadata?.orderType === "school_cohort_license") {
+        const order = await db.query.schoolOrders.findFirst({
+          where: eq(schoolOrders.reference, reference),
+        });
+
+        if (order) {
+          if (event.data.amount < order.totalAmountKobo) {
+            return NextResponse.json({ error: "Payment amount does not match school order total." }, { status: 400 });
+          }
+
+          const now = new Date();
+          const expiryDate = new Date(now.getTime() + order.durationMonths * 30 * 24 * 60 * 60 * 1000);
+
+          await db.update(schoolOrders)
+            .set({
+              status: "completed",
+              settledAt: now,
+              paystackPayload: event.data,
+            })
+            .where(eq(schoolOrders.id, order.id));
+
+          // Resolve and activate target students
+          const metadata = (order.metadata as any) || {};
+          const targetedIds: string[] = Array.isArray(metadata.studentIds) ? metadata.studentIds : [];
+
+          let studentsToActivate: Array<{ id: string; studentUserId: string }> = [];
+
+          if (targetedIds.length > 0) {
+            studentsToActivate = await db
+              .select({
+                id: schoolStudents.id,
+                studentUserId: schoolStudents.studentUserId,
+              })
+              .from(schoolStudents)
+              .where(
+                and(
+                  eq(schoolStudents.schoolId, order.schoolId),
+                  inArray(schoolStudents.id, targetedIds)
+                )
+              );
+          }
+
+          if (studentsToActivate.length < order.studentCount) {
+            const remainingLimit = order.studentCount - studentsToActivate.length;
+            const existingIds = new Set(studentsToActivate.map((s) => s.id));
+
+            const available = await db
+              .select({
+                id: schoolStudents.id,
+                studentUserId: schoolStudents.studentUserId,
+              })
+              .from(schoolStudents)
+              .where(
+                and(
+                  eq(schoolStudents.schoolId, order.schoolId),
+                  eq(schoolStudents.licenseStatus, "inactive")
+                )
+              )
+              .limit(remainingLimit);
+
+            for (const std of available) {
+              if (!existingIds.has(std.id)) {
+                studentsToActivate.push(std);
+                existingIds.add(std.id);
+              }
+            }
+          }
+
+          for (const std of studentsToActivate) {
+            try {
+              await db.update(schoolStudents)
+                .set({
+                  licenseStatus: "active",
+                  licenseExpiresAt: expiryDate,
+                })
+                .where(eq(schoolStudents.id, std.id));
+
+              await db.insert(subscriptionEntitlements)
+                .values({
+                  userId: std.studentUserId,
+                  expiresAt: expiryDate,
+                  planCode: "SCHOOL_INSTITUTIONAL_1500",
+                  autoRenew: false,
+                  updatedAt: now,
+                })
+                .onConflictDoUpdate({
+                  target: subscriptionEntitlements.userId,
+                  set: {
+                    expiresAt: expiryDate,
+                    planCode: "SCHOOL_INSTITUTIONAL_1500",
+                    autoRenew: false,
+                    updatedAt: now,
+                  },
+                });
+
+              await db.insert(schoolActivationJobs)
+                .values({
+                  orderId: order.id,
+                  studentUserId: std.studentUserId,
+                  durationMonths: order.durationMonths,
+                  status: "completed",
+                })
+                .onConflictDoNothing();
+            } catch (err) {
+              console.warn("Error during webhook student activation:", err);
+            }
+          }
+
+          await db.insert(paymentWebhookEvents).values({
+            eventId,
+            eventType: event.event,
+            payload: event,
+          }).onConflictDoNothing();
+
+          return NextResponse.json({ received: true, schoolOrderSettled: true }, { status: 200 });
+        }
+      }
+
+      // Default: individual student candidate transaction
       const txn = await db.query.paymentTransactions.findFirst({
         where: eq(paymentTransactions.reference, reference),
       });

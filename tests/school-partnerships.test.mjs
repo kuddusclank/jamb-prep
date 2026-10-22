@@ -300,5 +300,72 @@ test("Stage 4 Dashboard Roster: Interactive multi-select and cohort licensing tr
   assert.ok(source.includes("/schools/checkout?students="));
 });
 
+test("Stage 5 Cohort Licensing & Checkout: Endpoints, UI pages, and settlement files exist", () => {
+  const requiredFiles = [
+    "src/app/api/schools/checkout/initialize/route.ts",
+    "src/app/api/schools/checkout/verify/route.ts",
+    "src/app/schools/checkout/page.tsx",
+    "src/app/schools/checkout/checkout-client.tsx",
+    "src/app/schools/checkout/verify/page.tsx",
+    "src/app/schools/checkout/verify/verify-client.tsx",
+  ];
+
+  for (const relPath of requiredFiles) {
+    const fullPath = path.join(ROOT, relPath);
+    assert.ok(fs.existsSync(fullPath), `Expected file to exist: ${relPath}`);
+  }
+});
+
+test("Stage 5 Checkout Client: Configures candidate scope, term duration, and dual payment pathways", () => {
+  const checkoutClientFile = path.join(ROOT, "src/app/schools/checkout/checkout-client.tsx");
+  const source = fs.readFileSync(checkoutClientFile, "utf8");
+
+  // Step 1: Candidate count
+  assert.ok(source.includes("Number of Candidates"));
+  assert.ok(source.includes("studentCount"));
+  // Step 2: Duration options (1 to 12 months)
+  assert.ok(source.includes("durationOptions"));
+  assert.ok(source.includes("License Term Duration"));
+  // Non-recurring guarantee
+  assert.ok(source.includes("Non-recurring: Accounts expire cleanly without surprise debits"));
+  // Pathway A: Online Paystack checkout
+  assert.ok(source.includes("/api/schools/checkout/initialize/"));
+  // Pathway B: Direct Bank Remittance & Invoice Reference
+  assert.ok(source.includes("Direct Bank Remittance"));
+  assert.ok(source.includes("SCH-INV-"));
+});
+
+test("Stage 5 Verification & Activation: Handles transaction confirmation and student provisioning", () => {
+  const verifyClientFile = path.join(ROOT, "src/app/schools/checkout/verify/verify-client.tsx");
+  const source = fs.readFileSync(verifyClientFile, "utf8");
+
+  assert.ok(source.includes("/api/schools/checkout/verify/"));
+  assert.ok(source.includes("Cohort Licenses Activated!"));
+  assert.ok(source.includes("Print Receipt"));
+
+  const verifyRouteFile = path.join(ROOT, "src/app/api/schools/checkout/verify/route.ts");
+  const routeSource = fs.readFileSync(verifyRouteFile, "utf8");
+
+  // Updates order status to completed
+  assert.ok(routeSource.includes('status: "completed"'));
+  // Activates student license status in schoolStudents
+  assert.ok(routeSource.includes('licenseStatus: "active"'));
+  // Unlocks platform entitlements for student practice & mocks
+  assert.ok(routeSource.includes("subscriptionEntitlements"));
+  assert.ok(routeSource.includes("SCHOOL_INSTITUTIONAL_1500"));
+});
+
+test("Stage 5 Paystack Webhook: Idempotently settles institutional school cohort orders", () => {
+  const webhookFile = path.join(ROOT, "src/app/api/webhooks/paystack/route.ts");
+  const source = fs.readFileSync(webhookFile, "utf8");
+
+  assert.ok(source.includes("school_cohort_license"));
+  assert.ok(source.includes("schoolOrders"));
+  assert.ok(source.includes("schoolStudents"));
+  assert.ok(source.includes("schoolActivationJobs"));
+  assert.ok(source.includes("schoolOrderSettled"));
+});
+
+
 
 
