@@ -99,6 +99,14 @@ The following capabilities have been fully built, verified with 25 unit/integrat
    - Floating, non-displacing exam calculator overlay with complete touch and keyboard support.
    - Interruption monitoring banner returns `null` (0px) during standard exam-taking, surfacing only if a window/fullscreen blur actually occurs.
    - Responsive question stem cards and choices fitting standard mobile viewports with a compact bottom navigation bar (`Prev`, `Clear`, `Next`).
+4. **Dictionary, Five Daily Words & Educational Games (Feature F2)**:
+   - Curated high-yield UTME Lexicon (`src/lib/dictionary/utme-lexicon-data.ts`, >528 KB) containing irregular verb conjugations, syllables, stress indices, silent letters, and exam notes.
+   - Hybrid lookup service: local UTME bank first, dynamic Free Dictionary API fallback (`src/lib/dictionary/dictionary-service.ts`, `free-dictionary-service.ts`).
+   - Deterministic Daily 5 selection using date-based hashing (`DictionaryService.getDailyFive`).
+   - Full student dictionary interface (`src/app/dictionary/page.tsx`), bookmarking/saved words, and detailed drawer inspection (`WordInspectorSheet`).
+   - 4 interactive educational mini-games: **Stress Master**, **Sound Match**, **Silent Hunter**, and **Synonym Blitz** (`src/app/games/*` and `src/lib/dictionary/game-*.ts`).
+   - Study streak integration via `recordStreakActivity` (`src/lib/dictionary/streak-activation.ts`).
+   - Verified by unit tests: `tests/dictionary-games.test.mjs` (5 passing tests).
 
 ---
 
@@ -106,30 +114,30 @@ The following capabilities have been fully built, verified with 25 unit/integrat
 
 Based on the [Future Learning and School Partnerships Plan](future-learning-and-school-partnerships-plan.md) and [Product Requirements](product-requirements.md), the immediate candidate capabilities for the next engineering sprints are:
 
-### 1. Dictionary & Five Daily Words (Feature F2)
-- **Goal**: Boost candidates' Use of English score (lexis, structure, synonyms, antonyms, and idioms).
-- **Deliverables**:
-  - Curated offline vocabulary store for UTME-frequently tested words.
-  - Daily delivery of 5 new words with contextual JAMB-style example sentences and irregular verb forms.
-  - Spaced repetition review mechanics.
-  - Direct synergy with the 4 educational games already in the codebase (`/games/synonym-blitz`, `/games/sound-match`, `/games/stress-master`, `/games/silent-hunter`).
-
-### 2. Offline Outbox Synchronization & Durable Answer Reconciliation (Feature F5)
+### 1. Offline Outbox Synchronization & Durable Answer Reconciliation (Feature F5)
 - **Goal**: Seamless, reliable sync when candidates complete offline weekly practice.
 - **Deliverables**:
   - Background/foreground outbox synchronization pushing queued answers from IndexedDB to `/api/v1/practice/sync` upon network reconnection.
   - Server-side reconciliation ensuring streak points and mastery progress update accurately without duplication.
+  - Conflict resolution between multiple offline practice devices.
 
-### 3. School Partnerships & Bulk Institutional Licensing (Features F1 & F6)
+### 2. School Partnerships & Bulk Institutional Licensing (Features F1 & F6)
 - **Goal**: Enable secondary schools and tutorial centres to onboard cohorts of candidates.
 - **Deliverables**:
   - Prepaid cohort pricing at **₦1,500 / student / month** (1–12 month terms).
   - School admin / teacher portal: roster import (CSV/manual), mock exam assignment, and class-level diagnostic reporting.
   - Multi-tenant data segregation with strict role-based access control.
 
-### 4. Physical Mobile Device Closed-App Push Validation
+### 3. Physical Mobile Device Closed-App Push Validation
 - **Goal**: Final QA of push notifications across real Android and iOS devices.
 - **Deliverables**:
   - Test real Web Push delivery with the PWA completely closed/backgrounded on physical Android (Chrome/PWA) and iOS (Add to Home Screen Web Push).
   - Verify quiet hours and delivery timing against WAT timezone (`Africa/Lagos`).
+  - Validate that Pro user study schedules reliably override the general 7:00 AM notification reminder.
+
+### 4. Question Bank Expansion & Syllabus Coverage
+- **Goal**: Expand leaf-topic question coverage across all 8 UTME launch subjects.
+- **Deliverables**:
+  - Transition verified held questions to active blueprints (`885-question-draft-transition-plan.md`).
+  - Add remaining literature texts, grammar, and elective question pools.
 

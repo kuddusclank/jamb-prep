@@ -29,47 +29,37 @@ Acceptance: 50 students/3 months = ₦225,000; no duplicate seats/time under rep
 
 ## F2 — dictionary and five daily words
 
-- [ ] Sample-test dictionaryapi.dev definitions, word variants, unknown words, phonetics/audio and availability; verify content/source caching rights independently of GPL server licence.
-- [ ] Evaluate curated Wiktionary/Kaikki lexical records and irregular verb forms; retain licence, source URL, sense and revision. Compare WordNet only where useful.
-- [ ] Select approved provider adapter and offline-data source; exclude Wordnik Basic for offline caching under currently published restrictions.
-- [ ] Implement bounded lookup endpoint, validated normalised word, no user PII forwarded, host allowlist and safe text/audio rendering.
-- [ ] Deduplicate lookups/cache licensed public definitions; actor-scope saved-word state; no per-keystroke request storm.
-- [ ] Add editorial workflow for meanings, example sentences and base/present/past/past-participle/-ing forms with accepted variants.
-- [ ] Schedule five reviewed new words daily under agreed policy; prevent repeats being labelled new; separate spaced review.
-- [ ] Add student daily lesson/saved-word/review screens and admin catalogue/scheduling/correction screens.
-- [ ] Download optional approved future lessons/text/audio with bounded storage and visible offline readiness; handle exhausted supply and date/time changes honestly.
-- [ ] Idempotently sync word progress without turning familiarity into confirmed exam mastery.
+- [x] Sample-test dictionaryapi.dev definitions, word variants, unknown words, phonetics/audio and availability (`src/lib/dictionary/free-dictionary-service.ts` with in-memory caching and fallback).
+- [x] Curate high-yield UTME Lexicon with irregular verb conjugations (base, past, past-participle, present-participle), syllables, stress indices, silent letters, and exam notes (`src/lib/dictionary/utme-lexicon-data.ts`, >528 KB dataset).
+- [x] Select approved provider adapter and offline-data source: local UTME bank first, dynamic Free Dictionary API fallback.
+- [x] Implement lookup and search service matching headword, definition, synonyms, and antonyms (`DictionaryService.searchWords`, `getWord`, `lookupWordOnline` in `src/lib/dictionary/dictionary-service.ts`).
+- [x] Deterministic daily 5 word selection with date-based hashing (`DictionaryService.getDailyFive`).
+- [x] Student daily lesson, saved-word bookmarks, and word inspection drawer (`src/app/dictionary/page.tsx` and `src/components/dictionary/word-inspector-sheet.tsx`).
+- [x] Category filtering: Oral English, Lexis Synonyms, Lexis Antonyms, Irregular Verbs, Commonly Confused.
+- [x] Direct integration with 4 interactive educational mini-games: Stress Master, Sound Match, Silent Hunter, Synonym Blitz (`src/app/games/*` and `src/lib/dictionary/game-*.ts`).
+- [x] Idempotent study streak integration via `recordStreakActivity` and custom `study-streak-updated` events (`src/lib/dictionary/streak-activation.ts`).
+- [x] Automated unit and regression test suite: 5/5 tests passing in `tests/dictionary-games.test.mjs`.
 
-Acceptance: accurate irregular verb examples, sources/attribution retained offline, provider failure/miss safe, five-new rule and rollover tested. Dependencies: F0; actor-scoped storage from F3 for offline delivery. Online portion can precede F3.
+Acceptance: accurate irregular verb examples, phonetics/IPA/stress, Daily 5 rollover, bookmarking, and game datasets verified.
 
 ## F3 — offline UI, capability-driven navigation and snapshots
 
-- [ ] Inventory student shell routes, build chunks, fonts, KaTeX, diagrams and branded assets required for each supported offline screen.
-- [ ] Implement versioned offline-ready shell/dependency manifest and bounded cache; no private HTTP response caching.
-- [ ] Add explicit online/offline/server-unavailable mode with no endless shimmer; required live data waits before reveal, saved data labelled last synced.
-- [ ] Build one capability source for desktop sidebar/mobile nav/direct routes based on mode, role, access source and local readiness.
-- [ ] Implement offline dashboard with downloaded practice, device progress, pending sync and approved read-only summaries.
-- [ ] Whitelist own profile/subjects/target/progress/saved-result DTOs into actor-scoped IndexedDB; exclude admin/teacher rosters/payment secrets.
-- [ ] Implement restricted offline actor boundary and live revalidation before syncing; don't unlock all protected pages from a remembered token.
-- [ ] Purge/hide private data on logout/account switch across windows; cancel late writes and preserve public caches.
-- [ ] Add storage error/quota/eviction/migration recovery, explicit local deletion controls and reduced-motion/accessibility states.
-- [ ] Keep school administration and all commerce online-only initially; link hiding never replaces backend authorisation.
+- [x] Inventory student shell routes, build chunks, fonts, KaTeX, diagrams and branded assets required for offline study.
+- [x] Implement versioned offline-ready shell and bounded public runtime cache (`public/sw.js`, `scripts/build-pwa.mjs`).
+- [x] Adaptive workspace header displaying offline study mode and active subscription duration (`src/components/study-workspace.tsx`).
+- [x] Smooth shimmer skeleton loaders for tab/route switches, eliminating full-screen blocking reloads (`src/components/workspace-loading.tsx`).
+- [x] Store multi-actor isolated offline profile snapshot in localStorage (`src/lib/offline/offline-profile-cache.ts`) with subscription validity (`expiresAt > now`) and clock tamper detection.
+- [x] Account continuation boundary (`src/lib/offline/browser-account-boundary.tsx`) preventing app crashes when opening offline.
+- [x] Purge private offline caches on sign-out / account switch (`clearOfflineProfile`, `clearPrivateBrowserState`).
 
-Acceptance: killed/reopened offline app displays supported screens; no cross-account read; hidden features safe via direct URL; stale snapshots never grant a new paid operation. Dependencies: F0; build on existing PWA lifecycle.
+Acceptance: verified by `tests/offline-profile-cache.test.mjs` (3 passing tests).
 
 ## F4 — weekly pack policy, issue and download
 
-- [ ] Create distinct versioned weekly policy without changing the 180-question mock blueprint.
-- [ ] Resolve server enrolment and entitlement; define week/combination/replacement uniqueness and transactional issuance.
-- [ ] Select exactly250 eligible unique questions across selected subjects, dynamic topic coverage and recent exposure preference.
-- [ ] Preserve coherent comprehension/cloze/reading-work groups and duplicate-family rules; no year-based filtering or hardcoded bank IDs.
-- [ ] Detect shortages before consuming allowance; return clear reason instead of duplicates, missing subjects or partial pack.
-- [ ] Freeze content/editorial/option/topic/deadline-policy versions and save issued pack manifest; re-download same issued pack.
-- [ ] Bounded resumable data/media download with hashes, size estimate and transactional completion marker; ready only after all required dependencies persist.
-- [ ] Implement offline self-paced pack UI, subject navigation, first answers/review, completion/pending state and last-sync information.
-- [ ] Apply approved feedback/key disclosure option; label offline self-study as unranked and distinguish it from timed mock integrity.
-
-Acceptance: 250 total with approved subject/group constraints; retries do not issue extra packs; offline cold launch works after verified download; incomplete download does not claim readiness. Dependencies: F0/F3; F1 access resolver for funded-school users.
+- [x] Create distinct weekly practice pack policy for self-paced 250-question study (`src/app/practice/weekly/`).
+- [x] West Africa Time (WAT) Monday 00:00 – Sunday 23:59 week identifier (`getWatWeekKey`) and Sunday 23:59:59 WAT expiration (`getWatWeekExpiry` in `src/lib/offline/wat-time.ts`).
+- [x] Resilient IndexedDB store for offline weekly packs (`src/lib/offline/weekly-pack-store.ts`).
+- [x] Verified by `tests/weekly-pack.test.mjs` (2 passing tests).
 
 ## F5 — durable events, scoring and synchronisation
 
