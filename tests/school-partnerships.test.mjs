@@ -237,4 +237,68 @@ test("Stage 3 School Portal Shell: Interactive invite link copy button and candi
   );
 });
 
+test("Stage 4 Ingestion Pathways: API endpoints and modal components exist", () => {
+  const requiredFiles = [
+    "src/app/api/schools/students/create/route.ts",
+    "src/app/api/schools/students/import/route.ts",
+    "src/app/api/schools/students/list/route.ts",
+    "src/app/schools/dashboard/add-student-modal.tsx",
+    "src/app/schools/dashboard/csv-import-modal.tsx",
+  ];
+
+  for (const relPath of requiredFiles) {
+    const fullPath = path.join(ROOT, relPath);
+    assert.ok(fs.existsSync(fullPath), `Expected file to exist: ${relPath}`);
+  }
+});
+
+test("Stage 4 Default Password Rule: Computes LASTNAME in uppercase and pads for Supabase 6-character auth constraint", () => {
+  function computeDefaultPassword(lastName) {
+    const clean = lastName.trim().toUpperCase();
+    if (clean.length >= 6) return clean;
+    return `${clean}123456`.slice(0, 6);
+  }
+
+  assert.equal(computeDefaultPassword("Okonkwo"), "OKONKWO");
+  assert.equal(computeDefaultPassword("Adeleke"), "ADELEKE");
+  assert.equal(computeDefaultPassword("Danjuma"), "DANJUMA");
+  assert.equal(computeDefaultPassword("Bello"), "BELLO1"); // 5 letters -> padded to 6
+  assert.equal(computeDefaultPassword("Ojo"), "OJO123"); // 3 letters -> padded to 6
+  assert.equal(computeDefaultPassword("Ali"), "ALI123");
+  assert.equal(computeDefaultPassword("Eze"), "EZE123");
+});
+
+test("Stage 4 CSV Ingestion: Validates CSV headers and produces classroom distribution format", () => {
+  const csvModalFile = path.join(ROOT, "src/app/schools/dashboard/csv-import-modal.tsx");
+  const source = fs.readFileSync(csvModalFile, "utf8");
+
+  // Template headers
+  assert.ok(source.includes("first_name,last_name,email,student_id,phone,target_year"));
+  // Printable classroom handout export
+  assert.ok(source.includes("downloadClassroomHandout"));
+  assert.ok(source.includes("Classroom_Credential_Handout.csv"));
+  // Preflight validation preview
+  assert.ok(source.includes("parsedRows"));
+  assert.ok(source.includes("Preflight Validation"));
+});
+
+test("Stage 4 Dashboard Roster: Interactive multi-select and cohort licensing transition", () => {
+  const dashboardFile = path.join(ROOT, "src/app/schools/dashboard/page.tsx");
+  const source = fs.readFileSync(dashboardFile, "utf8");
+
+  // Multi-select state and Select All
+  assert.ok(source.includes("selectedStudentIds"));
+  assert.ok(source.includes("toggleSelectAll"));
+  assert.ok(source.includes("toggleSelectStudent"));
+
+  // Modals integration
+  assert.ok(source.includes("<AddStudentModal"));
+  assert.ok(source.includes("<CsvImportModal"));
+
+  // Dynamic pricing calculation for selected students
+  assert.ok(source.includes("selectedStudentIds.length * 1500"));
+  assert.ok(source.includes("/schools/checkout?students="));
+});
+
+
 

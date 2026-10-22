@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { createClient } from "@/lib/supabase/client";
+import { AddStudentModal } from "./add-student-modal";
+import { CsvImportModal } from "./csv-import-modal";
 import { 
   Users, 
   ShieldCheck, 
@@ -21,27 +23,132 @@ import {
   Building2,
   Calendar,
   Layers,
-  KeyRound
+  KeyRound,
+  CheckSquare,
+  Square,
+  Trash2,
+  Check
 } from "lucide-react";
+
+interface StudentItem {
+  id: string;
+  name: string;
+  email: string;
+  studentIdentifier?: string | null;
+  defaultPassword?: string;
+  subjects?: string[];
+  licenseStatus: "active" | "inactive";
+  daysLeft?: number;
+  lastActive?: string;
+  averageScore?: number | null;
+  enrolmentMethod?: string;
+}
 
 export default function SchoolDashboardPage() {
   const [user, setUser] = useState<any>(null);
-  const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedPasswordId, setCopiedPasswordId] = useState<string | null>(null);
+
+  // Modals state
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+
+  // Selection state
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+
+  // Initial Demo Roster with standard Nigerian secondary school candidate profiles
+  const [students, setStudents] = useState<StudentItem[]>([
+    {
+      id: "std-1",
+      name: "Chinedu Okonkwo",
+      email: "c.okonkwo@school.edu.ng",
+      studentIdentifier: "ST-001",
+      defaultPassword: "OKONKWO",
+      subjects: ["ENG", "MTH", "PHY", "CHM"],
+      licenseStatus: "active",
+      daysLeft: 28,
+      lastActive: "Today, 10:15 AM",
+      averageScore: 284,
+    },
+    {
+      id: "std-2",
+      name: "Amina Bello",
+      email: "a.bello@school.edu.ng",
+      studentIdentifier: "ST-002",
+      defaultPassword: "BELLO",
+      subjects: ["ENG", "LIT", "GOV", "ECN"],
+      licenseStatus: "active",
+      daysLeft: 28,
+      lastActive: "Yesterday",
+      averageScore: 292,
+    },
+    {
+      id: "std-3",
+      name: "Oluwaseun Adeleke",
+      email: "o.adeleke@school.edu.ng",
+      studentIdentifier: "ST-003",
+      defaultPassword: "ADELEKE",
+      subjects: ["ENG", "BIO", "CHM", "PHY"],
+      licenseStatus: "inactive",
+      daysLeft: 0,
+      lastActive: "Not started",
+      averageScore: null,
+    },
+    {
+      id: "std-4",
+      name: "Fatima Danjuma",
+      email: "f.danjuma@school.edu.ng",
+      studentIdentifier: "ST-004",
+      defaultPassword: "DANJUMA",
+      subjects: ["ENG", "MTH", "ECN", "GEO"],
+      licenseStatus: "active",
+      daysLeft: 14,
+      lastActive: "2 days ago",
+      averageScore: 246,
+    },
+  ]);
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then((res: any) => {
-      const user = res?.data?.user;
-      if (!user) {
+    supabase.auth.getUser().then(async (res: any) => {
+      const u = res?.data?.user;
+      if (!u) {
         window.location.assign("/schools/login?redirectTo=/schools/dashboard");
         return;
       }
-      const role = user.user_metadata?.role || "student";
+      const role = u.user_metadata?.role || "student";
       if (role === "student") {
         window.location.assign("/dashboard?error=unauthorized_school_portal");
         return;
       }
-      setUser(user);
+      setUser(u);
+
+      // Attempt to load enrolled students from server API
+      try {
+        const listRes = await fetch("/api/schools/students/list/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (listRes.ok) {
+          const data = await listRes.json();
+          if (data.students && Array.isArray(data.students) && data.students.length > 0) {
+            setStudents(data.students.map((s: any) => ({
+              id: s.id,
+              name: s.name,
+              email: s.email,
+              studentIdentifier: s.studentIdentifier || null,
+              defaultPassword: s.defaultPassword,
+              subjects: s.subjects || ["ENG", "MTH", "PHY", "CHM"],
+              licenseStatus: s.licenseStatus || "inactive",
+              daysLeft: s.licenseExpiresAt ? Math.max(0, Math.ceil((new Date(s.licenseExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0,
+              lastActive: "Enrolled",
+              averageScore: null,
+            })));
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load dynamic roster, using local cohort state:", err);
+      }
     });
   }, []);
 
@@ -61,61 +168,81 @@ export default function SchoolDashboardPage() {
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard) {
         await navigator.clipboard.writeText(inviteLink);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2500);
       }
     } catch (e) {
       console.warn("Failed to copy link:", e);
     }
   };
 
-  // Mock initial demo roster to demonstrate the ingestion pathways and password rules
-  const demoStudents = [
-    {
-      id: "std-1",
-      name: "Chinedu Okonkwo",
-      email: "c.okonkwo@school.edu.ng",
-      defaultPassword: "OKONKWO",
+  const handleCopyPassword = (studentId: string, pwd: string) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(pwd);
+      setCopiedPasswordId(studentId);
+      setTimeout(() => setCopiedPasswordId(null), 2000);
+    }
+  };
+
+  // Selection handlers
+  const isAllSelected = students.length > 0 && selectedStudentIds.length === students.length;
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedStudentIds([]);
+    } else {
+      setSelectedStudentIds(students.map((s) => s.id));
+    }
+  };
+
+  const toggleSelectStudent = (id: string) => {
+    setSelectedStudentIds((prev) => 
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  // Callback when a single student is created via Pathway A
+  const handleStudentAdded = (newStudent: any) => {
+    const formatted: StudentItem = {
+      id: newStudent.id,
+      name: newStudent.name,
+      email: newStudent.email,
+      studentIdentifier: newStudent.studentIdentifier || null,
+      defaultPassword: newStudent.defaultPassword,
       subjects: ["ENG", "MTH", "PHY", "CHM"],
-      licenseStatus: "active",
-      daysLeft: 28,
-      lastActive: "Today, 10:15 AM",
-      averageScore: 284,
-    },
-    {
-      id: "std-2",
-      name: "Amina Bello",
-      email: "a.bello@school.edu.ng",
-      defaultPassword: "BELLO",
-      subjects: ["ENG", "LIT", "GOV", "ECN"],
-      licenseStatus: "active",
-      daysLeft: 28,
-      lastActive: "Yesterday",
-      averageScore: 292,
-    },
-    {
-      id: "std-3",
-      name: "Oluwaseun Adeleke",
-      email: "o.adeleke@school.edu.ng",
-      defaultPassword: "ADELEKE",
-      subjects: ["ENG", "BIO", "CHM", "PHY"],
       licenseStatus: "inactive",
       daysLeft: 0,
-      lastActive: "Not started",
+      lastActive: "Just added",
       averageScore: null,
-    },
-    {
-      id: "std-4",
-      name: "Fatima Danjuma",
-      email: "f.danjuma@school.edu.ng",
-      defaultPassword: "DANJUMA",
-      subjects: ["ENG", "MTH", "ECN", "GEO"],
-      licenseStatus: "active",
-      daysLeft: 14,
-      lastActive: "2 days ago",
-      averageScore: 246,
-    },
-  ];
+      enrolmentMethod: "manual",
+    };
+    setStudents((prev) => [formatted, ...prev]);
+    setSelectedStudentIds((prev) => [...prev, formatted.id]);
+  };
+
+  // Callback when batch CSV is imported via Pathway B
+  const handleImportComplete = (importedList: any[]) => {
+    const formatted: StudentItem[] = importedList.map((item) => ({
+      id: item.id,
+      name: item.name,
+      email: item.email,
+      studentIdentifier: item.studentIdentifier || null,
+      defaultPassword: item.defaultPassword,
+      subjects: ["ENG", "MTH", "PHY", "CHM"],
+      licenseStatus: "inactive",
+      daysLeft: 0,
+      lastActive: "Imported via CSV",
+      averageScore: null,
+      enrolmentMethod: "csv",
+    }));
+
+    setStudents((prev) => [...formatted, ...prev]);
+    setSelectedStudentIds((prev) => [...prev, ...formatted.map((f) => f.id)]);
+  };
+
+  // Metrics
+  const activeCount = students.filter((s) => s.licenseStatus === "active").length;
+  const activeSpend = activeCount * 1500;
 
   return (
     <div className="min-h-screen bg-[#F8FAF7] text-[#092E28] flex flex-col justify-between">
@@ -195,7 +322,7 @@ export default function SchoolDashboardPage() {
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-xs hover:bg-emerald-500 transition cursor-pointer"
                 title="Copy student invite link"
               >
-                {copied ? (
+                {copiedLink ? (
                   <>
                     <CheckCircle2 size={13} className="text-emerald-100" />
                     <span>Copied!</span>
@@ -218,8 +345,8 @@ export default function SchoolDashboardPage() {
               <span className="text-xs font-semibold uppercase tracking-wider">Total Enrolled</span>
               <Users size={18} className="text-[#116149]" />
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-slate-900">4 Candidates</p>
-            <span className="text-[11px] text-slate-500 block">3 active licenses</span>
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900">{students.length} Candidates</p>
+            <span className="text-[11px] text-slate-500 block">{activeCount} active licenses</span>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-1">
@@ -227,7 +354,7 @@ export default function SchoolDashboardPage() {
               <span className="text-xs font-semibold uppercase tracking-wider">Active Paid</span>
               <CreditCard size={18} className="text-emerald-600" />
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-slate-900">₦4,500 / mo</p>
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900">₦{activeSpend.toLocaleString()} / mo</p>
             <span className="text-[11px] text-emerald-800 font-medium block">₦1,500 / candidate rate</span>
           </div>
 
@@ -268,24 +395,32 @@ export default function SchoolDashboardPage() {
 
           {/* 3 Pathway Action Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="rounded-2xl border border-slate-200 p-5 space-y-3 hover:border-slate-300 transition">
-              <div className="size-9 rounded-xl bg-emerald-50 text-[#116149] flex items-center justify-center">
+            {/* Card 1: Manual */}
+            <div 
+              onClick={() => setIsAddModalOpen(true)}
+              className="group rounded-2xl border border-slate-200 p-5 space-y-3 hover:border-[#116149] hover:bg-emerald-50/20 transition cursor-pointer"
+            >
+              <div className="size-9 rounded-xl bg-emerald-50 text-[#116149] flex items-center justify-center group-hover:bg-[#116149] group-hover:text-white transition">
                 <UserPlus size={18} />
               </div>
               <h3 className="text-sm font-bold text-slate-900">1. Manual Registration</h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Add an individual candidate directly by typing in their full name, email, and 4-subject combination.
+                Add an individual candidate directly by typing in their full name, email, and candidate ID.
               </p>
               <button 
                 type="button" 
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#116149] hover:underline pt-1 cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#116149] group-hover:underline pt-1 cursor-pointer"
               >
                 Add Single Candidate <ArrowRight size={13} />
               </button>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 p-5 space-y-3 hover:border-slate-300 transition">
-              <div className="size-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
+            {/* Card 2: Bulk CSV */}
+            <div 
+              onClick={() => setIsCsvModalOpen(true)}
+              className="group rounded-2xl border border-slate-200 p-5 space-y-3 hover:border-blue-600 hover:bg-blue-50/20 transition cursor-pointer"
+            >
+              <div className="size-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition">
                 <Upload size={18} />
               </div>
               <h3 className="text-sm font-bold text-slate-900">2. Bulk CSV Upload</h3>
@@ -294,14 +429,18 @@ export default function SchoolDashboardPage() {
               </p>
               <button 
                 type="button" 
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#116149] hover:underline pt-1 cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 group-hover:underline pt-1 cursor-pointer"
               >
                 Upload Student CSV <ArrowRight size={13} />
               </button>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 p-5 space-y-3 hover:border-slate-300 transition">
-              <div className="size-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center">
+            {/* Card 3: School Invite Link */}
+            <div 
+              onClick={handleCopyInviteLink}
+              className="group rounded-2xl border border-slate-200 p-5 space-y-3 hover:border-purple-600 hover:bg-purple-50/20 transition cursor-pointer"
+            >
+              <div className="size-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition">
                 <Share2 size={18} />
               </div>
               <h3 className="text-sm font-bold text-slate-900">3. School Invite Link</h3>
@@ -310,19 +449,65 @@ export default function SchoolDashboardPage() {
               </p>
               <button 
                 type="button" 
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#116149] hover:underline pt-1 cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-700 group-hover:underline pt-1 cursor-pointer"
               >
-                Copy Invite Link <ArrowRight size={13} />
+                {copiedLink ? "Link Copied!" : "Copy Invite Link"} <ArrowRight size={13} />
               </button>
             </div>
           </div>
 
+          {/* Roster Multi-Select Action Bar (Shows when candidates are selected) */}
+          {selectedStudentIds.length > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-[#092E28] p-4 text-white shadow-md animate-in slide-in-from-top-2">
+              <div className="flex items-center gap-3">
+                <span className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-300 font-bold text-xs">
+                  {selectedStudentIds.length}
+                </span>
+                <span className="text-xs text-[#d8dfd5]">
+                  candidate{selectedStudentIds.length > 1 ? "s" : ""} selected for cohort action
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedStudentIds([])}
+                  className="rounded-xl px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                >
+                  Clear Selection
+                </button>
+                <Link
+                  href={`/schools/checkout?students=${selectedStudentIds.length}`}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#d6ed9f] px-4 py-2 text-xs font-bold text-[#092E28] shadow-xs hover:bg-[#e2f5b3] transition cursor-pointer"
+                >
+                  <CreditCard size={14} />
+                  <span>Proceed to Cohort Licensing (₦{(selectedStudentIds.length * 1500).toLocaleString()})</span>
+                  <ArrowRight size={13} />
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* Student Cohort Table */}
-          <div className="overflow-hidden rounded-2xl border border-slate-200 pt-2">
+          <div className="overflow-hidden rounded-2xl border border-slate-200">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse min-w-[700px]">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/80 font-bold text-slate-600">
+                  <tr className="border-b border-slate-200 bg-slate-50/80 font-bold text-slate-600 select-none">
+                    <th className="py-3 px-4 w-10">
+                      <button
+                        type="button"
+                        onClick={toggleSelectAll}
+                        className="flex items-center justify-center text-slate-500 hover:text-[#116149] transition cursor-pointer"
+                        title={isAllSelected ? "Deselect all" : "Select all candidates"}
+                      >
+                        {isAllSelected ? (
+                          <CheckSquare size={16} className="text-[#116149]" />
+                        ) : (
+                          <Square size={16} />
+                        )}
+                      </button>
+                    </th>
                     <th className="py-3 px-4">Candidate Name</th>
                     <th className="py-3 px-4">Email</th>
                     <th className="py-3 px-4">Default Password</th>
@@ -332,45 +517,88 @@ export default function SchoolDashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {demoStudents.map((std) => (
-                    <tr key={std.id} className="hover:bg-slate-50/50 transition">
-                      <td className="py-3 px-4 font-semibold text-slate-900">
-                        {std.name}
-                      </td>
-                      <td className="py-3 px-4 text-slate-600">
-                        {std.email}
-                      </td>
-                      <td className="py-3 px-4">
-                        <code className="rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-800">
-                          {std.defaultPassword}
-                        </code>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1">
-                          {std.subjects.map((sub) => (
-                            <span key={sub} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                              {sub}
+                  {students.map((std) => {
+                    const isSelected = selectedStudentIds.includes(std.id);
+                    const pwd = std.defaultPassword || "PASSWORD";
+                    const isCopied = copiedPasswordId === std.id;
+
+                    return (
+                      <tr 
+                        key={std.id} 
+                        className={`transition ${isSelected ? "bg-emerald-50/40" : "hover:bg-slate-50/50"}`}
+                      >
+                        <td className="py-3 px-4">
+                          <button
+                            type="button"
+                            onClick={() => toggleSelectStudent(std.id)}
+                            className="flex items-center justify-center text-slate-400 hover:text-[#116149] transition cursor-pointer"
+                          >
+                            {isSelected ? (
+                              <CheckSquare size={16} className="text-[#116149]" />
+                            ) : (
+                              <Square size={16} />
+                            )}
+                          </button>
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-slate-900">
+                          <div className="flex items-center gap-2">
+                            <span>{std.name}</span>
+                            {std.studentIdentifier && (
+                              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-600">
+                                {std.studentIdentifier}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-slate-600">
+                          {std.email}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="inline-flex items-center gap-1.5">
+                            <code className="rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-800">
+                              {pwd}
+                            </code>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyPassword(std.id, pwd)}
+                              className="text-slate-400 hover:text-slate-700 transition cursor-pointer p-0.5"
+                              title="Copy default password"
+                            >
+                              {isCopied ? (
+                                <Check size={12} className="text-emerald-600" />
+                              ) : (
+                                <Copy size={12} />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-1">
+                            {(std.subjects || ["ENG", "MTH", "PHY", "CHM"]).map((sub) => (
+                              <span key={sub} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                                {sub}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          {std.licenseStatus === "active" ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
+                              <span className="size-1.5 rounded-full bg-emerald-500" />
+                              Active ({std.daysLeft ?? 28}d left)
                             </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        {std.licenseStatus === "active" ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
-                            <span className="size-1.5 rounded-full bg-emerald-500" />
-                            Active ({std.daysLeft}d left)
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                            Unlicensed
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-right font-bold text-slate-900">
-                        {std.averageScore ? `${std.averageScore} / 400` : "—"}
-                      </td>
-                    </tr>
-                  ))}
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                              Unlicensed
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-right font-bold text-slate-900">
+                          {std.averageScore ? `${std.averageScore} / 400` : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -387,7 +615,7 @@ export default function SchoolDashboardPage() {
               </p>
             </div>
             <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-              4 Candidates Active
+              {activeCount} Candidates Active
             </span>
           </div>
 
@@ -444,6 +672,21 @@ export default function SchoolDashboardPage() {
           </div>
         </div>
       </footer>
+
+      {/* Ingestion Pathway Modals */}
+      <AddStudentModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onStudentAdded={handleStudentAdded}
+        schoolCode={schoolCode}
+      />
+
+      <CsvImportModal
+        isOpen={isCsvModalOpen}
+        onClose={() => setIsCsvModalOpen(false)}
+        onImportComplete={handleImportComplete}
+        schoolCode={schoolCode}
+      />
     </div>
   );
 }
