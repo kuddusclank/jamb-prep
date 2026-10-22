@@ -91,12 +91,6 @@ export default function SchoolsPage() {
 
           {/* Foreground Editorial Content */}
           <div className="shell relative z-10 max-w-4xl mx-auto space-y-4 sm:space-y-5">
-            {/* Top Announcement Pill */}
-            <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white/95 backdrop-blur-xs border border-slate-200 text-xs font-semibold text-slate-700 shadow-xs">
-              <span className="size-2 rounded-full bg-[#116149]" />
-              <span>Bulk Cohort Licensing: ₦1,500 / student / month</span>
-            </div>
-
             {/* Editorial Serif Display Headline */}
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-serif font-normal tracking-tight text-[#092E28] leading-[1.1]">
               The Complete CBT Platform<br className="hidden sm:inline" /> for Modern Nigerian Schools.
