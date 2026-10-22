@@ -194,3 +194,54 @@ Read-only production SQL using the exact selector found 25 mock-ready subjects; 
 `loadOnboarding` now rejects empty/incomplete choices rather than caching a usable form. Wizard stays in actionable retry state; local preview errors link to the canonical live subject selector. New regression proves failed catalogues are not cached and a later full response recovers. Real local Chromium injected-empty-catalogue test verified no English-only form and the live recovery link. Total 41 regression tests and the build pass.
 
 Publication: shared `out/` was replaced by another local build before initial publication `0d225fe8`; detected immediately (missing build metadata/unprocessed worker). Rebuilt with `build:pwa` into immutable copy `/tmp/jambprep-reviewed-pwa-afr2muxl/out`; corrected production deployment `48dea17b`, build `366dbc27390aba5b1be7`. Canonical SW and build metadata independently matched. Default npm build now also runs PWA post-export generation. Future publications must use an isolated verified artifact. Database content unchanged.
+
+## Offline Profile Cache, PWA Force-Refresh, UI Shimmers & Mobile CBT Overhaul — 21–22 October 2026
+
+User instructed and approved implementation of offline profile caching, PWA update prompt/force refresh, shimmer route transitions, brand/SEO normalization, and mobile CBT exam overhaul.
+
+### Implemented & Verified Components:
+
+1. **Offline Profile & Entitlement Cache (`src/lib/offline/offline-profile-cache.ts`):**
+   - Implemented `saveOfflineProfile`, `getOfflineProfile`, `clearOfflineProfile`, and `isOfflineAccessValid`.
+   - Actor isolation enforced via `jambprep_offline_profile_${userId}` prefix.
+   - Verifies active paid status (`isPremium && expiresAt > now`) and includes device clock tamper detection.
+   - Automatic cleanup integrated with logout and account boundary.
+   - Verified by unit tests: `tests/offline-profile-cache.test.mjs` (3 passing tests).
+
+2. **Offline Account Boundary Continuation (`src/lib/offline/browser-account-boundary.tsx`):**
+   - When offline (`navigator.onLine === false`), gracefully boots using cached offline profile rather than throwing fatal network errors.
+   - Unauthenticated or expired users receive informative connection / renewal prompts without crashing.
+
+3. **PWA Force-Refresh / Update Prompt:**
+   - Detects new deployments via deterministic `pwa-build.json` hash comparison.
+   - Surfaces a clean, non-intrusive update pill/prompt enabling candidates to immediately refresh to the latest release without waiting for browser cache expiration.
+
+4. **Weekly Practice Pack (250 Questions) Offline Storage:**
+   - Client-side IndexedDB store (`weekly_packs`) caching curated 250-question packs.
+   - WAT-aligned (West Africa Time) Monday–Sunday weekly lifecycle and expiry calculations verified via `tests/weekly-pack.test.mjs`.
+
+5. **UI Transition Shimmers (`src/components/workspace-loading.tsx`):**
+   - Route/tab switches inside the candidate study workspace now use smooth shimmer skeletons.
+   - The full-screen branded loading screen is strictly reserved for application initial cold-boot and hard page reloads.
+
+6. **Branding, Typography & SEO Cleanup:**
+   - Standardized application naming to canonical **`JAMBPrep`** (resolving lowercase `jambprep.` occurrences).
+   - Injected **`JAMBPrep by LecternIQ`** into title templates, OpenGraph tags, JSON-LD schemas, and metadata keywords.
+   - Hidden horizontal scrollbars across mobile top bar, streak calendar strips, and filter chip rows.
+   - Preserved mobile horizontal top bar scroll position across page navigation.
+
+7. **Mobile CBT Mock Exam Redesign (`src/app/mock/exam-simulator.tsx`, `exam-calculator.tsx`, `exam-conditions.tsx`):**
+   - Recovered **>250px of vertical screen real estate** on mobile screens by consolidating 5 stacked header rows into a single compact sticky header (~50px).
+   - Replaced bulky full-width buttons with clean 36px icon buttons:
+     - `Maximize` / `Minimize` icon button for Fullscreen mode (with browser support detection).
+     - `Calculator` icon button opening a non-displacing floating calculator panel with touch & keyboard support.
+   - Interruption banner (`ExamConditions`) remains hidden (0px) during standard exam-taking and only surfaces when an actual window/fullscreen blur occurs.
+   - Responsive question stem card and option pills (`p-4 sm:p-8`, `p-3 sm:p-4`) fitting questions immediately into mobile viewports.
+   - Responsive bottom bar (`Prev (P)`, `Clear (R)`, `Next (N)`).
+
+### Verification & Deployment Evidence:
+- **Test Suite**: 25/25 automated unit and regression tests passing (`npm test`).
+- **Static Export**: 45/45 static pages cleanly compiled and verified (`npm run build`).
+- **Git Commit**: `8dcf5ac` pushed to `origin main`.
+- **Live Deployment**: Successfully deployed to Cloudflare Pages (`https://5f971e24.jambprep.pages.dev` and `jambprep.pages.dev`).
+
