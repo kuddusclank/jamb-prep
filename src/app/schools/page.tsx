@@ -83,8 +83,8 @@ export default function SchoolsPage() {
               height={1000}
               loading="eager"
             />
-            {/* Soft airy mist top gradient guaranteeing crisp text readability */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white via-white/85 sm:via-white/75 via-42% to-white/15" />
+            {/* Pure white top backdrop transitioning smoothly to reveal lab in lower half */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white via-white via-52% to-white/10" />
             {/* Bottom blend into the subsequent content */}
             <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-white via-white/80 to-transparent" />
           </div>
@@ -123,23 +123,25 @@ export default function SchoolsPage() {
               </Link>
             </div>
 
-            {/* Social Proof / Geographies Row */}
+            {/* Social Proof / Geographies Row (High-Contrast Protected Backdrop) */}
             <div className="pt-6 sm:pt-8">
-              <span className="text-[11px] uppercase font-bold text-slate-500 tracking-wider block">
-                Prepared for secondary schools and tutorial centres nationwide
-              </span>
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-4 sm:gap-7 text-xs sm:text-sm font-semibold text-slate-700">
-                <span>Lagos State</span>
-                <span className="text-slate-300">•</span>
-                <span>Abuja (FCT)</span>
-                <span className="text-slate-300">•</span>
-                <span>Rivers State</span>
-                <span className="text-slate-300">•</span>
-                <span>Oyo State</span>
-                <span className="text-slate-300">•</span>
-                <span>Ogun & Kano</span>
-                <span className="text-slate-300">•</span>
-                <span>Edo & Kaduna</span>
+              <div className="inline-flex flex-col items-center rounded-2xl bg-white/95 backdrop-blur-md px-6 py-3.5 border border-slate-200/90 shadow-xs">
+                <span className="text-[11px] uppercase font-bold text-slate-500 tracking-wider block">
+                  Prepared for secondary schools and tutorial centres nationwide
+                </span>
+                <div className="mt-2 flex flex-wrap items-center justify-center gap-3.5 sm:gap-6 text-xs sm:text-sm font-bold text-[#092E28]">
+                  <span>Lagos State</span>
+                  <span className="text-slate-300">•</span>
+                  <span>Abuja (FCT)</span>
+                  <span className="text-slate-300">•</span>
+                  <span>Rivers State</span>
+                  <span className="text-slate-300">•</span>
+                  <span>Oyo State</span>
+                  <span className="text-slate-300">•</span>
+                  <span>Ogun & Kano</span>
+                  <span className="text-slate-300">•</span>
+                  <span>Edo & Kaduna</span>
+                </div>
               </div>
             </div>
           </div>
