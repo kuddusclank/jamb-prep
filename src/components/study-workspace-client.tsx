@@ -3,6 +3,7 @@
 import { useApiResource } from "@/lib/api/use-api-resource";
 import type { ProfileData } from "@/lib/api/app-dtos";
 import { BrandMark } from "@/components/brand-mark";
+import { SyncStatusIndicator } from "./sync-status-indicator";
 import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
 import Link from "@/components/pending-link";
 import { usePathname } from "next/navigation";
@@ -182,22 +183,25 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
       <Link href="/dashboard" className={styles.brand}><BrandMark size={32}/> JAMBPrep</Link>
       <span className={styles.context}>{current?.label || 'Your study space'}</span>
 
-      {streak && (
-        <Link
-          href="/profile#schedule"
-          className="ml-auto inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition hover:scale-105"
-          style={{
-            background: streak.qualifiedToday ? '#FEF3C7' : streak.currentStreak > 0 ? '#FFFBEB' : '#F1F5F9',
-            borderColor: streak.qualifiedToday ? '#F59E0B' : streak.currentStreak > 0 ? '#FCD34D' : '#E2E8F0',
-            color: streak.currentStreak > 0 ? '#B45309' : '#64748B',
-          }}
-          title={streak.qualifiedToday ? "Today's study streak is locked in!" : streak.currentStreak > 0 ? `${streak.currentStreak}-day streak! Practice or take a mock today to extend.` : "Start your daily streak"}
-        >
-          <Flame size={14} className={streak.currentStreak > 0 ? "fill-current text-amber-500 animate-pulse" : "text-slate-400"} />
-          <span>{streak.currentStreak}d</span>
-        </Link>
-      )}
-      <Link href="/profile" className={streak ? "inline-flex items-center justify-center gap-2 min-h-11 px-3 border border-slate-200 rounded-xl text-sm hover:bg-slate-50" : styles.account}>
+      <div className="ml-auto flex items-center gap-2">
+        <SyncStatusIndicator />
+        {streak && (
+          <Link
+            href="/profile#schedule"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition hover:scale-105"
+            style={{
+              background: streak.qualifiedToday ? '#FEF3C7' : streak.currentStreak > 0 ? '#FFFBEB' : '#F1F5F9',
+              borderColor: streak.qualifiedToday ? '#F59E0B' : streak.currentStreak > 0 ? '#FCD34D' : '#E2E8F0',
+              color: streak.currentStreak > 0 ? '#B45309' : '#64748B',
+            }}
+            title={streak.qualifiedToday ? "Today's study streak is locked in!" : streak.currentStreak > 0 ? `${streak.currentStreak}-day streak! Practice or take a mock today to extend.` : "Start your daily streak"}
+          >
+            <Flame size={14} className={streak.currentStreak > 0 ? "fill-current text-amber-500 animate-pulse" : "text-slate-400"} />
+            <span>{streak.currentStreak}d</span>
+          </Link>
+        )}
+      </div>
+      <Link href="/profile" className="inline-flex items-center justify-center gap-2 min-h-11 px-3 border border-slate-200 rounded-xl text-sm hover:bg-slate-50">
         <UserRound size={18} aria-hidden="true" />
         <span className="hidden sm:inline">Account</span>
       </Link>

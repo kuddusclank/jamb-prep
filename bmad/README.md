@@ -107,6 +107,12 @@ The following capabilities have been fully built, verified with 25 unit/integrat
    - 4 interactive educational mini-games: **Stress Master**, **Sound Match**, **Silent Hunter**, and **Synonym Blitz** (`src/app/games/*` and `src/lib/dictionary/game-*.ts`).
    - Study streak integration via `recordStreakActivity` (`src/lib/dictionary/streak-activation.ts`).
    - Verified by unit tests: `tests/dictionary-games.test.mjs` (5 passing tests).
+5. **Offline Outbox Synchronization & Durable Answer Reconciliation (Feature F5)**:
+   - Unified IndexedDB outbox queue (`sync_outbox`) with automatic answer coalescing and monotonic revision tracking (`src/lib/offline/idb-storage.ts`).
+   - Multi-trigger client `SyncManager` (`src/lib/offline/sync-manager.ts`) listening to `online` events, `visibilitychange`, and app boot, guarded by Web Locks against multi-tab race conditions.
+   - Idempotent backend batch ingestion with per-item ACKs (`accepted`, `already_recorded`, `invalid_option`, `not_found`) in `worker/services/weekly-pack-service.ts`.
+   - UI status indicator (`src/components/sync-status-indicator.tsx`) in the workspace header and weekly practice views showing pending offline counts, syncing animations, and click-to-retry.
+   - Verified by unit tests: `tests/offline-outbox-sync.test.mjs` (5 passing tests, 30 suite total).
 
 ---
 
@@ -114,28 +120,21 @@ The following capabilities have been fully built, verified with 25 unit/integrat
 
 Based on the [Future Learning and School Partnerships Plan](future-learning-and-school-partnerships-plan.md) and [Product Requirements](product-requirements.md), the immediate candidate capabilities for the next engineering sprints are:
 
-### 1. Offline Outbox Synchronization & Durable Answer Reconciliation (Feature F5)
-- **Goal**: Seamless, reliable sync when candidates complete offline weekly practice.
-- **Deliverables**:
-  - Background/foreground outbox synchronization pushing queued answers from IndexedDB to `/api/v1/practice/sync` upon network reconnection.
-  - Server-side reconciliation ensuring streak points and mastery progress update accurately without duplication.
-  - Conflict resolution between multiple offline practice devices.
-
-### 2. School Partnerships & Bulk Institutional Licensing (Features F1 & F6)
+### 1. School Partnerships & Bulk Institutional Licensing (Features F1 & F6)
 - **Goal**: Enable secondary schools and tutorial centres to onboard cohorts of candidates.
 - **Deliverables**:
   - Prepaid cohort pricing at **₦1,500 / student / month** (1–12 month terms).
   - School admin / teacher portal: roster import (CSV/manual), mock exam assignment, and class-level diagnostic reporting.
   - Multi-tenant data segregation with strict role-based access control.
 
-### 3. Physical Mobile Device Closed-App Push Validation
+### 2. Physical Mobile Device Closed-App Push Validation
 - **Goal**: Final QA of push notifications across real Android and iOS devices.
 - **Deliverables**:
   - Test real Web Push delivery with the PWA completely closed/backgrounded on physical Android (Chrome/PWA) and iOS (Add to Home Screen Web Push).
   - Verify quiet hours and delivery timing against WAT timezone (`Africa/Lagos`).
   - Validate that Pro user study schedules reliably override the general 7:00 AM notification reminder.
 
-### 4. Question Bank Expansion & Syllabus Coverage
+### 3. Question Bank Expansion & Syllabus Coverage
 - **Goal**: Expand leaf-topic question coverage across all 8 UTME launch subjects.
 - **Deliverables**:
   - Transition verified held questions to active blueprints (`885-question-draft-transition-plan.md`).

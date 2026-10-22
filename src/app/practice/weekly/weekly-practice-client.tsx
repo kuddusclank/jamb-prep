@@ -14,6 +14,7 @@ import {
 import type { StoredWeeklyPack } from "@/lib/offline/idb-storage";
 import { getOfflineProfile, isOfflineAccessValid } from "@/lib/offline/offline-profile-cache";
 import { OfflineGatedNotice } from "@/app/dashboard/offline-gated-notice";
+import { SyncStatusIndicator } from "@/components/sync-status-indicator";
 import { MathRenderer } from "@/components/math-renderer";
 import { QuestionDiagram } from "@/components/question-diagram";
 import {
@@ -478,9 +479,12 @@ export function WeeklyPracticeClient() {
               {selectedSubjectCode} · Question {currentIndex + 1} of {activeQuestions.length}
             </span>
 
-            <span className="text-xs text-slate-400 font-medium truncate max-w-[150px]">
-              {currentQ.topicTitle}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="hidden sm:inline text-xs text-slate-400 font-medium truncate max-w-[150px]">
+                {currentQ.topicTitle}
+              </span>
+              <SyncStatusIndicator showWhenAllSynced />
+            </div>
           </div>
 
           {/* Quick Question Chips (Palette for this set) */}
@@ -692,6 +696,7 @@ export function WeeklyPracticeClient() {
             Practice
           </span>
         </div>
+        <SyncStatusIndicator showWhenAllSynced />
       </div>
 
       {/* Overview Progress Card */}

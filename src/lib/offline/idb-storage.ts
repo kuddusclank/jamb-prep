@@ -9,7 +9,7 @@
  */
 
 const DB_NAME = 'jambprep_offline_v1';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export interface StoredWeeklyPack {
   packId: string;
@@ -47,6 +47,10 @@ export interface OutboxItem {
   answeredAt: string;
   queuedAt: string;
   userId: string;
+  revision: number;
+  retryCount: number;
+  idempotencyKey?: string;
+  lastError?: string;
 }
 
 export interface StoredProfileSnapshot {
@@ -91,6 +95,15 @@ function openDatabase(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains('sync_outbox')) {
         const outboxStore = db.createObjectStore('sync_outbox', { keyPath: 'id', autoIncrement: true });
         outboxStore.createIndex('by_user', 'userId', { unique: false });
+        outboxStore.createIndex('by_user_pack_q', ['userId', 'packId', 'questionId'], { unique: false });
+      } else {
+        const tx = (event.target as IDBOpenDBRequest).transaction;
+        if (tx && tx.objectStoreNames.contains('sync_outbox')) {
+          const outboxStore = tx.objectStore('sync_outbox');
+          if (!outboxStore.indexNames.contains('by_user_pack_q')) {
+            outboxStore.createIndex('by_user_pack_q', ['userId', 'packId', 'questionId'], { unique: false });
+          }
+        }
       }
     };
 
@@ -140,17 +153,42 @@ export async function recordLocalAnswer(answer: StoredAnswer): Promise<void> {
     const answersStore = tx.objectStore('pack_answers');
     answersStore.put(answer);
 
-    // 2. Put in sync_outbox
+    // 2. Put in sync_outbox with coalescing & monotonic revision
     const outboxStore = tx.objectStore('sync_outbox');
-    const outboxItem: OutboxItem = {
-      packId: answer.packId,
-      questionId: answer.questionId,
-      selectedOption: answer.selectedOption,
-      answeredAt: answer.answeredAt,
-      queuedAt: new Date().toISOString(),
-      userId: answer.userId,
-    };
-    outboxStore.add(outboxItem);
+    const hasIndex = outboxStore.indexNames.contains('by_user_pack_q');
+    if (hasIndex) {
+      const existingReq = outboxStore.index('by_user_pack_q').get([answer.userId, answer.packId, answer.questionId]);
+      existingReq.onsuccess = () => {
+        const existing = existingReq.result as OutboxItem | undefined;
+        const revision = (existing?.revision || 0) + 1;
+        const outboxItem: OutboxItem = {
+          id: existing?.id,
+          packId: answer.packId,
+          questionId: answer.questionId,
+          selectedOption: answer.selectedOption,
+          answeredAt: answer.answeredAt,
+          queuedAt: existing?.queuedAt || new Date().toISOString(),
+          userId: answer.userId,
+          revision,
+          retryCount: 0,
+          idempotencyKey: `${answer.userId}_${answer.packId}_${answer.questionId}_${revision}`,
+        };
+        outboxStore.put(outboxItem);
+      };
+    } else {
+      const outboxItem: OutboxItem = {
+        packId: answer.packId,
+        questionId: answer.questionId,
+        selectedOption: answer.selectedOption,
+        answeredAt: answer.answeredAt,
+        queuedAt: new Date().toISOString(),
+        userId: answer.userId,
+        revision: 1,
+        retryCount: 0,
+        idempotencyKey: `${answer.userId}_${answer.packId}_${answer.questionId}_1`,
+      };
+      outboxStore.add(outboxItem);
+    }
 
     // 3. Update answers map inside the weekly_pack object for fast rendering
     const packStore = tx.objectStore('weekly_packs');
@@ -213,6 +251,43 @@ export async function clearSyncedOutboxItems(itemIds: number[]): Promise<void> {
     for (const id of itemIds) {
       store.delete(id);
     }
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/**
+ * Returns count of pending outbox items for a user.
+ */
+export async function getOutboxCount(userId: string): Promise<number> {
+  const db = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('sync_outbox', 'readonly');
+    const store = tx.objectStore('sync_outbox');
+    const index = store.index('by_user');
+    const req = index.count(userId);
+    req.onsuccess = () => resolve(req.result || 0);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/**
+ * Updates retry count and last error for an outbox item.
+ */
+export async function updateOutboxItemRetry(id: number, error: string): Promise<void> {
+  const db = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('sync_outbox', 'readwrite');
+    const store = tx.objectStore('sync_outbox');
+    const getReq = store.get(id);
+    getReq.onsuccess = () => {
+      const item = getReq.result as OutboxItem | undefined;
+      if (item) {
+        item.retryCount = (item.retryCount || 0) + 1;
+        item.lastError = error;
+        store.put(item);
+      }
+    };
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });

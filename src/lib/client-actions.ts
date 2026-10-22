@@ -230,6 +230,11 @@ export interface WeeklyPackSyncPayloadItem {
   timeSpentSeconds?: number;
 }
 
+export interface SyncItemAck {
+  questionId: string;
+  status: 'accepted' | 'already_recorded' | 'invalid_option' | 'not_found';
+}
+
 export interface WeeklyPackSyncResultResponse {
   success: boolean;
   syncedCount: number;
@@ -237,6 +242,7 @@ export interface WeeklyPackSyncResultResponse {
   totalQuestions: number;
   isCompleted: boolean;
   streakUpdated: boolean;
+  itemAcks?: SyncItemAck[];
 }
 
 export async function syncWeeklyPackToServer(

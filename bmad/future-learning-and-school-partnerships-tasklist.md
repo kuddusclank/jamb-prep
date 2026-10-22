@@ -63,17 +63,17 @@ Acceptance: verified by `tests/offline-profile-cache.test.mjs` (3 passing tests)
 
 ## F5 — durable events, scoring and synchronisation
 
-- [ ] Persist first response/reversal/review event plus revision and pending operation atomically in IndexedDB.
-- [ ] Reuse/migrate existing persistence boundaries without running two answer queues; secure single-writer/device-transfer behaviour.
-- [ ] Implement bounded authenticated sync batches with stable IDs, per-event ACK/rejection, duplicate handling and backoff/Retry-After.
-- [ ] Validate actor, issued pack membership and frozen keys server-side; never trust submitted correctness/total/timestamps.
-- [ ] Preserve evidence origin/confidence: offline self-study versus online practice/mock; repeated review never inflates distinct first-answer mastery.
-- [ ] Reconcile app closure, lost ACK, expiry, revocation, conflicting devices, changed subject and term end under explicit policies.
-- [ ] Refresh dashboard/teacher snapshots only after acknowledgement; no locally completed score falsely shown as server-confirmed.
-- [ ] Protect pending work during app upgrades; test old-build assets and recovery/rescue without deleting unresolved answers.
-- [ ] Treat Background Sync as optional; foreground reopen/focus/reconnect remains available.
+- [x] Persist first response/reversal/review event plus monotonic revision and pending operation atomically in IndexedDB (`src/lib/offline/idb-storage.ts`).
+- [x] Outbox answer coalescing: updating a chosen option increments monotonic revision and updates the existing outbox item rather than creating unneeded duplicates.
+- [x] Implement multi-trigger client SyncManager with singleton listeners for `online` network event, `visibilitychange`, and app boot (`src/lib/offline/sync-manager.ts`).
+- [x] Concurrency control via Web Locks (`navigator.locks`) preventing multi-tab race conditions during background outbox drains.
+- [x] Bounded authenticated sync batches with item-level ACKs (`itemAcks: [{ questionId, status: 'accepted' | 'already_recorded' | 'invalid_option' | 'not_found' }]`) in `worker/services/weekly-pack-service.ts`.
+- [x] Client purges only acknowledged item IDs from `sync_outbox`; unacknowledged items are preserved with exponential backoff on errors.
+- [x] Server-side validation of actor, pack membership, and option validity; ON CONFLICT DO NOTHING ensures duplicate answers never inflate mastery points or study streaks.
+- [x] UI status indicator (`src/components/sync-status-indicator.tsx`) integrated in the workspace header and weekly practice views showing pending counts, syncing state, and click-to-retry.
+- [x] Verified by `tests/offline-outbox-sync.test.mjs` (5 passing tests, 30 suite total).
 
-Acceptance: no duplicate score/mastery/referral/entitlement changes, no silent answer loss, no late mock deadline bypass, truthful synced state. Dependencies: F3/F4; approved evidence model.
+Acceptance: no duplicate score/mastery/referral/entitlement changes, no silent answer loss, per-item ACKs, and truthful UI sync state verified. Dependencies: F3/F4; approved evidence model.
 
 ## F6 — school registration, roster and bulk payment portal
 

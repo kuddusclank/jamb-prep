@@ -2,16 +2,14 @@ import {
   saveWeeklyPackToIdb,
   getWeeklyPackFromIdb,
   recordLocalAnswer,
-  getOutboxItems,
-  clearSyncedOutboxItems,
   type StoredWeeklyPack,
   type StoredAnswer,
 } from './idb-storage';
 import {
   fetchWeeklyPackFromServer,
-  syncWeeklyPackToServer,
   type WeeklyPackResponse,
 } from '@/lib/client-actions';
+import { syncManager } from './sync-manager';
 
 /**
  * Calculates current ISO week key in Africa/Lagos (WAT, UTC+1).
@@ -102,9 +100,10 @@ export async function submitPackAnswer(params: {
   // 1. Durably record in IndexedDB
   await recordLocalAnswer(answerRecord);
 
-  // 2. If online, attempt background sync
+  // 2. Refresh pending count and trigger background sync if online
+  void syncManager.refreshPendingCount();
   if (typeof navigator !== 'undefined' && navigator.onLine) {
-    void flushPendingSync(params.userId);
+    void syncManager.triggerSync('answer_submitted');
   }
 
   return {
@@ -115,39 +114,8 @@ export async function submitPackAnswer(params: {
 }
 
 /**
- * Flushes all pending outbox answers to the server.
+ * Flushes all pending outbox answers to the server via the unified SyncManager.
  */
-export async function flushPendingSync(userId: string): Promise<number> {
-  try {
-    const items = await getOutboxItems(userId);
-    if (!items.length) return 0;
-
-    // Group by packId
-    const byPack: Record<string, typeof items> = {};
-    for (const it of items) {
-      if (!byPack[it.packId]) byPack[it.packId] = [];
-      byPack[it.packId].push(it);
-    }
-
-    let syncedTotal = 0;
-    for (const [packId, batch] of Object.entries(byPack)) {
-      const payloadAnswers = batch.map(b => ({
-        questionId: b.questionId,
-        selectedOption: b.selectedOption,
-        answeredAt: b.answeredAt,
-      }));
-
-      const res = await syncWeeklyPackToServer(packId, payloadAnswers);
-      if (res.success) {
-        const itemIds = batch.map(b => b.id).filter((id): id is number => typeof id === 'number');
-        await clearSyncedOutboxItems(itemIds);
-        syncedTotal += res.syncedCount;
-      }
-    }
-
-    return syncedTotal;
-  } catch (err) {
-    console.warn('[OfflineSync] Outbox flush postponed:', err);
-    return 0;
-  }
+export async function flushPendingSync(_userId?: string): Promise<number> {
+  return syncManager.triggerSync('manual');
 }

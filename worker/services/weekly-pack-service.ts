@@ -362,6 +362,13 @@ export interface SyncAnswerItem {
   selectedOption: 'A' | 'B' | 'C' | 'D';
   answeredAt?: string;
   timeSpentSeconds?: number;
+  revision?: number;
+  idempotencyKey?: string;
+}
+
+export interface SyncItemAck {
+  questionId: string;
+  status: 'accepted' | 'already_recorded' | 'invalid_option' | 'not_found';
 }
 
 export interface WeeklyPackSyncResult {
@@ -371,6 +378,7 @@ export interface WeeklyPackSyncResult {
   totalQuestions: number;
   isCompleted: boolean;
   streakUpdated: boolean;
+  itemAcks?: SyncItemAck[];
 }
 
 /**
@@ -428,9 +436,13 @@ export async function syncWeeklyPackAnswers(
 
   let newlySynced = 0;
   let streakUpdated = false;
+  const itemAcks: SyncItemAck[] = [];
 
   for (const item of payload.answers) {
     if (!item.questionId || !['A', 'B', 'C', 'D'].includes(item.selectedOption)) {
+      if (item.questionId) {
+        itemAcks.push({ questionId: item.questionId, status: 'invalid_option' });
+      }
       continue;
     }
 
@@ -447,11 +459,17 @@ export async function syncWeeklyPackAnswers(
         AND aq.question_id = ${item.questionId}::uuid
     `;
 
-    if (!rows.length) continue;
+    if (!rows.length) {
+      itemAcks.push({ questionId: item.questionId, status: 'not_found' });
+      continue;
+    }
     const qRow = rows[0];
 
     const chosenOpt = qRow.snapshot.options.find(o => o.label === item.selectedOption);
-    if (!chosenOpt) continue;
+    if (!chosenOpt) {
+      itemAcks.push({ questionId: item.questionId, status: 'invalid_option' });
+      continue;
+    }
 
     const answerTimestamp = item.answeredAt && !isNaN(new Date(item.answeredAt).getTime())
       ? new Date(item.answeredAt).toISOString()
@@ -466,6 +484,7 @@ export async function syncWeeklyPackAnswers(
 
     if (inserted.length > 0) {
       newlySynced++;
+      itemAcks.push({ questionId: item.questionId, status: 'accepted' });
       const isCorrect = chosenOpt.id === qRow.correct_option_id;
 
       // Record scored response event
@@ -502,6 +521,9 @@ export async function syncWeeklyPackAnswers(
       if (goalRes.justQualified || goalRes.qualifiedToday) {
         streakUpdated = true;
       }
+    } else {
+      // Already recorded in attempt_answers; acknowledge so client purges outbox item
+      itemAcks.push({ questionId: item.questionId, status: 'already_recorded' });
     }
   }
 
@@ -531,5 +553,6 @@ export async function syncWeeklyPackAnswers(
     totalQuestions: Number(progress.total),
     isCompleted,
     streakUpdated,
+    itemAcks,
   };
 }
