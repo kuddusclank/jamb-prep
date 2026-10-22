@@ -12,6 +12,33 @@ interface InstallEvent extends Event {
 
 const COOLDOWN = 3 * 24 * 60 * 60 * 1000; // 3-day cooldown when dismissed
 const ACTIVE_BUILD_STORAGE_KEY = 'jambprep_active_build_id';
+const UPDATE_APPLIED_STORAGE_KEY = 'jambprep_last_updated_at';
+const UPDATE_DISMISSED_STORAGE_KEY = 'jambprep_update_dismissed_time';
+const UPDATE_SESSION_DISMISSED_KEY = 'jambprep_update_session_dismissed';
+const UPDATE_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes cooldown after update
+
+function isUpdateSuppressed(): boolean {
+  if (typeof window === 'undefined') return true;
+  try {
+    // 1. If dismissed in this session
+    if (sessionStorage.getItem(UPDATE_SESSION_DISMISSED_KEY) === '1') {
+      return true;
+    }
+    // 2. If update was clicked recently (last 10 minutes)
+    const lastUpdated = Number(localStorage.getItem(UPDATE_APPLIED_STORAGE_KEY) || 0);
+    if (lastUpdated > 0 && Date.now() - lastUpdated < UPDATE_COOLDOWN_MS) {
+      return true;
+    }
+    // 3. If dismissed in local storage within last 12 hours
+    const lastDismissed = Number(localStorage.getItem(UPDATE_DISMISSED_STORAGE_KEY) || 0);
+    if (lastDismissed > 0 && Date.now() - lastDismissed < 12 * 60 * 60 * 1000) {
+      return true;
+    }
+  } catch {
+    // Storage access error
+  }
+  return false;
+}
 
 export default function PwaProvider() {
   const pathname = usePathname();
@@ -94,10 +121,8 @@ export default function PwaProvider() {
           registrationRef.current = registration;
 
           if (registration.waiting) {
-            const justReloaded = sessionStorage.getItem('jambprep_sw_reloaded');
-            if (justReloaded && Date.now() - Number(justReloaded) < 30000) {
-              registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-            } else {
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            if (!isUpdateSuppressed()) {
               setUpdate(true);
             }
           }
@@ -107,10 +132,8 @@ export default function PwaProvider() {
             if (!worker) return;
             const changed = () => {
               if (active && worker.state === 'installed' && navigator.serviceWorker.controller) {
-                const justReloaded = sessionStorage.getItem('jambprep_sw_reloaded');
-                if (justReloaded && Date.now() - Number(justReloaded) < 30000) {
-                  worker.postMessage({ type: 'SKIP_WAITING' });
-                } else {
+                worker.postMessage({ type: 'SKIP_WAITING' });
+                if (!isUpdateSuppressed()) {
                   setUpdate(true);
                 }
               }
@@ -133,8 +156,8 @@ export default function PwaProvider() {
           if (reg) {
             await reg.update();
             if (reg.waiting) {
-              const justReloaded = sessionStorage.getItem('jambprep_sw_reloaded');
-              if (!justReloaded || Date.now() - Number(justReloaded) >= 30000) {
+              reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+              if (!isUpdateSuppressed()) {
                 setUpdate(true);
               }
             }
@@ -150,9 +173,7 @@ export default function PwaProvider() {
               if (!currentBuildId) {
                 localStorage.setItem(ACTIVE_BUILD_STORAGE_KEY, data.buildId);
               } else if (currentBuildId !== data.buildId) {
-                const reloadedForBuild = sessionStorage.getItem('jambprep_reloaded_build_' + data.buildId);
-                const dismissedForBuild = Number(localStorage.getItem('jambprep_update_dismissed_' + data.buildId) || 0);
-                if (!reloadedForBuild && (Date.now() - dismissedForBuild > 2 * 60 * 60 * 1000)) {
+                if (!isUpdateSuppressed()) {
                   setUpdate(true);
                 }
               }
@@ -225,6 +246,8 @@ export default function PwaProvider() {
     setInstructions(false);
     try {
       localStorage.setItem('jambprep_install_dismissed', String(Date.now()));
+      localStorage.setItem(UPDATE_DISMISSED_STORAGE_KEY, String(Date.now()));
+      sessionStorage.setItem(UPDATE_SESSION_DISMISSED_KEY, '1');
       if (latestBuildIdRef.current) {
         localStorage.setItem('jambprep_update_dismissed_' + latestBuildIdRef.current, String(Date.now()));
       }
@@ -239,64 +262,73 @@ export default function PwaProvider() {
     setUpdate(false);
 
     try {
-      // 1. Fetch latest build ID and sync to storage FIRST
-      let newBuildId = latestBuildIdRef.current;
+      // 1. Immediately record that update has been applied so the modal never re-appears
       try {
+        localStorage.setItem(UPDATE_APPLIED_STORAGE_KEY, String(Date.now()));
+        sessionStorage.setItem(UPDATE_SESSION_DISMISSED_KEY, '1');
+        sessionStorage.setItem('jambprep_sw_reloaded', String(Date.now()));
+
         const res = await fetch('/pwa-build.json?t=' + Date.now(), { cache: 'no-store' });
         if (res.ok) {
           const data = (await res.json()) as { buildId?: string };
           if (data?.buildId) {
-            newBuildId = data.buildId;
+            localStorage.setItem(ACTIVE_BUILD_STORAGE_KEY, data.buildId);
+            sessionStorage.setItem('jambprep_reloaded_build_' + data.buildId, '1');
           }
         }
       } catch {
         // Storage sync error ignored
       }
 
-      if (newBuildId) {
-        localStorage.setItem(ACTIVE_BUILD_STORAGE_KEY, newBuildId);
-        sessionStorage.setItem('jambprep_reloaded_build_' + newBuildId, '1');
-      }
-      sessionStorage.setItem('jambprep_sw_reloaded', String(Date.now()));
-
       // 2. Clear stale public caches
       if ('caches' in window) {
         try {
           const keys = await caches.keys();
-          for (const k of keys) {
-            if (k.startsWith('jambprep-public-')) {
-              await caches.delete(k);
-            }
-          }
+          await Promise.all(
+            keys.filter((k) => k.startsWith('jambprep-public-')).map((k) => caches.delete(k))
+          );
         } catch {
           // Cache delete error ignored
         }
       }
 
-      // 3. Post SKIP_WAITING to waiting worker and wait for controllerchange or timeout
+      // 3. Post SKIP_WAITING to waiting worker and wait for controllerchange or fallback timeout
       const reg = registrationRef.current || (await navigator.serviceWorker.getRegistration());
       if (reg?.waiting) {
         let reloaded = false;
-        const onCtrl = () => {
+        const reloadNow = () => {
           if (!reloaded) {
             reloaded = true;
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', onCtrl, { once: true });
+
+        navigator.serviceWorker.addEventListener('controllerchange', reloadNow, { once: true });
         reg.waiting.postMessage({ type: 'SKIP_WAITING' });
 
-        // Fallback reload if controllerchange doesn't fire within 400ms
-        setTimeout(() => {
+        // If controllerchange doesn't fire within 1500ms, unregister old registration and reload
+        setTimeout(async () => {
           if (!reloaded) {
             reloaded = true;
+            try {
+              await reg.unregister();
+            } catch {
+              // ignore
+            }
             window.location.reload();
           }
-        }, 400);
+        }, 1500);
         return;
       }
 
-      // 4. If no waiting worker, reload directly
+      // 4. If no waiting worker, unregister old registration and reload cleanly
+      if (reg) {
+        try {
+          await reg.unregister();
+        } catch {
+          // ignore
+        }
+      }
       window.location.reload();
     } catch {
       window.location.reload();
