@@ -283,8 +283,6 @@ export default function SchoolRegisterPage() {
             <p className="mt-4 text-xs leading-relaxed text-slate-500">
               Institutional data is strictly encrypted. Student performance analytics are private to your registered school administrators.
             </p>
-
-            <PolicyLinks className="mt-6 text-xs text-slate-500" />
           </div>
         </section>
       </main>

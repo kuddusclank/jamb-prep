@@ -190,8 +190,6 @@ export default function SchoolLoginPage() {
                 Register your institution
               </Link>
             </p>
-
-            <PolicyLinks className="mt-6 text-xs text-slate-500" />
           </div>
         </section>
       </main>
