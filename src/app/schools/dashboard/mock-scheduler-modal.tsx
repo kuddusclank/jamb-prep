@@ -24,6 +24,7 @@ interface MockSchedulerModalProps {
   schoolName: string;
   schoolCode: string;
   activeCandidatesCount: number;
+  onScheduled?: (session: any) => void;
 }
 
 export function MockSchedulerModal({
@@ -32,8 +33,9 @@ export function MockSchedulerModal({
   schoolName,
   schoolCode,
   activeCandidatesCount,
+  onScheduled,
 }: MockSchedulerModalProps) {
-  const [title, setTitle] = useState("SS3 Grand UTME Computer Lab Mock");
+  const [title, setTitle] = useState("");
   const [timingMode, setTimingMode] = useState<"immediate" | "scheduled">("immediate");
   const [scheduledDateTime, setScheduledDateTime] = useState("");
   const [hotkeyMode, setHotkeyMode] = useState(true);
@@ -91,6 +93,9 @@ export function MockSchedulerModal({
 
       setScheduledSession(sessionData);
       setIsPending(false);
+      if (onScheduled && sessionData?.session) {
+        onScheduled(sessionData.session);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "A network error occurred.");
       setIsPending(false);
@@ -124,7 +129,7 @@ export function MockSchedulerModal({
         {!scheduledSession ? (
           <form onSubmit={handleScheduleSubmit} className="space-y-5">
             <div className="space-y-1 pb-3 border-b border-slate-100">
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-bold text-blue-800">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 text-[10px] font-bold text-[#116149]">
                 <Clock size={12} />
                 <span>Synchronized CBT Lab Session</span>
               </div>

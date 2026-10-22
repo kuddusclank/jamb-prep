@@ -70,6 +70,7 @@ export default function SchoolDashboardPage() {
 
   // School cohort roster starts clean for fresh institutional registrations
   const [students, setStudents] = useState<StudentItem[]>([]);
+  const [scheduledMock, setScheduledMock] = useState<any | null>(null);
   const [origin, setOrigin] = useState("");
 
   useEffect(() => {
@@ -94,6 +95,18 @@ export default function SchoolDashboardPage() {
       setUser(u);
 
       const code = (u.user_metadata?.school_code as string) || (u.id ? "SCH-" + u.id.slice(0, 8).toUpperCase() : "SCH-DEFAULT");
+
+      // Load any actual scheduled lab mock for this school
+      try {
+        if (typeof window !== "undefined") {
+          const storedMock = localStorage.getItem(`jambprep_school_lab_mock_${code}`);
+          if (storedMock) {
+            setScheduledMock(JSON.parse(storedMock));
+          }
+        }
+      } catch (e) {
+        console.warn("Could not read scheduled mock:", e);
+      }
 
       // Load any actual previously added or imported candidates for this school
       let localCohort: StudentItem[] = [];
@@ -145,6 +158,17 @@ export default function SchoolDashboardPage() {
     const supabase = createClient();
     await supabase.auth.signOut();
     window.location.assign("/schools");
+  };
+
+  const handleMockScheduled = (session: any) => {
+    setScheduledMock(session);
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`jambprep_school_lab_mock_${schoolCode}`, JSON.stringify(session));
+      }
+    } catch (e) {
+      console.warn("Could not save scheduled mock:", e);
+    }
   };
 
   const schoolName = (user?.user_metadata?.school_name as string) || "Institutional Partner";
@@ -360,37 +384,49 @@ export default function SchoolDashboardPage() {
 
         {/* 4 Key Institutional KPI Metric Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-1">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-2">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">Total Enrolled</span>
-              <Users size={18} className="text-[#116149]" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Enrolled</span>
+              <div className="size-8 rounded-lg bg-emerald-50 text-[#116149] flex items-center justify-center">
+                <Users size={16} />
+              </div>
             </div>
             <p className="text-2xl sm:text-3xl font-bold text-slate-900">{students.length} Candidates</p>
             <span className="text-[11px] text-slate-500 block">{activeCount} active licenses</span>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-1">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-2">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">Active Paid</span>
-              <CreditCard size={18} className="text-emerald-600" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Paid</span>
+              <div className="size-8 rounded-lg bg-emerald-50 text-[#116149] flex items-center justify-center">
+                <CreditCard size={16} />
+              </div>
             </div>
             <p className="text-2xl sm:text-3xl font-bold text-slate-900">₦{activeSpend.toLocaleString()} / mo</p>
             <span className="text-[11px] text-emerald-800 font-medium block">₦1,500 / candidate rate</span>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-1">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-2">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">Lab Simulation</span>
-              <Calendar size={18} className="text-blue-600" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Lab Simulation</span>
+              <div className="size-8 rounded-lg bg-emerald-50 text-[#116149] flex items-center justify-center">
+                <Calendar size={16} />
+              </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-slate-900">CBT Lab Ready</p>
-            <span className="text-[11px] text-slate-500 block">120-min timed simulation</span>
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900">
+              {scheduledMock ? "1 Scheduled" : "0 Scheduled"}
+            </p>
+            <span className="text-[11px] text-slate-500 block">
+              {scheduledMock ? (scheduledMock.labSessionCode || "Proctor session ready") : "No active mock sessions"}
+            </span>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-1">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-2">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">Cohort Avg</span>
-              <BarChart3 size={18} className="text-purple-600" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Cohort Avg</span>
+              <div className="size-8 rounded-lg bg-emerald-50 text-[#116149] flex items-center justify-center">
+                <BarChart3 size={16} />
+              </div>
             </div>
             <p className="text-2xl sm:text-3xl font-bold text-slate-900">
               {cohortAvg !== null ? `${cohortAvg} / 400` : "—"}
@@ -454,9 +490,9 @@ export default function SchoolDashboardPage() {
                 </p>
               </div>
 
-              <div className="inline-flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-1.5 text-xs text-amber-900">
-                <KeyRound size={14} className="shrink-0 text-amber-700" />
-                <span>Default password rule: <strong>LASTNAME in capital letters</strong></span>
+              <div className="inline-flex items-center gap-2 rounded-xl bg-slate-100 border border-slate-200/80 px-3 py-1.5 text-xs text-slate-700">
+                <KeyRound size={14} className="shrink-0 text-slate-500" />
+                <span>Default password rule: <strong className="text-slate-900">LASTNAME in capital letters</strong></span>
               </div>
             </div>
 
@@ -465,9 +501,9 @@ export default function SchoolDashboardPage() {
               {/* Card 1: Manual */}
               <div 
                 onClick={() => setIsAddModalOpen(true)}
-                className="group rounded-2xl border border-slate-200 p-5 space-y-3 hover:border-[#116149] hover:bg-emerald-50/20 transition cursor-pointer"
+                className="group rounded-2xl border border-slate-200 p-5 space-y-3 hover:border-[#116149] hover:bg-slate-50/50 transition cursor-pointer"
               >
-                <div className="size-9 rounded-xl bg-emerald-50 text-[#116149] flex items-center justify-center group-hover:bg-[#116149] group-hover:text-white transition">
+                <div className="size-9 rounded-xl bg-slate-100 text-[#092E28] flex items-center justify-center group-hover:bg-[#116149] group-hover:text-white transition">
                   <UserPlus size={18} />
                 </div>
                 <h3 className="text-sm font-bold text-slate-900">1. Manual Registration</h3>
@@ -485,9 +521,9 @@ export default function SchoolDashboardPage() {
               {/* Card 2: Bulk CSV */}
               <div 
                 onClick={() => setIsCsvModalOpen(true)}
-                className="group rounded-2xl border border-slate-200 p-5 space-y-3 hover:border-blue-600 hover:bg-blue-50/20 transition cursor-pointer"
+                className="group rounded-2xl border border-slate-200 p-5 space-y-3 hover:border-[#116149] hover:bg-slate-50/50 transition cursor-pointer"
               >
-                <div className="size-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition">
+                <div className="size-9 rounded-xl bg-slate-100 text-[#092E28] flex items-center justify-center group-hover:bg-[#116149] group-hover:text-white transition">
                   <Upload size={18} />
                 </div>
                 <h3 className="text-sm font-bold text-slate-900">2. Bulk CSV Upload</h3>
@@ -496,7 +532,7 @@ export default function SchoolDashboardPage() {
                 </p>
                 <button 
                   type="button" 
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 group-hover:underline pt-1 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#116149] group-hover:underline pt-1 cursor-pointer"
                 >
                   Upload Student CSV <ArrowRight size={13} />
                 </button>
@@ -505,9 +541,9 @@ export default function SchoolDashboardPage() {
               {/* Card 3: School Invite Link */}
               <div 
                 onClick={handleCopyInviteLink}
-                className="group rounded-2xl border border-slate-200 p-5 space-y-3 hover:border-purple-600 hover:bg-purple-50/20 transition cursor-pointer"
+                className="group rounded-2xl border border-slate-200 p-5 space-y-3 hover:border-[#116149] hover:bg-slate-50/50 transition cursor-pointer"
               >
-                <div className="size-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition">
+                <div className="size-9 rounded-xl bg-slate-100 text-[#092E28] flex items-center justify-center group-hover:bg-[#116149] group-hover:text-white transition">
                   <Share2 size={18} />
                 </div>
                 <h3 className="text-sm font-bold text-slate-900">3. School Invite Link</h3>
@@ -516,7 +552,7 @@ export default function SchoolDashboardPage() {
                 </p>
                 <button 
                   type="button" 
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-700 group-hover:underline pt-1 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#116149] group-hover:underline pt-1 cursor-pointer"
                 >
                   {copiedLink ? "Link Copied!" : "Copy Invite Link"} <ArrowRight size={13} />
                 </button>
@@ -751,47 +787,69 @@ export default function SchoolDashboardPage() {
               </button>
             </div>
 
-            {/* Active Session Simulation Card */}
-            <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-6 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-bold text-blue-900">
-                    <span className="size-1.5 rounded-full bg-blue-600 animate-pulse" />
-                    <span>Synchronized Lab Ready</span>
-                  </div>
-                  <h3 className="text-base font-bold text-slate-900">
-                    SS3 Term 2 Grand UTME Mock Simulation
-                  </h3>
-                  <p className="text-xs text-slate-600">
-                    Standard 4-subject exam (Use of English 60 questions + 3 Subjects 40 questions = 180 questions).
+            {/* Scheduled Session Card or Clean Empty State */}
+            {!scheduledMock ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-[#F8FAF7] p-10 sm:p-12 text-center space-y-4">
+                <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-500 shadow-xs">
+                  <Clock size={24} />
+                </div>
+                <div className="space-y-1 max-w-md mx-auto">
+                  <h3 className="text-sm font-bold text-slate-900">No mock exam session scheduled yet</h3>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    You haven&apos;t scheduled any computer laboratory mock exams. Launch a new lab session to configure your title, duration, and generate a synchronized entry code.
                   </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMockSchedulerOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#116149] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#0b4936] transition cursor-pointer"
+                >
+                  <Play size={13} fill="currentColor" />
+                  <span>Schedule First Lab Mock</span>
+                </button>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-bold text-[#116149]">
+                      <span className="size-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                      <span>Synchronized Lab Ready</span>
+                    </div>
+                    <h3 className="text-base font-bold text-slate-900">
+                      {scheduledMock.title || "UTME Computer Lab Mock"}
+                    </h3>
+                    <p className="text-xs text-slate-600">
+                      Standard 4-subject exam (Use of English 60 questions + 3 Subjects 40 questions = 180 questions).
+                    </p>
+                  </div>
 
-                <div className="rounded-xl bg-white p-3 border border-blue-200 text-center min-w-[140px] shadow-xs">
-                  <span className="text-[10px] text-slate-500 font-semibold uppercase block">Session Code</span>
-                  <span className="font-mono text-base font-extrabold text-blue-900">{schoolCode}-MOCK</span>
+                  <div className="rounded-xl bg-slate-50 p-3 border border-slate-200 text-center min-w-[140px] shadow-xs">
+                    <span className="text-[10px] text-slate-500 font-semibold uppercase block">Session Code</span>
+                    <span className="font-mono text-base font-extrabold text-slate-900">{scheduledMock.labSessionCode || `${schoolCode}-MOCK`}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                  <div className="rounded-xl bg-slate-50 p-3 border border-slate-200 text-xs">
+                    <span className="text-slate-500 block text-[10px]">Timer Control</span>
+                    <strong className="text-slate-900 text-sm">120:00 Countdown</strong>
+                  </div>
+                  <div className="rounded-xl bg-slate-50 p-3 border border-slate-200 text-xs">
+                    <span className="text-slate-500 block text-[10px]">Proctor Mode</span>
+                    <strong className="text-slate-900 text-sm">8-Key Hotkey Strict</strong>
+                  </div>
+                  <div className="rounded-xl bg-slate-50 p-3 border border-slate-200 text-xs">
+                    <span className="text-slate-500 block text-[10px]">Eligible Roster</span>
+                    <strong className="text-[#116149] text-sm">{activeCount} Licensed Students</strong>
+                  </div>
+                  <div className="rounded-xl bg-slate-50 p-3 border border-slate-200 text-xs">
+                    <span className="text-slate-500 block text-[10px]">Instant Result</span>
+                    <strong className="text-slate-900 text-sm">Immediate Diagnostic</strong>
+                  </div>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                <div className="rounded-xl bg-white p-3 border border-slate-200 text-xs">
-                  <span className="text-slate-500 block text-[10px]">Timer Control</span>
-                  <strong className="text-slate-900 text-sm">120:00 Countdown</strong>
-                </div>
-                <div className="rounded-xl bg-white p-3 border border-slate-200 text-xs">
-                  <span className="text-slate-500 block text-[10px]">Proctor Mode</span>
-                  <strong className="text-slate-900 text-sm">8-Key Hotkey Strict</strong>
-                </div>
-                <div className="rounded-xl bg-white p-3 border border-slate-200 text-xs">
-                  <span className="text-slate-500 block text-[10px]">Eligible Roster</span>
-                  <strong className="text-[#116149] text-sm">{activeCount} Licensed Students</strong>
-                </div>
-                <div className="rounded-xl bg-white p-3 border border-slate-200 text-xs">
-                  <span className="text-slate-500 block text-[10px]">Instant Result</span>
-                  <strong className="text-purple-700 text-sm">Immediate Diagnostic</strong>
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* Step-by-Step Lab Proctoring Checklist */}
             <div className="rounded-2xl border border-slate-200 p-5 space-y-3">
@@ -867,6 +925,7 @@ export default function SchoolDashboardPage() {
         schoolName={schoolName}
         schoolCode={schoolCode}
         activeCandidatesCount={activeCount}
+        onScheduled={handleMockScheduled}
       />
     </div>
   );
