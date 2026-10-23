@@ -10,3 +10,14 @@
 /signup /register/ 301
 /forgot /forgot-password/ 301
 /llm.txt /llms.txt 301
+
+/school /schools/ 301
+/school/ /schools/ 301
+/school/dashboard /schools/dashboard/ 301
+/school/dashboard/ /schools/dashboard/ 301
+/school/checkout /schools/checkout/ 301
+/school/checkout/ /schools/checkout/ 301
+/school/login /schools/login/ 301
+/school/login/ /schools/login/ 301
+/school/register /schools/register/ 301
+/school/register/ /schools/register/ 301

@@ -8,11 +8,22 @@ import { resolveLegacyDeepLinkRedirect } from "@/lib/routing/deep-links";
 
 export default function NotFoundPage() {
   const [redirectTarget, setRedirectTarget] = useState<string | null>(null);
+  const [isSchoolAdmin, setIsSchoolAdmin] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
+    try {
+      const stored = localStorage.getItem("jambprep_browser_session_v1");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.role === "school_admin" || parsed?.user?.user_metadata?.role === "school_admin") {
+          setIsSchoolAdmin(true);
+        }
+      }
+    } catch {}
+
     const resolved = resolveLegacyDeepLinkRedirect(
       window.location.pathname,
       window.location.search
@@ -52,10 +63,10 @@ export default function NotFoundPage() {
           </span>
         </Link>
         <Link
-          href="/dashboard"
+          href={isSchoolAdmin ? "/schools/dashboard" : "/dashboard"}
           className="text-xs font-semibold text-[#116149] hover:underline"
         >
-          Go to Dashboard →
+          {isSchoolAdmin ? "Go to School Dashboard →" : "Go to Dashboard →"}
         </Link>
       </header>
 
@@ -68,24 +79,35 @@ export default function NotFoundPage() {
             404 · Page Not Found
           </span>
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-            We couldn&apos;t find that study page.
+            We couldn&apos;t find that page.
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            The link may be mistyped, expired, or moved to our updated exam and scorecard routes. Choose a destination below to continue your UTME preparation.
+            {isSchoolAdmin
+              ? "The link may be mistyped or moved. Choose a destination below to return to your institutional school portal."
+              : "The link may be mistyped, expired, or moved to our updated exam and scorecard routes. Choose a destination below to continue your UTME preparation."}
           </p>
           <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/dashboard"
+              href={isSchoolAdmin ? "/schools/dashboard" : "/dashboard"}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#116149] px-6 text-xs font-semibold text-white hover:bg-[#0b4936]"
             >
-              <ArrowLeft size={14} /> Study Dashboard
+              <ArrowLeft size={14} /> {isSchoolAdmin ? "School Portal Dashboard" : "Study Dashboard"}
             </Link>
-            <Link
-              href="/mock"
-              className="inline-flex min-h-11 items-center justify-center rounded-full border border-slate-200 px-6 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              Mock Exam Lobby
-            </Link>
+            {isSchoolAdmin ? (
+              <Link
+                href="/schools"
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-slate-200 px-6 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Schools Overview
+              </Link>
+            ) : (
+              <Link
+                href="/mock"
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-slate-200 px-6 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Mock Exam Lobby
+              </Link>
+            )}
             <Link
               href="/"
               className="inline-flex min-h-11 items-center justify-center rounded-full border border-slate-200 px-6 text-xs font-semibold text-slate-700 hover:bg-slate-50"

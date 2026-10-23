@@ -52,7 +52,7 @@ export function buildCanonicalResultUrl(attemptId: string): string {
 export interface LegacyRedirectResolution {
   target: string;
   status: 301 | 302;
-  reason: "legacy_checkout" | "legacy_mock_result_root" | "legacy_mock_result" | "legacy_mock_attempt";
+  reason: "legacy_checkout" | "legacy_mock_result_root" | "legacy_mock_result" | "legacy_mock_attempt" | "legacy_school_alias";
 }
 
 function decodePathSegment(value: string): string | null {
@@ -89,6 +89,16 @@ export function resolveLegacyDeepLinkRedirect(
 
   const normalized =
     pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+
+  if (normalized === "/school" || normalized.startsWith("/school/")) {
+    const targetPath = normalized.replace(/^\/school(\/|$)/, "/schools$1");
+    const query = search ? (search.startsWith("?") ? search : `?${search}`) : "";
+    return {
+      target: `${targetPath}${query}`,
+      status: 301,
+      reason: "legacy_school_alias",
+    };
+  }
 
   if (normalized === "/checkout") {
     const query = search

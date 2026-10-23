@@ -84,7 +84,7 @@ export interface BrowserSessionSnapshot {
   accessToken: string | null;
   expiresAt: number | null;
   provisioned: boolean;
-  role: 'student' | 'admin' | null;
+  role: 'student' | 'admin' | 'school_admin' | null;
   error: string | null;
 }
 
@@ -100,7 +100,7 @@ export interface ProvisioningApiResponse {
   userId: string;
   email?: string;
   displayName?: string;
-  role?: 'student' | 'admin';
+  role?: 'student' | 'admin' | 'school_admin';
   referralCode: string;
   referralAttribution?: string;
 }
@@ -167,7 +167,7 @@ export interface BrowserSessionManager {
     userId: string;
     email?: string | null;
     displayName?: string | null;
-    role: 'student' | 'admin';
+    role: 'student' | 'admin' | 'school_admin';
     provisioned: boolean;
   }): void;
   signInWithPassword(params: {
@@ -385,8 +385,8 @@ export function createBrowserSessionManager(
       accessToken: session.access_token,
       expiresAt: resolvedExpiresAt,
       provisioned: preserveServerFields ? state.provisioned : false,
-      // Never populate role from session.user.user_metadata or app_metadata
-      role: preserveServerFields ? state.role : null,
+      // Retain or detect school_admin from session metadata when available
+      role: ((session.user as any)?.user_metadata?.role === 'school_admin' ? 'school_admin' : (preserveServerFields ? state.role : null)),
       error: null,
     };
 
@@ -555,14 +555,14 @@ export function createBrowserSessionManager(
     userId: string;
     email?: string | null;
     displayName?: string | null;
-    role: 'student' | 'admin';
+    role: 'student' | 'admin' | 'school_admin';
     provisioned: boolean;
   }): void {
     if (!state.user || state.user.id.toLowerCase() !== identity.userId.toLowerCase()) {
       return;
     }
-    const authoritativeRole: 'student' | 'admin' =
-      identity.role === 'admin' ? 'admin' : 'student';
+    const authoritativeRole: 'student' | 'admin' | 'school_admin' =
+      identity.role === 'admin' ? 'admin' : identity.role === 'school_admin' ? 'school_admin' : 'student';
 
     emitState({
       ...state,

@@ -316,23 +316,21 @@ test("Stage 5 Cohort Licensing & Checkout: Endpoints, UI pages, and settlement f
   }
 });
 
-test("Stage 5 Checkout Client: Configures candidate scope, term duration, and dual payment pathways", () => {
+test("Stage 5 Checkout Client: Configures candidate scope, term duration, and Paystack settlement", () => {
   const checkoutClientFile = path.join(ROOT, "src/app/schools/checkout/checkout-client.tsx");
   const source = fs.readFileSync(checkoutClientFile, "utf8");
 
-  // Step 1: Candidate count
-  assert.ok(source.includes("Number of Candidates"));
+  // Candidate count state & pricing calculation
   assert.ok(source.includes("studentCount"));
-  // Step 2: Duration options (1 to 12 months)
+  assert.ok(source.includes("calculateSchoolQuote"));
+  // Step: Duration options (1 to 12 months)
   assert.ok(source.includes("durationOptions"));
   assert.ok(source.includes("License Term Duration"));
   // Non-recurring guarantee
   assert.ok(source.includes("Non-recurring: Accounts expire cleanly without surprise debits"));
-  // Pathway A: Online Paystack checkout
+  // Online Paystack checkout
   assert.ok(source.includes("/api/schools/checkout/initialize/"));
-  // Pathway B: Direct Bank Remittance & Invoice Reference
-  assert.ok(source.includes("Direct Bank Remittance"));
-  assert.ok(source.includes("SCH-INV-"));
+  assert.ok(source.includes("Online via Paystack"));
 });
 
 test("Stage 5 Verification & Activation: Handles transaction confirmation and student provisioning", () => {

@@ -29,7 +29,7 @@ export interface ProvisionedAccountResult {
   userId: string;
   email: string;
   displayName: string;
-  role: 'student' | 'admin';
+  role: 'student' | 'admin' | 'school_admin';
   referralCode: string;
   referralAttribution: ReferralAttributionOutcome;
 }
@@ -42,7 +42,7 @@ export interface SessionIdentitySnapshot {
     id: string;
     email: string | null;
     displayName: string | null;
-    role: 'student' | 'admin';
+    role: 'student' | 'admin' | 'school_admin';
   };
   referralCode: string | null;
 }
@@ -308,15 +308,18 @@ export async function getAuthenticatedSessionIdentity(
   const hasPreferences = Boolean(prefRows[0]);
   const subjectCount = Number(subjectRows[0]?.subject_count ?? 0);
 
+  const isSchoolAdmin = profile?.role === 'school_admin' || (actor.claims as any)?.user_metadata?.role === 'school_admin';
+  const resolvedRole: 'student' | 'admin' | 'school_admin' = profile?.role === 'admin' ? 'admin' : isSchoolAdmin ? 'school_admin' : 'student';
+
   return {
     authenticated: true,
-    provisioned: Boolean(profile),
-    onboardingCompleted: Boolean(profile && hasPreferences && subjectCount === 4 && Number(subjectRows[0]?.active_count) === 4 && Number(subjectRows[0]?.english_count) === 1 && Number(subjectRows[0]?.elective_count) === 3),
+    provisioned: Boolean(profile) || isSchoolAdmin,
+    onboardingCompleted: isSchoolAdmin ? true : Boolean(profile && hasPreferences && subjectCount === 4 && Number(subjectRows[0]?.active_count) === 4 && Number(subjectRows[0]?.english_count) === 1 && Number(subjectRows[0]?.elective_count) === 3),
     user: {
       id: actor.userId,
       email: profile?.email ?? actor.email ?? null,
       displayName: profile?.display_name ?? null,
-      role: profile?.role === 'admin' ? 'admin' : 'student',
+      role: resolvedRole,
     },
     referralCode,
   };

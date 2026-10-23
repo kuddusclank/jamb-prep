@@ -25,11 +25,7 @@ import {
   Loader2, 
   AlertCircle,
   HelpCircle,
-  FileText,
-  Copy,
-  Check,
-  PhoneCall,
-  Printer
+  FileText
 } from "lucide-react";
 
 export function SchoolCheckoutClient() {
@@ -44,8 +40,6 @@ export function SchoolCheckoutClient() {
   const [durationMonths, setDurationMonths] = useState<number>(3);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showBankTransferModal, setShowBankTransferModal] = useState(false);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -76,14 +70,6 @@ export function SchoolCheckoutClient() {
   const formattedEndDate = endDate.toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
 
   const invoiceReference = `SCH-INV-${schoolCode}-${startDate.getFullYear()}${String(startDate.getMonth() + 1).padStart(2, "0")}`;
-
-  const handleCopy = (text: string, field: string) => {
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-    }
-  };
 
   const handlePaystackCheckout = async () => {
     setError(null);
@@ -192,102 +178,21 @@ export function SchoolCheckoutClient() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left Column: Scope & Config (7 cols) */}
             <div className="lg:col-span-7 space-y-6">
-              {/* Step 1: Candidate Count */}
+              {/* License Term Duration */}
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <div className="space-y-0.5">
                     <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <Users size={16} className="text-[#116149]" />
-                      1. Number of Candidates
+                      <Calendar size={16} className="text-[#116149]" />
+                      License Term Duration
                     </h2>
-                    <p className="text-xs text-slate-500">Each student receives full CBT exam & offline pack access.</p>
+                    <p className="text-xs text-slate-500">
+                      Select preparation window for this cohort ({studentCount} candidate{studentCount > 1 ? "s" : ""}).
+                    </p>
                   </div>
                   <span className="text-xs font-mono font-bold text-[#116149] bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
                     ₦{MONTHLY_RATE_PER_STUDENT_NAIRA.toLocaleString()}/student/mo
                   </span>
-                </div>
-
-                <div className="flex items-center gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setStudentCount((c) => Math.max(MIN_STUDENTS, c - 5))}
-                    className="flex size-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 font-bold text-lg transition cursor-pointer"
-                    aria-label="Decrease candidate count by 5"
-                  >
-                    -5
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setStudentCount((c) => Math.max(MIN_STUDENTS, c - 1))}
-                    className="flex size-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 font-bold text-lg transition cursor-pointer"
-                    aria-label="Decrease candidate count by 1"
-                  >
-                    -
-                  </button>
-
-                  <div className="flex-1 relative">
-                    <input
-                      type="number"
-                      min={MIN_STUDENTS}
-                      max={MAX_STUDENTS}
-                      value={studentCount}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value, 10);
-                        if (!isNaN(val)) setStudentCount(Math.max(MIN_STUDENTS, Math.min(MAX_STUDENTS, val)));
-                      }}
-                      className="w-full h-11 text-center font-bold text-lg rounded-2xl border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#116149]"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-slate-400 pointer-events-none">
-                      candidates
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setStudentCount((c) => Math.min(MAX_STUDENTS, c + 1))}
-                    className="flex size-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 font-bold text-lg transition cursor-pointer"
-                    aria-label="Increase candidate count by 1"
-                  >
-                    +
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setStudentCount((c) => Math.min(MAX_STUDENTS, c + 5))}
-                    className="flex size-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 font-bold text-lg transition cursor-pointer"
-                    aria-label="Increase candidate count by 5"
-                  >
-                    +5
-                  </button>
-                </div>
-
-                {/* Quick Presets */}
-                <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-                  <span className="text-[11px] text-slate-400">Quick presets:</span>
-                  {[10, 25, 50, 100, 250].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setStudentCount(preset)}
-                      className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold transition cursor-pointer ${
-                        studentCount === preset
-                          ? "bg-[#116149] text-white"
-                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                      }`}
-                    >
-                      {preset}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Step 2: Duration Selector */}
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
-                <div className="space-y-0.5">
-                  <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Calendar size={16} className="text-[#116149]" />
-                    2. License Term Duration
-                  </h2>
-                  <p className="text-xs text-slate-500">Duration during which your candidates have full platform access.</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
@@ -396,19 +301,6 @@ export function SchoolCheckoutClient() {
                       </>
                     )}
                   </button>
-
-                  <div className="text-center">
-                    <span className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">or</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowBankTransferModal(true)}
-                    className="w-full flex items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-slate-50 px-5 py-3 text-xs font-semibold text-slate-800 hover:bg-white hover:border-slate-400 transition cursor-pointer"
-                  >
-                    <Building2 size={15} className="text-slate-600" />
-                    <span>Direct Bank Remittance / Bursary Wire</span>
-                  </button>
                 </div>
 
                 <div className="rounded-xl bg-slate-50 p-3 text-[11px] text-slate-500 leading-relaxed border border-slate-200/60 flex items-start gap-2">
@@ -436,109 +328,6 @@ export function SchoolCheckoutClient() {
           </div>
         </div>
       </footer>
-
-      {/* Bank Remittance Modal for Bursary Payments */}
-      {showBankTransferModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div 
-            className="relative w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 text-[#092E28] shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200"
-            role="dialog"
-            aria-modal="true"
-          >
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <div className="space-y-0.5">
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Building2 size={18} className="text-[#116149]" />
-                  Direct Bank Remittance Instructions
-                </h3>
-                <p className="text-xs text-slate-500">For school accounts requiring manual bursary bank transfer or check.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowBankTransferModal(false)}
-                className="flex size-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="py-5 space-y-4 text-xs">
-              <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 space-y-1 text-amber-900">
-                <span className="font-bold block text-sm">Important Remittance Reference:</span>
-                <p className="text-[11px] text-amber-800">
-                  Please include this exact invoice code in your bank transfer narration or payment remark:
-                </p>
-                <div className="flex items-center justify-between rounded-xl bg-white p-2.5 border border-amber-200 mt-2">
-                  <span className="font-mono font-bold text-sm text-slate-900">{invoiceReference}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(invoiceReference, "ref")}
-                    className="inline-flex items-center gap-1 rounded-lg bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-900 hover:bg-amber-200 transition cursor-pointer"
-                  >
-                    {copiedField === "ref" ? <Check size={12} /> : <Copy size={12} />}
-                    <span>{copiedField === "ref" ? "Copied" : "Copy Code"}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Bank Account Details */}
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Bank Name:</span>
-                  <strong className="text-slate-900 font-semibold">Guaranty Trust Bank (GTBank)</strong>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Account Name:</span>
-                  <strong className="text-slate-900 font-semibold">LecternIQ Enterprise (JAMBPrep)</strong>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Account Number:</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-slate-900 text-sm">0123456789</span>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy("0123456789", "acc")}
-                      className="text-slate-400 hover:text-slate-700 transition cursor-pointer p-0.5"
-                    >
-                      {copiedField === "acc" ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between pt-1 border-t border-slate-200">
-                  <span className="text-slate-500">Exact Amount:</span>
-                  <strong className="text-sm font-bold text-[#116149]">{quote.formattedTotalNaira}</strong>
-                </div>
-              </div>
-
-              <div className="rounded-xl bg-blue-50 p-3 text-[11px] text-blue-900 border border-blue-200 flex items-start gap-2">
-                <PhoneCall size={14} className="text-blue-700 shrink-0 mt-0.5" />
-                <span>
-                  After payment, send your transaction receipt and School Code (<strong>{schoolCode}</strong>) to{" "}
-                  <strong>support@lecterniq.com</strong> or WhatsApp <strong>+234 800 JAMBPREP</strong> for same-day manual activation.
-                </span>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
-              >
-                <Printer size={13} />
-                <span>Print Invoice</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowBankTransferModal(false)}
-                className="rounded-xl bg-[#116149] px-5 py-2 text-xs font-bold text-white hover:bg-[#0b4936] transition cursor-pointer"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

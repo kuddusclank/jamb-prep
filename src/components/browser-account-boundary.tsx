@@ -117,8 +117,13 @@ function BrowserAccountBoundaryContent({ children, mode = 'protected', returnPat
   const pathname = rawPath.replace(/\/$/, '') || '/';
   const router = useRouter();
   const identity = account.identity;
-  const searchParams=useSearchParams();
-  const destination = identity ? accountDestination(identity, pathname, returnPath ?? searchParams.get('redirectTo') ?? '/dashboard', searchParams.get('edit') === '1') : null;
+  const searchParams = useSearchParams();
+  const effectiveRole = identity?.user?.role || account.session.role;
+  const destination = identity
+    ? accountDestination(identity, pathname, returnPath ?? searchParams.get('redirectTo') ?? '/dashboard', searchParams.get('edit') === '1')
+    : effectiveRole === 'school_admin' && !pathname.startsWith('/schools')
+    ? '/schools/dashboard'
+    : null;
   useEffect(() => {
     if (mode === 'protected' && account.session.status === 'unauthenticated') {
       if (getAccountCoordinator().manager.getState().status !== 'unauthenticated') return;
@@ -144,6 +149,11 @@ function BrowserAccountBoundaryContent({ children, mode = 'protected', returnPat
 export function BrowserAccountNavigation() {
   const account = useBrowserAccount();
   if (account.session.status === 'loading') return <span role="status">Checking session…</span>;
-  if (account.session.status === 'authenticated') return <><Link href={account.identity && !account.identity.onboardingCompleted ? '/onboarding' : '/dashboard'}>My study space</Link><button type="button" onClick={() => { void signOutAction(); }}>Sign out</button></>;
+  if (account.session.status === 'authenticated') {
+    const isSchoolAdmin = account.session.role === 'school_admin' || account.identity?.user?.role === 'school_admin';
+    const destination = isSchoolAdmin ? '/schools/dashboard' : (account.identity && !account.identity.onboardingCompleted ? '/onboarding' : '/dashboard');
+    const label = isSchoolAdmin ? 'School portal' : 'My study space';
+    return <><Link href={destination}>{label}</Link><button type="button" onClick={() => { void signOutAction(); }}>Sign out</button></>;
+  }
   return <Link href="/login">Sign in</Link>;
 }

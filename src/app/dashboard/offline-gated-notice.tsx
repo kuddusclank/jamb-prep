@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "@/components/pending-link";
-import { Sparkles, WifiOff, Lock, RefreshCw, ArrowRight, ShieldCheck, Download, Smartphone } from "lucide-react";
+import { Sparkles, WifiOff, Lock, RefreshCw, ArrowRight, ShieldCheck, Download, Smartphone, Building2 } from "lucide-react";
 import type { OfflineUserProfile } from "@/lib/offline/offline-profile-cache";
 
 interface OfflineGatedNoticeProps {
@@ -11,6 +12,22 @@ interface OfflineGatedNoticeProps {
 }
 
 export function OfflineGatedNotice({ reason, profile, onRetry }: OfflineGatedNoticeProps) {
+  const [isSchoolAdmin, setIsSchoolAdmin] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("jambprep_browser_session_v1");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed?.role === "school_admin" || parsed?.user?.user_metadata?.role === "school_admin") {
+            setIsSchoolAdmin(true);
+          }
+        }
+      } catch {}
+    }
+  }, []);
+
   const isExpired = reason === 'expired';
   const isTampered = reason === 'tampered';
 
@@ -21,6 +38,51 @@ export function OfflineGatedNotice({ reason, profile, onRetry }: OfflineGatedNot
         year: 'numeric',
       })
     : null;
+
+  if (isSchoolAdmin) {
+    return (
+      <div className="shell section-space max-w-2xl mx-auto">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-10 shadow-sm text-center space-y-6">
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-[#116149] border border-emerald-200">
+              <Building2 size={26} />
+            </div>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase bg-emerald-100 text-[#116149]">
+              School Administrator Portal
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#092E28]">
+              Internet Connection Required
+            </h1>
+            <p className="text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
+              Your institutional school portal requires an active internet connection to synchronize student rosters, computer lab simulations, and syllabus diagnostic heatmaps.
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            {onRetry && (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-6 py-3.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+              >
+                <RefreshCw size={15} /> Check Connection
+              </button>
+            )}
+
+            <Link
+              href="/schools/dashboard"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-[#0e523e] transition cursor-pointer"
+            >
+              Go to School Dashboard <ArrowRight size={15} />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="shell section-space max-w-2xl mx-auto">

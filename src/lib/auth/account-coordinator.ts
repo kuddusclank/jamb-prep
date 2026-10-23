@@ -10,6 +10,50 @@ export interface OnboardingData {
 }
 
 export function accountDestination(identity: SessionIdentityResponse, pathname: string, returnPath = '/dashboard', editOnboarding = false): string | null {
+  const role = identity.user.role;
+
+  // 1. SCHOOL ADMINISTRATOR RBAC:
+  if (role === 'school_admin') {
+    const studentProtectedPaths = [
+      '/onboarding',
+      '/dashboard',
+      '/practice',
+      '/exam',
+      '/mock',
+      '/result',
+      '/pricing',
+      '/checkout',
+      '/referrals',
+      '/dictionary',
+      '/games',
+      '/analytics',
+      '/profile',
+    ];
+    const isStudentProtected = studentProtectedPaths.some(
+      (p) => pathname === p || pathname.startsWith(`${p}/`)
+    );
+    if (isStudentProtected || ['/', '/login', '/register', '/forgot-password'].includes(pathname)) {
+      return '/schools/dashboard';
+    }
+    return null;
+  }
+
+  // 2. SUPER ADMINISTRATOR RBAC:
+  if (role === 'admin') {
+    if (['/', '/login', '/register'].includes(pathname)) {
+      return '/admin';
+    }
+    return null;
+  }
+
+  // 3. STUDENT RBAC:
+  if (pathname.startsWith('/schools/dashboard') || pathname.startsWith('/schools/checkout')) {
+    return '/dashboard';
+  }
+  if (pathname.startsWith('/admin')) {
+    return '/dashboard';
+  }
+
   if (!identity.provisioned) return pathname === '/register' ? null : '/register?resume=1';
   if (!identity.onboardingCompleted) return pathname === '/onboarding' ? null : '/onboarding';
   if (pathname === '/onboarding' && editOnboarding) return null;

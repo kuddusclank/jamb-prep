@@ -55,7 +55,7 @@ export interface SessionIdentityResponse {
     id: string;
     email: string | null;
     displayName: string | null;
-    role: 'student' | 'admin';
+    role: 'student' | 'admin' | 'school_admin';
   };
   referralCode: string | null;
 }
@@ -441,7 +441,7 @@ export function createNativeApiClient(options?: NativeApiClientOptions): NativeA
           userId: res.data.userId,
           email: res.data.email ?? null,
           displayName: res.data.displayName ?? params.displayName,
-          role: res.data.role === 'admin' ? 'admin' : 'student',
+          role: res.data.role === 'admin' ? 'admin' : res.data.role === 'school_admin' ? 'school_admin' : 'student',
           provisioned: true,
         });
       }
