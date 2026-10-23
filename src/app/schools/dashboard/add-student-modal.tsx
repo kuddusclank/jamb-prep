@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, UserPlus, CheckCircle2, Copy, AlertCircle, Loader2, ArrowRight } from "lucide-react";
+import { X, UserPlus, CheckCircle2, Copy, AlertCircle, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface AddStudentModalProps {
@@ -114,101 +114,101 @@ export function AddStudentModal({ isOpen, onClose, onStudentAdded, schoolCode }:
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 text-[#092E28] shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-lg rounded-lg bg-white p-5 sm:p-6 text-[#17231F] shadow-xl border border-[#E3E8E4] animate-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-5 top-5 flex size-9 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+          className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-md text-[#68766F] hover:bg-[#F7F8F6] hover:text-[#17231F] transition cursor-pointer"
           aria-label="Close modal"
         >
-          <X size={18} />
+          <X size={16} />
         </button>
 
         {createdStudent ? (
-          <div className="space-y-6 text-center py-2">
-            <div className="size-14 rounded-full bg-emerald-100 text-[#116149] flex items-center justify-center mx-auto shadow-xs">
-              <CheckCircle2 size={32} />
+          <div className="space-y-5 text-center py-2">
+            <div className="size-11 rounded-lg bg-[#EAF4EF] text-[#12664F] flex items-center justify-center mx-auto shadow-2xs">
+              <CheckCircle2 size={24} />
             </div>
 
             <div className="space-y-1">
-              <h3 className="text-xl font-bold text-slate-900">Candidate Enrolled Successfully</h3>
-              <p className="text-xs text-slate-500">
+              <h3 className="text-base sm:text-lg font-semibold text-[#17231F]">Candidate Enrolled Successfully</h3>
+              <p className="text-xs text-[#68766F]">
                 The student account is provisioned and bound to your school cohort.
               </p>
             </div>
 
             {/* Credential Slip Card */}
-            <div className="rounded-2xl border border-emerald-200 bg-[#F8FAF7] p-5 text-left space-y-3 font-mono text-xs">
-              <div className="flex justify-between border-b border-slate-200 pb-2">
-                <span className="text-slate-500 font-sans">Student Name:</span>
-                <span className="font-bold text-slate-900 font-sans">{createdStudent.name}</span>
+            <div className="rounded-md border border-[#E3E8E4] bg-[#F7F8F6] p-4 text-left space-y-2.5 font-mono text-xs">
+              <div className="flex justify-between border-b border-[#E3E8E4] pb-2">
+                <span className="text-[#68766F] font-sans">Student Name:</span>
+                <span className="font-semibold text-[#17231F] font-sans">{createdStudent.name}</span>
               </div>
-              <div className="flex justify-between border-b border-slate-200 pb-2">
-                <span className="text-slate-500 font-sans">Login Email:</span>
-                <span className="font-semibold text-slate-800">{createdStudent.email}</span>
+              <div className="flex justify-between border-b border-[#E3E8E4] pb-2">
+                <span className="text-[#68766F] font-sans">Login Email:</span>
+                <span className="font-medium text-[#17231F]">{createdStudent.email}</span>
               </div>
-              <div className="flex justify-between border-b border-slate-200 pb-2">
-                <span className="text-slate-500 font-sans">Default Password:</span>
-                <span className="font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">
+              <div className="flex justify-between border-b border-[#E3E8E4] pb-2">
+                <span className="text-[#68766F] font-sans">Default Password:</span>
+                <span className="font-semibold text-[#12664F] bg-[#EAF4EF] px-2 py-0.5 rounded border border-[#12664F]/20">
                   {createdStudent.defaultPassword}
                 </span>
               </div>
-              <div className="flex justify-between pt-1">
-                <span className="text-slate-500 font-sans">School Code:</span>
-                <span className="font-bold text-[#116149]">{schoolCode}</span>
+              <div className="flex justify-between pt-0.5">
+                <span className="text-[#68766F] font-sans">School Code:</span>
+                <span className="font-semibold text-[#12664F]">{schoolCode}</span>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
               <button
                 type="button"
                 onClick={handleCopyCredentials}
-                className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition cursor-pointer"
+                className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-md border border-[#E3E8E4] bg-white px-3 text-xs font-medium text-[#17231F] shadow-2xs hover:bg-[#F7F8F6] transition cursor-pointer"
               >
-                {copied ? <CheckCircle2 size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                {copied ? <CheckCircle2 size={13} className="text-[#12664F]" /> : <Copy size={13} />}
                 <span>{copied ? "Copied to Clipboard" : "Copy Credentials"}</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleReset}
-                className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[#116149] px-4 text-xs font-semibold text-white shadow-sm hover:bg-[#0c4a37] transition cursor-pointer"
+                className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-md bg-[#12664F] px-3 text-xs font-medium text-white shadow-2xs hover:bg-[#0B3028] transition cursor-pointer"
               >
-                <UserPlus size={14} />
+                <UserPlus size={13} />
                 <span>Add Another Student</span>
               </button>
             </div>
           </div>
         ) : (
           <div>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="size-11 rounded-2xl bg-emerald-100 text-[#116149] flex items-center justify-center">
-                <UserPlus size={20} />
+            <div className="flex items-center gap-3 mb-5 pb-3 border-b border-[#E3E8E4]">
+              <div className="size-9 rounded-lg bg-[#EAF4EF] text-[#12664F] flex items-center justify-center">
+                <UserPlus size={18} />
               </div>
               <div>
-                <h2 className="text-xl font-bold tracking-tight text-slate-900">Add Student Manually</h2>
-                <p className="text-xs text-slate-500">
+                <h2 className="text-base sm:text-lg font-semibold tracking-tight text-[#17231F]">Add Candidate Manually</h2>
+                <p className="text-xs text-[#68766F]">
                   Direct candidate registration under {schoolCode}
                 </p>
               </div>
             </div>
 
             {error && (
-              <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800 flex items-start gap-2">
-                <AlertCircle size={15} className="shrink-0 mt-0.5 text-red-600" />
+              <div role="alert" className="mb-4 rounded-md border border-red-200 bg-red-50 p-2.5 text-xs text-red-800 flex items-start gap-2">
+                <AlertCircle size={14} className="shrink-0 mt-0.5 text-red-600" />
                 <span>{error}</span>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4 text-left">
+            <form onSubmit={handleSubmit} className="space-y-3.5 text-left">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="modal-fn" className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label htmlFor="modal-fn" className="block text-xs font-medium text-[#17231F] mb-1">
                     First Name *
                   </label>
                   <input
@@ -218,12 +218,12 @@ export function AddStudentModal({ isOpen, onClose, onStudentAdded, schoolCode }:
                     placeholder="e.g. Chinedu"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-xs text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15"
+                    className="w-full rounded-md border border-[#E3E8E4] bg-white px-3 py-2 text-xs text-[#17231F] placeholder:text-[#68766F]/60 focus:outline-none focus:ring-1 focus:ring-[#12664F] focus:border-[#12664F]"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="modal-ln" className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label htmlFor="modal-ln" className="block text-xs font-medium text-[#17231F] mb-1">
                     Last Name / Surname *
                   </label>
                   <input
@@ -233,13 +233,13 @@ export function AddStudentModal({ isOpen, onClose, onStudentAdded, schoolCode }:
                     placeholder="e.g. Okonkwo"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-xs text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15"
+                    className="w-full rounded-md border border-[#E3E8E4] bg-white px-3 py-2 text-xs text-[#17231F] placeholder:text-[#68766F]/60 focus:outline-none focus:ring-1 focus:ring-[#12664F] focus:border-[#12664F]"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="modal-email" className="block text-xs font-semibold text-slate-700 mb-1">
+                <label htmlFor="modal-email" className="block text-xs font-medium text-[#17231F] mb-1">
                   Candidate Email *
                 </label>
                 <input
@@ -249,28 +249,28 @@ export function AddStudentModal({ isOpen, onClose, onStudentAdded, schoolCode }:
                   placeholder="e.g. c.okonkwo@school.edu.ng"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-xs text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15"
+                  className="w-full rounded-md border border-[#E3E8E4] bg-white px-3 py-2 text-xs text-[#17231F] placeholder:text-[#68766F]/60 focus:outline-none focus:ring-1 focus:ring-[#12664F] focus:border-[#12664F]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="modal-id" className="block text-xs font-semibold text-slate-700 mb-1">
-                    Student / Admission ID <span className="text-slate-400 font-normal">(Optional)</span>
+                  <label htmlFor="modal-id" className="block text-xs font-medium text-[#17231F] mb-1">
+                    Student ID <span className="text-[#68766F] font-normal">(Optional)</span>
                   </label>
                   <input
                     id="modal-id"
                     type="text"
-                    placeholder="e.g. ST-2026-084"
+                    placeholder="e.g. ST-2026-001"
                     value={studentIdentifier}
                     onChange={(e) => setStudentIdentifier(e.target.value)}
-                    className="w-full min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-xs text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15"
+                    className="w-full rounded-md border border-[#E3E8E4] bg-white px-3 py-2 text-xs text-[#17231F] placeholder:text-[#68766F]/60 focus:outline-none focus:ring-1 focus:ring-[#12664F] focus:border-[#12664F]"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="modal-phone" className="block text-xs font-semibold text-slate-700 mb-1">
-                    Parent / Student Phone <span className="text-slate-400 font-normal">(Optional)</span>
+                  <label htmlFor="modal-phone" className="block text-xs font-medium text-[#17231F] mb-1">
+                    Guardian Phone <span className="text-[#68766F] font-normal">(Optional)</span>
                   </label>
                   <input
                     id="modal-phone"
@@ -278,47 +278,41 @@ export function AddStudentModal({ isOpen, onClose, onStudentAdded, schoolCode }:
                     placeholder="e.g. 08012345678"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-xs text-[#092E28] placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15"
+                    className="w-full rounded-md border border-[#E3E8E4] bg-white px-3 py-2 text-xs text-[#17231F] placeholder:text-[#68766F]/60 focus:outline-none focus:ring-1 focus:ring-[#12664F] focus:border-[#12664F]"
                   />
                 </div>
               </div>
 
               {/* Password Rule Notice */}
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-xs text-[#092E28]">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-700">Initial Login Password:</span>
-                  <span className="font-mono font-bold text-[#116149] bg-white px-2 py-0.5 rounded border border-emerald-300">
-                    {predictedPassword}
-                  </span>
-                </div>
-                <p className="mt-1 text-[11px] text-slate-500">
-                  Default password is automatically set to the student's uppercase surname for simple computer lab onboarding.
+              <div className="rounded-md bg-[#F7F8F6] border border-[#E3E8E4] p-3 text-xs space-y-1">
+                <span className="font-medium text-[#17231F] block text-[11px]">
+                  Generated Initial Password
+                </span>
+                <p className="text-[11px] text-[#68766F] leading-relaxed">
+                  Calculated automatically: <code className="font-mono font-semibold text-[#12664F] bg-white px-1.5 py-0.5 rounded border border-[#E3E8E4]">{predictedPassword}</code> (Surname in uppercase, padded to 6 chars).
                 </p>
               </div>
 
-              <div className="pt-2 flex gap-3">
+              <div className="flex items-center justify-end gap-2.5 pt-2">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="min-h-11 flex-1 rounded-full border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-md border border-[#E3E8E4] text-xs font-medium text-[#68766F] hover:bg-[#F7F8F6] transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="min-h-11 flex-1 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#116149] text-xs font-semibold text-white shadow-sm hover:bg-[#0c4a37] disabled:opacity-50 transition cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-[#12664F] px-4 py-1.5 text-xs font-medium text-white shadow-2xs hover:bg-[#0B3028] transition cursor-pointer disabled:opacity-50"
                 >
                   {isPending ? (
                     <>
-                      <Loader2 size={14} className="animate-spin" />
-                      <span>Enrolling...</span>
+                      <Loader2 size={13} className="animate-spin text-white" />
+                      <span>Enrolling Candidate...</span>
                     </>
                   ) : (
-                    <>
-                      <span>Enrol Student</span>
-                      <ArrowRight size={13} />
-                    </>
+                    <span>Enrol Candidate</span>
                   )}
                 </button>
               </div>
