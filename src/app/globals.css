@@ -259,3 +259,101 @@ select[aria-invalid="true"] { border-color: #dc2626; }
   }
 }
 
+/* ========================================================
+   PRINT MEDIA RULES (For Clean 1-Page Slips & Reports)
+   ======================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 12mm;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #17231f !important;
+    font-size: 11pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  /* When printing from an active modal, hide dashboard page layout */
+  body:has([data-print-target]) header,
+  body:has([data-print-target]) main,
+  body:has([data-print-target]) footer,
+  body:has([data-print-target]) nav,
+  body.printing-student-drilldown header,
+  body.printing-student-drilldown main,
+  body.printing-student-drilldown footer,
+  body.printing-student-drilldown nav,
+  body.printing-mock-scheduler header,
+  body.printing-mock-scheduler main,
+  body.printing-mock-scheduler footer,
+  body.printing-mock-scheduler nav {
+    display: none !important;
+  }
+
+  /* When printing from a modal, hide all other root container children */
+  body:has([data-print-target]) > div > *:not([data-print-target]):not(:has([data-print-target])),
+  body.printing-student-drilldown > div > *:not([data-print-target]):not(:has([data-print-target])),
+  body.printing-mock-scheduler > div > *:not([data-print-target]):not(:has([data-print-target])) {
+    display: none !important;
+  }
+
+  /* Unfix the modal overlay container so it does NOT repeat on multiple pages */
+  [data-print-target] {
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    display: block !important;
+  }
+
+  /* Ensure modal dialog card spans cleanly without scrollbars or clipping */
+  [data-print-dialog] {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+  }
+
+  /* Prevent page breaks inside cards, tables, score sections */
+  [data-print-dialog] .grid,
+  [data-print-dialog] table,
+  .print-avoid-break {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Hide interactive controls in print */
+  .no-print,
+  [data-no-print],
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Ensure color bars, badges, and accuracy meters print in color */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+

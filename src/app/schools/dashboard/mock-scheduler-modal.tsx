@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   X, 
   Calendar, 
@@ -41,6 +41,22 @@ export function MockSchedulerModal({
   const [scheduledSession, setScheduledSession] = useState<any | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
 
+  const handlePrint = () => {
+    document.body.classList.add("printing-mock-scheduler");
+    window.print();
+  };
+
+  useEffect(() => {
+    const handleAfterPrint = () => {
+      document.body.classList.remove("printing-mock-scheduler");
+    };
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => {
+      window.removeEventListener("afterprint", handleAfterPrint);
+      document.body.classList.remove("printing-mock-scheduler");
+    };
+  }, []);
+
   if (!isOpen) return null;
 
   const handleScheduleSubmit = async (e: React.FormEvent) => {
@@ -50,24 +66,41 @@ export function MockSchedulerModal({
 
     try {
       let sessionData = null;
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
+      const payload = {
+        title,
+        scheduledDate: timingMode === "immediate" ? new Date().toISOString() : scheduledDateTime,
+        durationMinutes: 120,
+        totalQuestions: 180,
+        hotkeyNavigationEnabled: hotkeyMode,
+      };
+
       try {
-        const res = await fetch("/api/schools/mocks/schedule/", {
+        const res = await fetch(`${apiBase}/api/v1/schools/mocks/schedule`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title,
-            scheduledDate: timingMode === "immediate" ? new Date().toISOString() : scheduledDateTime,
-            durationMinutes: 120,
-            totalQuestions: 180,
-            hotkeyNavigationEnabled: hotkeyMode,
-          }),
+          body: JSON.stringify(payload),
         });
-
         if (res.ok) {
           sessionData = await res.json();
         }
       } catch {
-        // Fallback for static hosts
+        // Fall through
+      }
+
+      if (!sessionData) {
+        try {
+          const res = await fetch("/api/schools/mocks/schedule/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          if (res.ok) {
+            sessionData = await res.json();
+          }
+        } catch {
+          // Fallback for static hosts
+        }
       }
 
       if (!sessionData) {
@@ -108,16 +141,20 @@ export function MockSchedulerModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+    <div 
+      data-print-target="mock-scheduler"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200 print:static print:p-0 print:bg-white print:backdrop-blur-none print:z-auto print:block print:w-full print:h-auto"
+    >
       <div 
-        className="relative w-full max-w-lg rounded-lg bg-white p-5 sm:p-6 text-[#17231F] shadow-xl border border-[#E3E8E4] animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+        data-print-dialog="true"
+        className="relative w-full max-w-lg rounded-lg bg-white p-5 sm:p-6 text-[#17231F] shadow-xl border border-[#E3E8E4] animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto print:max-h-none print:overflow-visible print:p-0 print:border-none print:shadow-none print:max-w-none print:w-full"
         role="dialog"
         aria-modal="true"
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-md text-[#68766F] hover:bg-[#F7F8F6] hover:text-[#17231F] transition cursor-pointer"
+          className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-md text-[#68766F] hover:bg-[#F7F8F6] hover:text-[#17231F] transition cursor-pointer print:hidden"
           aria-label="Close modal"
         >
           <X size={16} />
@@ -325,10 +362,10 @@ export function MockSchedulerModal({
               </ul>
             </div>
 
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center justify-between pt-1 print:hidden">
               <button
                 type="button"
-                onClick={() => window.print()}
+                onClick={handlePrint}
                 className="inline-flex items-center gap-1.5 rounded-md border border-[#E3E8E4] bg-white px-3 py-1.5 text-xs font-medium text-[#17231F] hover:bg-[#F7F8F6] transition cursor-pointer"
               >
                 <Printer size={13} />
