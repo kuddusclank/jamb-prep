@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { BrandMark } from "@/components/brand-mark";
+import { createClient } from "@/lib/supabase/client";
 import { 
   CheckCircle2, 
   XCircle, 
@@ -55,11 +56,28 @@ export function SchoolVerifyClient() {
       }
 
       try {
-        let verifyData = null;
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
+        let token: string | undefined;
         try {
-          const res = await fetch("/api/schools/checkout/verify/", {
+          const supabase = createClient();
+          const sessionRes = await supabase.auth.getSession();
+          token = sessionRes?.data?.session?.access_token;
+        } catch {
+          // Continue without token
+        }
+
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+        };
+
+        let verifyData = null;
+
+        // 1. Target live Worker API
+        try {
+          const res = await fetch(`${apiBase}/api/v1/schools/checkout/verify`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify({ reference }),
           });
 
@@ -70,7 +88,27 @@ export function SchoolVerifyClient() {
             }
           }
         } catch {
-          // Static host fallback
+          // Fall through to Next.js API route
+        }
+
+        // 2. Next.js API route fallback if worker was unreachable
+        if (!verifyData) {
+          try {
+            const res = await fetch("/api/schools/checkout/verify/", {
+              method: "POST",
+              headers,
+              body: JSON.stringify({ reference }),
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+              if (data?.success) {
+                verifyData = data;
+              }
+            }
+          } catch {
+            // Static host fallback
+          }
         }
 
         if (!isMounted) return;

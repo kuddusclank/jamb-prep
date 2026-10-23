@@ -76,11 +76,28 @@ export function SchoolCheckoutClient() {
     setIsPending(true);
 
     try {
-      let authUrl = null;
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
+      let token: string | undefined;
       try {
-        const res = await fetch("/api/schools/checkout/initialize/", {
+        const supabase = createClient();
+        const sessionRes = await supabase.auth.getSession();
+        token = sessionRes?.data?.session?.access_token;
+      } catch {
+        // Continue without token
+      }
+
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+      };
+
+      let authUrl = null;
+
+      // 1. Target live Cloudflare Worker API
+      try {
+        const res = await fetch(`${apiBase}/api/v1/schools/checkout/initialize`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({
             studentCount: quote.studentCount,
             durationMonths: quote.durationMonths,
@@ -94,7 +111,30 @@ export function SchoolCheckoutClient() {
           }
         }
       } catch {
-        // Fallback for static hosts
+        // Fall through to Next.js API route / fallback
+      }
+
+      // 2. Next.js API route fallback if worker was unreachable
+      if (!authUrl) {
+        try {
+          const res = await fetch("/api/schools/checkout/initialize/", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              studentCount: quote.studentCount,
+              durationMonths: quote.durationMonths,
+            }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.authorizationUrl) {
+              authUrl = data.authorizationUrl;
+            }
+          }
+        } catch {
+          // Fall through
+        }
       }
 
       if (!authUrl) {
