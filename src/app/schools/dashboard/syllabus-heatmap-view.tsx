@@ -127,29 +127,35 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
 
   // Dynamically resolve only subjects offered by the candidate cohort (no hardcoded ghost subjects!)
   const subjectsList = useMemo<OfferedSubject[]>(() => {
-    if (offeredSubjects.length > 0) return offeredSubjects;
-
-    // Fallback: extract distinct subjects dynamically from loaded topics
-    const map = new Map<string, OfferedSubject>();
-    for (const t of topics) {
-      const code = t.subjectCode || t.subject.slice(0, 3).toUpperCase();
-      if (!map.has(code)) {
-        map.set(code, {
-          id: t.subjectId || code,
-          name: t.subject,
-          code,
-          isCompulsory: code === "ENG",
-          enrolledCandidateCount: cohortSize,
-          topicsAssessedCount: 0,
-          totalQuestionsAttempted: 0,
-          averageAccuracy: null,
-          urgentCount: 0,
-          revisionCount: 0,
-          readyCount: 0,
-        });
+    let list: OfferedSubject[] = [];
+    if (offeredSubjects.length > 0) {
+      list = offeredSubjects;
+    } else {
+      // Fallback: extract distinct subjects dynamically from loaded topics
+      const map = new Map<string, OfferedSubject>();
+      for (const t of topics) {
+        const code = t.subjectCode || t.subject.slice(0, 3).toUpperCase();
+        if (!map.has(code)) {
+          map.set(code, {
+            id: t.subjectId || code,
+            name: t.subject,
+            code,
+            isCompulsory: code === "ENG",
+            enrolledCandidateCount: cohortSize,
+            topicsAssessedCount: 0,
+            totalQuestionsAttempted: 0,
+            averageAccuracy: null,
+            urgentCount: 0,
+            revisionCount: 0,
+            readyCount: 0,
+          });
+        }
       }
+      list = Array.from(map.values());
     }
-    return Array.from(map.values());
+
+    // Strictly eliminate any subject that has 0 enrolled candidates AND 0 assessed topics
+    return list.filter((s) => s.enrolledCandidateCount > 0 || s.topicsAssessedCount > 0);
   }, [offeredSubjects, topics, cohortSize]);
 
   // Global counts for top overview
@@ -246,6 +252,8 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
       .filter((group) => {
         // If searching, hide subjects with zero matching topics
         if (cleanSearch && group.topics.length === 0) return false;
+        // Strictly hide subjects that have no enrolled candidates and no topics
+        if (group.subject.enrolledCandidateCount === 0 && group.topics.length === 0) return false;
         return true;
       });
   }, [topics, subjectsList, selectedSubject, statusFilter, searchQuery, sortBy]);
