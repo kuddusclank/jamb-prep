@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "@/components/pending-link";
-import { Sparkles, WifiOff, Lock, RefreshCw, ArrowRight, ShieldCheck, Download, Smartphone, Building2 } from "lucide-react";
+import { WifiOff, Lock, RefreshCw, ArrowRight, ShieldCheck, Download, Smartphone, Building2 } from "lucide-react";
 import type { OfflineUserProfile } from "@/lib/offline/offline-profile-cache";
 
 interface OfflineGatedNoticeProps {
@@ -94,7 +94,6 @@ export function OfflineGatedNotice({ reason, profile, onRetry }: OfflineGatedNot
             {isExpired ? <Lock size={26} /> : <WifiOff size={26} />}
           </div>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase bg-amber-100 text-amber-900">
-            <Sparkles size={12} className="text-amber-700" />
             {isExpired ? "Subscription Expired" : "Pro Offline Feature"}
           </span>
         </div>
@@ -175,7 +174,9 @@ export function OfflineGatedNotice({ reason, profile, onRetry }: OfflineGatedNot
             href="/pricing"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-[#0e523e] transition"
           >
-            {isExpired ? "Renew Pro Access" : "View Pro Plans (₦2,000/mo)"} <ArrowRight size={15} />
+            {Boolean(profile?.subscription?.isSchoolAttached)
+              ? (isExpired ? "Contact School Admin to Renew" : "View School License")
+              : (isExpired ? "Renew Pro Access" : "View Pro Plans (₦2,000/mo)")} <ArrowRight size={15} />
           </Link>
         </div>
 

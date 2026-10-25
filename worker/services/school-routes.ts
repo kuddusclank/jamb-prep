@@ -4,6 +4,57 @@ import { ApiError } from '../api/errors';
 import { paystackRequest, validateCheckoutUrl, type PaymentEnv } from './paystack-service';
 import { enqueueCohortActivation, processActivationBatch } from './school-activation-service';
 
+type SqlTagFn = <T = any>(strings: TemplateStringsArray, ...values: any[]) => Promise<T>;
+
+const UUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+const disconnectPasswordFailures = new Map<string, { count: number; windowStartMs: number }>();
+const MAX_PASSWORD_FAILURES = 5;
+const PASSWORD_FAILURE_WINDOW_MS = 10 * 60 * 1000;
+
+export function resetDisconnectPasswordFailuresForTest(): void {
+  disconnectPasswordFailures.clear();
+}
+
+async function runSchoolTx<T>(dbCtx: any, callback: (sql: SqlTagFn) => Promise<T>): Promise<T> {
+  if (typeof dbCtx.runCommittedTransaction === 'function') {
+    return await dbCtx.runCommittedTransaction(callback);
+  }
+  return await callback(dbCtx.sql);
+}
+
+function uuidListCsv(ids: string[]): string {
+  return ids.filter((id) => UUID_PATTERN.test(id)).join(',');
+}
+
+export function buildUniqueSchoolSlug(schoolName: string, schoolCode: string): string {
+  const baseSlug =
+    schoolName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 36) || 'school';
+  const codeSuffix =
+    schoolCode
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'inst';
+  return `${baseSlug}-${codeSuffix}`;
+}
+
+export function generateCollisionSafeSchoolCode(schoolName: string): string {
+  const prefix =
+    schoolName
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .slice(0, 4)
+      .toUpperCase() || 'XYZ';
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const randomBytes = new Uint8Array(6);
+  crypto.getRandomValues(randomBytes);
+  const suffix = Array.from(randomBytes, (b) => alphabet[b % alphabet.length]).join('');
+  return `SCH-${prefix}${suffix}`;
+}
+
 async function verifyPaystackHmacSignature(bodyText: string, signature: string | null, secretKey: string): Promise<boolean> {
   if (!signature || !secretKey) return false;
   try {
@@ -25,7 +76,337 @@ async function verifyPaystackHmacSignature(bodyText: string, signature: string |
   }
 }
 
+/** Order metadata may be a jsonb object or (for older rows) a JSON-encoded string. */
+function parseOrderStudentIds(metadata: unknown): string[] {
+  let value: any = metadata;
+  if (typeof value === 'string') {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      return [];
+    }
+  }
+  return Array.isArray(value?.studentIds) ? value.studentIds.filter((id: unknown) => typeof id === 'string') : [];
+}
+
+function resolveCheckoutAppOrigin(request: Request, env: any): string {
+  const reqOrigin = request.headers.get('Origin')?.trim().replace(/\/+$/, '') || '';
+  if (
+    reqOrigin === 'https://jambprep.pages.dev' ||
+    reqOrigin === 'https://jambprep.lecterniq.com' ||
+    /^https:\/\/[a-z0-9-]+\.jambprep\.pages\.dev$/i.test(reqOrigin) ||
+    reqOrigin === 'http://localhost:3000' ||
+    reqOrigin === 'http://127.0.0.1:3000'
+  ) {
+    return reqOrigin;
+  }
+  return env?.PUBLIC_APP_ORIGIN || 'https://jambprep.pages.dev';
+}
+
+/**
+ * Shared helper that resolves the authenticated school administrator's institution,
+ * auto-provisioning the `schools` and `school_members` records when metadata is present.
+ */
+export async function resolveCallerSchool(
+  actor: { userId: string; email?: string | null; claims?: any },
+  dbCtx: any,
+  options: { autoProvision?: boolean } = { autoProvision: true }
+): Promise<{ id: string; name: string; code: string; type: string; state: string; admin_id: string } | null> {
+  const meta = ((actor.claims as any)?.user_metadata || {}) as Record<string, any>;
+  const metaSchoolCode = (typeof meta.school_code === 'string' ? meta.school_code.trim().toUpperCase() : '') || null;
+  const metaSchoolName = (typeof meta.school_name === 'string' ? meta.school_name.trim() : '') || 'LecternIQ Partner School';
+  const metaState = (typeof meta.state === 'string' ? meta.state.trim() : '') || 'Lagos';
+  const metaSchoolType = (typeof meta.school_type === 'string' ? meta.school_type.trim() : '') || 'secondary_school';
+
+  let schoolRows = await dbCtx.sql<Array<{ id: string; name: string; code: string; type: string; state: string; admin_id: string }>>`
+    SELECT s.id, s.name, s.code, s.type, s.state, s.admin_id
+    FROM schools s
+    WHERE s.admin_id = ${actor.userId}::uuid
+       OR EXISTS (SELECT 1 FROM school_members sm WHERE sm.school_id = s.id AND sm.user_id = ${actor.userId}::uuid)
+    LIMIT 1
+  `;
+
+  if (options.autoProvision && !schoolRows[0] && metaSchoolCode) {
+    if (meta.role === 'student') {
+      return null;
+    }
+
+    const enrolledStudentCheck = await dbCtx.sql<Array<{ id: string }>>`
+      SELECT id FROM school_students WHERE student_user_id = ${actor.userId}::uuid LIMIT 1
+    `;
+    if (enrolledStudentCheck.length > 0) {
+      return null;
+    }
+
+    await dbCtx.sql`
+      INSERT INTO profiles (id, display_name, email, role)
+      VALUES (
+        ${actor.userId}::uuid,
+        ${meta.display_name || actor.email || 'School Administrator'},
+        ${actor.email || `${actor.userId}@admin.jambprep.local`},
+        'school_admin'
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        role = 'school_admin',
+        display_name = COALESCE(NULLIF(profiles.display_name, ''), EXCLUDED.display_name)
+      WHERE NOT EXISTS (SELECT 1 FROM school_students ss WHERE ss.student_user_id = ${actor.userId}::uuid)
+    `;
+
+    let candidateCode = metaSchoolCode;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const slug = buildUniqueSchoolSlug(metaSchoolName, candidateCode);
+      schoolRows = await dbCtx.sql<Array<{ id: string; name: string; code: string; type: string; state: string; admin_id: string }>>`
+        INSERT INTO schools (name, slug, code, type, state, admin_id, contact_email)
+        VALUES (${metaSchoolName}, ${slug}, ${candidateCode}, ${metaSchoolType}, ${metaState}, ${actor.userId}::uuid, ${actor.email || null})
+        ON CONFLICT (code) DO UPDATE SET
+          updated_at = NOW()
+        WHERE schools.admin_id = ${actor.userId}::uuid
+        RETURNING id, name, code, type, state, admin_id
+      `;
+      if (schoolRows[0]) break;
+      candidateCode = generateCollisionSafeSchoolCode(metaSchoolName);
+    }
+
+    if (schoolRows[0]) {
+      await dbCtx.sql`
+        INSERT INTO school_members (school_id, user_id, role)
+        VALUES (${schoolRows[0].id}::uuid, ${actor.userId}::uuid, 'owner')
+        ON CONFLICT (school_id, user_id) DO NOTHING
+      `;
+      if (schoolRows[0].code !== metaSchoolCode) {
+        await dbCtx.sql`
+          UPDATE auth.users
+          SET raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object('school_code', ${schoolRows[0].code}::text),
+              updated_at = NOW()
+          WHERE id = ${actor.userId}::uuid
+        `.catch(() => {});
+      }
+    }
+  }
+
+  return schoolRows[0] || null;
+}
+
+/**
+ * Settles a school cohort order (`SCH-ORD-*`) idempotently when triggered from
+ * either `/api/v1/webhooks/paystack` or `/api/v1/schools/checkout/webhook`.
+ */
+export async function settleSchoolOrderFromWebhook(
+  dbCtx: any,
+  reference: string,
+  paidAmountKobo?: number
+): Promise<{ handled: boolean; alreadySettled?: boolean; orderId?: string }> {
+  const orderRows = await dbCtx.sql<Array<{
+    id: string;
+    school_id: string;
+    duration_months: number;
+    student_count: number;
+    total_amount_kobo: number;
+    status: string;
+    metadata: any;
+  }>>`
+    SELECT id, school_id, duration_months, student_count, total_amount_kobo, status, metadata
+    FROM school_orders
+    WHERE reference = ${reference}
+    LIMIT 1
+  `;
+
+  const order = orderRows[0];
+  if (!order) {
+    return { handled: false };
+  }
+
+  if (order.status === 'completed') {
+    return { handled: true, alreadySettled: true, orderId: order.id };
+  }
+
+  if (typeof paidAmountKobo === 'number' && paidAmountKobo > 0 && paidAmountKobo < order.total_amount_kobo) {
+    throw new ApiError({
+      status: 400,
+      code: 'BAD_REQUEST',
+      message: 'Webhook paid amount is less than the school order total.',
+    });
+  }
+
+  const targetedIds = parseOrderStudentIds(order.metadata);
+
+  await enqueueCohortActivation(dbCtx, {
+    orderId: order.id,
+    schoolId: order.school_id,
+    durationMonths: order.duration_months,
+    studentCount: order.student_count,
+    targetedIds,
+  });
+
+  await processActivationBatch(dbCtx, order.id, 100);
+  return { handled: true, alreadySettled: false, orderId: order.id };
+}
+
+/**
+ * Before creating a new order, settle any earlier order for this school that Paystack
+ * reports as paid but which was never activated (for example after a failed verify call).
+ * Returns the reference of the first order it settled, or null.
+ */
+async function settleEarlierPaidOrder(
+  dbCtx: any,
+  env: PaymentEnv,
+  schoolId: string
+): Promise<string | null> {
+  const open = await dbCtx.sql`
+    SELECT id, reference, duration_months, student_count, total_amount_kobo, metadata
+    FROM school_orders
+    WHERE school_id = ${schoolId}::uuid
+      AND status IN ('pending', 'processing')
+      AND created_at > now() - interval '14 days'
+    ORDER BY created_at DESC
+    LIMIT 10
+  ` as Array<{
+    id: string;
+    reference: string;
+    duration_months: number;
+    student_count: number;
+    total_amount_kobo: number;
+    metadata: unknown;
+  }>;
+
+  for (const order of open) {
+    try {
+      const verified = await paystackRequest(env, `/transaction/verify/${encodeURIComponent(order.reference)}`, undefined);
+      if (verified.status !== 'success' || Number(verified.amount) < order.total_amount_kobo) continue;
+
+      await enqueueCohortActivation(dbCtx, {
+        orderId: order.id,
+        schoolId,
+        durationMonths: order.duration_months,
+        studentCount: order.student_count,
+        targetedIds: parseOrderStudentIds(order.metadata),
+      });
+      await processActivationBatch(dbCtx, order.id, 100);
+      return order.reference;
+    } catch (err) {
+      console.warn('Earlier order reconciliation notice:', order.reference, err);
+    }
+  }
+  return null;
+}
+
 export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
+  // 0. POST /api/v1/schools/register — Eagerly provision `schools` & `school_members` right at registration
+  {
+    id: 'schools.register.post',
+    method: 'POST',
+    pattern: '/api/v1/schools/register',
+    auth: 'student_live_session',
+    maxBodyBytes: 32 * 1024,
+    handler: async (ctx) => {
+      const actor = ctx.actor!;
+      const dbCtx = ctx.getDb();
+      const { data } = await readBoundedJsonBody(ctx.request, { maxBytes: 32 * 1024 });
+      const body = (data || {}) as Record<string, any>;
+
+      const meta = ((actor.claims as any)?.user_metadata || {}) as Record<string, any>;
+      if (meta.role === 'student') {
+        throw new ApiError({
+          status: 403,
+          code: 'FORBIDDEN',
+          message: 'Student accounts cannot register or claim a school partnership.',
+        });
+      }
+
+      const enrolledStudentCheck = await dbCtx.sql<Array<{ id: string }>>`
+        SELECT id FROM school_students WHERE student_user_id = ${actor.userId}::uuid LIMIT 1
+      `;
+      if (enrolledStudentCheck.length > 0) {
+        throw new ApiError({
+          status: 403,
+          code: 'FORBIDDEN',
+          message: 'Enrolled school candidates cannot register or claim a school partnership.',
+        });
+      }
+
+      const schoolName = (typeof body.schoolName === 'string' ? body.schoolName.trim() : '') || (typeof meta.school_name === 'string' ? meta.school_name.trim() : '') || 'LecternIQ Partner School';
+      const requestedCode = ((typeof body.schoolCode === 'string' ? body.schoolCode.trim() : '') || (typeof meta.school_code === 'string' ? meta.school_code.trim() : '') || generateCollisionSafeSchoolCode(schoolName)).toUpperCase();
+      const schoolType = (typeof body.schoolType === 'string' ? body.schoolType.trim() : '') || (typeof meta.school_type === 'string' ? meta.school_type.trim() : '') || 'secondary_school';
+      const state = (typeof body.state === 'string' ? body.state.trim() : '') || (typeof meta.state === 'string' ? meta.state.trim() : '') || 'Lagos';
+      const adminName = (typeof body.adminName === 'string' ? body.adminName.trim() : '') || (typeof meta.display_name === 'string' ? meta.display_name.trim() : '') || 'School Administrator';
+      const phone = typeof body.phone === 'string' ? body.phone.trim() : null;
+
+      await dbCtx.sql`
+        INSERT INTO profiles (id, display_name, email, role)
+        VALUES (
+          ${actor.userId}::uuid,
+          ${adminName},
+          ${actor.email || `${actor.userId}@admin.jambprep.local`},
+          'school_admin'
+        )
+        ON CONFLICT (id) DO UPDATE SET
+          role = 'school_admin',
+          display_name = COALESCE(NULLIF(EXCLUDED.display_name, ''), profiles.display_name)
+        WHERE NOT EXISTS (SELECT 1 FROM school_students ss WHERE ss.student_user_id = ${actor.userId}::uuid)
+      `;
+
+      let candidateCode = requestedCode;
+      let schoolRows: Array<{ id: string; name: string; code: string; type: string; state: string }> = [];
+      const metaCodeUpper = typeof meta.school_code === 'string' ? meta.school_code.trim().toUpperCase() : '';
+      const allowCollisionRetry = !body.schoolCode || metaCodeUpper === requestedCode;
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const slug = buildUniqueSchoolSlug(schoolName, candidateCode);
+        schoolRows = await dbCtx.sql<Array<{ id: string; name: string; code: string; type: string; state: string }>>`
+          INSERT INTO schools (name, slug, code, type, state, admin_id, contact_phone, contact_email)
+          VALUES (${schoolName}, ${slug}, ${candidateCode}, ${schoolType}, ${state}, ${actor.userId}::uuid, ${phone}, ${actor.email || null})
+          ON CONFLICT (code) DO UPDATE SET
+            name = EXCLUDED.name,
+            updated_at = NOW()
+          WHERE schools.admin_id = ${actor.userId}::uuid
+          RETURNING id, name, code, type, state
+        `;
+        if (schoolRows[0]) break;
+        if (!allowCollisionRetry) {
+          throw new ApiError({
+            status: 409,
+            code: 'CONFLICT',
+            message: `School code ${candidateCode} is already registered to another institution.`,
+          });
+        }
+        candidateCode = generateCollisionSafeSchoolCode(schoolName);
+      }
+
+      if (!schoolRows[0]) {
+        throw new ApiError({
+          status: 409,
+          code: 'CONFLICT',
+          message: 'Could not allocate a unique school code. Please retry registration.',
+        });
+      }
+
+      const school = schoolRows[0];
+      await dbCtx.sql`
+        INSERT INTO school_members (school_id, user_id, role)
+        VALUES (${school.id}::uuid, ${actor.userId}::uuid, 'owner')
+        ON CONFLICT (school_id, user_id) DO NOTHING
+      `;
+
+      await dbCtx.sql`
+        UPDATE auth.users
+        SET raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object(
+              'school_code', ${school.code}::text,
+              'school_id', ${school.id}::text
+            ),
+            updated_at = NOW()
+        WHERE id = ${actor.userId}::uuid
+      `.catch(() => {});
+
+      return {
+        status: 200,
+        body: {
+          success: true,
+          school,
+        },
+      };
+    },
+  },
+
   // 1. GET /api/v1/schools/students — Load authoritative school roster & sync institution profile
   {
     id: 'schools.students.get',
@@ -36,59 +417,38 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
       const actor = ctx.actor!;
       const dbCtx = ctx.getDb();
 
-      const meta = ((actor.claims as any).user_metadata || {}) as Record<string, any>;
-      const metaSchoolCode = (typeof meta.school_code === 'string' ? meta.school_code.trim().toUpperCase() : '') || null;
-      const metaSchoolName = (typeof meta.school_name === 'string' ? meta.school_name.trim() : '') || 'LecternIQ Partner School';
-      const metaState = (typeof meta.state === 'string' ? meta.state.trim() : '') || 'Lagos';
-      const metaSchoolType = (typeof meta.school_type === 'string' ? meta.school_type.trim() : '') || 'secondary_school';
-
-      // 1. Locate school record by admin ownership, membership, or registered school_code
-      let schoolRows = await dbCtx.sql<Array<{ id: string; name: string; code: string; type: string; state: string }>>`
-        SELECT s.id, s.name, s.code, s.type, s.state
-        FROM schools s
-        WHERE s.admin_id = ${actor.userId}::uuid
-           OR EXISTS (SELECT 1 FROM school_members sm WHERE sm.school_id = s.id AND sm.user_id = ${actor.userId}::uuid)
-           ${metaSchoolCode ? dbCtx.sql`OR UPPER(s.code) = ${metaSchoolCode}` : dbCtx.sql``}
-        LIMIT 1
-      `;
-
-      // 2. Ensure school admin profile exists in profiles table
-      await dbCtx.sql`
-        INSERT INTO profiles (id, display_name, email, role)
-        VALUES (
-          ${actor.userId}::uuid,
-          ${meta.display_name || actor.email || 'School Administrator'},
-          ${actor.email || `${actor.userId}@admin.jambprep.local`},
-          'school_admin'
-        )
-        ON CONFLICT (id) DO UPDATE SET
-          role = 'school_admin',
-          display_name = COALESCE(NULLIF(profiles.display_name, ''), EXCLUDED.display_name)
-      `;
-
-      // 3. Auto-provision school record if admin has code in metadata but record is missing
-      if (!schoolRows[0] && metaSchoolCode) {
-        const slug = metaSchoolName.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 48) || 'school';
-        schoolRows = await dbCtx.sql<Array<{ id: string; name: string; code: string; type: string; state: string }>>`
-          INSERT INTO schools (name, slug, code, type, state, admin_id)
-          VALUES (${metaSchoolName}, ${slug}, ${metaSchoolCode}, ${metaSchoolType}, ${metaState}, ${actor.userId}::uuid)
-          ON CONFLICT (code) DO UPDATE SET admin_id = ${actor.userId}::uuid
-          RETURNING id, name, code, type, state
-        `;
-      }
-
-      const school = schoolRows[0];
+      const school = await resolveCallerSchool(actor, dbCtx, { autoProvision: true });
       if (!school) {
         return {
           status: 200,
           body: {
             students: [],
             school: null,
+            activeLabMock: null,
           },
         };
       }
 
-      // 4. Query all enrolled students from school_students left-joined with profiles + practice & mock progress
+      // Opportunistically mark past-due active licences as 'expired' in the DB
+      await dbCtx.sql`
+        UPDATE school_students
+        SET license_status = 'expired'
+        WHERE school_id = ${school.id}::uuid
+          AND license_status = 'active'
+          AND license_expires_at IS NOT NULL
+          AND license_expires_at <= NOW()
+      `.catch(() => {});
+
+      // Fetch any persisted scheduled lab mock from the school admin's metadata
+      const adminMetaRows = await dbCtx.sql<Array<{ active_lab_mock: any }>>`
+        SELECT raw_user_meta_data->'active_lab_mock' AS active_lab_mock
+        FROM auth.users
+        WHERE id = ${school.admin_id}::uuid
+        LIMIT 1
+      `.catch(() => []);
+      const activeLabMock = adminMetaRows[0]?.active_lab_mock || null;
+
+      // Query all enrolled students from school_students left-joined with profiles + pre-aggregated practice & mock progress
       const enrolledRows = await dbCtx.sql<Array<{
         id: string;
         student_user_id: string;
@@ -99,37 +459,84 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
         created_at: string;
         name: string | null;
         email: string | null;
+        custom_default_password: string | null;
+        custom_password_set: boolean | null;
         mock_avg_score: number | null;
         practice_accuracy: number | null;
         total_practice_questions: number | null;
+        subjects?: string[] | string | null;
       }>>`
         SELECT
           ss.id,
           ss.student_user_id,
           ss.student_identifier,
           ss.ingestion_method,
-          ss.license_status,
+          CASE
+            WHEN ss.license_status = 'active' AND ss.license_expires_at IS NOT NULL AND ss.license_expires_at <= NOW()
+            THEN 'expired'
+            ELSE ss.license_status
+          END AS license_status,
           ss.license_expires_at,
           ss.created_at,
           p.display_name AS name,
           p.email,
-          (SELECT round(avg(ar.total_score)) FROM attempt_results ar WHERE ar.user_id = ss.student_user_id) as mock_avg_score,
-          (SELECT round(avg(m.accuracy_percent)) FROM student_topic_mastery m WHERE m.user_id = ss.student_user_id) as practice_accuracy,
-          (SELECT sum(m.total_attempted) FROM student_topic_mastery m WHERE m.user_id = ss.student_user_id) as total_practice_questions
+          au.raw_user_meta_data->>'default_password' AS custom_default_password,
+          COALESCE((au.raw_user_meta_data->>'custom_password_set')::boolean, false) AS custom_password_set,
+          ar_agg.mock_avg_score,
+          stm_agg.practice_accuracy,
+          stm_agg.total_practice_questions,
+          COALESCE(sub_agg.subjects, '[]'::json) AS subjects
         FROM school_students ss
         LEFT JOIN profiles p ON ss.student_user_id = p.id
+        LEFT JOIN auth.users au ON ss.student_user_id = au.id
+        LEFT JOIN (
+          SELECT ar.user_id, round(avg(ar.total_score)) AS mock_avg_score
+          FROM attempt_results ar
+          JOIN school_students ss2 ON ss2.student_user_id = ar.user_id AND ss2.school_id = ${school.id}::uuid
+          GROUP BY ar.user_id
+        ) ar_agg ON ar_agg.user_id = ss.student_user_id
+        LEFT JOIN (
+          SELECT m.user_id, round(avg(m.accuracy_percent)) AS practice_accuracy, sum(m.total_attempted) AS total_practice_questions
+          FROM student_topic_mastery m
+          JOIN school_students ss3 ON ss3.student_user_id = m.user_id AND ss3.school_id = ${school.id}::uuid
+          GROUP BY m.user_id
+        ) stm_agg ON stm_agg.user_id = ss.student_user_id
+        LEFT JOIN (
+          SELECT sub.user_id, json_agg(s.code ORDER BY s.is_compulsory DESC, s.display_order ASC, s.code ASC) AS subjects
+          FROM student_subjects sub
+          JOIN subjects s ON sub.subject_id = s.id
+          JOIN school_students ss4 ON ss4.student_user_id = sub.user_id AND ss4.school_id = ${school.id}::uuid
+          GROUP BY sub.user_id
+        ) sub_agg ON sub_agg.user_id = ss.student_user_id
         WHERE ss.school_id = ${school.id}::uuid
         ORDER BY ss.created_at DESC
       `;
 
       const formatted = enrolledRows.map((row) => {
-        const isSelfRegistered = row.ingestion_method === 'link';
+        const isSelfRegistered = row.ingestion_method === 'link' || Boolean(row.custom_password_set);
         let defaultPassword: string | null = null;
 
         if (!isSelfRegistered) {
-          const parts = (row.name || '').trim().split(/\s+/);
-          const lastName = parts.length > 1 ? parts[parts.length - 1] : parts[0] || '';
-          defaultPassword = lastName.toUpperCase();
+          if (row.custom_default_password) {
+            defaultPassword = row.custom_default_password;
+          } else {
+            const parts = (row.name || '').trim().split(/\s+/);
+            const lastName = parts.length > 1 ? parts[parts.length - 1] : parts[0] || '';
+            defaultPassword = lastName.toUpperCase();
+          }
+        }
+
+        let parsedSubjects: string[] = [];
+        if (Array.isArray(row.subjects)) {
+          parsedSubjects = row.subjects;
+        } else if (typeof row.subjects === 'string') {
+          try {
+            const parsed = JSON.parse(row.subjects);
+            if (Array.isArray(parsed)) parsedSubjects = parsed;
+            else parsedSubjects = row.subjects.replace(/[{}"\s]/g, '').split(',').filter(Boolean);
+          } catch {
+            parsedSubjects = row.subjects.replace(/[{}"\s]/g, '').split(',').filter(Boolean);
+          }
         }
 
         return {
@@ -142,6 +549,7 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
           licenseStatus: row.license_status,
           licenseExpiresAt: row.license_expires_at,
           defaultPassword,
+          subjects: parsedSubjects,
           averageScore: row.mock_avg_score !== null ? Number(row.mock_avg_score) : null,
           practiceAccuracy: row.practice_accuracy !== null ? Number(row.practice_accuracy) : null,
           totalPracticeQuestions: row.total_practice_questions !== null ? Number(row.total_practice_questions) : 0,
@@ -160,6 +568,7 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
             type: school.type,
             state: school.state,
           },
+          activeLabMock,
         },
       };
     },
@@ -170,7 +579,7 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
     id: 'schools.students.post',
     method: 'POST',
     pattern: '/api/v1/schools/students',
-    auth: 'student',
+    auth: 'student_live_session',
     maxBodyBytes: 128 * 1024,
     handler: async (ctx) => {
       const actor = ctx.actor!;
@@ -178,20 +587,7 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
       const { data } = await readBoundedJsonBody(ctx.request, { maxBytes: 128 * 1024, allowArrayRoot: true });
       const body = data as any;
 
-      const meta = ((actor.claims as any).user_metadata || {}) as Record<string, any>;
-      const metaSchoolCode = (typeof meta.school_code === 'string' ? meta.school_code.trim().toUpperCase() : '') || null;
-
-      // Locate school
-      const schoolRows = await dbCtx.sql<Array<{ id: string; code: string }>>`
-        SELECT s.id, s.code
-        FROM schools s
-        WHERE s.admin_id = ${actor.userId}::uuid
-           OR EXISTS (SELECT 1 FROM school_members sm WHERE sm.school_id = s.id AND sm.user_id = ${actor.userId}::uuid)
-           ${metaSchoolCode ? dbCtx.sql`OR UPPER(s.code) = ${metaSchoolCode}` : dbCtx.sql``}
-        LIMIT 1
-      `;
-
-      const school = schoolRows[0];
+      const school = await resolveCallerSchool(actor, dbCtx, { autoProvision: true });
       if (!school) {
         throw new ApiError({
           status: 404,
@@ -200,23 +596,31 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
         });
       }
 
+      const rawCandidates: Array<any> = Array.isArray(body?.students)
+        ? body.students
+        : body?.email
+        ? [body]
+        : [];
+
       const candidates: Array<{
         name: string;
         email: string;
         studentIdentifier?: string | null;
-        ingestionMethod?: string;
-      }> = Array.isArray(body?.students)
-        ? body.students
-        : body?.email
-        ? [
-            {
-              name: `${body.firstName || ''} ${body.lastName || ''}`.trim() || body.name || 'Candidate',
-              email: body.email,
-              studentIdentifier: body.studentIdentifier || null,
-              ingestionMethod: body.ingestionMethod || 'manual',
-            },
-          ]
-        : [];
+        ingestionMethod: string;
+        subjects?: string[];
+      }> = rawCandidates.map((c) => {
+        const first = (c.firstName || '').trim();
+        const last = (c.lastName || '').trim();
+        const fallbackName = (c.name || '').trim();
+        const compositeName = `${first} ${last}`.trim() || fallbackName || 'Candidate';
+        return {
+          name: compositeName,
+          email: (c.email || '').trim().toLowerCase(),
+          studentIdentifier: c.studentIdentifier || null,
+          ingestionMethod: c.ingestionMethod || body.ingestionMethod || 'manual',
+          subjects: Array.isArray(c.subjects) ? c.subjects : undefined,
+        };
+      });
 
       if (candidates.length === 0) {
         throw new ApiError({
@@ -226,32 +630,179 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
         });
       }
 
-      const results = [];
+      const { results, skipped } = await runSchoolTx(dbCtx, async (txSql) => {
+        const ingested: Array<any> = [];
+        const skippedRows: Array<{ email: string; reason: string }> = [];
 
-      for (const cand of candidates) {
-        const cleanEmail = (cand.email || '').trim().toLowerCase();
-        const cleanName = (cand.name || '').trim() || 'Candidate';
-        if (!cleanEmail || !cleanEmail.includes('@')) continue;
+        for (const cand of candidates) {
+          const cleanEmail = (cand.email || '').trim().toLowerCase();
+          const cleanName = (cand.name || '').trim() || 'Candidate';
+          if (!cleanEmail || !cleanEmail.includes('@')) {
+            if (cleanEmail) {
+              skippedRows.push({ email: cleanEmail, reason: 'Invalid email address format.' });
+            }
+            continue;
+          }
 
-        // 1. Find or create profile
-        let userRows = await dbCtx.sql<Array<{ id: string; display_name: string; email: string }>>`
-          SELECT id, display_name, email FROM profiles WHERE LOWER(email) = ${cleanEmail} LIMIT 1
-        `;
+          const parts = cleanName.split(/\s+/);
+          const lastName = parts.length > 1 ? parts[parts.length - 1] : parts[0] || '';
+          const defaultPassword = cand.ingestionMethod === 'link' ? null : lastName.toUpperCase();
 
-        let studentUserId = userRows[0]?.id;
-        if (!studentUserId) {
-          const inserted = await dbCtx.sql<Array<{ id: string }>>`
-            INSERT INTO profiles (display_name, email, role)
-            VALUES (${cleanName}, ${cleanEmail}, 'student')
-            ON CONFLICT (id) DO NOTHING
-            RETURNING id
+          // 1. Locate existing user in Supabase auth.users and inspect role/school ownership
+          const authUserRows = await txSql<Array<{
+            id: string;
+            meta_role: string | null;
+            profile_role: string | null;
+            other_school_id: string | null;
+          }>>`
+            SELECT
+              u.id,
+              u.raw_user_meta_data->>'role' AS meta_role,
+              p.role AS profile_role,
+              (
+                SELECT ss.school_id::text
+                FROM school_students ss
+                WHERE ss.student_user_id = u.id
+                  AND ss.school_id != ${school.id}::uuid
+                LIMIT 1
+              ) AS other_school_id
+            FROM auth.users u
+            LEFT JOIN profiles p ON p.id = u.id
+            WHERE LOWER(u.email) = ${cleanEmail}
+            LIMIT 1
           `;
-          studentUserId = inserted[0]?.id;
-        }
 
-        if (studentUserId) {
+          const existingAuth = authUserRows[0];
+          let studentUserId = existingAuth?.id;
+
+          if (existingAuth) {
+            const effectiveRole = existingAuth.profile_role || existingAuth.meta_role || 'student';
+            if (effectiveRole === 'school_admin' || effectiveRole === 'admin') {
+              if (candidates.length === 1) {
+                throw new ApiError({
+                  status: 409,
+                  code: 'CONFLICT',
+                  message: `Email ${cleanEmail} belongs to a school or platform administrator account and cannot be enrolled as a candidate.`,
+                });
+              }
+              skippedRows.push({
+                email: cleanEmail,
+                reason: 'Belongs to a school or platform administrator account.',
+              });
+              continue;
+            }
+
+            if (existingAuth.other_school_id) {
+              if (candidates.length === 1) {
+                throw new ApiError({
+                  status: 409,
+                  code: 'CONFLICT',
+                  message: `Candidate (${cleanEmail}) is already enrolled under another school.`,
+                });
+              }
+              skippedRows.push({
+                email: cleanEmail,
+                reason: 'Already enrolled under another school.',
+              });
+              continue;
+            }
+            // Existing student account: DO NOT overwrite their encrypted_password!
+          } else {
+            const newUserId = crypto.randomUUID();
+            const authPassword = defaultPassword || 'STUDENT';
+
+            await txSql`
+              INSERT INTO auth.users (
+                instance_id,
+                id,
+                aud,
+                role,
+                email,
+                encrypted_password,
+                email_confirmed_at,
+                confirmation_token,
+                recovery_token,
+                email_change_token_new,
+                email_change,
+                phone_change,
+                phone_change_token,
+                email_change_token_current,
+                email_change_confirm_status,
+                reauthentication_token,
+                is_sso_user,
+                is_anonymous,
+                raw_app_meta_data,
+                raw_user_meta_data,
+                created_at,
+                updated_at
+              ) VALUES (
+                '00000000-0000-0000-0000-000000000000',
+                ${newUserId}::uuid,
+                'authenticated',
+                'authenticated',
+                ${cleanEmail}::text,
+                crypt(${authPassword}::text, gen_salt('bf')),
+                NOW(),
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
+                0,
+                '',
+                false,
+                false,
+                '{"provider":"email","providers":["email"]}'::jsonb,
+                json_build_object(
+                  'display_name', ${cleanName}::text,
+                  'role', 'student',
+                  'school_code', ${school.code}::text,
+                  'default_password', ${authPassword}::text
+                )::jsonb,
+                NOW(),
+                NOW()
+              )
+            `;
+
+            await txSql`
+              INSERT INTO auth.identities (
+                id,
+                user_id,
+                identity_data,
+                provider,
+                provider_id,
+                last_sign_in_at,
+                created_at,
+                updated_at
+              ) VALUES (
+                gen_random_uuid(),
+                ${newUserId}::uuid,
+                json_build_object('sub', ${newUserId}::text, 'email', ${cleanEmail}::text)::jsonb,
+                'email',
+                ${newUserId}::text,
+                NOW(),
+                NOW(),
+                NOW()
+              )
+              ON CONFLICT (provider_id, provider) DO NOTHING
+            `;
+
+            studentUserId = newUserId;
+          }
+
+          // 2. Ensure profile exists in profiles table (never downgrade a non-student role)
+          await txSql`
+            INSERT INTO profiles (id, display_name, email, role)
+            VALUES (${studentUserId}::uuid, ${cleanName}, ${cleanEmail}, 'student')
+            ON CONFLICT (id) DO UPDATE SET
+              display_name = COALESCE(NULLIF(EXCLUDED.display_name, ''), profiles.display_name)
+          `;
+
+          // 3. Link student into school_students
           const method = cand.ingestionMethod || 'manual';
-          const insertedStudent = await dbCtx.sql<Array<{ id: string; created_at: string }>>`
+          const insertedStudent = await txSql<Array<{ id: string; created_at: string }>>`
             INSERT INTO school_students (school_id, student_user_id, student_identifier, ingestion_method, license_status)
             VALUES (${school.id}::uuid, ${studentUserId}::uuid, ${cand.studentIdentifier || null}, ${method}, 'inactive')
             ON CONFLICT (school_id, student_user_id) DO UPDATE SET
@@ -259,11 +810,50 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
             RETURNING id, created_at
           `;
 
-          const parts = cleanName.split(/\s+/);
-          const lastName = parts.length > 1 ? parts[parts.length - 1] : parts[0] || '';
-          const defaultPassword = method === 'link' ? null : lastName.toUpperCase();
+          // 4. Optionally assign UTME subjects if provided during ingestion
+          let assignedSubjects: string[] = [];
+          if (Array.isArray(cand.subjects) && cand.subjects.length > 0) {
+            const cleanCodes = Array.from(
+              new Set(
+                cand.subjects
+                  .filter((s: unknown): s is string => typeof s === 'string' && s.trim().length > 0)
+                  .map((s: string) => s.trim().toUpperCase())
+              )
+            );
+            if (cleanCodes.length > 0) {
+              const ensuredCodes = cleanCodes.includes('ENG') ? cleanCodes.slice(0, 4) : ['ENG', ...cleanCodes.slice(0, 3)];
+              const codesCsv = ensuredCodes.join(',');
+              const subjectRows = await txSql<Array<{ id: string; code: string }>>`
+                SELECT id, code
+                FROM subjects
+                WHERE is_active = TRUE
+                  AND code IN (SELECT unnest(string_to_array(${codesCsv}::text, ',')))
+                ORDER BY is_compulsory DESC, display_order ASC, code ASC
+              `;
+              if (subjectRows.length > 0) {
+                await txSql`
+                  DELETE FROM student_subjects WHERE user_id = ${studentUserId}::uuid
+                `;
+                for (const sub of subjectRows) {
+                  await txSql`
+                    INSERT INTO student_subjects (user_id, subject_id)
+                    VALUES (${studentUserId}::uuid, ${sub.id}::uuid)
+                    ON CONFLICT (user_id, subject_id) DO NOTHING
+                  `;
+                }
+                if (subjectRows.length === 4) {
+                  await txSql`
+                    INSERT INTO student_preferences (user_id, target_score, exam_year)
+                    VALUES (${studentUserId}::uuid, 250, 2026)
+                    ON CONFLICT (user_id) DO NOTHING
+                  `;
+                }
+                assignedSubjects = subjectRows.map((s) => s.code);
+              }
+            }
+          }
 
-          results.push({
+          ingested.push({
             id: insertedStudent[0]?.id || `ss-${Date.now()}`,
             studentUserId,
             name: cleanName,
@@ -272,42 +862,458 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
             ingestionMethod: method,
             licenseStatus: 'inactive',
             defaultPassword,
+            subjects: assignedSubjects,
           });
         }
-      }
+
+        return { results: ingested, skipped: skippedRows };
+      });
 
       return {
         status: 200,
         body: {
           success: true,
           count: results.length,
+          skippedCount: skipped.length,
+          skipped,
           students: results,
+          roster: results,
         },
       };
     },
   },
 
-  // 3. POST /api/v1/schools/students/drilldown — Individual candidate diagnostic drilldown
+  // 2B. PATCH /api/v1/schools/students — Update an enrolled candidate's profile, subjects, or surname password
+  {
+    id: 'schools.students.patch',
+    method: 'PATCH',
+    pattern: '/api/v1/schools/students',
+    auth: 'student_live_session',
+    maxBodyBytes: 32 * 1024,
+    handler: async (ctx) => {
+      const actor = ctx.actor!;
+      const dbCtx = ctx.getDb();
+      const { data } = await readBoundedJsonBody(ctx.request, { maxBytes: 32 * 1024 });
+      const body = (data || {}) as Record<string, any>;
+
+      const school = await resolveCallerSchool(actor, dbCtx, { autoProvision: true });
+      if (!school) {
+        throw new ApiError({ status: 404, code: 'NOT_FOUND', message: 'No institutional school record found for your account.' });
+      }
+
+      const studentId = typeof body.studentId === 'string' ? body.studentId.trim() : '';
+      const candidateEmailLookup = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+      const isValidUuidId = UUID_PATTERN.test(studentId);
+      if (!isValidUuidId && !candidateEmailLookup) {
+        throw new ApiError({ status: 400, code: 'VALIDATION_FAILED', message: 'A valid candidate ID is required.' });
+      }
+
+      return await runSchoolTx(dbCtx, async (txSql) => {
+        // Verify candidate belongs to this school
+        const existingRows = isValidUuidId
+          ? await txSql<Array<{
+              id: string;
+              student_user_id: string;
+              student_identifier: string | null;
+              ingestion_method: string;
+              license_status: string;
+              name: string | null;
+              email: string | null;
+            }>>`
+              SELECT
+                ss.id,
+                ss.student_user_id,
+                ss.student_identifier,
+                ss.ingestion_method,
+                ss.license_status,
+                p.display_name AS name,
+                p.email
+              FROM school_students ss
+              LEFT JOIN profiles p ON p.id = ss.student_user_id
+              WHERE ss.school_id = ${school.id}::uuid
+                AND (ss.id = ${studentId}::uuid OR ss.student_user_id = ${studentId}::uuid)
+              LIMIT 1
+            `
+          : await txSql<Array<{
+              id: string;
+              student_user_id: string;
+              student_identifier: string | null;
+              ingestion_method: string;
+              license_status: string;
+              name: string | null;
+              email: string | null;
+            }>>`
+              SELECT
+                ss.id,
+                ss.student_user_id,
+                ss.student_identifier,
+                ss.ingestion_method,
+                ss.license_status,
+                p.display_name AS name,
+                p.email
+              FROM school_students ss
+              LEFT JOIN profiles p ON p.id = ss.student_user_id
+              WHERE ss.school_id = ${school.id}::uuid
+                AND LOWER(p.email) = ${candidateEmailLookup}
+              LIMIT 1
+            `;
+
+        const target = existingRows[0];
+        if (!target) {
+          throw new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Candidate not found in your school roster.' });
+        }
+
+        const firstName = typeof body.firstName === 'string' ? body.firstName.trim() : '';
+        const lastName = typeof body.lastName === 'string' ? body.lastName.trim() : '';
+        const rawName = typeof body.name === 'string' ? body.name.trim() : '';
+        const nextName = (`${firstName} ${lastName}`.trim() || rawName || target.name || 'Candidate').trim();
+        const nextEmail = (typeof body.email === 'string' ? body.email.trim().toLowerCase() : target.email || '').trim();
+        const nextIdentifier =
+          body.studentIdentifier !== undefined
+            ? (typeof body.studentIdentifier === 'string' && body.studentIdentifier.trim() ? body.studentIdentifier.trim() : null)
+            : target.student_identifier;
+        const resetPasswordToSurname = Boolean(body.resetPasswordToSurname);
+
+        if (!nextEmail || !nextEmail.includes('@')) {
+          throw new ApiError({ status: 400, code: 'VALIDATION_FAILED', message: 'Please enter a valid candidate email address.' });
+        }
+
+        // Check email collision if email changed
+        if (nextEmail !== (target.email || '').toLowerCase()) {
+          const emailConflict = await txSql<Array<{ id: string }>>`
+            SELECT id FROM auth.users
+            WHERE LOWER(email) = ${nextEmail}
+              AND id != ${target.student_user_id}::uuid
+            UNION
+            SELECT id FROM profiles
+            WHERE LOWER(email) = ${nextEmail}
+              AND id != ${target.student_user_id}::uuid
+            LIMIT 1
+          `;
+          if (emailConflict[0]) {
+            throw new ApiError({
+              status: 409,
+              code: 'CONFLICT',
+              message: `Another account already uses the email ${nextEmail}.`,
+            });
+          }
+
+          await txSql`
+            UPDATE auth.users
+            SET email = ${nextEmail},
+                updated_at = NOW()
+            WHERE id = ${target.student_user_id}::uuid
+          `;
+          await txSql`
+            UPDATE auth.identities
+            SET identity_data = jsonb_set(COALESCE(identity_data, '{}'::jsonb), '{email}', to_jsonb(${nextEmail}::text)),
+                updated_at = NOW()
+            WHERE user_id = ${target.student_user_id}::uuid AND provider = 'email'
+          `.catch(() => {});
+        }
+
+        // Compute surname default password if requested or if school-ingested (manual / csv)
+        const nameParts = nextName.split(/\s+/);
+        const computedSurname = (nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0] || 'STUDENT').toUpperCase();
+        const shouldSyncSurnamePassword = resetPasswordToSurname || target.ingestion_method !== 'link';
+
+        if (shouldSyncSurnamePassword) {
+          await txSql`
+            UPDATE auth.users
+            SET encrypted_password = crypt(${computedSurname}::text, gen_salt('bf')),
+                raw_user_meta_data = (COALESCE(raw_user_meta_data, '{}'::jsonb) - 'custom_password_set') || jsonb_build_object(
+                  'display_name', ${nextName}::text,
+                  'default_password', ${computedSurname}::text
+                ),
+                updated_at = NOW()
+            WHERE id = ${target.student_user_id}::uuid
+          `;
+        } else {
+          await txSql`
+            UPDATE auth.users
+            SET raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object(
+                  'display_name', ${nextName}::text
+                ),
+                updated_at = NOW()
+            WHERE id = ${target.student_user_id}::uuid
+          `;
+        }
+
+        // Update profiles and school_students
+        await txSql`
+          UPDATE profiles
+          SET display_name = ${nextName},
+              email = ${nextEmail},
+              updated_at = NOW()
+          WHERE id = ${target.student_user_id}::uuid
+        `;
+
+        await txSql`
+          UPDATE school_students
+          SET student_identifier = ${nextIdentifier}
+          WHERE id = ${target.id}::uuid AND school_id = ${school.id}::uuid
+        `;
+
+        // Optionally update 4 UTME subjects if provided
+        let updatedSubjects: string[] | null = null;
+        if (Array.isArray(body.subjects)) {
+          const cleanCodes = Array.from(
+            new Set(
+              body.subjects
+                .filter((s: unknown): s is string => typeof s === 'string' && s.trim().length > 0)
+                .map((s: string) => s.trim().toUpperCase())
+            )
+          );
+
+          if (cleanCodes.length > 0) {
+            const ensuredCodes = cleanCodes.includes('ENG') ? cleanCodes.slice(0, 4) : ['ENG', ...cleanCodes.slice(0, 3)];
+            const codesCsv = ensuredCodes.join(',');
+            const subjectRows = await txSql<Array<{ id: string; code: string }>>`
+              SELECT id, code
+              FROM subjects
+              WHERE is_active = TRUE
+                AND code IN (SELECT unnest(string_to_array(${codesCsv}::text, ',')))
+              ORDER BY is_compulsory DESC, display_order ASC, code ASC
+            `;
+
+            if (subjectRows.length > 0) {
+              await txSql`
+                DELETE FROM student_subjects WHERE user_id = ${target.student_user_id}::uuid
+              `;
+              for (const sub of subjectRows) {
+                await txSql`
+                  INSERT INTO student_subjects (user_id, subject_id)
+                  VALUES (${target.student_user_id}::uuid, ${sub.id}::uuid)
+                  ON CONFLICT (user_id, subject_id) DO NOTHING
+                `;
+              }
+              if (subjectRows.length === 4) {
+                await txSql`
+                  INSERT INTO student_preferences (user_id, target_score, exam_year)
+                  VALUES (${target.student_user_id}::uuid, 250, 2026)
+                  ON CONFLICT (user_id) DO NOTHING
+                `;
+              }
+              updatedSubjects = subjectRows.map((s) => s.code);
+            }
+          }
+        }
+
+        if (!updatedSubjects) {
+          const currentSubRows = await txSql<Array<{ code: string }>>`
+            SELECT s.code
+            FROM student_subjects sub
+            JOIN subjects s ON s.id = sub.subject_id
+            WHERE sub.user_id = ${target.student_user_id}::uuid
+            ORDER BY s.is_compulsory DESC, s.display_order ASC, s.code ASC
+          `;
+          updatedSubjects = currentSubRows.map((r) => r.code);
+        }
+
+        const defaultPassword =
+          target.ingestion_method === 'link' && !resetPasswordToSurname ? null : computedSurname;
+
+        return {
+          status: 200 as const,
+          body: {
+            success: true,
+            student: {
+              id: target.id,
+              studentUserId: target.student_user_id,
+              name: nextName,
+              email: nextEmail,
+              studentIdentifier: nextIdentifier,
+              ingestionMethod: resetPasswordToSurname && target.ingestion_method === 'link' ? 'manual' : target.ingestion_method,
+              licenseStatus: target.license_status,
+              defaultPassword,
+              subjects: updatedSubjects,
+            },
+          },
+        };
+      });
+    },
+  },
+
+  // 2C. POST /api/v1/schools/students/disconnect — Single or batch disconnect from school (requires admin password)
+  {
+    id: 'schools.students.disconnect',
+    method: 'POST',
+    pattern: '/api/v1/schools/students/disconnect',
+    auth: 'student_live_session',
+    maxBodyBytes: 32 * 1024,
+    handler: async (ctx) => {
+      const actor = ctx.actor!;
+      const dbCtx = ctx.getDb();
+      const { data } = await readBoundedJsonBody(ctx.request, { maxBytes: 32 * 1024 });
+      const body = (data || {}) as Record<string, any>;
+
+      const rawIds: unknown[] = Array.isArray(body.studentIds)
+        ? body.studentIds
+        : typeof body.studentId === 'string'
+        ? [body.studentId]
+        : [];
+      const studentIds = rawIds.filter((id): id is string => typeof id === 'string' && UUID_PATTERN.test(id.trim())).map((id) => id.trim());
+      const adminPassword = typeof body.adminPassword === 'string' ? body.adminPassword : '';
+
+      if (studentIds.length === 0) {
+        throw new ApiError({
+          status: 400,
+          code: 'VALIDATION_FAILED',
+          message: 'Please select at least one candidate to disconnect.',
+        });
+      }
+
+      if (!adminPassword) {
+        throw new ApiError({
+          status: 400,
+          code: 'VALIDATION_FAILED',
+          message: 'Please enter your administrator password to confirm disconnecting candidates.',
+        });
+      }
+
+      const nowMs = (ctx.now || new Date()).getTime();
+      const failState = disconnectPasswordFailures.get(actor.userId);
+      if (failState && nowMs - failState.windowStartMs < PASSWORD_FAILURE_WINDOW_MS && failState.count >= MAX_PASSWORD_FAILURES) {
+        throw new ApiError({
+          status: 429,
+          code: 'RATE_LIMITED',
+          message: 'Too many failed administrator password attempts. Please wait 10 minutes before trying again.',
+        });
+      }
+
+      // 1. Verify school administrator's password against auth.users
+      const pwdCheckRows = await dbCtx.sql<Array<{ password_valid: boolean }>>`
+        SELECT (encrypted_password = crypt(${adminPassword}::text, encrypted_password)) AS password_valid
+        FROM auth.users
+        WHERE id = ${actor.userId}::uuid
+        LIMIT 1
+      `;
+
+      if (!pwdCheckRows[0]?.password_valid) {
+        const prev = disconnectPasswordFailures.get(actor.userId);
+        if (!prev || nowMs - prev.windowStartMs >= PASSWORD_FAILURE_WINDOW_MS) {
+          disconnectPasswordFailures.set(actor.userId, { count: 1, windowStartMs: nowMs });
+        } else {
+          prev.count += 1;
+        }
+        throw new ApiError({
+          status: 403,
+          code: 'FORBIDDEN',
+          message: 'Incorrect administrator password. Candidates were not disconnected.',
+        });
+      }
+      disconnectPasswordFailures.delete(actor.userId);
+
+      // 2. Locate caller's school
+      const school = await resolveCallerSchool(actor, dbCtx, { autoProvision: false });
+      if (!school) {
+        throw new ApiError({
+          status: 404,
+          code: 'NOT_FOUND',
+          message: 'No institutional school record found for your account.',
+        });
+      }
+
+      return await runSchoolTx(dbCtx, async (txSql) => {
+        // 3. Resolve matching school_students records owned by this school
+        const idsCsv = uuidListCsv(studentIds);
+        const ownedRows = await txSql<Array<{ id: string; student_user_id: string }>>`
+          SELECT id, student_user_id
+          FROM school_students
+          WHERE school_id = ${school.id}::uuid
+            AND (
+              id IN (SELECT unnest(string_to_array(${idsCsv}::text, ',')::uuid[]))
+              OR student_user_id IN (SELECT unnest(string_to_array(${idsCsv}::text, ',')::uuid[]))
+            )
+        `;
+
+        if (ownedRows.length === 0) {
+          throw new ApiError({
+            status: 404,
+            code: 'NOT_FOUND',
+            message: 'None of the selected candidates were found in your school roster.',
+          });
+        }
+
+        const rowIdsCsv = uuidListCsv(ownedRows.map((r) => r.id));
+        const userIdsCsv = uuidListCsv(ownedRows.map((r) => r.student_user_id));
+
+        // 4. Remove any queued school activation jobs for these students under this school's orders
+        await txSql`
+          DELETE FROM school_activation_jobs
+          WHERE student_user_id IN (SELECT unnest(string_to_array(${userIdsCsv}::text, ',')::uuid[]))
+            AND status IN ('queued', 'failed')
+            AND order_id IN (SELECT id FROM school_orders WHERE school_id = ${school.id}::uuid)
+        `;
+
+        // 5. Disconnect candidates from school_students (preserving their user account, progress, and remaining subscription days)
+        await txSql`
+          DELETE FROM school_students
+          WHERE school_id = ${school.id}::uuid
+            AND id IN (SELECT unnest(string_to_array(${rowIdsCsv}::text, ',')::uuid[]))
+        `;
+
+        // 6. Strip school affiliation from auth.users metadata and transition subscription plan_code to individual mode
+        await txSql`
+          UPDATE auth.users
+          SET raw_user_meta_data = (COALESCE(raw_user_meta_data, '{}'::jsonb) - 'school_code' - 'school_id') || '{"disconnected_from_school": true}'::jsonb,
+              updated_at = NOW()
+          WHERE id IN (SELECT unnest(string_to_array(${userIdsCsv}::text, ',')::uuid[]))
+        `;
+
+        await txSql`
+          UPDATE subscription_entitlements
+          SET plan_code = 'INDIVIDUAL_MONTHLY_1000',
+              auto_renew = false,
+              updated_at = NOW()
+          WHERE user_id IN (SELECT unnest(string_to_array(${userIdsCsv}::text, ',')::uuid[]))
+            AND plan_code = 'SCHOOL_INSTITUTIONAL_1500'
+        `;
+
+        return {
+          status: 200 as const,
+          body: {
+            success: true,
+            disconnectedCount: ownedRows.length,
+            disconnectedIds: ownedRows.map((r) => r.id),
+            subscriptionMode: 'individual',
+          },
+        };
+      });
+    },
+  },
+
+  // 3. POST /api/v1/schools/students/drilldown — Individual candidate diagnostic drilldown (Tenant-Scoped)
   {
     id: 'schools.students.drilldown',
     method: 'POST',
     pattern: '/api/v1/schools/students/drilldown',
-    auth: 'public',
+    auth: 'student',
     maxBodyBytes: 32 * 1024,
     handler: async (ctx) => {
+      const actor = ctx.actor!;
       const dbCtx = ctx.getDb();
       const { data } = await readBoundedJsonBody(ctx.request, { maxBytes: 32 * 1024 });
       const studentId = (typeof (data as any)?.studentId === 'string' ? (data as any).studentId.trim() : '') || null;
 
-      if (!studentId) {
+      if (!studentId || !UUID_PATTERN.test(studentId)) {
         throw new ApiError({
           status: 400,
           code: 'BAD_REQUEST',
-          message: 'Student ID is required.',
+          message: 'A valid candidate ID is required.',
         });
       }
 
-      // 1. Resolve student and profile
+      const school = await resolveCallerSchool(actor, dbCtx, { autoProvision: false });
+      if (!school) {
+        throw new ApiError({
+          status: 403,
+          code: 'FORBIDDEN',
+          message: 'You must be an authenticated school administrator to inspect candidate performance.',
+        });
+      }
+
+      // 1. Resolve student and verify ownership by caller's school
       const studentRows = await dbCtx.sql<Array<{
         id: string;
         student_user_id: string;
@@ -320,17 +1326,40 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
           ss.id,
           ss.student_user_id,
           ss.student_identifier,
-          ss.license_status,
+          CASE
+            WHEN ss.license_status = 'active' AND ss.license_expires_at IS NOT NULL AND ss.license_expires_at <= NOW()
+            THEN 'expired'
+            ELSE ss.license_status
+          END AS license_status,
           p.display_name AS name,
           p.email
         FROM school_students ss
         LEFT JOIN profiles p ON ss.student_user_id = p.id
-        WHERE ss.id = ${studentId}::uuid OR ss.student_user_id = ${studentId}::uuid OR p.id = ${studentId}::uuid
+        WHERE ss.school_id = ${school.id}::uuid
+          AND (ss.id = ${studentId}::uuid OR ss.student_user_id = ${studentId}::uuid)
         LIMIT 1
       `;
 
-      const student = studentRows[0] || null;
-      const targetUserId = student?.student_user_id || (studentId.length === 36 ? studentId : null);
+      const student = studentRows[0];
+      if (!student) {
+        throw new ApiError({
+          status: 404,
+          code: 'NOT_FOUND',
+          message: 'Candidate not found in your school roster.',
+        });
+      }
+
+      const targetUserId = student.student_user_id;
+
+      // 2. Fetch candidate's actual enrolled UTME subjects
+      const enrolledSubjectRows = await dbCtx.sql<Array<{ code: string; name: string; is_compulsory: boolean }>>`
+        SELECT s.code, s.name, s.is_compulsory
+        FROM student_subjects sub
+        JOIN subjects s ON s.id = sub.subject_id
+        WHERE sub.user_id = ${targetUserId}::uuid
+        ORDER BY s.is_compulsory DESC, s.display_order ASC, s.code ASC
+        LIMIT 4
+      `;
 
       let weakTopics: Array<{ topic: string; subject: string; errorRate: string }> = [];
       let strongTopics: Array<{ topic: string; subject: string; accuracy: string }> = [];
@@ -344,7 +1373,34 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
         practiceSessionsCount: 0,
       };
 
-      let rawMocks: Array<{
+      const practiceRows = await dbCtx.sql<Array<{
+        topics_practiced: string;
+        total_questions_attempted: string;
+        total_questions_correct: string;
+        overall_practice_accuracy: string;
+        practice_sessions_count: string;
+      }>>`
+        SELECT
+          count(distinct m.topic_id) as topics_practiced,
+          coalesce(sum(m.total_attempted), 0) as total_questions_attempted,
+          coalesce(sum(m.total_correct), 0) as total_questions_correct,
+          coalesce(round(avg(m.accuracy_percent)), 0) as overall_practice_accuracy,
+          (SELECT count(*) FROM attempts a WHERE a.user_id = ${targetUserId}::uuid AND a.mode = 'practice') as practice_sessions_count
+        FROM student_topic_mastery m
+        WHERE m.user_id = ${targetUserId}::uuid
+      `;
+
+      if (practiceRows[0]) {
+        practiceSummary = {
+          topicsPracticed: Number(practiceRows[0].topics_practiced || 0),
+          totalQuestionsAttempted: Number(practiceRows[0].total_questions_attempted || 0),
+          totalQuestionsCorrect: Number(practiceRows[0].total_questions_correct || 0),
+          overallPracticeAccuracy: practiceRows[0].total_questions_attempted !== '0' ? Number(practiceRows[0].overall_practice_accuracy) : null,
+          practiceSessionsCount: Number(practiceRows[0].practice_sessions_count || 0),
+        };
+      }
+
+      const rawMocks = await dbCtx.sql<Array<{
         total_score: number;
         english_score: number;
         subject2_score: number;
@@ -353,139 +1409,104 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
         time_spent_seconds: number;
         topic_breakdown: any;
         created_at: string;
-      }> = [];
+      }>>`
+        SELECT
+          ar.total_score,
+          ar.english_score,
+          ar.subject2_score,
+          ar.subject3_score,
+          ar.subject4_score,
+          ar.time_spent_seconds,
+          ar.topic_breakdown,
+          ar.created_at
+        FROM attempt_results ar
+        WHERE ar.user_id = ${targetUserId}::uuid
+        ORDER BY ar.created_at DESC
+        LIMIT 10
+      `;
 
-      if (targetUserId) {
-        // Fetch practice mastery and stats
-        const practiceRows = await dbCtx.sql<Array<{
-          topics_practiced: string;
-          total_questions_attempted: string;
-          total_questions_correct: string;
-          overall_practice_accuracy: string;
-          practice_sessions_count: string;
-        }>>`
-          SELECT
-            count(distinct m.topic_id) as topics_practiced,
-            coalesce(sum(m.total_attempted), 0) as total_questions_attempted,
-            coalesce(sum(m.total_correct), 0) as total_questions_correct,
-            coalesce(round(avg(m.accuracy_percent)), 0) as overall_practice_accuracy,
-            (SELECT count(*) FROM attempts a WHERE a.user_id = ${targetUserId}::uuid AND a.mode = 'practice') as practice_sessions_count
-          FROM student_topic_mastery m
-          WHERE m.user_id = ${targetUserId}::uuid
-        `;
+      const latestMock = rawMocks[0] || null;
+      if (latestMock) {
+        latestMockTotal = latestMock.total_score;
 
-        if (practiceRows[0]) {
-          practiceSummary = {
-            topicsPracticed: Number(practiceRows[0].topics_practiced || 0),
-            totalQuestionsAttempted: Number(practiceRows[0].total_questions_attempted || 0),
-            totalQuestionsCorrect: Number(practiceRows[0].total_questions_correct || 0),
-            overallPracticeAccuracy: practiceRows[0].total_questions_attempted !== '0' ? Number(practiceRows[0].overall_practice_accuracy) : null,
-            practiceSessionsCount: Number(practiceRows[0].practice_sessions_count || 0),
-          };
-        }
+        const breakdown = Array.isArray(latestMock.topic_breakdown) ? latestMock.topic_breakdown : [];
+        weakTopics = breakdown
+          .filter((b: any) => b.correct === 0 && b.total >= 1)
+          .slice(0, 5)
+          .map((b: any) => ({
+            topic: b.topicTitle || 'Subject Topic',
+            subject: b.subjectCode || 'GENERAL',
+            errorRate: '100%',
+          }));
 
-        // Fetch mock results
-        rawMocks = await dbCtx.sql<Array<{
-          total_score: number;
-          english_score: number;
-          subject2_score: number;
-          subject3_score: number;
-          subject4_score: number;
-          time_spent_seconds: number;
-          topic_breakdown: any;
-          created_at: string;
-        }>>`
-          SELECT
-            ar.total_score,
-            ar.english_score,
-            ar.subject2_score,
-            ar.subject3_score,
-            ar.subject4_score,
-            ar.time_spent_seconds,
-            ar.topic_breakdown,
-            ar.created_at
-          FROM attempt_results ar
-          WHERE ar.user_id = ${targetUserId}::uuid
-          ORDER BY ar.created_at DESC
-          LIMIT 10
-        `;
-
-        const latestMock = rawMocks[0] || null;
-        if (latestMock) {
-          latestMockTotal = latestMock.total_score;
-
-          // Weak & strong topics from latest mock breakdown
-          const breakdown = Array.isArray(latestMock.topic_breakdown) ? latestMock.topic_breakdown : [];
-          weakTopics = breakdown
-            .filter((b: any) => b.correct === 0 && b.total >= 1)
-            .slice(0, 5)
-            .map((b: any) => ({
-              topic: b.topicTitle || 'Subject Topic',
-              subject: b.subjectCode || 'GENERAL',
-              errorRate: '100%',
-            }));
-
-          strongTopics = breakdown
-            .filter((b: any) => b.correct === b.total && b.total >= 1)
-            .slice(0, 5)
-            .map((b: any) => ({
-              topic: b.topicTitle || 'Subject Topic',
-              subject: b.subjectCode || 'GENERAL',
-              accuracy: '100%',
-            }));
-        }
-
-        // Mock history list
-        mockHistory = rawMocks.map((m, idx) => ({
-          date: new Date(m.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-          examName: `UTME Standard CBT Simulation #${rawMocks.length - idx}`,
-          score: m.total_score,
-          timeSpent: `${Math.round(m.time_spent_seconds / 60)} mins`,
-        }));
+        strongTopics = breakdown
+          .filter((b: any) => b.correct === b.total && b.total >= 1)
+          .slice(0, 5)
+          .map((b: any) => ({
+            topic: b.topicTitle || 'Subject Topic',
+            subject: b.subjectCode || 'GENERAL',
+            accuracy: '100%',
+          }));
       }
 
-      const latest = rawMocks[0] || null;
+      mockHistory = rawMocks.map((m, idx) => ({
+        date: new Date(m.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+        examName: `UTME Standard CBT Simulation #${rawMocks.length - idx}`,
+        score: m.total_score,
+        timeSpent: `${Math.round(m.time_spent_seconds / 60)} mins`,
+      }));
+
+      // Build 4-subject breakdown using the candidate's actual enrolled UTME subjects (or fallback to standard 4 if not yet onboarded)
+      const subjectTemplate =
+        enrolledSubjectRows.length > 0
+          ? enrolledSubjectRows
+          : [
+              { code: 'ENG', name: 'Use of English', is_compulsory: true },
+              { code: 'MTH', name: 'Mathematics', is_compulsory: false },
+              { code: 'PHY', name: 'Physics', is_compulsory: false },
+              { code: 'CHM', name: 'Chemistry', is_compulsory: false },
+            ];
+
+      const mockScoresBySlot = latestMock
+        ? [latestMock.english_score, latestMock.subject2_score, latestMock.subject3_score, latestMock.subject4_score]
+        : [null, null, null, null];
+
+      const breakdownBySubjectCode = new Map<string, { correct: number; total: number }>();
+      if (latestMock && Array.isArray(latestMock.topic_breakdown)) {
+        for (const item of latestMock.topic_breakdown) {
+          const code = typeof item?.subjectCode === 'string' ? item.subjectCode.trim().toUpperCase() : '';
+          if (!code) continue;
+          const cur = breakdownBySubjectCode.get(code) || { correct: 0, total: 0 };
+          cur.correct += Number(item.correct) || 0;
+          cur.total += Number(item.total) || 0;
+          breakdownBySubjectCode.set(code, cur);
+        }
+      }
+
+      const subjectsBreakdown = subjectTemplate.map((sub, index) => {
+        const codeUpper = sub.code.toUpperCase();
+        const topicAgg = breakdownBySubjectCode.get(codeUpper);
+        const slotScore =
+          topicAgg && topicAgg.total > 0
+            ? Math.round((topicAgg.correct / topicAgg.total) * 100)
+            : mockScoresBySlot[index] ?? null;
+        return {
+          name: sub.name,
+          code: sub.code,
+          score: slotScore,
+          maxScore: 100,
+          accuracy: typeof slotScore === 'number' ? `${slotScore}%` : '—',
+          status: latestMock ? 'completed' : 'unattempted',
+        };
+      });
 
       const drilldown = {
-        studentId,
-        name: student?.name || 'Candidate',
-        email: student?.email || '',
-        studentIdentifier: student?.student_identifier || null,
-        licenseStatus: student?.license_status || 'inactive',
-        subjects: [
-          {
-            name: 'Use of English',
-            code: 'ENG',
-            score: latest ? latest.english_score : null,
-            maxScore: 100,
-            accuracy: latest && typeof latest.english_score === 'number' ? `${latest.english_score}%` : '—',
-            status: latest ? 'completed' : 'unattempted',
-          },
-          {
-            name: 'Mathematics',
-            code: 'MTH',
-            score: latest ? latest.subject2_score : null,
-            maxScore: 100,
-            accuracy: latest && typeof latest.subject2_score === 'number' ? `${latest.subject2_score}%` : '—',
-            status: latest ? 'completed' : 'unattempted',
-          },
-          {
-            name: 'Physics',
-            code: 'PHY',
-            score: latest ? latest.subject3_score : null,
-            maxScore: 100,
-            accuracy: latest && typeof latest.subject3_score === 'number' ? `${latest.subject3_score}%` : '—',
-            status: latest ? 'completed' : 'unattempted',
-          },
-          {
-            name: 'Chemistry',
-            code: 'CHM',
-            score: latest ? latest.subject4_score : null,
-            maxScore: 100,
-            accuracy: latest && typeof latest.subject4_score === 'number' ? `${latest.subject4_score}%` : '—',
-            status: latest ? 'completed' : 'unattempted',
-          },
-        ],
+        studentId: student.id,
+        name: student.name || 'Candidate',
+        email: student.email || '',
+        studentIdentifier: student.student_identifier || null,
+        licenseStatus: student.license_status || 'inactive',
+        subjects: subjectsBreakdown,
         totalScore: latestMockTotal,
         maxPossibleScore: 400,
         percentileRank: latestMockTotal ? (latestMockTotal >= 250 ? 'Top 15% Cohort' : 'Active Cohort') : null,
@@ -505,19 +1526,33 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
     },
   },
 
-  // 4. POST /api/v1/schools/diagnostics/summary — Cohort syllabus diagnostics
+  // 4. POST /api/v1/schools/diagnostics/summary — Cohort syllabus diagnostics (Tenant-Scoped)
   {
     id: 'schools.diagnostics.summary',
     method: 'POST',
     pattern: '/api/v1/schools/diagnostics/summary',
-    auth: 'public',
+    auth: 'student',
     maxBodyBytes: 32 * 1024,
     handler: async (ctx) => {
+      const actor = ctx.actor!;
       const dbCtx = ctx.getDb();
+
+      const school = await resolveCallerSchool(actor, dbCtx, { autoProvision: false });
+      if (!school) {
+        return {
+          status: 200,
+          body: {
+            success: true,
+            topics: [],
+            revisionTimetable: [],
+          },
+        };
+      }
 
       const topicRows = await dbCtx.sql<Array<{
         id: string;
-        subject: string;
+        subject_name: string;
+        subject_code: string;
         topic: string;
         total_attempted: string;
         total_correct: string;
@@ -525,15 +1560,18 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
       }>>`
         SELECT
           t.id,
-          s.code as subject,
+          s.name as subject_name,
+          s.code as subject_code,
           t.title as topic,
           sum(m.total_attempted) as total_attempted,
           sum(m.total_correct) as total_correct,
           round((sum(m.total_correct)::float / nullif(sum(m.total_attempted), 0)::float) * 100) as accuracy_rate
         FROM student_topic_mastery m
+        JOIN school_students ss ON ss.student_user_id = m.user_id
         JOIN topics t ON m.topic_id = t.id
         JOIN subjects s ON m.subject_id = s.id
-        GROUP BY t.id, s.code, t.title
+        WHERE ss.school_id = ${school.id}::uuid
+        GROUP BY t.id, s.name, s.code, t.title
         HAVING sum(m.total_attempted) > 0
         ORDER BY accuracy_rate ASC, total_attempted DESC
         LIMIT 50
@@ -542,19 +1580,20 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
       const diagnosticTopics = topicRows.map((r) => {
         const rate = Number(r.accuracy_rate) || 0;
         let status: 'urgent_remedial' | 'revision_recommended' | 'exam_ready' = 'revision_recommended';
-        let recommendedAction = 'Schedule group tutorial and past-question drill.';
+        let recommendedAction = 'Schedule group tutorial and past-question speed drill.';
 
-        if (rate < 50) {
+        if (rate < 40) {
           status = 'urgent_remedial';
-          recommendedAction = 'Critical gap: Re-teach core syllabus principles before next mock.';
+          recommendedAction = 'Critical gap (<40% accuracy): Re-teach core syllabus principles before next mock.';
         } else if (rate >= 70) {
           status = 'exam_ready';
-          recommendedAction = 'Mastered topic: Candidate retention is on track for UTME.';
+          recommendedAction = 'Mastered topic (≥70% accuracy): Candidate retention is on track for UTME.';
         }
 
         return {
           id: r.id,
-          subject: r.subject,
+          subject: r.subject_name,
+          subjectCode: r.subject_code,
           topic: r.topic,
           accuracyRate: rate,
           questionsAttempted: Number(r.total_attempted) || 0,
@@ -564,15 +1603,16 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
       });
 
       const revisionTimetable = diagnosticTopics
-        .filter((t) => t.status === 'urgent_remedial')
+        .filter((t) => t.status === 'urgent_remedial' || t.status === 'revision_recommended')
         .slice(0, 5)
         .map((t, i) => {
           const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
           return {
             day: days[i % days.length],
+            time: '45 Mins Remedial Block',
             subject: t.subject,
             topic: t.topic,
-            priority: 'High',
+            priority: t.status === 'urgent_remedial' ? 'Urgent' : 'Moderate',
             action: t.recommendedAction,
           };
         });
@@ -588,54 +1628,11 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
     },
   },
 
-  // 5. POST /api/v1/schools/mocks/schedule — Schedule school CBT lab mock test
+  // 5. POST /api/v1/schools/mocks/schedule — Schedule & persist school CBT lab mock test
   {
     id: 'schools.mocks.schedule',
     method: 'POST',
     pattern: '/api/v1/schools/mocks/schedule',
-    auth: 'public',
-    maxBodyBytes: 32 * 1024,
-    handler: async (ctx) => {
-      const { data } = await readBoundedJsonBody(ctx.request, { maxBytes: 32 * 1024 });
-      const body = (data || {}) as Record<string, any>;
-
-      const title = (typeof body.title === 'string' ? body.title.trim() : '') || 'Term UTME Mock Examination';
-      const scheduledDate = (typeof body.scheduledDate === 'string' ? body.scheduledDate.trim() : '') || new Date().toISOString();
-      const durationMinutes = Number(body.durationMinutes) || 120;
-      const totalQuestions = Number(body.totalQuestions) || 180;
-      const hotkeyNavigationEnabled = body.hotkeyNavigationEnabled ?? true;
-
-      const randomSuffix = Math.random().toString(36).slice(-4).toUpperCase();
-      const labSessionCode = `LAB-SCH-${randomSuffix}`;
-
-      const session = {
-        id: `mock-sess-${Date.now()}`,
-        title,
-        labSessionCode,
-        scheduledDate,
-        durationMinutes,
-        totalQuestions,
-        hotkeyNavigationEnabled,
-        proctorKey: `PRC-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
-        status: 'scheduled',
-        createdAt: new Date().toISOString(),
-      };
-
-      return {
-        status: 200,
-        body: {
-          success: true,
-          session,
-        },
-      };
-    },
-  },
-
-  // 6. POST /api/v1/schools/checkout/initialize — Initialize Paystack checkout for school cohort
-  {
-    id: 'schools.checkout.initialize',
-    method: 'POST',
-    pattern: '/api/v1/schools/checkout/initialize',
     auth: 'student',
     maxBodyBytes: 32 * 1024,
     handler: async (ctx) => {
@@ -644,35 +1641,224 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
       const { data } = await readBoundedJsonBody(ctx.request, { maxBytes: 32 * 1024 });
       const body = (data || {}) as Record<string, any>;
 
-      const studentCount = Number(body.studentCount);
-      const durationMonths = Number(body.durationMonths || 3);
-      const studentIds = Array.isArray(body.studentIds) ? body.studentIds : [];
-
-      if (!Number.isInteger(studentCount) || studentCount < 1) {
-        throw new ApiError({ status: 400, code: 'VALIDATION_FAILED', message: 'Student count must be at least 1.' });
+      const school = await resolveCallerSchool(actor, dbCtx, { autoProvision: true });
+      if (!school) {
+        throw new ApiError({
+          status: 403,
+          code: 'FORBIDDEN',
+          message: 'You must be an authenticated school administrator to schedule a CBT laboratory mock.',
+        });
       }
+
+      const title = (typeof body.title === 'string' ? body.title.trim() : '') || 'Term UTME Mock Examination';
+      const scheduledDate = (typeof body.scheduledDate === 'string' ? body.scheduledDate.trim() : '') || new Date().toISOString();
+      const durationMinutes = Number(body.durationMinutes) || 120;
+      const totalQuestions = Number(body.totalQuestions) || 180;
+      const hotkeyNavigationEnabled = body.hotkeyNavigationEnabled ?? true;
+
+      const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      const randomBytes = new Uint8Array(6);
+      crypto.getRandomValues(randomBytes);
+      const randomSuffix = Array.from(randomBytes.slice(0, 4), (b) => alphabet[b % alphabet.length]).join('');
+      const labSessionCode = `LAB-SCH-${randomSuffix}`;
+      const proctorSuffix = Array.from(randomBytes, (b) => alphabet[b % alphabet.length]).join('');
+
+      const session = {
+        id: `mock-sess-${Date.now()}`,
+        schoolId: school.id,
+        schoolName: school.name,
+        schoolCode: school.code,
+        title,
+        labSessionCode,
+        scheduledDate,
+        durationMinutes,
+        totalQuestions,
+        hotkeyNavigationEnabled,
+        proctorKey: `PRC-${proctorSuffix}`,
+        status: 'scheduled',
+        createdAt: new Date().toISOString(),
+      };
+
+      await dbCtx.sql`
+        UPDATE auth.users
+        SET raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object('active_lab_mock', ${JSON.stringify(session)}::text::jsonb),
+            updated_at = NOW()
+        WHERE id = ${school.admin_id}::uuid
+      `;
+
+      return {
+        status: 200,
+        body: {
+          success: true,
+          session,
+          instructions: [
+            'Ensure all laboratory desktop monitors are connected to the school LAN or internet.',
+            'Students sign in with their email and uppercase surname default password.',
+            'Enter the Lab Session Code on the exam entry screen.',
+            '8-Key navigation (A, B, C, D for options; P for previous, N for next; S for submit; R for review) is enforced.',
+            'Exam auto-submits exactly when the 120:00 timer elapses.',
+          ],
+        },
+      };
+    },
+  },
+
+  // 5B. POST /api/v1/schools/mocks/join — Validate a whiteboard CBT Lab Session Code (`LAB-SCH-*`) for a student
+  {
+    id: 'schools.mocks.join',
+    method: 'POST',
+    pattern: '/api/v1/schools/mocks/join',
+    auth: 'student',
+    maxBodyBytes: 16 * 1024,
+    handler: async (ctx) => {
+      const actor = ctx.actor!;
+      const dbCtx = ctx.getDb();
+      const { data } = await readBoundedJsonBody(ctx.request, { maxBytes: 16 * 1024 });
+      const rawCode = typeof (data as any)?.labSessionCode === 'string' ? (data as any).labSessionCode.trim().toUpperCase() : '';
+
+      if (!rawCode) {
+        throw new ApiError({
+          status: 400,
+          code: 'VALIDATION_FAILED',
+          message: 'Please enter the CBT Lab Session Code written on your laboratory whiteboard.',
+        });
+      }
+
+      // Look up matching lab session from the student's enrolled school (or admin's school)
+      const matchRows = await dbCtx.sql<Array<{
+        school_id: string;
+        school_name: string;
+        school_code: string;
+        active_lab_mock: any;
+      }>>`
+        SELECT
+          s.id AS school_id,
+          s.name AS school_name,
+          s.code AS school_code,
+          au.raw_user_meta_data->'active_lab_mock' AS active_lab_mock
+        FROM schools s
+        JOIN auth.users au ON au.id = s.admin_id
+        WHERE (
+            s.admin_id = ${actor.userId}::uuid
+            OR EXISTS (
+              SELECT 1 FROM school_students ss
+              WHERE ss.school_id = s.id AND ss.student_user_id = ${actor.userId}::uuid
+            )
+          )
+          AND (
+            UPPER(au.raw_user_meta_data->'active_lab_mock'->>'labSessionCode') = ${rawCode}
+            OR UPPER(s.code || '-MOCK') = ${rawCode}
+          )
+        LIMIT 1
+      `;
+
+      if (!matchRows[0]) {
+        throw new ApiError({
+          status: 404,
+          code: 'NOT_FOUND',
+          message: `Lab session code "${rawCode}" was not found for your school or has expired. Please check the code on the whiteboard.`,
+        });
+      }
+
+      const row = matchRows[0];
+      const scheduledIso = row.active_lab_mock?.scheduledDate;
+      if (scheduledIso) {
+        const scheduledMs = Date.parse(scheduledIso);
+        const nowMs = (ctx.now || new Date()).getTime();
+        if (Number.isFinite(scheduledMs) && scheduledMs - nowMs > 15 * 60 * 1000) {
+          throw new ApiError({
+            status: 409,
+            code: 'CONFLICT',
+            message: `This CBT Lab Mock session ("${row.active_lab_mock?.title || 'School Mock'}") is scheduled to open at ${new Date(scheduledMs).toLocaleString()}.`,
+          });
+        }
+      }
+      return {
+        status: 200,
+        body: {
+          success: true,
+          valid: true,
+          session: row.active_lab_mock || {
+            labSessionCode: rawCode,
+            title: `${row.school_name} CBT Lab Mock`,
+            durationMinutes: 120,
+            totalQuestions: 180,
+            schoolName: row.school_name,
+            schoolCode: row.school_code,
+          },
+        },
+      };
+    },
+  },
+
+  // 6. POST /api/v1/schools/checkout/initialize — Initialize Paystack checkout for explicitly selected candidates
+  {
+    id: 'schools.checkout.initialize',
+    method: 'POST',
+    pattern: '/api/v1/schools/checkout/initialize',
+    auth: 'student_live_session',
+    maxBodyBytes: 32 * 1024,
+    handler: async (ctx) => {
+      const actor = ctx.actor!;
+      const dbCtx = ctx.getDb();
+      const { data } = await readBoundedJsonBody(ctx.request, { maxBytes: 32 * 1024 });
+      const body = (data || {}) as Record<string, any>;
+
+      const durationMonths = Number(body.durationMonths || 3);
+      const requestedStudentIds: unknown[] = Array.isArray(body.studentIds) ? body.studentIds : [];
+
       if (!Number.isInteger(durationMonths) || durationMonths < 1 || durationMonths > 12) {
         throw new ApiError({ status: 400, code: 'VALIDATION_FAILED', message: 'Duration must be between 1 and 12 calendar months.' });
       }
 
-      // Locate School record
-      const meta = ((actor.claims as any).user_metadata || {}) as Record<string, any>;
-      const metaSchoolCode = (typeof meta.school_code === 'string' ? meta.school_code.trim().toUpperCase() : '') || null;
-
-      const schoolRows = await dbCtx.sql<Array<{ id: string; name: string; code: string }>>`
-        SELECT s.id, s.name, s.code
-        FROM schools s
-        WHERE s.admin_id = ${actor.userId}::uuid
-           OR EXISTS (SELECT 1 FROM school_members sm WHERE sm.school_id = s.id AND sm.user_id = ${actor.userId}::uuid)
-           ${metaSchoolCode ? dbCtx.sql`OR UPPER(s.code) = ${metaSchoolCode}` : dbCtx.sql``}
-        LIMIT 1
-      `;
-
-      if (!schoolRows[0]) {
+      const school = await resolveCallerSchool(actor, dbCtx, { autoProvision: false });
+      if (!school) {
         throw new ApiError({ status: 404, code: 'NOT_FOUND', message: 'No school partnership found for your account.' });
       }
 
-      const school = schoolRows[0];
+      // Strict selection guard: require explicit candidate IDs belonging to this school
+      const requestedIds = requestedStudentIds.filter((id: unknown): id is string => typeof id === 'string' && UUID_PATTERN.test(id));
+      if (requestedIds.length === 0) {
+        throw new ApiError({
+          status: 400,
+          code: 'VALIDATION_FAILED',
+          message: 'Please select at least one candidate from your school roster before checking out licences.',
+        });
+      }
+
+      const ownedRows = await dbCtx.sql<Array<{ id: string }>>`
+        SELECT id FROM school_students
+        WHERE school_id = ${school.id}::uuid
+          AND id IN (SELECT unnest(string_to_array(${requestedIds.join(',')}::text, ',')::uuid[]))
+      `;
+      const ownedIds = new Set(ownedRows.map((row) => row.id));
+      const studentIds = requestedIds.filter((id: string, index: number) => ownedIds.has(id) && requestedIds.indexOf(id) === index);
+
+      if (studentIds.length === 0) {
+        throw new ApiError({
+          status: 400,
+          code: 'VALIDATION_FAILED',
+          message: 'The selected candidates were not found in your school roster.',
+        });
+      }
+
+      const studentCount = studentIds.length;
+
+      // Settle any earlier paid-but-unactivated order first, instead of charging again.
+      const settledReference = await settleEarlierPaidOrder(dbCtx, ctx.env as PaymentEnv, school.id);
+      if (settledReference) {
+        const appOriginForSettled = resolveCheckoutAppOrigin(ctx.request, ctx.env);
+        return {
+          status: 200,
+          body: {
+            success: true,
+            reconciled: true,
+            reference: settledReference,
+            authorizationUrl: `${appOriginForSettled}/schools/checkout/verify/?reference=${encodeURIComponent(settledReference)}`,
+          },
+        };
+      }
+
       const ratePerStudentKobo = 150000; // ₦1,500
       const totalAmountKobo = studentCount * durationMonths * ratePerStudentKobo;
       const reference = `SCH-ORD-${Date.now()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
@@ -703,13 +1889,13 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
             schoolCode: school.code,
             adminEmail: actor.email,
             orderType: 'school_cohort_license',
-          })}::jsonb
+          })}::text::jsonb
         )
       `;
 
       const env = ctx.env as any;
       const paystackSecret = env.PAYSTACK_SECRET_KEY?.trim() || '';
-      const appOrigin = env.PUBLIC_APP_ORIGIN || 'https://jambprep.pages.dev';
+      const appOrigin = resolveCheckoutAppOrigin(ctx.request, env);
       const callbackUrl = `${appOrigin}/schools/checkout/verify/?reference=${encodeURIComponent(reference)}`;
 
       if (paystackSecret && /^sk_(test|live)_/.test(paystackSecret)) {
@@ -751,7 +1937,6 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
           };
         } catch (paystackErr) {
           console.warn('Paystack API call notice:', paystackErr);
-          // Fall through to callback URL if gateway call fails
         }
       }
 
@@ -775,12 +1960,12 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
     },
   },
 
-  // 7. POST /api/v1/schools/checkout/verify — Verify Paystack settlement & execute batch activation
+  // 7. POST /api/v1/schools/checkout/verify — Verify Paystack settlement & execute full cohort activation
   {
     id: 'schools.checkout.verify',
     method: 'POST',
     pattern: '/api/v1/schools/checkout/verify',
-    auth: 'student',
+    auth: 'student_live_session',
     maxBodyBytes: 32 * 1024,
     handler: async (ctx) => {
       const dbCtx = ctx.getDb();
@@ -815,11 +2000,17 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
 
       const order = orderRows[0];
 
-      // Resolve school metadata
-      const schoolRows = await dbCtx.sql<Array<{ id: string; name: string; code: string }>>`
-        SELECT id, name, code FROM schools WHERE id = ${order.school_id}::uuid LIMIT 1
-      `;
-      const school = schoolRows[0] || { id: order.school_id, name: 'Partner School', code: 'SCH-0000' };
+      // Enforce school tenant ownership on order verification
+      const callerSchool = await resolveCallerSchool(ctx.actor!, dbCtx, { autoProvision: false });
+      if (!callerSchool || callerSchool.id !== order.school_id) {
+        throw new ApiError({
+          status: 403,
+          code: 'FORBIDDEN',
+          message: 'You are not authorized to verify or settle this school order.',
+        });
+      }
+
+      const school = callerSchool;
 
       // Idempotency: if already completed, return existing confirmation
       if (order.status === 'completed') {
@@ -844,7 +2035,7 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
         };
       }
 
-      // Verify on Paystack Gateway if key is configured
+      // Verify on Paystack Gateway
       const env = ctx.env as any;
       const paystackSecret = env.PAYSTACK_SECRET_KEY?.trim() || '';
 
@@ -857,7 +2048,11 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
           );
 
           if (verifyData.status !== 'success') {
-            throw new ApiError({ status: 400, code: 'PAYMENT_FAILED', message: 'Payment has not been confirmed by Paystack.' });
+            throw new ApiError({
+              status: 400,
+              code: 'PAYMENT_FAILED',
+              message: `Payment has not been confirmed by Paystack (status: ${String(verifyData.status || 'unconfirmed')}).`,
+            });
           }
 
           const paidAmount = Number(verifyData.amount);
@@ -866,13 +2061,22 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
           }
         } catch (verifyErr) {
           if (verifyErr instanceof ApiError) throw verifyErr;
-          console.warn('Gateway verification fallback notice:', verifyErr);
+          throw new ApiError({
+            status: 503,
+            code: 'SERVICE_UNAVAILABLE',
+            message: 'Payment gateway verification could not be completed. Please retry shortly.',
+          });
         }
+      } else if (env.ENVIRONMENT === 'production') {
+        throw new ApiError({
+          status: 503,
+          code: 'SERVICE_CONFIG_UNAVAILABLE',
+          message: 'Payment gateway secret key is not configured.',
+        });
       }
 
       // 1. Enqueue activation jobs into school_activation_jobs
-      const metadata = order.metadata || {};
-      const targetedIds = Array.isArray(metadata.studentIds) ? metadata.studentIds : [];
+      const targetedIds = parseOrderStudentIds(order.metadata);
 
       await enqueueCohortActivation(dbCtx, {
         orderId: order.id,
@@ -882,8 +2086,8 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
         targetedIds,
       });
 
-      // 2. Process batch of activation jobs (50 students per chunk)
-      const progress = await processActivationBatch(dbCtx, order.id, 50);
+      // 2. Drain all activation batches (100 students per chunk until completed)
+      const progress = await processActivationBatch(dbCtx, order.id, 100);
 
       return {
         status: 200,
@@ -907,7 +2111,7 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
     },
   },
 
-  // 8. POST /api/v1/schools/checkout/webhook — Paystack Webhook Handler with HMAC verification
+  // 8. POST /api/v1/schools/checkout/webhook — Dedicated School Paystack Webhook Handler with HMAC verification
   {
     id: 'schools.checkout.webhook',
     method: 'POST',
@@ -917,17 +2121,23 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
     handler: async (ctx) => {
       const dbCtx = ctx.getDb();
       const env = ctx.env as any;
-      const paystackSecret = env.PAYSTACK_SECRET_KEY?.trim() || '';
+      const paystackSecret = (env.PAYSTACK_WEBHOOK_SECRET || env.PAYSTACK_SECRET_KEY || '').trim();
+
+      if (!paystackSecret) {
+        throw new ApiError({
+          status: 503,
+          code: 'SERVICE_CONFIG_UNAVAILABLE',
+          message: 'Paystack webhook secret is not configured.',
+        });
+      }
 
       const rawBody = await ctx.request.text();
       const signature = ctx.request.headers.get('x-paystack-signature');
 
-      // Verify HMAC-SHA512 signature
-      if (paystackSecret) {
-        const isValid = await verifyPaystackHmacSignature(rawBody, signature, paystackSecret);
-        if (!isValid) {
-          throw new ApiError({ status: 401, code: 'UNAUTHORIZED', message: 'Invalid webhook signature.' });
-        }
+      // Verify HMAC-SHA512 signature (fail-closed)
+      const isValid = await verifyPaystackHmacSignature(rawBody, signature, paystackSecret);
+      if (!isValid) {
+        throw new ApiError({ status: 401, code: 'UNAUTHORIZED', message: 'Invalid webhook signature.' });
       }
 
       let payload: Record<string, any> = {};
@@ -939,40 +2149,9 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
 
       if (payload.event === 'charge.success') {
         const data = payload.data || {};
-        const reference = data.reference;
-
-        if (reference && typeof reference === 'string') {
-          const orderRows = await dbCtx.sql<Array<{
-            id: string;
-            school_id: string;
-            duration_months: number;
-            student_count: number;
-            status: string;
-            metadata: any;
-          }>>`
-            SELECT id, school_id, duration_months, student_count, status, metadata
-            FROM school_orders
-            WHERE reference = ${reference}
-            LIMIT 1
-          `;
-
-          if (orderRows[0] && orderRows[0].status !== 'completed') {
-            const order = orderRows[0];
-            const metadata = order.metadata || {};
-            const targetedIds = Array.isArray(metadata.studentIds) ? metadata.studentIds : [];
-
-            // Enqueue activation jobs
-            await enqueueCohortActivation(dbCtx, {
-              orderId: order.id,
-              schoolId: order.school_id,
-              durationMonths: order.duration_months,
-              studentCount: order.student_count,
-              targetedIds,
-            });
-
-            // Process activation chunk
-            await processActivationBatch(dbCtx, order.id, 50);
-          }
+        const reference = typeof data.reference === 'string' ? data.reference.trim() : '';
+        if (reference) {
+          await settleSchoolOrderFromWebhook(dbCtx, reference, Number(data.amount) || undefined);
         }
       }
 

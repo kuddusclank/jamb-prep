@@ -11,7 +11,7 @@ import { MathRenderer } from '@/components/math-renderer';
 import { isArabicText } from '@/lib/utils';
 import { MockResultRatingPrompt } from '@/components/mock-result-rating-prompt';
 interface ResultData {subjectScores?:{code:string;name:string;count:number;score:number}[];totalScore:number;englishScore:number;subject2Score:number;subject3Score:number;subject4Score:number;timeSpentSeconds:number;completedAt:string;}
-import { CheckCircle2, XCircle, AlertCircle, HelpCircle, ChevronDown, ChevronUp, Sparkles, Filter, Bookmark, BookA, Lock, ArrowRight } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, HelpCircle, ChevronDown, ChevronUp, BookOpen, Filter, Bookmark, BookA, Lock, ArrowRight, Building2 } from 'lucide-react';
 import { ReportQuestionDialog } from '@/components/report-question-dialog';
 import { QuestionDiagram } from '@/components/question-diagram';
 import { InspectableText } from '@/components/dictionary/inspectable-text';
@@ -42,19 +42,63 @@ function Review({ attemptId }: { attemptId: string }) {
   const resource = useApiResource<ReviewData>(`/api/v1/exams/attempts/${attemptId}/review`);
   const profile = useApiResource<ProfileData>("/api/v1/profile");
   const isPremium = profile.data?.subscription.isPremium ?? false;
+  const isSchoolAttached = Boolean(profile.data?.subscription.isSchoolAttached);
+  const schoolName = profile.data?.subscription.school?.schoolName || "your school";
   const [statusFilter, setStatusFilter] = useState<'all' | 'incorrect' | 'unanswered' | 'correct'>('all');
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
   const [showPalette, setShowPalette] = useState(false);
   const [visibleLimit, setVisibleLimit] = useState(30);
 
   if (!resource.data) {
+    const isSchoolAttached = Boolean(profile.data?.subscription?.isSchoolAttached);
+    const schoolName = profile.data?.subscription?.school?.schoolName || "your school";
+
+    const isPremiumError = Boolean(
+      resource.error && (
+        resource.error.toLowerCase().includes('premium') ||
+        resource.error.toLowerCase().includes('upgrade') ||
+        resource.error.toLowerCase().includes('entitlement') ||
+        resource.error.toLowerCase().includes('school')
+      )
+    );
+
+    if (isPremiumError) {
+      return (
+        <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xs">
+          <div className="py-4 space-y-4 max-w-md mx-auto">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-[#116149]">
+              {isSchoolAttached ? <Building2 size={26} /> : <Lock size={26} />}
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-xl font-bold text-slate-900">
+                {isSchoolAttached ? "School License Required for Detailed Review" : "Premium is required for detailed review"}
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {isSchoolAttached
+                  ? `Full question-by-question review, step-by-step diagnostic solutions, and detailed explanations are unlocked through ${schoolName}. Contact your school administrator to activate your candidate license.`
+                  : "Unlock full question-by-question review, step-by-step diagnostic solutions, and detailed explanations."}
+              </p>
+            </div>
+            <div className="pt-2">
+              <Link
+                href="/pricing"
+                className="inline-flex items-center justify-center rounded-full bg-[#116149] px-7 py-3.5 text-base font-semibold text-white shadow-md hover:bg-[#0e4e3a] transition-all cursor-pointer"
+              >
+                {isSchoolAttached ? "Contact School Admin" : "Upgrade to Pro"}
+              </Link>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
     return (
       <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 text-center">
         <ResourceStatus error={resource.error} retry={resource.retry} />
         <p className="mt-2 text-sm text-slate-600">
           Want detailed diagnostic solutions and step-by-step explanations?{" "}
           <Link href="/pricing" className="font-semibold text-[#116149] hover:underline">
-            Upgrade to Pro
+            {isSchoolAttached ? "Contact School Admin" : "Upgrade to Pro"}
           </Link>
         </p>
       </section>
@@ -124,7 +168,7 @@ function Review({ attemptId }: { attemptId: string }) {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-slate-200/80 pb-4">
         <div>
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-[#116149] border border-emerald-200/80 uppercase tracking-wide">
-            <Sparkles size={12} /> Diagnostic Solutions
+            <BookOpen size={12} /> Diagnostic Solutions
           </span>
           <h2 className="mt-1.5 text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
             Answer Explanations & Solutions
@@ -370,11 +414,13 @@ function Review({ attemptId }: { attemptId: string }) {
                         <Link
                           href="/pricing"
                           className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-900 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full hover:bg-amber-200 transition-colors cursor-pointer"
-                          title="Vocabulary Inspector is a Pro feature — click to unlock"
+                          title={isSchoolAttached ? `Vocabulary Inspector is unlocked through your school license with ${schoolName}` : "Vocabulary Inspector is a Pro feature — click to unlock"}
                         >
-                          <Lock size={10} />
+                          {isSchoolAttached ? <Building2 size={10} /> : <Lock size={10} />}
                           <span>Tap to inspect</span>
-                          <span className="text-[9px] font-extrabold uppercase bg-amber-200/90 text-amber-950 px-1 rounded">PRO</span>
+                          <span className="text-[9px] font-extrabold uppercase bg-amber-200/90 text-amber-950 px-1 rounded">
+                            {isSchoolAttached ? "SCHOOL" : "PRO"}
+                          </span>
                         </Link>
                       )
                     )}

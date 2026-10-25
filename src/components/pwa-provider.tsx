@@ -52,6 +52,7 @@ export default function PwaProvider() {
   const [visible, setVisible] = useState(false);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
   const latestBuildIdRef = useRef<string | null>(null);
+  const mountedBuildIdRef = useRef<string | null>(null);
 
   // Smooth entrance delay after page load
   useEffect(() => {
@@ -103,36 +104,17 @@ export default function PwaProvider() {
 
     // 3. Service Worker registration, automatic checks, and update listening
     if ('serviceWorker' in navigator) {
-      let refreshing = false;
-      const onControllerChange = () => {
-        if (!active || refreshing) return;
-        // Never interrupt an active exam
-        if (window.location.pathname.startsWith('/exam')) return;
-        refreshing = true;
-        window.location.reload();
-      };
-      navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
-      workerCleanups.push(() => navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange));
-
       navigator.serviceWorker
         .register('/sw.js', { scope: '/', updateViaCache: 'none' })
         .then((registration) => {
           if (!active) return;
           registrationRef.current = registration;
 
-          if (registration.waiting) {
-            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-            if (!isUpdateSuppressed()) {
-              setUpdate(true);
-            }
-          }
-
           const onFound = () => {
             const worker = registration.installing;
             if (!worker) return;
             const changed = () => {
               if (active && worker.state === 'installed' && navigator.serviceWorker.controller) {
-                worker.postMessage({ type: 'SKIP_WAITING' });
                 if (!isUpdateSuppressed()) {
                   setUpdate(true);
                 }
@@ -143,36 +125,43 @@ export default function PwaProvider() {
           };
           registration.addEventListener('updatefound', onFound);
           workerCleanups.push(() => registration.removeEventListener('updatefound', onFound));
-
-          // Proactive background update check
-          void registration.update().catch(() => undefined);
         })
         .catch(() => undefined);
 
-      // Periodically check for updates (every 10 minutes) & on tab focus
-      const checkUpdate = async () => {
+      // Sync build ID on initial load; only prompt for update if a NEW build is deployed while this tab stays open
+      const syncInitialBuildId = async () => {
         try {
-          const reg = registrationRef.current || (await navigator.serviceWorker.getRegistration());
-          if (reg) {
-            await reg.update();
-            if (reg.waiting) {
-              reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-              if (!isUpdateSuppressed()) {
-                setUpdate(true);
+          const res = await fetch('/pwa-build.json?t=' + Date.now(), { cache: 'no-store' });
+          if (res.ok) {
+            const data = (await res.json()) as { buildId?: string };
+            if (data?.buildId) {
+              mountedBuildIdRef.current = data.buildId;
+              latestBuildIdRef.current = data.buildId;
+              try {
+                localStorage.setItem(ACTIVE_BUILD_STORAGE_KEY, data.buildId);
+              } catch {
+                // ignore storage errors
               }
             }
           }
+        } catch {
+          // Offline
+        }
+      };
+      void syncInitialBuildId();
 
-          // Build ID handshake check
+      // Periodically check for updates (every 15 minutes)
+      const checkUpdate = async () => {
+        try {
           const res = await fetch('/pwa-build.json?t=' + Date.now(), { cache: 'no-store' });
           if (res.ok) {
             const data = (await res.json()) as { buildId?: string };
             if (data?.buildId) {
               latestBuildIdRef.current = data.buildId;
-              const currentBuildId = localStorage.getItem(ACTIVE_BUILD_STORAGE_KEY);
-              if (!currentBuildId) {
+              if (!mountedBuildIdRef.current) {
+                mountedBuildIdRef.current = data.buildId;
                 localStorage.setItem(ACTIVE_BUILD_STORAGE_KEY, data.buildId);
-              } else if (currentBuildId !== data.buildId) {
+              } else if (mountedBuildIdRef.current !== data.buildId) {
                 if (!isUpdateSuppressed()) {
                   setUpdate(true);
                 }
@@ -184,15 +173,7 @@ export default function PwaProvider() {
         }
       };
 
-      const onVisibility = () => {
-        if (document.visibilityState === 'visible') {
-          void checkUpdate();
-        }
-      };
-      document.addEventListener('visibilitychange', onVisibility);
-      workerCleanups.push(() => document.removeEventListener('visibilitychange', onVisibility));
-
-      const interval = setInterval(checkUpdate, 10 * 60 * 1000);
+      const interval = setInterval(checkUpdate, 15 * 60 * 1000);
       workerCleanups.push(() => clearInterval(interval));
     }
 
@@ -205,13 +186,6 @@ export default function PwaProvider() {
       window.removeEventListener('error', onChunkError);
     };
   }, []);
-
-  // Check on route changes (except during active exams)
-  useEffect(() => {
-    if ('serviceWorker' in navigator && !pathname.startsWith('/exam')) {
-      void registrationRef.current?.update().catch(() => undefined);
-    }
-  }, [pathname]);
 
   const inExam = pathname.startsWith('/exam');
   const isExcluded = inExam || pathname.startsWith('/admin') || pathname.startsWith('/checkout') || pathname.startsWith('/schools');

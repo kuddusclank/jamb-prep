@@ -3,6 +3,7 @@
 import { SUBJECT_COMBINATION_EDIT_URL } from "@/lib/auth/redirect";
 import { useState, useActionState } from "react";
 import { updateProfileAction, cancelSubscriptionAction } from "@/lib/client-actions";
+import { createClient } from "@/lib/supabase/client";
 import { 
   User, 
   Target, 
@@ -15,13 +16,14 @@ import {
   BookOpen, 
   Building, 
   GraduationCap,
-  Sparkles,
   Lock,
-  RefreshCw
+  RefreshCw,
+  Building2
 } from "lucide-react";
 import Link from "@/components/pending-link";
 import { ScheduleSection } from "./schedule-section";
 import { forcePwaReload } from "@/lib/pwa/force-refresh";
+import type { SchoolAffiliation } from "@/lib/api/app-dtos";
 
 interface SubjectSummary {
   name: string;
@@ -46,6 +48,8 @@ interface ProfileClientProps {
     planCode: string | null;
     autoRenew?: boolean;
     cancelledAt?: string | null;
+    isSchoolAttached?: boolean;
+    school?: SchoolAffiliation | null;
   };
   enrolledSubjects: SubjectSummary[];
 }
@@ -73,6 +77,46 @@ export function ProfileClient({
   const [targetCourse, setTargetCourse] = useState(initialPreferences.targetCourse || "");
   const [isRefreshingPwa, setIsRefreshingPwa] = useState(false);
 
+  // Password change state
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [passwordFeedback, setPasswordFeedback] = useState<{ error?: string; message?: string } | null>(null);
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordFeedback(null);
+
+    if (!newPassword || newPassword.length < 6) {
+      setPasswordFeedback({ error: "New password must be at least 6 characters long." });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordFeedback({ error: "Passwords do not match. Please re-type your new password." });
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+        data: { default_password: null, custom_password_set: true },
+      });
+      if (error) {
+        setPasswordFeedback({ error: error.message || "Could not update password." });
+      } else {
+        setPasswordFeedback({ message: "Your account password has been updated." });
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+    } catch (err: unknown) {
+      setPasswordFeedback({ error: err instanceof Error ? err.message : "Could not update password." });
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
+
   const handleForceRefresh = async () => {
     setIsRefreshingPwa(true);
     await forcePwaReload();
@@ -98,6 +142,9 @@ export function ProfileClient({
   };
 
   const isCurrentPremium = subscription.isPremium;
+  const isSchoolAttached = Boolean(subscription.isSchoolAttached);
+  const schoolName = subscription.school?.schoolName || "your school";
+  const schoolCode = subscription.school?.schoolCode || "";
   const isCancelled = isCurrentPremium && (isCancelledLocally || Boolean(subscription.cancelledAt));
   const isAutoRenewing = isCurrentPremium && !isCancelled && subscription.autoRenew !== false;
 
@@ -463,25 +510,35 @@ export function ProfileClient({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-2 text-[#116149] font-semibold">
                     <CheckCircle2 size={16} className="text-[#116149] shrink-0" />
-                    <span>30-Day Pro Access Active · Valid until {formattedExpiry}</span>
+                    <span>
+                      {isSchoolAttached 
+                        ? `Institutional License Active (${schoolName}) · Valid until ${formattedExpiry}`
+                        : `30-Day Pro Access Active · Valid until ${formattedExpiry}`}
+                    </span>
                   </div>
-                  <span className="text-slate-600">Switches to Free on {formattedExpiry} unless renewed.</span>
+                  <span className="text-slate-600">
+                    {isSchoolAttached 
+                      ? `Funded and managed by ${schoolName}.`
+                      : `Switches to Free on ${formattedExpiry} unless renewed.`}
+                  </span>
                 </div>
               )}
             </div>
           </div>
         ) : (
-          /* Free Tier Card */
+          /* Free Tier / School Inactive Card */
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
             <div>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[11px] font-bold uppercase tracking-wider">
-                FREE TIER
+                {isSchoolAttached ? `SCHOOL CANDIDATE · ${schoolCode}` : "FREE TIER"}
               </span>
               <h3 className="text-lg font-bold text-[#092E28] mt-2">
-                Standard Diagnostic Allowance
+                {isSchoolAttached ? `${schoolName} · Candidate Access` : "Standard Diagnostic Allowance"}
               </h3>
               <p className="text-xs text-slate-600 mt-1 max-w-md leading-relaxed">
-                You can start one practice session of 5, 10 or 15 questions per day. Upgrade to Premium for unlimited CBT simulations, tailored weak-topic revision, and study coach analytics.
+                {isSchoolAttached
+                  ? `Your account is enrolled under ${schoolName}. Individual payments are disabled; license renewals and CBT mock access are managed directly by your school administration.`
+                  : "You can start one practice session of 5, 10 or 15 questions per day. Upgrade to Premium for unlimited CBT simulations, tailored weak-topic revision, and study coach analytics."}
               </p>
             </div>
 
@@ -489,11 +546,102 @@ export function ProfileClient({
               href="/pricing"
               className="shrink-0 min-h-11 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 text-xs font-semibold text-white hover:bg-[#0b4936] transition shadow-md shadow-[#116149]/20"
             >
-              <Sparkles size={14} className="text-amber-400" />
-              Upgrade to Premium (₦1,000)
+              {isSchoolAttached ? (
+                <>
+                  <Building2 size={14} className="text-emerald-200" />
+                  View School License
+                </>
+              ) : (
+                <>
+                  Upgrade to Premium (₦1,000)
+                </>
+              )}
             </Link>
           </div>
         )}
+      </div>
+
+      {/* Section 3B: Account Security & Password Change */}
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+        <div className="flex items-center gap-2.5 mb-6 pb-4 border-b border-slate-100">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-slate-100 text-[#092E28]">
+            <Lock size={18} />
+          </span>
+          <div>
+            <h2 className="text-base font-bold text-[#092E28]">Account Security & Password</h2>
+            <p className="text-xs text-slate-500">
+              {isSchoolAttached
+                ? "Replace your default school surname password with a private password."
+                : "Update your sign-in password for this account."}
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleUpdatePassword} className="space-y-4">
+          {passwordFeedback?.error && (
+            <div className="p-3.5 rounded-2xl border border-red-200 bg-red-50 text-xs text-red-800 flex items-center gap-2">
+              <AlertTriangle size={15} className="shrink-0 text-red-600" />
+              <span>{passwordFeedback.error}</span>
+            </div>
+          )}
+
+          {passwordFeedback?.message && (
+            <div className="p-3.5 rounded-2xl border border-emerald-200 bg-emerald-50 text-xs text-emerald-800 flex items-center gap-2">
+              <CheckCircle2 size={15} className="shrink-0 text-emerald-600" />
+              <span>{passwordFeedback.message}</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="newPassword" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                New Password
+              </label>
+              <input
+                id="newPassword"
+                type="password"
+                minLength={6}
+                required
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="At least 6 characters"
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-[#092E28] focus:border-[#116149] focus:outline-hidden focus:ring-1 focus:ring-[#116149]"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                Confirm New Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                minLength={6}
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter new password"
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-[#092E28] focus:border-[#116149] focus:outline-hidden focus:ring-1 focus:ring-[#116149]"
+              />
+            </div>
+          </div>
+
+          <div className="pt-1">
+            <button
+              type="submit"
+              disabled={isUpdatingPassword}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 text-xs font-semibold text-[#092E28] hover:bg-slate-50 transition cursor-pointer disabled:opacity-50"
+            >
+              {isUpdatingPassword ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" /> Updating Password...
+                </>
+              ) : (
+                "Update Password"
+              )}
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Section 4: App Version & Offline Cache Management */}

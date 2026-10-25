@@ -8,9 +8,10 @@ import {
   ArrowRight,
   Loader2,
   Layers,
-  Sparkles,
   Lock,
+  Building2,
 } from "lucide-react";
+import { useAccountTier } from "@/lib/auth/use-account-tier";
 import {
   getWeeklyPackFromIdb,
   type StoredWeeklyPack,
@@ -29,6 +30,7 @@ export function WeeklyPracticeCard({ userId, isPremium = false }: WeeklyPractice
   const [pack, setPack] = useState<StoredWeeklyPack | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const tier = useAccountTier();
 
   useEffect(() => {
     if (!isPremium) return;
@@ -77,7 +79,6 @@ export function WeeklyPracticeCard({ userId, isPremium = false }: WeeklyPractice
         <div className="space-y-2 max-w-xl">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase bg-emerald-800/60 text-emerald-200 border border-emerald-700/50">
-              <Sparkles size={12} className="text-amber-300" />
               WEEKLY OFFLINE PACK
             </span>
 
@@ -148,8 +149,8 @@ export function WeeklyPracticeCard({ userId, isPremium = false }: WeeklyPractice
               href="/pricing"
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-amber-400 text-amber-950 font-bold text-sm shadow-md hover:bg-amber-300 transition active:scale-95"
             >
-              <Lock size={15} />
-              <span>Upgrade to Pro for Offline</span>
+              {tier.isSchoolAttached ? <Building2 size={15} /> : <Lock size={15} />}
+              <span>{tier.isSchoolAttached ? "Contact School Admin for Offline" : "Upgrade to Pro for Offline"}</span>
               <ArrowRight size={16} />
             </Link>
           ) : pack ? (

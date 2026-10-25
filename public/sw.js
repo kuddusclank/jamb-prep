@@ -41,9 +41,6 @@ self.addEventListener('message', event => {
   }
 });
 self.addEventListener('install', event => {
-  if (typeof self.skipWaiting === 'function') {
-    self.skipWaiting();
-  }
   event.waitUntil((async () => {
     if (BUILD_ID.startsWith('__')) return;
     const responses = await Promise.all(ESSENTIALS.map(async path => {
@@ -63,22 +60,6 @@ self.addEventListener('install', event => {
       if (validAsset(indexRes, '/index.html')) {
         await cache.put('/index.html', indexRes.clone());
         await cache.put('/', indexRes.clone());
-        await cache.put('/dashboard', indexRes.clone());
-        await cache.put('/dashboard/', indexRes.clone());
-        await cache.put('/practice', indexRes.clone());
-        await cache.put('/practice/', indexRes.clone());
-        await cache.put('/profile', indexRes.clone());
-        await cache.put('/profile/', indexRes.clone());
-        await cache.put('/dictionary', indexRes.clone());
-        await cache.put('/dictionary/', indexRes.clone());
-        await cache.put('/games/stress-master', indexRes.clone());
-        await cache.put('/games/stress-master/', indexRes.clone());
-        await cache.put('/games/sound-match', indexRes.clone());
-        await cache.put('/games/sound-match/', indexRes.clone());
-        await cache.put('/games/silent-hunter', indexRes.clone());
-        await cache.put('/games/silent-hunter/', indexRes.clone());
-        await cache.put('/games/synonym-blitz', indexRes.clone());
-        await cache.put('/games/synonym-blitz/', indexRes.clone());
       }
     } catch { /* optional app shell prefetch */ }
   })());

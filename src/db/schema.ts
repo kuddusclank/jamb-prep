@@ -198,7 +198,9 @@ export const attemptResults = pgTable('attempt_results', {
   timeSpentSeconds: integer('time_spent_seconds').notNull(),
   topicBreakdown: jsonb('topic_breakdown').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-}).enableRLS();
+}, (table) => [
+  index('attempt_results_user_created_idx').on(table.userId, table.createdAt),
+]).enableRLS();
 
 export const studentAppRatings = pgTable('student_app_ratings', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -544,6 +546,7 @@ export const schoolStudents = pgTable('school_students', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   uniqueIndex('school_students_unique_user_idx').on(table.schoolId, table.studentUserId),
+  uniqueIndex('school_students_student_user_unique_idx').on(table.studentUserId),
   index('school_students_school_license_idx').on(table.schoolId, table.licenseStatus),
 ]).enableRLS();
 
@@ -576,6 +579,7 @@ export const schoolActivationJobs = pgTable('school_activation_jobs', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
+  uniqueIndex('school_activation_jobs_order_student_idx').on(table.orderId, table.studentUserId),
   index('school_activation_jobs_order_idx').on(table.orderId),
   index('school_activation_jobs_status_idx').on(table.status),
 ]).enableRLS();

@@ -83,7 +83,13 @@ export async function POST(request: Request) {
 
       verifiedOnGateway = true;
     } else {
-      // In local development or testing mode, verify transaction directly
+      if (process.env.NODE_ENV === "production") {
+        return NextResponse.json(
+          { error: "Payment gateway secret key is not configured; cannot verify transaction." },
+          { status: 503 }
+        );
+      }
+      // Non-production fallback only
       verifiedOnGateway = true;
     }
 
@@ -107,13 +113,14 @@ export async function POST(request: Request) {
     const metadata = (order.metadata as any) || {};
     const targetedIds: string[] = Array.isArray(metadata.studentIds) ? metadata.studentIds : [];
 
-    let studentsToActivate: Array<{ id: string; studentUserId: string }> = [];
+    let studentsToActivate: Array<{ id: string; studentUserId: string; licenseExpiresAt: Date | null }> = [];
 
     if (targetedIds.length > 0) {
       studentsToActivate = await db
         .select({
           id: schoolStudents.id,
           studentUserId: schoolStudents.studentUserId,
+          licenseExpiresAt: schoolStudents.licenseExpiresAt,
         })
         .from(schoolStudents)
         .where(
@@ -124,8 +131,9 @@ export async function POST(request: Request) {
         );
     }
 
-    // If no specific IDs provided or fewer than studentCount, pull inactive students up to studentCount
-    if (studentsToActivate.length < order.studentCount) {
+    // Legacy orders without a selection: licence unlicensed candidates up to the paid count.
+    // Orders with a selection licence only the selected candidates.
+    if (targetedIds.length === 0 && studentsToActivate.length < order.studentCount) {
       const remainingLimit = order.studentCount - studentsToActivate.length;
       const existingIds = new Set(studentsToActivate.map((s) => s.id));
 
@@ -133,6 +141,7 @@ export async function POST(request: Request) {
         .select({
           id: schoolStudents.id,
           studentUserId: schoolStudents.studentUserId,
+          licenseExpiresAt: schoolStudents.licenseExpiresAt,
         })
         .from(schoolStudents)
         .where(
@@ -151,14 +160,20 @@ export async function POST(request: Request) {
       }
     }
 
-    // Activate each student's license and provision student entitlement
+    // Activate each student's license and provision student entitlement (extending existing future expiry if already active)
+    const durationMs = order.durationMonths * 30 * 24 * 60 * 60 * 1000;
     let activatedCount = 0;
     for (const std of studentsToActivate) {
       try {
+        const baseTime = std.licenseExpiresAt
+          ? Math.max(now.getTime(), new Date(std.licenseExpiresAt).getTime())
+          : now.getTime();
+        const studentExpiryDate = new Date(baseTime + durationMs);
+
         await db.update(schoolStudents)
           .set({
             licenseStatus: "active",
-            licenseExpiresAt: expiryDate,
+            licenseExpiresAt: studentExpiryDate,
           })
           .where(eq(schoolStudents.id, std.id));
 
@@ -166,7 +181,7 @@ export async function POST(request: Request) {
         await db.insert(subscriptionEntitlements)
           .values({
             userId: std.studentUserId,
-            expiresAt: expiryDate,
+            expiresAt: studentExpiryDate,
             planCode: "SCHOOL_INSTITUTIONAL_1500",
             autoRenew: false, // strictly non-recurring for schools
             updatedAt: now,
@@ -174,7 +189,7 @@ export async function POST(request: Request) {
           .onConflictDoUpdate({
             target: subscriptionEntitlements.userId,
             set: {
-              expiresAt: expiryDate,
+              expiresAt: studentExpiryDate,
               planCode: "SCHOOL_INSTITUTIONAL_1500",
               autoRenew: false,
               updatedAt: now,

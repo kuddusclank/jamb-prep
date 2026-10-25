@@ -55,6 +55,8 @@ export interface ExamSessionPayload {
   initialLabels: Record<string, "A" | "B" | "C" | "D">;
 }
 
+import type { SchoolAffiliation } from "./api/app-dtos";
+
 export interface CheckoutPricing {
   originalAmountKobo: number;
   finalAmountKobo: number;
@@ -65,12 +67,21 @@ export interface CheckoutPricing {
   rewardId: string | null;
   isAlreadyPremium: boolean;
   currentExpiresAt: string | null;
+  userEmail?: string;
+  isSchoolAttached?: boolean;
+  school?: SchoolAffiliation | null;
 }
 
 export interface VerifyPaymentResult {
   success: boolean;
   message: string;
   expiresAt?: string;
+}
+
+let signingOut = false;
+
+export function isSigningOut(): boolean {
+  return signingOut;
 }
 
 /**
@@ -82,10 +93,14 @@ export async function signOutAction(): Promise<void> {
     const pending = Object.keys(localStorage).some(key => key.startsWith('jamb_outbox_') && (() => { try { return JSON.parse(localStorage.getItem(key) ?? '[]').length > 0; } catch { return true; } })());
     if (pending && !window.confirm('Some exam answers have not synced. Signing out will remove them from this device. Sign out anyway?')) return;
   }
-  await detachAndUnsubscribeBrowserPush({ notifyServer: true }).catch(() => undefined);
+  signingOut = true;
+  await Promise.race([
+    detachAndUnsubscribeBrowserPush({ notifyServer: true }).catch(() => undefined),
+    new Promise((resolve) => setTimeout(resolve, 600)),
+  ]);
   await getDefaultBrowserSessionManager().signOut();
   if (typeof window !== "undefined") {
-    window.location.assign("/login");
+    window.location.replace("/login");
   }
 }
 
@@ -260,8 +275,11 @@ export async function getMockPayload(attemptId:string):Promise<ExamSessionPayloa
   for(const question of result.questions) { initialRevisions[question.id]=question.revision; if(question.selectedOptionId){initialAnswers[question.id]=question.selectedOptionId; const label=question.options.find((option)=>option.id===question.selectedOptionId)?.label;if(label) initialLabels[question.id]=label;} }
   return {...result,expiresAtTimestamp:Date.now()+Math.max(0,new Date(result.expiresAt).getTime()-result.serverNow),initialAnswers,initialLabels,initialRevisions};
 }
-export async function startMockAttempt(examConditions=false):Promise<ExamSessionPayload> {
-  const result=await getAccountCoordinator().mutate<{attemptId:string}>('/api/v1/exams/attempts',{examConditions});
+export async function startMockAttempt(examConditions=false, labSessionCode?: string | null):Promise<ExamSessionPayload> {
+  const result=await getAccountCoordinator().mutate<{attemptId:string}>('/api/v1/exams/attempts',{
+    examConditions,
+    ...(labSessionCode ? { labSessionCode } : {}),
+  });
   return getMockPayload(result.attemptId);
 }
 export async function syncExamAnswer(attemptId:string,questionId:string,selectedOptionId:string|null,revision=1):Promise<{success:boolean;reason?:string;revision?:number}> {

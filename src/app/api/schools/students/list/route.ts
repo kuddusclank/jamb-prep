@@ -60,7 +60,7 @@ export async function POST() {
       const parts = (row.name || "").trim().split(/\s+/);
       const lastName = parts.length > 1 ? parts[parts.length - 1] : parts[0] || "CANDIDATE";
       const cleanPass = lastName.toUpperCase();
-      const defaultPassword = cleanPass.length >= 6 ? cleanPass : `${cleanPass}123456`.slice(0, 6);
+      const defaultPassword = cleanPass;
 
       return {
         id: row.id,

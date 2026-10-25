@@ -1,9 +1,9 @@
 "use client";
 import StudyLoading from "./study-loading";
-import { signOutAction } from "@/lib/client-actions";
+import { signOutAction, isSigningOut } from "@/lib/client-actions";
 
-import { useEffect, useState, Suspense, ReactNode } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { accountDestination, getAccountCoordinator } from '../lib/auth/account-coordinator';
 import { BrowserSessionSnapshot } from '../lib/auth/session-manager';
@@ -50,12 +50,18 @@ export function useBrowserAccount() {
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
   useEffect(() => {
-    const unsubscribe = manager.subscribe(setSession);
-    setSession(manager.getState());
+    const unsubscribe = manager.subscribe((next) => {
+      if (isSigningOut()) return;
+      setSession(next);
+    });
+    if (!isSigningOut()) {
+      setSession(manager.getState());
+    }
     if (manager.getState().status === 'loading') void manager.initialize();
     return unsubscribe;
   }, [manager]);
   useEffect(() => {
+    if (isSigningOut()) return;
     let active = true;
     const currentUserId = session.user?.id;
     const cached = coordinator.getCachedIdentity();
@@ -67,12 +73,12 @@ export function useBrowserAccount() {
     setError(null);
     if (session.status === 'authenticated' && session.user) {
       void coordinator.loadIdentity().then((value) => {
-        if (active) {
+        if (active && !isSigningOut()) {
           setIdentity(value);
           saveOfflineProfile({ identity: value });
         }
       }).catch((err: unknown) => {
-        if (!active) return;
+        if (!active || isSigningOut()) return;
         const isOfflineOrNetworkFailure =
           (typeof navigator !== 'undefined' && !navigator.onLine) ||
           isNetworkOrTimeoutError(err);
@@ -108,28 +114,27 @@ export function useBrowserAccount() {
 }
 
 type BoundaryProps = { children: ReactNode; mode?: 'protected' | 'auth' | 'public'; returnPath?: string };
-export function BrowserAccountBoundary(props:BoundaryProps) {
-  return <Suspense fallback={<StudyLoading/>}><BrowserAccountBoundaryContent {...props}/></Suspense>;
-}
-function BrowserAccountBoundaryContent({ children, mode = 'protected', returnPath }: BoundaryProps) {
+export function BrowserAccountBoundary({ children, mode = 'protected', returnPath }: BoundaryProps) {
   const account = useBrowserAccount();
   const rawPath = usePathname();
   const pathname = rawPath.replace(/\/$/, '') || '/';
   const router = useRouter();
   const identity = account.identity;
-  const searchParams = useSearchParams();
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const effectiveRole = identity?.user?.role || account.session.role;
   const destination = identity
-    ? accountDestination(identity, pathname, returnPath ?? searchParams.get('redirectTo') ?? '/dashboard', searchParams.get('edit') === '1')
+    ? accountDestination(identity, pathname, returnPath ?? searchParams?.get('redirectTo') ?? '/dashboard', searchParams?.get('edit') === '1')
     : effectiveRole === 'school_admin' && !pathname.startsWith('/schools')
     ? '/schools/dashboard'
     : null;
   useEffect(() => {
+    if (isSigningOut()) return;
     if (mode === 'protected' && account.session.status === 'unauthenticated') {
       if (getAccountCoordinator().manager.getState().status !== 'unauthenticated') return;
       router.replace(buildLoginRedirectUrl(`${window.location.pathname}${window.location.search}`));
     } else if (destination) router.replace(destination);
   }, [mode, account.session.status, destination, router]);
+  if (isSigningOut()) return <>{children}</>;
   if (mode === 'public' && account.session.status !== 'authenticated') return <>{children}</>;
   if (mode === 'auth' && (account.session.status === 'unauthenticated' || (pathname === '/register' && identity && !identity.provisioned))) return <>{children}</>;
   if (account.error) return <main className="min-h-screen flex items-center justify-center px-5 py-12">

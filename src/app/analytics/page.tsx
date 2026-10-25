@@ -7,7 +7,6 @@ import {
   BarChart3,
   Clock,
   WifiOff,
-  Sparkles,
 } from "lucide-react";
 import Link from "@/components/pending-link";
 import { useBrowserAccount } from "@/components/browser-account-boundary";

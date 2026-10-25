@@ -5,7 +5,6 @@ import Link from "@/components/pending-link";
 import {
   User,
   Target,
-  Sparkles,
   BookOpen,
   ArrowRight,
   ShieldCheck,
@@ -71,7 +70,6 @@ export function OfflineProfileView({ profile }: OfflineProfileViewProps) {
         <div>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-[#116149]">
-              <Sparkles size={12} className="text-amber-600" />
               Pro Profile (Offline View)
             </span>
             <span className="inline-flex items-center gap-1 text-xs text-slate-500 font-medium">
@@ -136,7 +134,7 @@ export function OfflineProfileView({ profile }: OfflineProfileViewProps) {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm space-y-5">
           <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
             <div className="size-12 rounded-2xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center shrink-0">
-              <Sparkles size={22} />
+              <ShieldCheck size={22} />
             </div>
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-amber-900">Subscription Entitlement</span>

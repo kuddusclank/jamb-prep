@@ -1,7 +1,7 @@
 "use client";
 import { StudyWorkspace } from "@/components/study-workspace";
 import { useEffect, useState } from "react";
-import { Check, Copy, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, Copy, ShieldCheck } from "lucide-react";
 
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
 import type { ReferralData } from "@/lib/api/app-dtos";
@@ -41,7 +41,7 @@ export default function ReferralsPage() {
           <div className="rounded-3xl bg-gradient-to-br from-[#116149] to-[#092E28] text-white p-6 sm:p-10 shadow-2xl relative overflow-hidden">
             <div className="relative z-10 max-w-xl">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/20 text-[#E7B85A] text-xs font-bold uppercase tracking-wider mb-4">
-                <Sparkles size={14} /> REFER-AND-EARN
+                REFER-AND-EARN
               </span>
               <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-tight">
                 Invite 2 classmates. <br />

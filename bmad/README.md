@@ -22,6 +22,9 @@ Read [UI design and component guide](ui-design-and-component-guide.md) before fr
 | **Design Brief** | [`design-brief.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/design-brief.md) | Brand identity, Tailwind v4 design tokens, color palette, typography, KaTeX formula styling, and ergonomics. |
 | **Backend Schema** | [`backend-schema.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/backend-schema.md) | Full Drizzle ORM models, PostgreSQL tables, Supabase RLS policies, Zod validation schemas, and API contracts. |
 | **Implementation Plan** | [`implementation-plan.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/implementation-plan.md) | 8-phase development roadmap, milestones, testing matrix, and launch acceptance criteria. |
+| **Course Combination Finder Plan** | [`course-combination-finder-plan.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/course-combination-finder-plan.md) | JAMB IBASS course-to-subject combination lookup (300+ courses), 10-second landing prompt, `/combinations` SEO route, and `/register` ↔ `/onboarding` round-trip funnel. |
+| **Course Combination Tasklist** | [`course-combination-finder-tasklist.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/course-combination-finder-tasklist.md) | Detailed task breakdown (`C00`–`C07`), acceptance criteria, and automated test verification. |
+| **Course Combination Agent Prompt** | [`course-combination-agent-prompt.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/course-combination-agent-prompt.md) | Handoff prompt for web-researching 300+ official JAMB IBASS courses and executing `C00`–`C07`. |
 
 ---
 
@@ -79,6 +82,10 @@ The requested transition of the exact original 885 held-set IDs to draft is plan
 ## Future learning and school partnerships — planning, 17 October 2026
 
 See [future feature plan](future-learning-and-school-partnerships-plan.md) and [phased tasklist](future-learning-and-school-partnerships-tasklist.md) for weekly250 offline practice, mode-specific dashboard/navigation and snapshots, dictionary/five daily words, and school tenant/teacher reporting with upfront bulk access at ₦1,500 per student/month for 1–12 months. This is a future planning request; it does not authorise implementation or overwrite existing individual billing. Open policy decisions are identified in the plan.
+
+## Priority: Course → Subject Combination Finder & Registration Funnel — 24 October 2026
+
+User requested a feature allowing prospective and registering UTME candidates to type in their course, view their official JAMB 4-subject combination (Compulsory Use of English + Core Electives + Flexible Elective Slot picker + Recommended Target Score), lock in their course, and flow directly through registration (`/register`) and subject setup (`/onboarding`). Read [`course-combination-finder-plan.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/course-combination-finder-plan.md) and [`course-combination-finder-tasklist.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/course-combination-finder-tasklist.md) for the complete specification (`C00`–`C07`), including the 10-second landing page smart dialog, inline `#subjects` search hook, public `/combinations` SEO route, and `/onboarding` ↔ `/combinations?from=onboarding` round-trip state coordinator.
 
 ## Priority: Premium Schedule — 17 October 2026
 

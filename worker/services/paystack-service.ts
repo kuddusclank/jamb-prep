@@ -65,6 +65,7 @@ export async function initializeCheckout(db:RequestDbContext,env:PaymentEnv,user
     const other=await tx<Array<{reference:string;status:string;authorization_url:string|null}>>`SELECT c.reference,c.status,c.authorization_url FROM payment_checkout_requests c JOIN payment_transactions p ON p.reference=c.reference WHERE c.user_id=${userId}::uuid AND p.status='pending' AND c.status IN ('initializing','ready','unknown') ORDER BY c.created_at DESC LIMIT 1`;
     if(other[0])return {...other[0],created:false};
     const pricing=await getCheckoutPricing(tx,userId,email,now);
+    if(pricing.isSchoolAttached)throw new ApiError({status:403,code:'FORBIDDEN',message:'Your account is managed by your school. Please contact your school administrator to activate or extend your candidate license.'});
     if(pricing.isAlreadyPremium)throw new ApiError({status:409,code:'CONFLICT',message:'You already have Premium access.'});
     if(!email)throw new ApiError({status:409,code:'CONFLICT',message:'Your authenticated account needs an email address for checkout.'});
     const reference=`JAMB-${crypto.randomUUID()}`;

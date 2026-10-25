@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { StudyWorkspace } from "@/components/study-workspace";
 import {
@@ -11,13 +11,144 @@ import {
   Keyboard,
   ShieldAlert,
   WifiOff,
-  Sparkles,
   ArrowRight,
+  Building2,
+  Loader2,
 } from "lucide-react";
 import { MockStartButton } from "./mock-start-button";
 import { useNetworkStatus, isNetworkOrTimeoutError } from "@/lib/offline/network-state";
 import Link from "@/components/pending-link";
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
+import { createClient } from "@/lib/supabase/client";
+
+function SchoolLabSessionEntry({
+  onVerifiedSessionChange,
+}: {
+  onVerifiedSessionChange?: (session: any | null) => void;
+}) {
+  const [labCode, setLabCode] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifiedSession, setVerifiedSession] = useState<any | null>(null);
+  const [labError, setLabError] = useState<string | null>(null);
+
+  const handleJoinLabSession = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLabError(null);
+    const cleanCode = labCode.trim().toUpperCase();
+    if (!cleanCode) {
+      setLabError("Enter the LAB-SCH-XXXX session code from your computer lab whiteboard.");
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const apiBase =
+        process.env.NEXT_PUBLIC_API_BASE_URL ||
+        "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
+      const supabase = createClient();
+      const sessionRes = await supabase.auth.getSession();
+      const token = sessionRes?.data?.session?.access_token;
+
+      const res = await fetch(`${apiBase}/api/v1/schools/mocks/join`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ labSessionCode: cleanCode }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.valid) {
+        const msg =
+          (typeof data?.error === "string" && data.error) ||
+          data?.error?.message ||
+          data?.message ||
+          "Lab session code was not found. Please check the code on the whiteboard.";
+        throw new Error(msg);
+      }
+
+      setVerifiedSession(data.session);
+      onVerifiedSessionChange?.(data.session);
+    } catch (err: unknown) {
+      setLabError(err instanceof Error ? err.message : "Could not verify lab session code.");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  return (
+    <div className="mt-7 rounded-2xl border border-emerald-950/15 bg-[#F6F8F5] p-4 sm:p-5 space-y-3">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Building2 size={16} className="text-[#116149] shrink-0" />
+          <span className="text-xs font-bold uppercase tracking-wider text-[#092E28]">
+            School CBT Lab Session Code (Optional)
+          </span>
+        </div>
+        {verifiedSession && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-[#116149]">
+            <CheckCircle2 size={12} /> Synchronized: {verifiedSession.labSessionCode}
+          </span>
+        )}
+      </div>
+
+      {verifiedSession ? (
+        <div className="rounded-xl border border-emerald-200 bg-white p-3.5 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <strong className="text-[#092E28] block">{verifiedSession.title || "Proctored School Lab Mock"}</strong>
+            <span className="text-slate-600">
+              {verifiedSession.schoolName ? `${verifiedSession.schoolName} · ` : ""}
+              120-minute synchronized session verified. Click &ldquo;Start Official Mock&rdquo; below when instructed by your invigilator.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setVerifiedSession(null);
+              setLabCode("");
+              onVerifiedSessionChange?.(null);
+            }}
+            className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 underline shrink-0 cursor-pointer"
+          >
+            Change Code
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleJoinLabSession} className="flex flex-col sm:flex-row gap-2">
+          <input
+            type="text"
+            value={labCode}
+            onChange={(e) => setLabCode(e.target.value.toUpperCase())}
+            placeholder="Enter whiteboard code (e.g. LAB-SCH-4F9A)"
+            className="flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-mono uppercase text-[#092E28] placeholder:font-sans placeholder:normal-case placeholder:text-slate-400 focus:border-[#116149] focus:outline-hidden focus:ring-1 focus:ring-[#116149]"
+          />
+          <button
+            type="submit"
+            disabled={isVerifying || !labCode.trim()}
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#092E28] px-4 py-2 text-xs font-bold text-white hover:bg-[#116149] transition cursor-pointer disabled:opacity-50"
+          >
+            {isVerifying ? (
+              <>
+                <Loader2 size={13} className="animate-spin" />
+                <span>Verifying...</span>
+              </>
+            ) : (
+              <span>Verify Lab Code</span>
+            )}
+          </button>
+        </form>
+      )}
+
+      {labError && (
+        <p className="text-xs text-red-700 font-medium flex items-center gap-1.5">
+          <AlertTriangle size={13} className="shrink-0" />
+          <span>{labError}</span>
+        </p>
+      )}
+    </div>
+  );
+}
 interface MockReadiness {ready:boolean;isPremium:boolean;activeAttemptId:string|null;message:string;subjects:{code:string;name:string;isCompulsory:boolean;required:number;available:number;ready:boolean;message:string}[];}
 
 function MockRedirectNotice() {
@@ -46,6 +177,7 @@ function MockRedirectNotice() {
 export default function MockLobbyPage() {
   const resource = useApiResource<MockReadiness>("/api/v1/mock/readiness");
   const { isOffline, isOnline } = useNetworkStatus();
+  const [verifiedLabSession, setVerifiedLabSession] = useState<any | null>(null);
 
   const isNetworkFailure = resource.error ? isNetworkOrTimeoutError(resource.error) : false;
 
@@ -216,12 +348,20 @@ export default function MockLobbyPage() {
             </div>
 
             {!resource.data.ready&&!resource.data.activeAttemptId&&<div role="status" className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"><p className="font-semibold">{resource.data.message}</p><ul className="mt-3 space-y-2">{resource.data.subjects.filter(s=>!s.ready).map(s=><li key={s.code}>{s.message}</li>)}</ul><a href="/practice/" className="mt-4 inline-block font-semibold underline">Practise a topic instead</a></div>}
+
+            {/* School Computer Lab Session Code Entry */}
+            <SchoolLabSessionEntry onVerifiedSessionChange={setVerifiedLabSession} />
+
             {/* Launch CTA */}
             <div className="mt-8 space-y-6 border-t border-slate-100 pt-6">
               <div className="text-xs text-slate-500">
                 Ready? Ensure you have 2 uninterrupted hours before starting.
               </div>
-              <MockStartButton canStart={resource.data.ready} activeAttemptId={resource.data.activeAttemptId} />
+              <MockStartButton
+                canStart={resource.data.ready}
+                activeAttemptId={resource.data.activeAttemptId}
+                labSessionCode={verifiedLabSession?.labSessionCode || null}
+              />
             </div>
           </div>
         </div>

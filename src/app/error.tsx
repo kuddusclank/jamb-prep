@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle, RefreshCw, Home, Sparkles, WifiOff } from "lucide-react";
+import { AlertCircle, RefreshCw, Home, WifiOff } from "lucide-react";
 
 export default function GlobalError({
   error,
@@ -64,7 +64,7 @@ export default function GlobalError({
           }`}
         >
           {isChunkError ? (
-            <Sparkles size={28} />
+            <RefreshCw size={28} />
           ) : isNetworkError ? (
             <WifiOff size={28} />
           ) : (

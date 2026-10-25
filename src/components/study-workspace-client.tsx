@@ -2,6 +2,7 @@
 
 import { useApiResource } from "@/lib/api/use-api-resource";
 import type { ProfileData } from "@/lib/api/app-dtos";
+import { useBrowserAccount } from "@/components/browser-account-boundary";
 import { BrandMark } from "@/components/brand-mark";
 import { SyncStatusIndicator } from "./sync-status-indicator";
 import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
@@ -30,6 +31,7 @@ const destinations = [
 ];
 
 export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
+  const account = useBrowserAccount();
   const profile = useApiResource<ProfileData>("/api/v1/profile");
   const { isOnline, isOffline } = useNetworkStatus();
   const pathname = usePathname();
@@ -112,32 +114,68 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     void ensureWeeklyPackDownloaded(studentId).catch(() => {});
   }, [profile.data?.profile?.id, profile.data?.subscription?.isPremium, isOffline]);
 
-  const currentUserId = profile.data?.profile?.id || (typeof window !== "undefined" ? getOfflineProfile()?.userId : undefined);
+  const currentUserId =
+    profile.data?.profile?.id ||
+    account.identity?.user?.id ||
+    account.session.user?.id ||
+    (typeof window !== "undefined" ? getOfflineProfile()?.userId : undefined);
   const offlineSnapshot = getOfflineProfile(currentUserId);
-  const effectiveProfile: ProfileData | null = profile.data || (offlineSnapshot ? {
-    profile: {
-      id: offlineSnapshot.userId,
-      display_name: offlineSnapshot.displayName,
-      email: offlineSnapshot.email,
-      role: offlineSnapshot.role,
-    },
-    preferences: {
-      target_score: offlineSnapshot.targetScore,
-      target_institution: null,
-      target_course: null,
-    },
-    subscription: {
-      isPremium: offlineSnapshot.subscription.isPremium,
-      expiresAt: offlineSnapshot.subscription.expiresAt,
-      daysRemaining: offlineSnapshot.subscription.expiresAt
-        ? Math.max(0, Math.ceil((new Date(offlineSnapshot.subscription.expiresAt).getTime() - Date.now()) / 86400000))
-        : 0,
-      planCode: offlineSnapshot.subscription.planCode,
-      autoRenew: offlineSnapshot.subscription.autoRenew,
-      cancelledAt: null,
-    },
-    studyStreak: null,
-  } : null);
+  const sessionFallbackUser = account.identity?.user || account.session.user;
+  const effectiveProfile: ProfileData | null =
+    profile.data ||
+    (offlineSnapshot
+      ? {
+          profile: {
+            id: offlineSnapshot.userId,
+            display_name: offlineSnapshot.displayName,
+            email: offlineSnapshot.email,
+            role: offlineSnapshot.role,
+          },
+          preferences: {
+            target_score: offlineSnapshot.targetScore,
+            target_institution: null,
+            target_course: null,
+          },
+          subscription: {
+            isPremium: offlineSnapshot.subscription.isPremium,
+            expiresAt: offlineSnapshot.subscription.expiresAt,
+            daysRemaining: offlineSnapshot.subscription.expiresAt
+              ? Math.max(0, Math.ceil((new Date(offlineSnapshot.subscription.expiresAt).getTime() - Date.now()) / 86400000))
+              : 0,
+            planCode: offlineSnapshot.subscription.planCode,
+            autoRenew: offlineSnapshot.subscription.autoRenew,
+            cancelledAt: null,
+            isSchoolAttached: Boolean(offlineSnapshot.subscription.isSchoolAttached),
+            school: offlineSnapshot.subscription.school ?? null,
+          },
+          studyStreak: null,
+        }
+      : sessionFallbackUser
+      ? {
+          profile: {
+            id: sessionFallbackUser.id,
+            display_name: sessionFallbackUser.displayName || "Student",
+            email: sessionFallbackUser.email || "",
+            role: account.identity?.user?.role || account.session.role || "student",
+          },
+          preferences: {
+            target_score: 280,
+            target_institution: null,
+            target_course: null,
+          },
+          subscription: {
+            isPremium: true,
+            expiresAt: null,
+            daysRemaining: 0,
+            planCode: null,
+            autoRenew: false,
+            cancelledAt: null,
+            isSchoolAttached: false,
+            school: null,
+          },
+          studyStreak: null,
+        }
+      : null);
 
   const showFreeLinks = effectiveProfile?.subscription.isPremium === false;
   const visibleDestinations = destinations.filter(item => showFreeLinks || !["/referrals", "/pricing"].includes(item.href));
@@ -216,22 +254,27 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
         className={styles.navigation}
       >
         {visibleDestinations.map(({ href, label, icon: Icon, isPro, requiresOnline }) => {
-          const isLocked = isPro && profile.data?.subscription.isPremium === false;
+          const isLocked = isPro && effectiveProfile?.subscription?.isPremium === false;
           const isOfflineDisabled = !isOnline && requiresOnline;
           const targetHref = isLocked ? '/pricing' : (isOfflineDisabled ? '#' : href);
+          const isSchoolAttached = Boolean(effectiveProfile?.subscription?.isSchoolAttached);
+          const displayLabel = href === '/pricing' && isSchoolAttached ? 'School License' : label;
+          const lockTitle = isSchoolAttached
+            ? `${label} requires an active license from ${effectiveProfile?.subscription?.school?.schoolName || 'your school'} — click to view`
+            : `${label} is a Pro feature — click to upgrade`;
           return (
             <Link
               key={href}
               href={targetHref}
               aria-current={current?.href === href ? 'page' : undefined}
               className={`${styles.navLink} ${isOfflineDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-              title={isLocked ? `${label} is a Pro feature — click to upgrade` : (isOfflineDisabled ? `${label} requires an internet connection` : label)}
+              title={isLocked ? lockTitle : (isOfflineDisabled ? `${label} requires an internet connection` : label)}
             >
               <Icon size={19} aria-hidden="true" />
-              <span>{label}</span>
+              <span>{displayLabel}</span>
               {isLocked && (
                 <span className="ml-auto text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded-sm">
-                  PRO
+                  {isSchoolAttached ? 'SCHOOL' : 'PRO'}
                 </span>
               )}
               {isOfflineDisabled && (

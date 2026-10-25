@@ -10,7 +10,7 @@ import { allocatePractice, checkIssuedPractice, startFrozenMock } from '../servi
 import { saveStudentOnboardingAtomic } from '../services/onboarding-service';
 import { APP_RATING_ROUTES } from '../services/app-rating-service';
 import { STUDY_SCHEDULE_ROUTES } from '../services/study-schedule-routes';
-import { SCHOOL_ROUTES } from '../services/school-routes';
+import { SCHOOL_ROUTES, settleSchoolOrderFromWebhook } from '../services/school-routes';
 import { getStudyScheduleState, type StudyScheduleViewResponse } from '../services/study-schedule-service';
 /**
  * Typed Native Worker API Router & Foundation Endpoint Registry (T03)
@@ -357,6 +357,29 @@ async function handlePaystackWebhook(ctx: RouteRequestContext): Promise<RouteHan
         status: 200,
         body: { received: true, duplicate: true },
       };
+    }
+
+    // Handle institutional school cohort orders (`SCH-ORD-*`) sent to the primary Paystack webhook
+    const isSchoolOrderRef =
+      reference.startsWith('SCH-ORD-') ||
+      (event.data?.metadata as Record<string, any> | undefined)?.orderType === 'school_cohort_license';
+    if (isSchoolOrderRef) {
+      const schoolSettlement = await settleSchoolOrderFromWebhook(
+        dbCtx,
+        reference,
+        typeof event.data?.amount === 'number' ? Number(event.data.amount) : undefined
+      );
+      if (schoolSettlement.handled) {
+        await dbCtx.sql`
+          INSERT INTO payment_webhook_events (event_id, event_type, payload, processed_at)
+          VALUES (${eventId}, ${event.event}, ${rawBody}::text::jsonb, ${ctx.now.toISOString()}::timestamptz)
+          ON CONFLICT (event_id) DO NOTHING
+        `;
+        return {
+          status: 200,
+          body: { received: true, schoolOrderSettled: true, orderId: schoolSettlement.orderId },
+        };
+      }
     }
 
     const txnRows = await dbCtx.sql<
@@ -1432,7 +1455,7 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
   {
     id: 'exams.attempts.create', method: 'POST', pattern: '/api/v1/exams/attempts', auth: 'student_live_session', maxBodyBytes: BODY_LIMIT_SMALL_WRITE_BYTES, idempotency: 'required',
     handler: async (ctx) => {
-      const { rawText, data } = await readBoundedJsonBody<{ examConditions: boolean }>(ctx.request, { maxBytes: BODY_LIMIT_SMALL_WRITE_BYTES });
+      const { rawText, data } = await readBoundedJsonBody<{ examConditions: boolean; labSessionCode?: string | null }>(ctx.request, { maxBytes: BODY_LIMIT_SMALL_WRITE_BYTES });
       return runWithIdempotency(ctx,'exams.attempts.create',true,rawText,async (scoped) => ({ body: await startFrozenMock(scoped.getDb().sql,scoped.actor!.userId,data,scoped.now) }));
     },
   },

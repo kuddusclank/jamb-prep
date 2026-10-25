@@ -145,67 +145,57 @@ Fatima,Danjuma,f.danjuma@school.edu.ng,ST-104,08045678901,2026`;
     setError(null);
 
     try {
-      let result = null;
-      try {
-        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
-        const supabase = createClient();
-        const sessionRes = await supabase.auth.getSession();
-        const token = sessionRes?.data?.session?.access_token;
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
+      const supabase = createClient();
+      const sessionRes = await supabase.auth.getSession();
+      const token = sessionRes?.data?.session?.access_token;
 
-        const res = await fetch(`${apiBase}/api/v1/schools/students`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { "Authorization": `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify({
-            students: validRows.map((r) => ({
-              firstName: r.firstName,
-              lastName: r.lastName,
-              email: r.email,
-              studentIdentifier: r.studentIdentifier || null,
-              phone: r.phone || null,
-            })),
-            ingestionMethod: "csv",
-          }),
-        });
-
-        if (res.ok) {
-          result = await res.json();
-        }
-      } catch {
-        // Fallback for static hosts
+      if (!token) {
+        throw new Error("Your administrator session has expired. Please sign in again to import candidates.");
       }
 
-      if (!result) {
-        const generatedRoster = validRows.map((r, i) => {
-          const cleanLast = r.lastName.trim().toUpperCase();
-          const defaultPassword = cleanLast.length >= 6 ? cleanLast : `${cleanLast}123456`.slice(0, 6);
-          return {
-            id: `std-csv-${Date.now()}-${i}`,
-            name: `${r.firstName} ${r.lastName}`,
+      const res = await fetch(`${apiBase}/api/v1/schools/students`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          students: validRows.map((r) => ({
             firstName: r.firstName,
             lastName: r.lastName,
             email: r.email,
-            defaultPassword,
             studentIdentifier: r.studentIdentifier || null,
-            status: "imported" as const,
-          };
-        });
+            phone: r.phone || null,
+          })),
+          ingestionMethod: "csv",
+        }),
+      });
 
-        result = {
-          success: true,
-          totalReceived: validRows.length,
-          importedCount: validRows.length,
-          skippedCount: 0,
-          errors: [],
-          roster: generatedRoster,
-        };
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg =
+          (typeof data?.error === "string" && data.error) ||
+          data?.error?.message ||
+          data?.message ||
+          "Could not complete batch candidate ingestion. Please verify your CSV rows and try again.";
+        throw new Error(msg);
       }
 
+      const roster = Array.isArray(data?.roster) ? data.roster : Array.isArray(data?.students) ? data.students : [];
+      const skipped = Array.isArray(data?.skipped) ? data.skipped : [];
+      const result = {
+        success: true,
+        totalReceived: validRows.length,
+        importedCount: data?.count ?? roster.length,
+        skippedCount: data?.skippedCount ?? skipped.length,
+        skipped,
+        roster,
+      };
+
       setImportResult(result);
-      if (result.roster && result.roster.length > 0) {
-        onImportComplete(result.roster);
+      if (roster.length > 0) {
+        onImportComplete(roster);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "A network error occurred during import.");
@@ -271,6 +261,19 @@ Fatima,Danjuma,f.danjuma@school.edu.ng,ST-104,08045678901,2026`;
                 <span className="text-[#17231F]">Roster Summary:</span>
                 <span className="text-[#12664F] font-mono">{importResult.importedCount} accounts ready</span>
               </div>
+              {importResult.skippedCount > 0 && (
+                <div className="rounded border border-amber-200 bg-amber-50 p-2.5 text-[11px] text-amber-900 space-y-1">
+                  <p className="font-semibold">
+                    {importResult.skippedCount} row(s) skipped due to conflicts:
+                  </p>
+                  {Array.isArray(importResult.skipped) &&
+                    importResult.skipped.slice(0, 5).map((item: { email: string; reason: string }, idx: number) => (
+                      <p key={idx} className="font-mono text-[10px]">
+                        • {item.email}: {item.reason}
+                      </p>
+                    ))}
+                </div>
+              )}
               <p className="text-xs text-[#68766F] leading-relaxed">
                 Default passwords have been set to each candidate&apos;s uppercase surname. Download the printable classroom handout below to distribute credentials to students in the lab.
               </p>

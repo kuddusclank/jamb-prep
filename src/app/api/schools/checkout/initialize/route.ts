@@ -18,9 +18,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const studentCount = Number(body.studentCount);
     const durationMonths = Number(body.durationMonths || 3);
-    const studentIds = Array.isArray(body.studentIds) ? body.studentIds : [];
+    const studentIds: string[] = Array.isArray(body.studentIds)
+      ? body.studentIds.filter((id: unknown): id is string => typeof id === "string" && /^[0-9a-fA-F-]{36}$/.test(id))
+      : [];
+    // A selection fixes the paid count to exactly the selected candidates.
+    const studentCount = studentIds.length > 0 ? studentIds.length : Number(body.studentCount);
 
     if (!Number.isInteger(studentCount) || studentCount < 1) {
       return NextResponse.json({ error: "Please provide a valid student count (minimum 1)." }, { status: 400 });

@@ -27,11 +27,11 @@ import {
   Loader2,
   HelpCircle,
   RotateCcw,
-  Sparkles,
   Layers,
   Award,
   Bookmark,
   Lock,
+  Building2,
 } from "lucide-react";
 
 interface QuestionOption {
@@ -60,6 +60,7 @@ interface QuestionItem {
 export function WeeklyPracticeClient() {
   const account = useBrowserAccount();
   const profile = useApiResource<ProfileData>("/api/v1/profile");
+  const isSchoolAttached = Boolean(profile.data?.subscription?.isSchoolAttached);
   const userId = account.identity?.user.id || account.session.user?.id || "";
 
   const [pack, setPack] = useState<StoredWeeklyPack | null>(null);
@@ -336,8 +337,14 @@ export function WeeklyPracticeClient() {
               href="/pricing"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-[#116149] text-white text-sm font-bold shadow-md hover:bg-[#0b4936] transition"
             >
-              <Sparkles size={16} className="text-[#E7B85A]" />
-              <span>Upgrade to Pro</span>
+              {isSchoolAttached ? (
+                <>
+                  <Building2 size={16} className="text-[#E7B85A]" />
+                  <span>Contact School Admin to Unlock</span>
+                </>
+              ) : (
+                <span>Upgrade to Pro</span>
+              )}
               <ArrowRight size={16} />
             </Link>
             <Link
@@ -558,7 +565,7 @@ export function WeeklyPracticeClient() {
                 </div>
               )}
               <div className="whitespace-pre-line text-xs sm:text-sm">
-                {currentQ.passage.content}
+                <MathRenderer content={currentQ.passage.content} />
               </div>
             </div>
           )}
@@ -705,7 +712,6 @@ export function WeeklyPracticeClient() {
           <div>
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide uppercase bg-emerald-100 text-[#116149]">
-                <Sparkles size={11} className="text-amber-600" />
                 SELF-PACED PRACTICE
               </span>
             </div>

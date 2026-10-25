@@ -212,12 +212,24 @@ export async function provisionStudentAccountAtomic(
     `;
 
     if (schoolRows[0]?.id) {
-      await tx`
-        INSERT INTO school_students (school_id, student_user_id, ingestion_method, license_status)
-        VALUES (${schoolRows[0].id}::uuid, ${userId}::uuid, 'link', 'inactive')
-        ON CONFLICT (school_id, student_user_id) DO NOTHING
+      const existingAffiliation = await tx<Array<{ school_id: string }>>`
+        SELECT school_id
+        FROM school_students
+        WHERE student_user_id = ${userId}::uuid
+        LIMIT 1
       `;
-      referralAttribution = 'pending';
+      if (!existingAffiliation[0]) {
+        await tx`
+          INSERT INTO school_students (school_id, student_user_id, ingestion_method, license_status)
+          VALUES (${schoolRows[0].id}::uuid, ${userId}::uuid, 'link', 'inactive')
+          ON CONFLICT DO NOTHING
+        `;
+        referralAttribution = 'pending';
+      } else if (existingAffiliation[0].school_id === schoolRows[0].id) {
+        referralAttribution = 'pending';
+      } else {
+        referralAttribution = 'already_attributed';
+      }
     } else {
       // 3b. Standard candidate referral promo code lookup
       const refRows = await tx<Array<{ user_id: string }>>`

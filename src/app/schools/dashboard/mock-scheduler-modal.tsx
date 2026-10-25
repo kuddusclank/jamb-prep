@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { 
   X, 
   Calendar, 
@@ -65,8 +66,15 @@ export function MockSchedulerModal({
     setIsPending(true);
 
     try {
-      let sessionData = null;
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
+      const supabase = createClient();
+      const sessionRes = await supabase.auth.getSession();
+      const token = sessionRes?.data?.session?.access_token;
+
+      if (!token) {
+        throw new Error("Your administrator session has expired. Please sign in again to schedule a computer lab mock.");
+      }
+
       const payload = {
         title,
         scheduledDate: timingMode === "immediate" ? new Date().toISOString() : scheduledDateTime,
@@ -75,50 +83,33 @@ export function MockSchedulerModal({
         hotkeyNavigationEnabled: hotkeyMode,
       };
 
-      try {
-        const res = await fetch(`${apiBase}/api/v1/schools/mocks/schedule`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (res.ok) {
-          sessionData = await res.json();
-        }
-      } catch {
-        // Fall through
+      const res = await fetch(`${apiBase}/api/v1/schools/mocks/schedule`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const sessionData = await res.json().catch(() => ({}));
+      if (!res.ok || !sessionData?.session) {
+        const msg =
+          (typeof sessionData?.error === "string" && sessionData.error) ||
+          sessionData?.error?.message ||
+          sessionData?.message ||
+          "Could not schedule the CBT lab mock session. Please try again.";
+        throw new Error(msg);
       }
 
-      if (!sessionData) {
-        try {
-          const res = await fetch("/api/schools/mocks/schedule/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-          if (res.ok) {
-            sessionData = await res.json();
-          }
-        } catch {
-          // Fallback for static hosts
-        }
-      }
-
-      if (!sessionData) {
-        sessionData = {
-          success: true,
-          session: {
-            title,
-            labSessionCode: `LAB-${schoolCode}-${Date.now().toString(36).slice(-4).toUpperCase()}`,
-            proctorKey: `PRC-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
-          },
-          instructions: [
-            "Ensure all laboratory desktop monitors are connected to the school LAN or internet.",
-            "Students sign in with their email and uppercase surname default password.",
-            "Enter the Lab Session Code on the exam entry screen.",
-            "8-Key navigation (A, B, C, D for options; P for previous, N for next; S for submit; R for review) is enforced.",
-            "Exam auto-submits exactly when the 120:00 timer elapses.",
-          ],
-        };
+      if (!Array.isArray(sessionData.instructions)) {
+        sessionData.instructions = [
+          "Ensure all laboratory desktop monitors are connected to the school LAN or internet.",
+          "Students sign in with their email and uppercase surname default password.",
+          "Enter the Lab Session Code on the exam entry screen.",
+          "8-Key navigation (A, B, C, D for options; P for previous, N for next; S for submit; R for review) is enforced.",
+          "Exam auto-submits exactly when the 120:00 timer elapses.",
+        ];
       }
 
       setScheduledSession(sessionData);

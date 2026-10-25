@@ -1,5 +1,14 @@
 import type { RequestDbContext } from '../api/db-context';
 
+/**
+ * The Worker DB client runs with fetch_types disabled, so JS arrays cannot be bound as
+ * Postgres array parameters. UUID lists are sent as one comma-separated text parameter
+ * and split inside SQL. Callers must pass UUIDs read from the database or validated upstream.
+ */
+function uuidListCsv(ids: string[]): string {
+  return ids.filter((id) => /^[0-9a-fA-F-]{36}$/.test(id)).join(',');
+}
+
 export interface EnqueueActivationParams {
   orderId: string;
   schoolId: string;
@@ -27,6 +36,11 @@ export async function enqueueCohortActivation(
 ): Promise<{ queuedCount: number; totalAssigned: number }> {
   const { orderId, schoolId, durationMonths, studentCount, targetedIds } = params;
 
+  // 0. Serialize concurrent verify/webhook callers on the parent school_orders row
+  await dbCtx.sql`
+    SELECT id FROM school_orders WHERE id = ${orderId}::uuid FOR UPDATE
+  `;
+
   // 1. Check if jobs are already enqueued for this order
   const existingJobs = await dbCtx.sql<Array<{ id: string }>>`
     SELECT id FROM school_activation_jobs WHERE order_id = ${orderId}::uuid
@@ -41,53 +55,32 @@ export async function enqueueCohortActivation(
 
   // 2. Resolve eligible student records from school_students
   const resolvedStudentUserIds: string[] = [];
+  const hasTargetedSelection = !!targetedIds && targetedIds.length > 0;
 
-  if (targetedIds && targetedIds.length > 0) {
+  if (hasTargetedSelection) {
+    // The admin picked exact candidates: licence only those, never anyone else.
     const targetedRows = await dbCtx.sql<Array<{ student_user_id: string }>>`
       SELECT student_user_id 
       FROM school_students
       WHERE school_id = ${schoolId}::uuid
-        AND id = ANY(${targetedIds}::uuid[])
+        AND id IN (SELECT unnest(string_to_array(${uuidListCsv(targetedIds)}::text, ',')::uuid[]))
     `;
     for (const row of targetedRows) {
       if (row.student_user_id && !resolvedStudentUserIds.includes(row.student_user_id)) {
         resolvedStudentUserIds.push(row.student_user_id);
       }
     }
-  }
-
-  // If fewer than studentCount, fill with inactive students from the school
-  if (resolvedStudentUserIds.length < studentCount) {
-    const needed = studentCount - resolvedStudentUserIds.length;
+  } else {
+    // Legacy orders without a selection: licence the oldest unlicensed candidates up to the paid count.
     const fallbackRows = await dbCtx.sql<Array<{ student_user_id: string }>>`
       SELECT student_user_id 
       FROM school_students
       WHERE school_id = ${schoolId}::uuid
         AND license_status != 'active'
-        ${resolvedStudentUserIds.length > 0 ? dbCtx.sql`AND student_user_id != ALL(${resolvedStudentUserIds}::uuid[])` : dbCtx.sql``}
       ORDER BY created_at ASC
-      LIMIT ${needed}
+      LIMIT ${studentCount}
     `;
     for (const row of fallbackRows) {
-      if (row.student_user_id && !resolvedStudentUserIds.includes(row.student_user_id)) {
-        resolvedStudentUserIds.push(row.student_user_id);
-      }
-    }
-  }
-
-  // If still fewer than studentCount (e.g. fresh school without students enrolled yet),
-  // pull any enrolled student regardless of status to reach the paid capacity
-  if (resolvedStudentUserIds.length < studentCount) {
-    const remaining = studentCount - resolvedStudentUserIds.length;
-    const anyRows = await dbCtx.sql<Array<{ student_user_id: string }>>`
-      SELECT student_user_id 
-      FROM school_students
-      WHERE school_id = ${schoolId}::uuid
-        ${resolvedStudentUserIds.length > 0 ? dbCtx.sql`AND student_user_id != ALL(${resolvedStudentUserIds}::uuid[])` : dbCtx.sql``}
-      ORDER BY created_at ASC
-      LIMIT ${remaining}
-    `;
-    for (const row of anyRows) {
       if (row.student_user_id && !resolvedStudentUserIds.includes(row.student_user_id)) {
         resolvedStudentUserIds.push(row.student_user_id);
       }
@@ -99,8 +92,9 @@ export async function enqueueCohortActivation(
     return { queuedCount: 0, totalAssigned: 0 };
   }
 
-  // 3. Bulk insert jobs into school_activation_jobs
-  for (const studentUserId of resolvedStudentUserIds) {
+  // 3. Bulk insert jobs into school_activation_jobs in a single set-based query
+  const targetUserCsv = uuidListCsv(resolvedStudentUserIds);
+  if (targetUserCsv) {
     await dbCtx.sql`
       INSERT INTO school_activation_jobs (
         order_id,
@@ -109,14 +103,14 @@ export async function enqueueCohortActivation(
         status,
         retry_count
       )
-      VALUES (
+      SELECT
         ${orderId}::uuid,
-        ${studentUserId}::uuid,
+        u_id,
         ${durationMonths},
         'queued',
         0
-      )
-      ON CONFLICT DO NOTHING
+      FROM unnest(string_to_array(${targetUserCsv}::text, ',')::uuid[]) AS u_id
+      ON CONFLICT (order_id, student_user_id) DO NOTHING
     `;
   }
 
@@ -127,23 +121,25 @@ export async function enqueueCohortActivation(
 }
 
 /**
- * Process a batch/chunk of queued activation jobs (default 50 items per chunk).
- * Updates student licences and platform entitlements atomically.
+ * Process queued activation jobs in batches (default 100 items per chunk),
+ * looping until all eligible jobs for the order are drained so cohorts > 50
+ * students activate completely in a single verification or webhook pass.
  */
 export async function processActivationBatch(
   dbCtx: RequestDbContext,
   orderId: string,
-  batchSize: number = 50
+  batchSize: number = 100
 ): Promise<ActivationProgress> {
   const now = new Date();
 
   // 1. Fetch order details to know duration
   const orderRows = await dbCtx.sql<Array<{
     id: string;
+    school_id: string;
     duration_months: number;
     status: string;
   }>>`
-    SELECT id, duration_months, status
+    SELECT id, school_id, duration_months, status
     FROM school_orders
     WHERE id = ${orderId}::uuid
     LIMIT 1
@@ -155,74 +151,88 @@ export async function processActivationBatch(
 
   const order = orderRows[0];
   const durationMonths = order.duration_months || 3;
-  const expiryDate = new Date(now.getTime() + durationMonths * 30 * 24 * 60 * 60 * 1000);
+  const addedDays = durationMonths * 30;
+  const expiryDate = new Date(now.getTime() + addedDays * 24 * 60 * 60 * 1000);
+  const chunkLimit = Math.max(1, Math.min(250, batchSize));
+  const maxChunks = 40; // Supports up to 10,000 students safely
 
-  // 2. Fetch the next chunk of queued or failed jobs (up to 3 retries)
-  const pendingJobs = await dbCtx.sql<Array<{
-    id: string;
-    student_user_id: string;
-    retry_count: number;
-  }>>`
-    SELECT id, student_user_id, retry_count
-    FROM school_activation_jobs
-    WHERE order_id = ${orderId}::uuid
-      AND status IN ('queued', 'failed')
-      AND retry_count < 3
-    ORDER BY created_at ASC
-    LIMIT ${batchSize}
-  `;
+  // 2. Drain all queued/retryable chunks until none remain
+  for (let chunkIndex = 0; chunkIndex < maxChunks; chunkIndex++) {
+    const pendingJobs = await dbCtx.sql<Array<{
+      id: string;
+      student_user_id: string;
+      retry_count: number;
+    }>>`
+      SELECT id, student_user_id, retry_count
+      FROM school_activation_jobs
+      WHERE order_id = ${orderId}::uuid
+        AND status IN ('queued', 'failed')
+        AND retry_count < 3
+      ORDER BY created_at ASC
+      LIMIT ${chunkLimit}
+    `;
 
-  if (pendingJobs.length > 0) {
+    if (pendingJobs.length === 0) {
+      break;
+    }
+
     const jobIds = pendingJobs.map((j) => j.id);
     const userIds = pendingJobs.map((j) => j.student_user_id);
+    const jobIdsCsv = uuidListCsv(jobIds);
+    const userIdsCsv = uuidListCsv(userIds);
 
     // Mark current chunk as processing
     await dbCtx.sql`
       UPDATE school_activation_jobs
       SET status = 'processing', updated_at = ${now.toISOString()}::timestamptz
-      WHERE id = ANY(${jobIds}::uuid[])
+      WHERE id IN (SELECT unnest(string_to_array(${jobIdsCsv}::text, ',')::uuid[]))
     `;
 
     try {
-      // Step A: Update school_students license status
+      // Step A: Update school_students license status scoped to this school — extend existing future expiry if already active
       await dbCtx.sql`
         UPDATE school_students
         SET license_status = 'active',
-            license_expires_at = ${expiryDate.toISOString()}::timestamptz
-        WHERE student_user_id = ANY(${userIds}::uuid[])
+            license_expires_at = GREATEST(
+              COALESCE(license_expires_at, ${now.toISOString()}::timestamptz),
+              ${now.toISOString()}::timestamptz
+            ) + (${addedDays} * interval '1 day')
+        WHERE school_id = ${order.school_id}::uuid
+          AND student_user_id IN (SELECT unnest(string_to_array(${userIdsCsv}::text, ',')::uuid[]))
       `;
 
-      // Step B: Bulk upsert subscription_entitlements for each student
-      for (const userId of userIds) {
-        await dbCtx.sql`
-          INSERT INTO subscription_entitlements (
-            user_id,
-            plan_code,
-            expires_at,
-            auto_renew,
-            updated_at
-          )
-          VALUES (
-            ${userId}::uuid,
-            'SCHOOL_INSTITUTIONAL_1500',
-            ${expiryDate.toISOString()}::timestamptz,
-            false,
+      // Step B: Bulk upsert subscription_entitlements for all students in chunk — extend existing future expiry if already active
+      await dbCtx.sql`
+        INSERT INTO subscription_entitlements (
+          user_id,
+          plan_code,
+          expires_at,
+          auto_renew,
+          updated_at
+        )
+        SELECT
+          u_id,
+          'SCHOOL_INSTITUTIONAL_1500',
+          ${expiryDate.toISOString()}::timestamptz,
+          false,
+          ${now.toISOString()}::timestamptz
+        FROM unnest(string_to_array(${userIdsCsv}::text, ',')::uuid[]) AS u_id
+        ON CONFLICT (user_id) DO UPDATE SET
+          plan_code = 'SCHOOL_INSTITUTIONAL_1500',
+          expires_at = GREATEST(
+            COALESCE(subscription_entitlements.expires_at, ${now.toISOString()}::timestamptz),
             ${now.toISOString()}::timestamptz
-          )
-          ON CONFLICT (user_id) DO UPDATE SET
-            plan_code = 'SCHOOL_INSTITUTIONAL_1500',
-            expires_at = ${expiryDate.toISOString()}::timestamptz,
-            auto_renew = false,
-            updated_at = ${now.toISOString()}::timestamptz
-        `;
-      }
+          ) + (${addedDays} * interval '1 day'),
+          auto_renew = false,
+          updated_at = ${now.toISOString()}::timestamptz
+      `;
 
       // Step C: Mark jobs as completed
       await dbCtx.sql`
         UPDATE school_activation_jobs
         SET status = 'completed',
             updated_at = ${now.toISOString()}::timestamptz
-        WHERE id = ANY(${jobIds}::uuid[])
+        WHERE id IN (SELECT unnest(string_to_array(${jobIdsCsv}::text, ',')::uuid[]))
       `;
     } catch (batchErr) {
       const errMsg = batchErr instanceof Error ? batchErr.message : String(batchErr);
@@ -233,8 +243,9 @@ export async function processActivationBatch(
             retry_count = retry_count + 1,
             last_error = ${errMsg},
             updated_at = ${now.toISOString()}::timestamptz
-        WHERE id = ANY(${jobIds}::uuid[])
+        WHERE id IN (SELECT unnest(string_to_array(${jobIdsCsv}::text, ',')::uuid[]))
       `;
+      break;
     }
   }
 

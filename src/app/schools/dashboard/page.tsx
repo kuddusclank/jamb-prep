@@ -10,6 +10,8 @@ import { StudentDrilldownModal } from "./student-drilldown-modal";
 import { MockSchedulerModal } from "./mock-scheduler-modal";
 import { SyllabusHeatmapView } from "./syllabus-heatmap-view";
 import { CohortCheckoutModal } from "./cohort-checkout-modal";
+import { EditStudentModal } from "./edit-student-modal";
+import { DisconnectStudentModal } from "./disconnect-student-modal";
 import StudyLoading from "@/components/study-loading";
 import { SchoolDashboardSkeleton } from "@/components/school-dashboard-skeleton";
 import { 
@@ -35,7 +37,9 @@ import {
   AlertCircle,
   Play,
   Share2,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Pencil,
+  UserMinus
 } from "lucide-react";
 
 interface StudentItem {
@@ -45,13 +49,29 @@ interface StudentItem {
   studentIdentifier?: string | null;
   defaultPassword?: string;
   subjects?: string[];
-  licenseStatus: "active" | "inactive";
+  licenseStatus: "active" | "inactive" | "expired";
   daysLeft?: number;
   lastActive?: string;
   averageScore?: number | null;
   practiceAccuracy?: number | null;
   totalPracticeQuestions?: number;
   enrolmentMethod?: string;
+}
+
+function parseSubjectsArray(val: unknown): string[] {
+  if (Array.isArray(val)) {
+    return val.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  }
+  if (typeof val === "string") {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+      }
+    } catch {}
+    return val.replace(/[{}"\s]/g, "").split(",").filter((s) => s.length > 0);
+  }
+  return [];
 }
 
 export default function SchoolDashboardPage() {
@@ -78,6 +98,8 @@ export default function SchoolDashboardPage() {
   const [isMockSchedulerOpen, setIsMockSchedulerOpen] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [selectedDrilldownStudent, setSelectedDrilldownStudent] = useState<StudentItem | null>(null);
+  const [editingStudent, setEditingStudent] = useState<StudentItem | null>(null);
+  const [disconnectTargets, setDisconnectTargets] = useState<StudentItem[]>([]);
 
   // Selection & Expandable Rows state
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
@@ -132,7 +154,13 @@ export default function SchoolDashboardPage() {
         if (typeof window !== "undefined") {
           const stored = localStorage.getItem(`jambprep_school_students_${code}`);
           if (stored) {
-            localCohort = JSON.parse(stored);
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+              localCohort = parsed.map((item: any) => ({
+                ...item,
+                subjects: parseSubjectsArray(item.subjects),
+              }));
+            }
           }
         }
       } catch (e) {
@@ -155,35 +183,43 @@ export default function SchoolDashboardPage() {
 
         if (listRes.ok) {
           const data = await listRes.json();
-          if (data.students && Array.isArray(data.students)) {
-            const mappedStudents: StudentItem[] = data.students.map((s: any) => ({
-              id: s.id,
-              name: s.name,
-              email: s.email,
-              studentIdentifier: s.studentIdentifier || null,
-              defaultPassword: s.defaultPassword,
-              subjects: s.subjects || ["ENG", "MTH", "PHY", "CHM"],
-              licenseStatus: s.licenseStatus || "inactive",
-              daysLeft: s.licenseExpiresAt ? Math.max(0, Math.ceil((new Date(s.licenseExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0,
-              lastActive: s.ingestionMethod === "link" ? "Self-Registered (Link)" : "Enrolled",
-              averageScore: typeof s.averageScore === "number" ? s.averageScore : null,
-              practiceAccuracy: typeof s.practiceAccuracy === "number" ? s.practiceAccuracy : null,
-              totalPracticeQuestions: typeof s.totalPracticeQuestions === "number" ? s.totalPracticeQuestions : 0,
-              enrolmentMethod: s.ingestionMethod || "link",
-            }));
-
-            // Merge with local cohort to preserve any offline items
-            const serverIds = new Set(mappedStudents.map((s) => s.id));
-            const serverEmails = new Set(mappedStudents.map((s) => s.email?.toLowerCase()));
-            const localOnly = localCohort.filter(
-              (item) => !serverIds.has(item.id) && !serverEmails.has(item.email?.toLowerCase())
-            );
-            const combined = [...mappedStudents, ...localOnly];
-
-            setStudents(combined);
+          if (data.activeLabMock) {
+            setScheduledMock(data.activeLabMock);
             try {
               if (typeof window !== "undefined") {
-                localStorage.setItem(`jambprep_school_students_${code}`, JSON.stringify(combined));
+                localStorage.setItem(`jambprep_school_lab_mock_${code}`, JSON.stringify(data.activeLabMock));
+              }
+            } catch {}
+          }
+          if (data.students && Array.isArray(data.students)) {
+            const mappedStudents: StudentItem[] = data.students.map((s: any) => {
+              const daysLeft = s.licenseExpiresAt
+                ? Math.max(0, Math.ceil((new Date(s.licenseExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+                : 0;
+              const rawStatus = s.licenseStatus || "inactive";
+              const effectiveStatus: "active" | "inactive" | "expired" =
+                rawStatus === "active" && s.licenseExpiresAt && daysLeft <= 0 ? "expired" : rawStatus;
+              return {
+                id: s.id,
+                name: s.name,
+                email: s.email,
+                studentIdentifier: s.studentIdentifier || null,
+                defaultPassword: s.defaultPassword,
+                subjects: parseSubjectsArray(s.subjects),
+                licenseStatus: effectiveStatus,
+                daysLeft,
+                lastActive: s.ingestionMethod === "link" ? "Self-Registered (Link)" : "Enrolled",
+                averageScore: typeof s.averageScore === "number" ? s.averageScore : null,
+                practiceAccuracy: typeof s.practiceAccuracy === "number" ? s.practiceAccuracy : null,
+                totalPracticeQuestions: typeof s.totalPracticeQuestions === "number" ? s.totalPracticeQuestions : 0,
+                enrolmentMethod: s.ingestionMethod || "link",
+              };
+            });
+
+            setStudents(mappedStudents);
+            try {
+              if (typeof window !== "undefined") {
+                localStorage.setItem(`jambprep_school_students_${code}`, JSON.stringify(mappedStudents));
               }
             } catch (e) {
               console.warn("Could not cache cohort:", e);
@@ -197,11 +233,7 @@ export default function SchoolDashboardPage() {
 
       setStudents(localCohort);
     }).finally(() => {
-      // Transition from auth loading to shimmer skeleton for visual polish, then reveal live dashboard
-      setLoadingPhase("data_loading");
-      setTimeout(() => {
-        setLoadingPhase("ready");
-      }, 350);
+      setLoadingPhase("ready");
     });
   }, []);
 
@@ -249,14 +281,18 @@ export default function SchoolDashboardPage() {
     }
   };
 
-  // Selection handlers
-  const isAllSelected = students.length > 0 && selectedStudentIds.length === students.length;
+  // Selection handlers — "Select All" only selects unlicensed candidates so already-subscribed students aren't selected by default
+  const unlicensedStudentIds = students.filter((s) => s.licenseStatus !== "active").map((s) => s.id);
+  const isAllSelected =
+    unlicensedStudentIds.length > 0
+      ? unlicensedStudentIds.every((id) => selectedStudentIds.includes(id))
+      : students.length > 0 && selectedStudentIds.length === students.length;
 
   const toggleSelectAll = () => {
-    if (isAllSelected) {
+    if (isAllSelected || (unlicensedStudentIds.length === 0 && selectedStudentIds.length > 0)) {
       setSelectedStudentIds([]);
     } else {
-      setSelectedStudentIds(students.map((s) => s.id));
+      setSelectedStudentIds(unlicensedStudentIds);
     }
   };
 
@@ -283,24 +319,68 @@ export default function SchoolDashboardPage() {
 
   const unlicensedCount = students.filter((s) => s.licenseStatus !== "active").length;
 
+  /** Checkout URL that carries the exact candidates to licence, so activation never guesses. */
+  const checkoutUrlFor = (ids: string[]) =>
+    `/schools/checkout?students=${Math.max(1, ids.length)}${ids.length > 0 ? `&ids=${ids.map(encodeURIComponent).join(",")}` : ""}`;
+
   const handleCheckoutClick = () => {
-    if (selectedStudentIds.length > 0) {
-      window.location.assign(`/schools/checkout?students=${selectedStudentIds.length}`);
-    } else {
-      setIsCheckoutModalOpen(true);
+    if (selectedStudentIds.length === 0) {
+      return;
+    }
+    window.location.assign(checkoutUrlFor(selectedStudentIds));
+  };
+
+  const handleSelectPendingForCheckout = () => {
+    const unlicensedIds = students.filter((s) => s.licenseStatus !== "active").map((s) => s.id);
+    if (unlicensedIds.length > 0) {
+      setSelectedStudentIds(unlicensedIds);
+      setActiveTab("roster");
     }
   };
 
-  const handleSelectAllAndProceed = () => {
-    const unlicensed = students.filter((s) => s.licenseStatus !== "active");
-    const targetCount = unlicensed.length > 0 ? unlicensed.length : Math.max(1, students.length);
-    window.location.assign(`/schools/checkout?students=${targetCount}`);
+  const handleStudentUpdated = (updated: any) => {
+    setStudents((prev) => {
+      const next = prev.map((item) =>
+        item.id === updated.id
+          ? {
+              ...item,
+              name: updated.name || item.name,
+              email: updated.email || item.email,
+              studentIdentifier: updated.studentIdentifier !== undefined ? updated.studentIdentifier : item.studentIdentifier,
+              defaultPassword: updated.defaultPassword !== undefined ? updated.defaultPassword : item.defaultPassword,
+              subjects: Array.isArray(updated.subjects) ? parseSubjectsArray(updated.subjects) : item.subjects,
+              enrolmentMethod: updated.ingestionMethod || item.enrolmentMethod,
+            }
+          : item
+      );
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(`jambprep_school_students_${schoolCode}`, JSON.stringify(next));
+        }
+      } catch {}
+      return next;
+    });
+  };
+
+  const handleStudentsDisconnected = (disconnectedIds: string[]) => {
+    const removedSet = new Set(disconnectedIds);
+    setStudents((prev) => {
+      const next = prev.filter((item) => !removedSet.has(item.id));
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(`jambprep_school_students_${schoolCode}`, JSON.stringify(next));
+        }
+      } catch {}
+      return next;
+    });
+    setSelectedStudentIds((prev) => prev.filter((id) => !removedSet.has(id)));
+    setExpandedStudentIds((prev) => prev.filter((id) => !removedSet.has(id)));
   };
 
   const handleModalProceed = (ids: string[]) => {
     setIsCheckoutModalOpen(false);
     setSelectedStudentIds(ids);
-    window.location.assign(`/schools/checkout?students=${ids.length}`);
+    window.location.assign(checkoutUrlFor(ids));
   };
 
   const handleStudentAdded = (newStudent: any) => {
@@ -310,7 +390,7 @@ export default function SchoolDashboardPage() {
       email: newStudent.email,
       studentIdentifier: newStudent.studentIdentifier || null,
       defaultPassword: newStudent.defaultPassword,
-      subjects: ["ENG", "MTH", "PHY", "CHM"],
+      subjects: newStudent.subjects || [],
       licenseStatus: "inactive",
       daysLeft: 0,
       lastActive: "Just added",
@@ -338,7 +418,7 @@ export default function SchoolDashboardPage() {
       email: item.email,
       studentIdentifier: item.studentIdentifier || null,
       defaultPassword: item.defaultPassword,
-      subjects: ["ENG", "MTH", "PHY", "CHM"],
+      subjects: item.subjects || [],
       licenseStatus: "inactive",
       daysLeft: 0,
       lastActive: "Imported via CSV",
@@ -523,10 +603,14 @@ export default function SchoolDashboardPage() {
               {students.length > activeCount && (
                 <button
                   type="button"
-                  onClick={handleCheckoutClick}
+                  onClick={selectedStudentIds.length > 0 ? handleCheckoutClick : handleSelectPendingForCheckout}
                   className="font-semibold text-[#12664F] hover:text-[#0B3028] hover:underline cursor-pointer shrink-0 ml-1 inline-flex items-center gap-0.5"
                 >
-                  <span>Licence {students.length - activeCount} pending</span>
+                  <span>
+                    {selectedStudentIds.length > 0
+                      ? `Checkout ${selectedStudentIds.length} selected`
+                      : `Select ${students.length - activeCount} pending`}
+                  </span>
                   <ArrowRight size={10} />
                 </button>
               )}
@@ -657,44 +741,39 @@ export default function SchoolDashboardPage() {
 
                 <button
                   type="button"
-                  onClick={handleSelectAllAndProceed}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[#12664F]/30 bg-[#EAF4EF] text-[#0B3028] px-3 py-1.5 text-xs font-semibold hover:bg-white hover:border-[#12664F] transition cursor-pointer"
-                  title="Select all unlicensed candidates and proceed directly to checkout"
-                >
-                  <CheckSquare size={13} className="text-[#12664F]" />
-                  <span>Select All & Proceed</span>
-                  <ArrowRight size={12} />
-                </button>
-
-                <button
-                  type="button"
                   onClick={handleCheckoutClick}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-[#12664F] px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-[#0B3028] transition cursor-pointer"
+                  disabled={selectedStudentIds.length === 0}
+                  title={
+                    selectedStudentIds.length === 0
+                      ? "Select at least one candidate from the table below to checkout licences"
+                      : `Checkout licences for ${selectedStudentIds.length} selected candidate(s)`
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-md bg-[#12664F] px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-[#0B3028] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <CreditCard size={13} />
                   <span>Checkout Licences</span>
-                  {unlicensedCount > 0 && (
+                  {selectedStudentIds.length > 0 && (
                     <span className="rounded-full bg-white/20 px-1.5 py-0.2 text-[10px] font-bold">
-                      {unlicensedCount}
+                      {selectedStudentIds.length}
                     </span>
                   )}
                 </button>
               </div>
             </div>
 
-            {/* Compact Enrolment Note & Password Policy Bar */}
+            {/* Compact Password Policy & View Bar */}
             <div className="px-4 sm:px-5 py-2.5 bg-[#F7F8F6] border-b border-[#E3E8E4] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-[#68766F]">
-              <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2.5 flex-wrap">
                 <div className="inline-flex items-center gap-1.5">
                   <KeyRound size={13} className="text-[#68766F] shrink-0" />
                   <span>
-                    Default password rule: <strong className="text-[#17231F] font-semibold">LASTNAME in capital letters</strong>
+                    Default password: <strong className="text-[#17231F] font-semibold">LASTNAME in capital letters</strong>
                   </span>
                 </div>
                 {unlicensedCount > 0 ? (
                   <span className="inline-flex items-center gap-1 rounded bg-amber-100/70 border border-amber-200 px-2 py-0.5 text-[11px] font-semibold text-amber-900">
                     <AlertCircle size={11} className="text-amber-700" />
-                    {unlicensedCount} candidate{unlicensedCount > 1 ? "s" : ""} awaiting licence
+                    {unlicensedCount} awaiting licence
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 rounded bg-[#EAF4EF] border border-[#12664F]/20 px-2 py-0.5 text-[11px] font-semibold text-[#12664F]">
@@ -704,7 +783,7 @@ export default function SchoolDashboardPage() {
                 )}
               </div>
 
-              <div className="flex items-center gap-2.5">
+              <div>
                 <button
                   type="button"
                   onClick={toggleExpandAll}
@@ -712,45 +791,46 @@ export default function SchoolDashboardPage() {
                 >
                   {expandedStudentIds.length === students.length && students.length > 0 ? "Collapse All" : "Expand All"}
                 </button>
-                <span className="text-slate-300">|</span>
-                <button
-                  type="button"
-                  onClick={handleSelectAllAndProceed}
-                  className="inline-flex items-center gap-1 font-semibold text-xs text-[#12664F] hover:text-[#0B3028] hover:underline transition cursor-pointer"
-                >
-                  <CreditCard size={12} />
-                  <span>Checkout All (₦{(Math.max(1, unlicensedCount > 0 ? unlicensedCount : students.length) * 1500).toLocaleString()}) →</span>
-                </button>
               </div>
             </div>
 
             {/* Roster Multi-Select Action Bar */}
             {selectedStudentIds.length > 0 && (
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#0B3028] px-4 sm:px-5 py-3 text-white text-xs border-b border-[#E3E8E4] animate-in fade-in">
-                <div className="flex items-center gap-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-[#0B3028] px-4 sm:px-5 py-2.5 text-white text-xs border-b border-[#E3E8E4] animate-in fade-in">
+                <div className="flex items-center gap-2">
                   <span className="flex size-5 items-center justify-center rounded bg-white/20 text-white font-semibold text-[11px]">
                     {selectedStudentIds.length}
                   </span>
                   <span className="text-slate-200">
-                    candidate{selectedStudentIds.length > 1 ? "s" : ""} selected for cohort action
+                    candidate{selectedStudentIds.length > 1 ? "s" : ""} selected
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2.5">
+                <div className="flex flex-wrap items-center gap-2.5">
                   <button
                     type="button"
                     onClick={() => setSelectedStudentIds([])}
                     className="text-slate-300 hover:text-white transition cursor-pointer text-xs underline underline-offset-2"
                   >
-                    Clear Selection
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDisconnectTargets(students.filter((s) => selectedStudentIds.includes(s.id)))
+                    }
+                    className="inline-flex items-center gap-1.5 rounded-md border border-amber-300/40 bg-amber-950/60 text-amber-200 px-3 py-1 font-semibold text-xs hover:bg-amber-900 hover:text-white transition cursor-pointer"
+                  >
+                    <UserMinus size={12} />
+                    <span>Disconnect Selected ({selectedStudentIds.length})</span>
                   </button>
                   <Link
-                    href={`/schools/checkout?students=${selectedStudentIds.length}`}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-[#EAF4EF] text-[#0B3028] px-3 py-1.5 font-semibold text-xs hover:bg-white transition cursor-pointer"
+                    href={checkoutUrlFor(selectedStudentIds)}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-[#EAF4EF] text-[#0B3028] px-3 py-1 font-semibold text-xs hover:bg-white transition cursor-pointer"
                   >
-                    <CreditCard size={13} />
-                    <span>Proceed to Cohort Licensing (₦{(selectedStudentIds.length * 1500).toLocaleString()})</span>
-                    <ArrowRight size={12} />
+                    <CreditCard size={12} />
+                    <span>Proceed to Checkout (₦{(selectedStudentIds.length * 1500).toLocaleString()})</span>
+                    <ArrowRight size={11} />
                   </Link>
                 </div>
               </div>
@@ -825,6 +905,7 @@ export default function SchoolDashboardPage() {
                       const isSelfRegistered = std.enrolmentMethod === "link" || !std.defaultPassword;
                       const pwd = std.defaultPassword || null;
                       const isCopied = copiedPasswordId === std.id;
+                      const validSubjects = parseSubjectsArray(std.subjects);
 
                       return (
                         <div key={std.id} className="contents">
@@ -903,13 +984,17 @@ export default function SchoolDashboardPage() {
                               )}
                             </td>
                             <td className="py-3 px-4">
-                              <div className="flex items-center gap-1">
-                                {(std.subjects || ["ENG", "MTH", "PHY", "CHM"]).map((sub) => (
-                                  <span key={sub} className="rounded bg-[#F7F8F6] border border-[#E3E8E4] px-1.5 py-0.5 text-[10px] font-medium text-[#68766F]">
-                                    {sub}
-                                  </span>
-                                ))}
-                              </div>
+                              {validSubjects.length > 0 ? (
+                                <div className="flex items-center gap-1">
+                                  {validSubjects.map((sub) => (
+                                    <span key={sub} className="rounded bg-[#F7F8F6] border border-[#E3E8E4] px-1.5 py-0.5 text-[10px] font-medium text-[#68766F]">
+                                      {sub}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-[#68766F] text-[11px] italic">Not selected</span>
+                              )}
                             </td>
                             <td className="py-3 px-4">
                               {std.licenseStatus === "active" ? (
@@ -917,10 +1002,21 @@ export default function SchoolDashboardPage() {
                                   <span className="size-1.5 rounded-full bg-[#12664F]" />
                                   Active ({std.daysLeft ?? 28}d left)
                                 </span>
+                              ) : std.licenseStatus === "expired" ? (
+                                <button
+                                  type="button"
+                                  onClick={() => window.location.assign(checkoutUrlFor([std.id]))}
+                                  className="inline-flex items-center gap-1 rounded bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-900 border border-red-200 hover:bg-red-100 transition cursor-pointer"
+                                  title="Candidate licence expired. Click to renew."
+                                >
+                                  <AlertCircle size={10} className="text-red-700" />
+                                  <span>Expired</span>
+                                  <span className="text-[9px] underline">Renew</span>
+                                </button>
                               ) : (
                                 <button
                                   type="button"
-                                  onClick={() => window.location.assign(`/schools/checkout?students=1`)}
+                                  onClick={() => window.location.assign(checkoutUrlFor([std.id]))}
                                   className="inline-flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-900 border border-amber-200 hover:bg-amber-100 transition cursor-pointer"
                                   title="Candidate unlicensed. Click to checkout 1 licence."
                                 >
@@ -956,18 +1052,29 @@ export default function SchoolDashboardPage() {
                               )}
                             </td>
                             <td className="py-3 px-4 text-right">
-                              <div className="flex items-center justify-end gap-1.5">
+                              <div className="flex items-center justify-end gap-1">
                                 <button
                                   type="button"
-                                  onClick={() => toggleExpandStudent(std.id)}
-                                  className="text-[11px] font-medium text-[#68766F] hover:text-[#12664F] px-1.5 py-0.5 rounded hover:bg-[#F7F8F6] transition cursor-pointer"
+                                  onClick={() => setEditingStudent(std)}
+                                  className="p-1.5 rounded text-[#68766F] hover:text-[#12664F] hover:bg-[#EAF4EF] transition cursor-pointer"
+                                  title="Edit candidate record"
+                                  aria-label={`Edit ${std.name}`}
                                 >
-                                  {isExpanded ? "Collapse" : "Details"}
+                                  <Pencil size={13} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setDisconnectTargets([std])}
+                                  className="p-1.5 rounded text-[#68766F] hover:text-amber-800 hover:bg-amber-50 transition cursor-pointer"
+                                  title="Disconnect candidate from school"
+                                  aria-label={`Disconnect ${std.name}`}
+                                >
+                                  <UserMinus size={13} />
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setSelectedDrilldownStudent(std)}
-                                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#12664F] hover:underline cursor-pointer"
+                                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#12664F] hover:underline cursor-pointer pl-1"
                                 >
                                   <span>Inspect</span>
                                   <ChevronRight size={13} />
@@ -1010,7 +1117,7 @@ export default function SchoolDashboardPage() {
                                         <div className="flex items-center justify-between text-[#68766F]">
                                           <span>Subject Combination:</span>
                                           <span className="font-mono text-[#12664F] font-medium">
-                                            {(std.subjects || ["ENG", "MTH", "PHY", "CHM"]).join(" · ")}
+                                            {validSubjects.length > 0 ? validSubjects.join(" · ") : "Not selected yet"}
                                           </span>
                                         </div>
                                       </div>
@@ -1070,9 +1177,24 @@ export default function SchoolDashboardPage() {
                                         </div>
                                       </div>
 
-                                      <p className="text-[10px] text-[#68766F] pt-1 leading-relaxed">
-                                        Students sign in at <strong className="text-[#17231F]">jambprep.pages.dev/login</strong> using their registered email and credentials.
-                                      </p>
+                                      <div className="pt-2 border-t border-[#E3E8E4] flex items-center gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => setEditingStudent(std)}
+                                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-md border border-[#E3E8E4] bg-white py-1.5 text-[11px] font-semibold text-[#17231F] hover:bg-[#F7F8F6] transition cursor-pointer"
+                                        >
+                                          <Pencil size={11} />
+                                          <span>Edit Record</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setDisconnectTargets([std])}
+                                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 py-1.5 text-[11px] font-semibold text-amber-900 hover:bg-amber-100 transition cursor-pointer"
+                                        >
+                                          <UserMinus size={11} />
+                                          <span>Disconnect</span>
+                                        </button>
+                                      </div>
                                     </div>
 
                                     {/* Card 3: Licensing Status & Instant Action */}
@@ -1107,7 +1229,7 @@ export default function SchoolDashboardPage() {
 
                                       {std.licenseStatus !== "active" ? (
                                         <Link
-                                          href="/schools/checkout?students=1"
+                                          href={checkoutUrlFor([std.id])}
                                           className="w-full inline-flex items-center justify-center gap-1.5 rounded-md bg-[#12664F] text-white py-2 text-xs font-semibold hover:bg-[#0B3028] shadow-xs transition cursor-pointer"
                                         >
                                           <CreditCard size={13} />
@@ -1116,7 +1238,7 @@ export default function SchoolDashboardPage() {
                                         </Link>
                                       ) : (
                                         <Link
-                                          href="/schools/checkout?students=1"
+                                          href={checkoutUrlFor([std.id])}
                                           className="w-full inline-flex items-center justify-center gap-1.5 rounded-md border border-[#E3E8E4] bg-white text-[#17231F] py-1.5 text-xs font-medium hover:bg-[#F7F8F6] transition cursor-pointer"
                                         >
                                           <CreditCard size={12} />
@@ -1318,6 +1440,23 @@ export default function SchoolDashboardPage() {
         students={students}
         schoolName={schoolName}
         onProceed={handleModalProceed}
+      />
+
+      {/* Candidate Edit Modal */}
+      <EditStudentModal
+        isOpen={!!editingStudent}
+        onClose={() => setEditingStudent(null)}
+        student={editingStudent}
+        onStudentUpdated={handleStudentUpdated}
+      />
+
+      {/* Single / Batch Candidate Disconnect Modal (Requires Admin Password) */}
+      <DisconnectStudentModal
+        isOpen={disconnectTargets.length > 0}
+        onClose={() => setDisconnectTargets([])}
+        targets={disconnectTargets.map((s) => ({ id: s.id, name: s.name, email: s.email }))}
+        schoolName={schoolName}
+        onDisconnected={handleStudentsDisconnected}
       />
     </div>
   );

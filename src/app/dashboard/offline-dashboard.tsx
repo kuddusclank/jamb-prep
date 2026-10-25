@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "@/components/pending-link";
 import {
-  Sparkles,
   BookOpen,
   CheckCircle2,
   Clock,
@@ -81,7 +80,7 @@ export function OfflineDashboard({ profile }: OfflineDashboardProps) {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-100 text-[#116149] text-xs font-bold uppercase tracking-wider">
-                <Sparkles size={12} className="text-amber-600" /> Pro Offline Active
+                Pro Offline Active
               </span>
               {formattedExpiry && (
                 <span className="text-xs text-slate-500 font-medium">

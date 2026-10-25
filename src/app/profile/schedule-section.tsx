@@ -12,12 +12,13 @@ import {
   Lock,
   RefreshCw,
   Smartphone,
-  Sparkles,
   Trash2,
   Trophy,
   AlertTriangle,
+  Building2,
 } from "lucide-react";
 import Link from "@/components/pending-link";
+import { useAccountTier } from "@/lib/auth/use-account-tier";
 import { createNativeApiClient } from "@/lib/api/native-client";
 import {
   detectPushCapability,
@@ -98,6 +99,7 @@ const COMMON_TIME_ZONES = [
 export function ScheduleSection() {
   const [data, setData] = useState<StudyScheduleResponseDto | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const tier = useAccountTier();
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Form state populated only after server response arrives
@@ -425,8 +427,16 @@ export function ScheduleSection() {
               href="/pricing"
               className="shrink-0 min-h-11 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 text-xs font-semibold text-white hover:bg-[#0b4936] transition shadow-sm"
             >
-              <Sparkles size={14} className="text-amber-300" aria-hidden="true" />
-              View plans
+              {tier.isSchoolAttached ? (
+                <>
+                  <Building2 size={14} className="text-emerald-200" aria-hidden="true" />
+                  View School License
+                </>
+              ) : (
+                <>
+                  View plans
+                </>
+              )}
             </Link>
           </div>
 
@@ -476,8 +486,16 @@ export function ScheduleSection() {
               href="/pricing"
               className="shrink-0 min-h-11 inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 text-xs font-semibold text-white hover:bg-[#0b4936] transition"
             >
-              <Sparkles size={14} className="text-amber-300" aria-hidden="true" />
-              Renew Premium
+              {tier.isSchoolAttached ? (
+                <>
+                  <Building2 size={14} className="text-emerald-200" aria-hidden="true" />
+                  View School License
+                </>
+              ) : (
+                <>
+                  Renew Premium
+                </>
+              )}
             </Link>
           </div>
 

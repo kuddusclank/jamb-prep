@@ -18,6 +18,14 @@ import {
   CreditCard 
 } from "lucide-react";
 
+function extractApiMessage(data: any, fallback: string): string {
+  const err = data?.error;
+  if (typeof err === "string" && err.trim()) return err;
+  if (err && typeof err === "object" && typeof err.message === "string" && err.message.trim()) return err.message;
+  if (typeof data?.message === "string" && data.message.trim()) return data.message;
+  return fallback;
+}
+
 interface VerificationResponse {
   success: boolean;
   alreadySettled?: boolean;
@@ -71,9 +79,10 @@ export function SchoolVerifyClient() {
           ...(token ? { "Authorization": `Bearer ${token}` } : {}),
         };
 
-        let verifyData = null;
+        let verifyData: VerificationResponse | null = null;
+        let failureMessage: string | null = null;
 
-        // 1. Target live Worker API
+        // Target authoritative Worker API
         try {
           const res = await fetch(`${apiBase}/api/v1/schools/checkout/verify`, {
             method: "POST",
@@ -81,59 +90,26 @@ export function SchoolVerifyClient() {
             body: JSON.stringify({ reference }),
           });
 
-          if (res.ok) {
-            const data = await res.json();
-            if (data?.success) {
-              verifyData = data;
-            }
+          const data = await res.json().catch(() => null);
+
+          if (res.ok && data?.success) {
+            verifyData = data;
+          } else {
+            failureMessage = extractApiMessage(data, "Payment has not been confirmed by Paystack.");
           }
         } catch {
-          // Fall through to Next.js API route
-        }
-
-        // 2. Next.js API route fallback if worker was unreachable
-        if (!verifyData) {
-          try {
-            const res = await fetch("/api/schools/checkout/verify/", {
-              method: "POST",
-              headers,
-              body: JSON.stringify({ reference }),
-            });
-
-            if (res.ok) {
-              const data = await res.json();
-              if (data?.success) {
-                verifyData = data;
-              }
-            }
-          } catch {
-            // Static host fallback
-          }
+          failureMessage = "Could not connect to payment verification service. Please retry or check your network.";
         }
 
         if (!isMounted) return;
 
-        if (!verifyData || !verifyData.success) {
-          verifyData = {
-            success: true,
-            activatedCount: 50,
-            order: {
-              id: `ord-${Date.now()}`,
-              reference,
-              studentCount: 50,
-              durationMonths: 3,
-              totalAmountKobo: 22500000,
-              status: "completed",
-              settledAt: new Date().toISOString(),
-              expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-              schoolName: "Institutional Partner",
-              schoolCode: "SCH-PARTNER",
-            },
-          };
+        if (verifyData && verifyData.success) {
+          setResult(verifyData);
+          setLoading(false);
+        } else {
+          setError(failureMessage || "Transaction was cancelled or not confirmed by Paystack. No licences have been granted.");
+          setLoading(false);
         }
-
-        setResult(verifyData);
-        setLoading(false);
       } catch (err: unknown) {
         if (!isMounted) return;
         setError(err instanceof Error ? err.message : "Failed to verify transaction with payment gateway.");

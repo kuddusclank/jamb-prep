@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { getAccountCoordinator } from '../auth/account-coordinator';
 import { useBrowserAccount } from '../../components/browser-account-boundary';
+import { isSigningOut } from '../client-actions';
 import StudySkeleton from '../../components/study-skeleton';
 import { saveProfileSnapshot, getProfileSnapshot } from '../offline/idb-storage';
 import { saveOfflineProfile, getOfflineProfile } from '../offline/offline-profile-cache';
@@ -38,17 +40,18 @@ export function useApiResource<T>(path: string | null) {
     });
   }, []);
   useEffect(() => {
+    if (isSigningOut()) return;
     let active = true;
     const cached = path && userId ? coordinator.getCachedResource<T>(path) : null;
     if (cached !== null && userId && path) {
       setValue({ userId, path, revision, data: cached });
     } else {
-      setValue(null);
+      setValue((prev) => (prev && prev.userId === userId && prev.path === path ? prev : null));
     }
     setFailure(null);
     if (path && session.status === 'authenticated' && userId) {
       void coordinator.loadResource<T>(path).then((data) => {
-        if (active) {
+        if (active && !isSigningOut()) {
           setValue({ userId, path, revision, data });
           if (path === '/api/v1/profile' && data && typeof data === 'object') {
             const prof = data as unknown as ProfileData;
@@ -77,7 +80,7 @@ export function useApiResource<T>(path: string | null) {
           }
         }
       }).catch(async (error: unknown) => {
-        if (!active) return;
+        if (!active || isSigningOut()) return;
         // Auto-detect offline condition if network/DNS/timeout error occurs or navigator says offline
         const isOfflineOrNetworkFailure =
           (typeof navigator !== 'undefined' && !navigator.onLine) ||
@@ -164,11 +167,47 @@ export function useApiResource<T>(path: string | null) {
     }
     return () => { active = false; };
   }, [path, userId, session.status, revision]);
-  return { data: session.status === 'authenticated' && value?.userId === userId && value.path === path && value.revision === revision ? value.data : null,
-    error: failure?.userId === userId && failure.path === path && failure.revision === revision ? failure.message : null,
+  return { data: (session.status === 'authenticated' || isSigningOut()) && value?.userId === userId && value.path === path ? value.data : null,
+    error: !isSigningOut() && failure?.userId === userId && failure.path === path && failure.revision === revision ? failure.message : null,
     retry: () => { getAccountCoordinator().clear(); setRevision((current) => current + 1); } };
 }
 export function ResourceStatus({ error, retry }: { error: string | null; retry: () => void }) {
   if (!error) return <StudySkeleton />;
-  return <section role={error ? 'alert' : 'status'} className="shell section-space"><div className="rounded-2xl border border-slate-200 bg-white p-6"><p>{error ?? 'Loading data…'}</p>{error && <button type="button" onClick={retry} className="mt-4 rounded-full bg-[#116149] px-5 py-3 text-white">Retry</button>}</div></section>;
+  const isPremiumError = Boolean(
+    error && (
+      error.toLowerCase().includes('premium') ||
+      error.toLowerCase().includes('upgrade') ||
+      error.toLowerCase().includes('entitlement') ||
+      error.toLowerCase().includes('school')
+    )
+  );
+  const isSchoolMessage = Boolean(error && (error.toLowerCase().includes('school') || error.toLowerCase().includes('administrator')));
+
+  return (
+    <section role={error ? 'alert' : 'status'} className="shell section-space">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
+        <p className="font-medium text-slate-800">{error ?? 'Loading data…'}</p>
+        {isPremiumError ? (
+          <div className="mt-4">
+            <Link
+              href="/pricing"
+              className="inline-flex items-center justify-center rounded-full bg-[#116149] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#0e4e3a] transition-colors"
+            >
+              {isSchoolMessage ? "Contact School Admin" : "Upgrade to Pro"}
+            </Link>
+          </div>
+        ) : (
+          error && (
+            <button
+              type="button"
+              onClick={retry}
+              className="mt-4 rounded-full bg-[#116149] px-5 py-3 text-sm font-semibold text-white hover:bg-[#0e4e3a] transition-colors"
+            >
+              Retry
+            </button>
+          )
+        )}
+      </div>
+    </section>
+  );
 }

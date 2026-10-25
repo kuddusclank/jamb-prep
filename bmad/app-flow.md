@@ -9,12 +9,14 @@
 ## 1. Route Map & Access Control Matrix
 
 ```
-/ (Landing Page) [Public]
+/ (Landing Page) [Public — Includes 10s Combination Prompt & Inline Course Search]
+├── /combinations [Public — SEO Course → Subject Combination Finder & Lock-In Funnel]
 ├── /login [Public / Guest-only]
-├── /register [Public / Guest-only]
+├── /register [Public / Guest-only — Displays Locked Course Combination Badge & Finder Link]
 ├── /pricing [Public]
+├── /schools [Public — B2B School Cohort Calculator & Application]
 │
-├── /onboarding [Auth Required - Incomplete Setup]
+├── /onboarding [Auth Required - Pre-fills Locked Course Combination + Round-Trip Link to /combinations?from=onboarding]
 │
 ├── /dashboard [Auth Required]
 │

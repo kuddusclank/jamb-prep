@@ -9,10 +9,11 @@ import {
   LogOut, 
   ChevronDown, 
   ShieldCheck, 
-  Sparkles,
-  LayoutDashboard
+  LayoutDashboard,
+  Building2
 } from "lucide-react";
 import { signOutAction } from "@/lib/client-actions";
+import { useAccountTier } from "@/lib/auth/use-account-tier";
 
 interface UserDropdownProps {
   user: {
@@ -26,6 +27,7 @@ interface UserDropdownProps {
 export function UserDropdown({ user, isPremium = false, expiresAt }: UserDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const tier = useAccountTier();
 
   // Close when clicking outside
   useEffect(() => {
@@ -162,8 +164,14 @@ export function UserDropdown({ user, isPremium = false, expiresAt }: UserDropdow
                 onClick={() => setIsOpen(false)}
                 className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-[#116149] bg-emerald-50/70 hover:bg-emerald-100/70 transition-colors"
               >
-                <Sparkles size={14} className="text-amber-600" />
-                <span>Upgrade to Unlimited</span>
+                {tier.isSchoolAttached ? (
+                  <>
+                    <Building2 size={14} className="text-[#116149]" />
+                    <span>School License (Contact Admin)</span>
+                  </>
+                ) : (
+                  <span>Upgrade to Unlimited</span>
+                )}
               </Link>
             )}
           </div>

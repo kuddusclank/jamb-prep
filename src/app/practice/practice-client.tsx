@@ -22,16 +22,17 @@ import {
   XCircle, 
   ArrowRight, 
   RotateCcw, 
-  Sparkles, 
   Loader2, 
   Layers, 
   HelpCircle,
   Award,
-  Lock
+  Lock,
+  Building2
 } from "lucide-react";
 import Link from "@/components/pending-link";
 import { InspectableText } from "@/components/dictionary/inspectable-text";
 import { QuickLookupDialog } from "@/components/dictionary/quick-lookup-dialog";
+import { useAccountTier } from "@/lib/auth/use-account-tier";
 
 import { useRouter } from "next/navigation";
 import type { PracticeSubject, PracticeTopic } from "@/lib/api/practice-dtos";
@@ -77,6 +78,7 @@ export function PracticeClient({
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isQuickLookupOpen, setIsQuickLookupOpen] = useState<boolean>(false);
+  const tier = useAccountTier();
 
   const subject=enrolledSubjects.find(s=>s.code===selectedSubject);
   const selectedTopic=subject?.topics.find(t=>t.slug===selectedTopicSlug||t.aliases.some(a=>a.toLowerCase()===selectedTopicSlug?.toLowerCase()));
@@ -198,7 +200,13 @@ export function PracticeClient({
                 href="/pricing"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-6 py-3.5 text-sm font-semibold text-amber-900 hover:bg-amber-100 transition-colors"
               >
-                <Sparkles size={16} className="text-amber-600" /> Upgrade for Unlimited Practice
+                {tier.isSchoolAttached ? (
+                  <>
+                    <Building2 size={16} className="text-[#116149]" /> Contact School Admin for Unlimited Practice
+                  </>
+                ) : (
+                  <>Upgrade for Unlimited Practice</>
+                )}
               </Link>
             )}
             <Link
@@ -322,7 +330,15 @@ export function PracticeClient({
               href="/pricing"
               className="w-full flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 py-4 text-sm font-semibold text-white shadow-sm hover:bg-[#0e523e] transition-all cursor-pointer text-center"
             >
-              <Sparkles size={18} className="text-[#E7B85A]" /> Upgrade to Pro for Unlimited Practice <ArrowRight size={16} />
+              {tier.isSchoolAttached ? (
+                <>
+                  <Building2 size={18} className="text-[#E7B85A]" /> Contact School Admin for Unlimited Practice <ArrowRight size={16} />
+                </>
+              ) : (
+                <>
+                  Upgrade to Pro for Unlimited Practice <ArrowRight size={16} />
+                </>
+              )}
             </Link>
           ) : (
             <button
@@ -381,11 +397,13 @@ export function PracticeClient({
             <Link
               href="/pricing"
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 transition-colors cursor-pointer"
-              title="Quick Dictionary is a Pro feature — click to upgrade"
+              title={tier.isSchoolAttached ? `Quick Dictionary requires an active license from ${tier.school?.schoolName || 'your school'}` : "Quick Dictionary is a Pro feature — click to upgrade"}
             >
-              <Lock size={11} />
+              {tier.isSchoolAttached ? <Building2 size={11} /> : <Lock size={11} />}
               <span>Dictionary</span>
-              <span className="text-[9px] font-extrabold uppercase bg-amber-200/90 text-amber-950 px-1 rounded">PRO</span>
+              <span className="text-[9px] font-extrabold uppercase bg-amber-200/90 text-amber-950 px-1 rounded">
+                {tier.isSchoolAttached ? "SCHOOL" : "PRO"}
+              </span>
             </Link>
           )}
           <ReportQuestionDialog key={currentQ.id} questionId={currentQ.id} variant="icon" />
@@ -416,11 +434,13 @@ export function PracticeClient({
                 <Link
                   href="/pricing"
                   className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-900 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full hover:bg-amber-200 transition-colors cursor-pointer"
-                  title="Vocabulary Inspector is a Pro feature — click to unlock"
+                  title={tier.isSchoolAttached ? `Vocabulary Inspector is unlocked through your school license with ${tier.school?.schoolName || 'your school'}` : "Vocabulary Inspector is a Pro feature — click to unlock"}
                 >
-                  <Lock size={10} />
+                  {tier.isSchoolAttached ? <Building2 size={10} /> : <Lock size={10} />}
                   <span>Tap words to inspect</span>
-                  <span className="text-[9px] font-extrabold uppercase bg-amber-200/90 text-amber-950 px-1 rounded">PRO</span>
+                  <span className="text-[9px] font-extrabold uppercase bg-amber-200/90 text-amber-950 px-1 rounded">
+                    {tier.isSchoolAttached ? "SCHOOL" : "PRO"}
+                  </span>
                 </Link>
               )
             )}

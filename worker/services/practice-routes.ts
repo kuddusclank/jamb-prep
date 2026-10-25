@@ -6,6 +6,7 @@ import {loadAssessmentPools,selectAssessmentForm} from './assessment-selector';
 import {getUserSubscriptionStatus} from './subscription-service';
 import { practiceCatalogue } from './practice-catalogue-service';
 import { getOrIssueWeeklyPack, syncWeeklyPackAnswers, type SyncAnswerItem } from './weekly-pack-service';
+import { submitAndScoreExamAttemptAtomic } from './exam-foundation-service';
 
 export const PRACTICE_ROUTES: RouteDefinition[] = [
   {id:'practice.weekly.get',method:'GET',pattern:'/api/v1/practice/weekly-pack',auth:'student',handler:async ctx=>{
@@ -31,7 +32,14 @@ export const PRACTICE_ROUTES: RouteDefinition[] = [
   {id:'mock.readiness',method:'GET',pattern:'/api/v1/mock/readiness',auth:'student',handler:async ctx=>{
     const sql=ctx.getDb().sql;const userId=ctx.actor!.userId;
     const [profile]=await sql`SELECT exam_year FROM student_preferences WHERE user_id=${userId}::uuid`;
-    const [active]=await sql`SELECT id FROM attempts WHERE user_id=${userId}::uuid AND mode='mock' AND status='in_progress' ORDER BY started_at DESC,id DESC LIMIT 1`;
+    const activeRows=await sql<Array<{id:string;expires_at?:string}>>`SELECT id,expires_at FROM attempts WHERE user_id=${userId}::uuid AND mode='mock' AND status='in_progress' ORDER BY started_at DESC,id DESC LIMIT 1`;
+    let active: {id:string;expires_at?:string} | undefined = activeRows[0];
+    if(active?.expires_at && Date.parse(String(active.expires_at)) <= ctx.now.getTime()){
+      await submitAndScoreExamAttemptAtomic(ctx.getDb(),{attemptId:active.id,userId,serverSubmittedAt:ctx.now.toISOString()}).catch(async()=>{
+        await sql`UPDATE attempts SET status='expired',completed_at=${ctx.now.toISOString()}::timestamptz WHERE id=${active!.id}::uuid AND status='in_progress'`;
+      });
+      active=undefined;
+    }
     const subscription=await getUserSubscriptionStatus(sql,userId,ctx.now);
     const subjects=await sql<Array<{id:string;code:string;name:string;is_compulsory:boolean;available:number}>>`SELECT s.id,s.code,s.name,s.is_compulsory,(SELECT count(*)::int FROM study_question_pool q WHERE q.subject_id=s.id) AS available FROM subjects s JOIN student_subjects ss ON ss.subject_id=s.id WHERE ss.user_id=${userId}::uuid AND s.is_active ORDER BY s.is_compulsory DESC,s.display_order,s.code`;
     const checked=[];

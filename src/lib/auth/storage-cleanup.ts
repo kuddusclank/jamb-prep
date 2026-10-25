@@ -55,6 +55,7 @@ export const PRIVATE_STORAGE_KEY_PREFIXES: ReadonlyArray<string> = [
   'jambprep_exam_',
   'jambprep_practice_',
   'jambprep_push_',
+  'jambprep_onboarding_draft_',
 ];
 
 const inMemoryCacheClearers = new Set<() => void>();
@@ -177,6 +178,23 @@ export function clearPrivateBrowserState(options?: {
 
   const removedLocalStorageKeys = removeMatchingKeys(localStorage);
   const removedSessionStorageKeys = removeMatchingKeys(sessionStorage);
+
+  // If an authenticated user was previously active and is now logging out or switching accounts,
+  // also clear any locked course combination so it does not leak to a different student.
+  // (When previousUserId is null, preserve pre-signup locked combination across guest -> register -> onboarding.)
+  if (previousUserId && localStorage) {
+    try {
+      const lockedComboKey = 'jambprep_locked_combination_v1';
+      if (localStorage.getItem(lockedComboKey) !== null) {
+        localStorage.removeItem(lockedComboKey);
+        if (!removedLocalStorageKeys.includes(lockedComboKey)) {
+          removedLocalStorageKeys.push(lockedComboKey);
+        }
+      }
+    } catch {
+      // Ignore storage access errors
+    }
+  }
 
   if (options?.nextUserId && localStorage) {
     try {

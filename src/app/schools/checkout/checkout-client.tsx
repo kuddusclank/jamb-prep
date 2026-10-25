@@ -31,7 +31,14 @@ import {
 export function SchoolCheckoutClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialStudents = Number(searchParams.get("students")) || 50;
+  const selectedStudentIds = (searchParams.get("ids") || "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter((id) => /^[0-9a-fA-F-]{36}$/.test(id));
+  const hasSelectedCandidates = selectedStudentIds.length > 0;
+  const initialStudents = hasSelectedCandidates
+    ? selectedStudentIds.length
+    : Number(searchParams.get("students")) || 1;
 
   const [user, setUser] = useState<any>(null);
   const [studentCount, setStudentCount] = useState<number>(
@@ -73,6 +80,10 @@ export function SchoolCheckoutClient() {
 
   const handlePaystackCheckout = async () => {
     setError(null);
+    if (!hasSelectedCandidates) {
+      setError("Please select at least one candidate from your school dashboard before checking out licences.");
+      return;
+    }
     setIsPending(true);
 
     try {
@@ -92,6 +103,7 @@ export function SchoolCheckoutClient() {
       };
 
       let authUrl = null;
+      let workerError: string | null = null;
 
       // 1. Target live Cloudflare Worker API
       try {
@@ -101,45 +113,35 @@ export function SchoolCheckoutClient() {
           body: JSON.stringify({
             studentCount: quote.studentCount,
             durationMonths: quote.durationMonths,
+            studentIds: selectedStudentIds,
           }),
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.authorizationUrl) {
-            authUrl = data.authorizationUrl;
-          }
+        const data = await res.json().catch(() => null);
+        if (res.ok && data?.authorizationUrl) {
+          authUrl = data.authorizationUrl;
+        } else if (!res.ok) {
+          const apiErr = data?.error;
+          workerError =
+            (typeof apiErr === "string" && apiErr) ||
+            (apiErr && typeof apiErr.message === "string" && apiErr.message) ||
+            (typeof data?.message === "string" && data.message) ||
+            "Checkout could not be started. Please try again.";
         }
       } catch {
         // Fall through to Next.js API route / fallback
       }
 
-      // 2. Next.js API route fallback if worker was unreachable
-      if (!authUrl) {
-        try {
-          const res = await fetch("/api/schools/checkout/initialize/", {
-            method: "POST",
-            headers,
-            body: JSON.stringify({
-              studentCount: quote.studentCount,
-              durationMonths: quote.durationMonths,
-            }),
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            if (data?.authorizationUrl) {
-              authUrl = data.authorizationUrl;
-            }
-          }
-        } catch {
-          // Fall through
-        }
+      if (workerError) {
+        setError(workerError);
+        setIsPending(false);
+        return;
       }
 
       if (!authUrl) {
-        const reference = `SCH-ORD-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-        authUrl = `/schools/checkout/verify?reference=${reference}`;
+        setError("Checkout service is unreachable right now. No payment was taken. Please try again.");
+        setIsPending(false);
+        return;
       }
 
       window.location.assign(authUrl);
@@ -203,6 +205,25 @@ export function SchoolCheckoutClient() {
               Select the size of your examination cohort and term duration. Instant activation upon one-time payment.
             </p>
           </div>
+
+          {!hasSelectedCandidates && (
+            <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs font-medium text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <AlertCircle size={18} className="shrink-0 text-amber-700 mt-0.5" />
+                <div>
+                  <strong className="block font-bold">No Candidates Selected for Checkout</strong>
+                  <span>Please select at least one candidate from your school roster table before purchasing licences.</span>
+                </div>
+              </div>
+              <Link
+                href="/schools/dashboard"
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-[#116149] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#0b4936] transition"
+              >
+                <ArrowLeft size={13} />
+                <span>Select Candidates</span>
+              </Link>
+            </div>
+          )}
 
           {error && (
             <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-medium text-red-800 flex items-start gap-3">
@@ -325,8 +346,8 @@ export function SchoolCheckoutClient() {
                   <button
                     type="button"
                     onClick={handlePaystackCheckout}
-                    disabled={isPending}
-                    className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#116149] px-6 py-3.5 text-xs font-bold text-white shadow-md shadow-[#116149]/20 hover:bg-[#0b4936] transition cursor-pointer disabled:opacity-50"
+                    disabled={isPending || !hasSelectedCandidates}
+                    className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#116149] px-6 py-3.5 text-xs font-bold text-white shadow-md shadow-[#116149]/20 hover:bg-[#0b4936] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isPending ? (
                       <>

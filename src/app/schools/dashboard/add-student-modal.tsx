@@ -25,9 +25,7 @@ export function AddStudentModal({ isOpen, onClose, onStudentAdded, schoolCode }:
   if (!isOpen) return null;
 
   const predictedPassword = lastName.trim()
-    ? (lastName.trim().toUpperCase().length >= 6
-        ? lastName.trim().toUpperCase()
-        : `${lastName.trim().toUpperCase()}123456`.slice(0, 6))
+    ? lastName.trim().toUpperCase()
     : "LASTNAME";
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,53 +34,36 @@ export function AddStudentModal({ isOpen, onClose, onStudentAdded, schoolCode }:
     setIsPending(true);
 
     try {
-      let created = null;
-      try {
-        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
-        const supabase = createClient();
-        const sessionRes = await supabase.auth.getSession();
-        const token = sessionRes?.data?.session?.access_token;
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
+      const supabase = createClient();
+      const sessionRes = await supabase.auth.getSession();
+      const token = sessionRes?.data?.session?.access_token;
 
-        const res = await fetch(`${apiBase}/api/v1/schools/students`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { "Authorization": `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify({
-            firstName,
-            lastName,
-            email,
-            studentIdentifier: studentIdentifier || null,
-            phone: phone || null,
-            ingestionMethod: "manual",
-          }),
-        });
+      const res = await fetch(`${apiBase}/api/v1/schools/students`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email,
+          studentIdentifier: studentIdentifier || null,
+          phone: phone || null,
+          ingestionMethod: "manual",
+        }),
+      });
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.students && data.students[0]) {
-            created = data.students[0];
-          }
-        }
-      } catch {
-        // Fallback for static hosts
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData?.error || errData?.message || "Failed to create candidate account.");
       }
 
+      const data = await res.json();
+      const created = data?.students?.[0];
       if (!created) {
-        const cleanLast = lastName.trim().toUpperCase();
-        const defaultPassword = cleanLast.length >= 6 ? cleanLast : `${cleanLast}123456`.slice(0, 6);
-        created = {
-          id: `std-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          name: `${firstName.trim()} ${lastName.trim()}`,
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          email: email.trim().toLowerCase(),
-          studentIdentifier: studentIdentifier ? studentIdentifier.trim() : null,
-          defaultPassword,
-          licenseStatus: "inactive",
-          enrolmentMethod: "manual",
-        };
+        throw new Error("Candidate record could not be saved.");
       }
 
       setCreatedStudent(created);
@@ -289,7 +270,7 @@ export function AddStudentModal({ isOpen, onClose, onStudentAdded, schoolCode }:
                   Generated Initial Password
                 </span>
                 <p className="text-[11px] text-[#68766F] leading-relaxed">
-                  Calculated automatically: <code className="font-mono font-semibold text-[#12664F] bg-white px-1.5 py-0.5 rounded border border-[#E3E8E4]">{predictedPassword}</code> (Surname in uppercase, padded to 6 chars).
+                  Calculated automatically: <code className="font-mono font-semibold text-[#12664F] bg-white px-1.5 py-0.5 rounded border border-[#E3E8E4]">{predictedPassword}</code> (Surname in uppercase).
                 </p>
               </div>
 

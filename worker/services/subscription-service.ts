@@ -17,6 +17,14 @@ import { assertActorOwnership } from '../api/authorization';
 import { RequestDbContext, SqlTagExecutor } from '../api/db-context';
 import { ApiError } from '../api/errors';
 
+export interface SchoolAffiliation {
+  schoolId: string;
+  schoolName: string;
+  schoolCode: string;
+  licenseStatus: 'inactive' | 'active' | 'expired';
+  licenseExpiresAt: string | null;
+}
+
 export interface SubscriptionStatus {
   isPremium: boolean;
   expiresAt: string | null;
@@ -24,6 +32,8 @@ export interface SubscriptionStatus {
   planCode: string | null;
   autoRenew: boolean;
   cancelledAt: string | null;
+  isSchoolAttached: boolean;
+  school: SchoolAffiliation | null;
 }
 
 export interface PaystackMetadata {
@@ -44,6 +54,8 @@ export interface CheckoutPricing {
   userEmail: string;
   isAlreadyPremium: boolean;
   currentExpiresAt: string | null;
+  isSchoolAttached: boolean;
+  school: SchoolAffiliation | null;
 }
 
 export const BASE_SUBSCRIPTION_AMOUNT_KOBO = 100_000; // ₦1,000
@@ -57,21 +69,58 @@ export async function getUserSubscriptionStatus(
   userId: string,
   now: Date = new Date()
 ): Promise<SubscriptionStatus> {
-  const rows = await sql<
-    Array<{
-      expires_at: string | Date;
-      plan_code: string | null;
-      auto_renew: boolean | null;
-      cancelled_at: string | Date | null;
-    }>
-  >`
-    SELECT expires_at, plan_code, auto_renew, cancelled_at
-    FROM subscription_entitlements
-    WHERE user_id = ${userId}::uuid
-    LIMIT 1
-  `;
+  const [entitlementRows, schoolRows] = await Promise.all([
+    sql<
+      Array<{
+        expires_at: string | Date;
+        plan_code: string | null;
+        auto_renew: boolean | null;
+        cancelled_at: string | Date | null;
+      }>
+    >`
+      SELECT expires_at, plan_code, auto_renew, cancelled_at
+      FROM subscription_entitlements
+      WHERE user_id = ${userId}::uuid
+      LIMIT 1
+    `,
+    sql<
+      Array<{
+        school_id: string;
+        school_name: string;
+        school_code: string;
+        license_status: 'inactive' | 'active' | 'expired';
+        license_expires_at: string | Date | null;
+      }>
+    >`
+      SELECT 
+        s.id AS school_id,
+        s.name AS school_name,
+        s.code AS school_code,
+        CASE
+          WHEN ss.license_status = 'active' AND ss.license_expires_at IS NOT NULL AND ss.license_expires_at <= NOW()
+          THEN 'expired'
+          ELSE ss.license_status
+        END AS license_status,
+        ss.license_expires_at
+      FROM school_students ss
+      JOIN schools s ON s.id = ss.school_id
+      WHERE ss.student_user_id = ${userId}::uuid
+      ORDER BY (ss.license_status = 'active' AND (ss.license_expires_at IS NULL OR ss.license_expires_at > NOW())) DESC, ss.created_at DESC
+      LIMIT 1
+    `.catch(() => []),
+  ]);
 
-  const entitlement = rows[0];
+  const schoolRow = schoolRows[0] ?? null;
+  const isSchoolAttached = Boolean(schoolRow);
+  const school: SchoolAffiliation | null = schoolRow ? {
+    schoolId: schoolRow.school_id,
+    schoolName: schoolRow.school_name,
+    schoolCode: schoolRow.school_code,
+    licenseStatus: schoolRow.license_status,
+    licenseExpiresAt: schoolRow.license_expires_at ? new Date(schoolRow.license_expires_at).toISOString() : null,
+  } : null;
+
+  const entitlement = entitlementRows[0];
   if (!entitlement) {
     return {
       isPremium: false,
@@ -80,6 +129,8 @@ export async function getUserSubscriptionStatus(
       planCode: null,
       autoRenew: false,
       cancelledAt: null,
+      isSchoolAttached,
+      school,
     };
   }
 
@@ -95,6 +146,8 @@ export async function getUserSubscriptionStatus(
     planCode: entitlement.plan_code,
     autoRenew: isPremium ? (entitlement.auto_renew ?? true) : false,
     cancelledAt: entitlement.cancelled_at ? new Date(entitlement.cancelled_at).toISOString() : null,
+    isSchoolAttached,
+    school,
   };
 }
 
@@ -145,6 +198,8 @@ export async function getCheckoutPricing(
     userEmail,
     isAlreadyPremium: subStatus.isPremium,
     currentExpiresAt: subStatus.expiresAt,
+    isSchoolAttached: subStatus.isSchoolAttached,
+    school: subStatus.school,
   };
 }
 

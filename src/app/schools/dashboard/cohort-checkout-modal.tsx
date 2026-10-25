@@ -20,7 +20,7 @@ interface StudentItem {
   studentIdentifier?: string | null;
   defaultPassword?: string;
   subjects?: string[];
-  licenseStatus: "active" | "inactive";
+  licenseStatus: "active" | "inactive" | "expired";
   daysLeft?: number;
   lastActive?: string;
   averageScore?: number | null;

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Lock, ArrowRight, CheckCircle2, Sparkles, BookOpen } from "lucide-react";
+import { Lock, ArrowRight, CheckCircle2, BookOpen, Building2 } from "lucide-react";
 import { useApiResource } from "@/lib/api/use-api-resource";
 import type { ProfileData } from "@/lib/api/app-dtos";
 import { StudyWorkspace } from "@/components/study-workspace";
@@ -30,6 +30,8 @@ export function ProFeatureGate({
   const userId = account.identity?.user?.id || account.session.user?.id;
   const offlineProfile = getOfflineProfile(userId);
   const offlineValidity = isOfflineAccessValid(offlineProfile);
+
+  const isSchoolAttached = Boolean(profile.data?.subscription?.isSchoolAttached || offlineProfile?.subscription?.isSchoolAttached);
 
   // When offline or network request timed out / failed
   const isNetworkFailure = profile.error ? isNetworkOrTimeoutError(profile.error) : false;
@@ -120,7 +122,15 @@ export function ProFeatureGate({
                 href="/pricing"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-8 py-3.5 text-sm font-bold text-white shadow-md hover:bg-[#0e523e] transition-all cursor-pointer"
               >
-                Upgrade to Pro to Unlock (₦1,000/mo) <ArrowRight size={16} />
+                {isSchoolAttached ? (
+                  <>
+                    <Building2 size={16} /> Contact School Admin to Unlock <ArrowRight size={16} />
+                  </>
+                ) : (
+                  <>
+                    Upgrade to Pro to Unlock (₦1,000/mo) <ArrowRight size={16} />
+                  </>
+                )}
               </Link>
               <Link
                 href="/dashboard"

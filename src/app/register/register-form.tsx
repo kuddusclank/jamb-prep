@@ -2,9 +2,28 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "@/components/pending-link";
 import { getAccountCoordinator } from "@/lib/auth/account-coordinator";
 import { useBrowserAccount } from "@/components/browser-account-boundary";
-import { ArrowRight, Eye, EyeOff, Loader2, Sparkles, Building2 } from "lucide-react";
+import {
+  getCourseById,
+} from "@/lib/curriculum/jamb-course-combinations";
+import {
+  buildLockedCombinationFromCourse,
+  getLockedCombination,
+  type LockedCourseCombination,
+  saveLockedCombination,
+} from "@/lib/curriculum/locked-combination-storage";
+import {
+  ArrowRight,
+  Building2,
+  Compass,
+  Eye,
+  EyeOff,
+  Gift,
+  GraduationCap,
+  Loader2,
+} from "lucide-react";
 
 function RegisterFormContent() {
   const router = useRouter();
@@ -13,20 +32,40 @@ function RegisterFormContent() {
   const searchParams = useSearchParams();
   const initialReferralCode = searchParams.get("ref") || "";
   const schoolCode = searchParams.get("school") || "";
+  const courseParam = searchParams.get("course") || "";
   const queryError = searchParams.get("error");
 
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [referralCode, setReferralCode] = useState(initialReferralCode || (schoolCode ? schoolCode : ""));
+  const referralCode = initialReferralCode || schoolCode || "";
   const [showPassword, setShowPassword] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lockedCombo, setLockedCombo] = useState<LockedCourseCombination | null>(null);
 
   useEffect(() => {
     if (account.session.user?.email) setEmail(account.session.user.email);
     if (account.session.user?.displayName) setDisplayName(account.session.user.displayName);
   }, [account.session.user?.id, account.session.user?.email, account.session.user?.displayName]);
+
+  useEffect(() => {
+    const existing = getLockedCombination();
+    if (existing) {
+      setLockedCombo(existing);
+      return;
+    }
+    if (courseParam) {
+      const course = getCourseById(courseParam);
+      if (course) {
+        const built = buildLockedCombinationFromCourse(course, {
+          source: "combinations-page",
+        });
+        saveLockedCombination(built);
+        setLockedCombo(built);
+      }
+    }
+  }, [courseParam]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +108,45 @@ function RegisterFormContent() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5" aria-busy={isPending}>
+      {/* Locked Course Combination Banner or Finder Prompt */}
+      {lockedCombo ? (
+        <div className="rounded-2xl border border-[#116149]/35 bg-[#eef8f3] p-4 text-xs text-[#092E28]">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2 font-bold text-[#0b4936] text-sm">
+              <GraduationCap size={16} className="shrink-0 text-[#116149]" />
+              <span>Course Locked In: {lockedCombo.courseTitle}</span>
+            </div>
+            <Link
+              href="/combinations?from=register"
+              className="shrink-0 font-semibold text-[#116149] underline hover:text-[#0b4936]"
+            >
+              Change course
+            </Link>
+          </div>
+          <p className="mt-1.5 text-slate-700 leading-relaxed">
+            <strong>4 Subjects:</strong> Use of English, {lockedCombo.electiveNames.join(", ")} ·{" "}
+            <strong>Target:</strong> {lockedCombo.recommendedTargetScore}/400
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-emerald-950/15 bg-[#fafbf7] p-3.5 text-xs text-slate-700 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-xl bg-[#e6f4ee] text-[#116149]">
+              <Compass size={15} />
+            </span>
+            <span className="leading-snug">
+              Don&rsquo;t know your UTME subject combination?{" "}
+              <Link
+                href="/combinations?from=register"
+                className="font-bold text-[#116149] underline underline-offset-2 hover:text-[#0b4936]"
+              >
+                Find &amp; lock in your course subjects first →
+              </Link>
+            </span>
+          </div>
+        </div>
+      )}
+
       {schoolCode && (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3.5 text-xs text-[#092E28] flex items-center gap-3">
           <div className="size-8 rounded-xl bg-[#116149] text-white flex items-center justify-center shrink-0 shadow-xs">
@@ -86,7 +164,7 @@ function RegisterFormContent() {
       {initialReferralCode && !schoolCode && (
         <div className="mb-4 rounded-2xl bg-[#F8F2DF] border border-amber-300/40 p-3.5 flex items-start gap-3">
           <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
-            <Sparkles size={14} />
+            <Gift size={14} />
           </span>
           <div className="text-xs">
             <p className="font-semibold text-amber-950">Referral code supplied</p>
@@ -170,23 +248,12 @@ function RegisterFormContent() {
         </div>
       </div>
 
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label htmlFor="referralCode" className="block text-sm font-medium text-slate-700">
-            Referral Code <span className="text-slate-400 font-normal">(optional)</span>
-          </label>
-          <span className="text-[10px] text-emerald-800 font-medium">Have an invitation?</span>
-        </div>
-        <input
-          id="referralCode"
-          name="referralCode"
-          type="text"
-          value={referralCode}
-          onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-          placeholder="e.g. TOBI99"
-          className="w-full min-h-13 rounded-xl border border-slate-300 bg-white px-4 text-base text-[#092E28] uppercase font-mono placeholder:font-sans placeholder:normal-case placeholder:text-slate-400 focus:border-[#116149] focus:ring-2 focus:ring-emerald-700/15 transition-colors"
-        />
-      </div>
+      <input
+        id="referralCode"
+        name="referralCode"
+        type="hidden"
+        value={referralCode}
+      />
 
       {!recovering && (
         <p className="text-xs leading-relaxed text-slate-500">

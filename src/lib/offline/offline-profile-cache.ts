@@ -9,7 +9,7 @@
  * unexpired paid subscriptions.
  */
 
-import type { ProfileData } from "@/lib/api/app-dtos";
+import type { ProfileData, SchoolAffiliation } from "@/lib/api/app-dtos";
 import type { SessionIdentityResponse } from "@/lib/api/native-client";
 
 export interface OfflineUserProfile {
@@ -29,6 +29,8 @@ export interface OfflineUserProfile {
     expiresAt: string | null; // ISO-8601 string
     planCode: string | null;
     autoRenew: boolean;
+    isSchoolAttached?: boolean;
+    school?: SchoolAffiliation | null;
   };
   streak: {
     currentStreak: number;
@@ -130,6 +132,16 @@ export function saveOfflineProfile(data: {
     lastActiveDate: data.profile?.studyStreak?.streak?.lastQualifiedDate ?? existing?.streak?.lastActiveDate ?? null,
   };
 
+  const isSchoolAttached =
+    data.profile?.subscription?.isSchoolAttached ??
+    existing?.subscription?.isSchoolAttached ??
+    false;
+
+  const school =
+    data.profile?.subscription?.school ??
+    existing?.subscription?.school ??
+    null;
+
   const snapshot: OfflineUserProfile = {
     userId,
     displayName,
@@ -142,6 +154,8 @@ export function saveOfflineProfile(data: {
       expiresAt,
       planCode,
       autoRenew,
+      isSchoolAttached,
+      school,
     },
     streak,
     cachedAt: Date.now(),

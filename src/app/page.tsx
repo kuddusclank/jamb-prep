@@ -7,16 +7,13 @@ import {
   BookOpen, 
   Check, 
   Clock3, 
-  Flag, 
   GraduationCap, 
-  ShieldCheck, 
   Target, 
-  Sparkles, 
   Flame, 
   BarChart3, 
   LogOut 
 } from "lucide-react";
-import { MobileMenu, Reveal, SubjectPicker } from "./landing-interactions";
+import { CombinationPromptDialog, MobileMenu, Reveal, SubjectPicker } from "./landing-interactions";
 import { UserDropdown } from "@/components/user-dropdown";
 import { PolicyLinks } from "@/components/legal-page";
 
@@ -38,6 +35,7 @@ export default function Home() {
   return (
     <BrowserAccountBoundary mode="public">
       <a href="#main" className="skip-link">Skip to content</a>
+      <CombinationPromptDialog />
 
       {/* Header Navigation */}
       <header className="sticky top-0 z-40 border-b border-emerald-950/10 bg-[#fafbf7]/95 backdrop-blur-lg">
@@ -61,6 +59,9 @@ export default function Home() {
               <Link href="/mock" className="hover:text-[#116149] font-medium transition-colors">
                 CBT Mock
               </Link>
+              <Link href="/combinations" className="hover:text-[#116149] font-medium transition-colors">
+                Check Combination
+              </Link>
               <Link href="/analytics" className="hover:text-[#116149] font-medium transition-colors flex items-center gap-1">
                 <BarChart3 size={15} /> Coach
               </Link>
@@ -69,13 +70,16 @@ export default function Home() {
               </Link>
               {!isPremium && (
                 <Link href="/referrals" className="text-amber-800 font-semibold hover:text-amber-900 flex items-center gap-1 text-xs">
-                  <Sparkles size={13} /> 50% Off
+                  50% Off
                 </Link>
               )}
             </nav>
           ) : (
             /* Guest Navigation */
-            <nav aria-label="Main navigation" className="hidden items-center gap-8 text-sm text-slate-600 md:flex">
+            <nav aria-label="Main navigation" className="hidden items-center gap-7 text-sm text-slate-600 md:flex">
+              <Link href="/combinations" className="hover:text-[#116149] font-semibold text-[#116149] transition-colors">
+                Check Combination
+              </Link>
               <a href="#how-it-works" className="hover:text-[#116149] transition-colors">How it works</a>
               <a href="#subjects" className="hover:text-[#116149] transition-colors">Subjects</a>
               <a href="#pricing" className="hover:text-[#116149] transition-colors">Pricing</a>
@@ -133,9 +137,9 @@ export default function Home() {
                   <Link href="/register" className={button}>
                     Create account <ArrowRight size={17}/>
                   </Link>
-                  <a href="#how-it-works" className="inline-flex min-h-12 items-center justify-center gap-2 text-sm font-semibold">
-                    See how it works <ArrowUpRight size={16}/>
-                  </a>
+                  <Link href="/combinations" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-emerald-950/20 bg-white px-6 text-sm font-semibold text-[#116149] hover:bg-emerald-50 transition shadow-2xs">
+                    Check your combination <ArrowRight size={16}/>
+                  </Link>
                 </div>
                 <p className="entrance delay-3 mt-5 text-xs text-slate-500">
                   Account required for all practice and exams · Free diagnostic included
@@ -345,68 +349,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Mock Exam Preview */}
-        <section className="shell section-space grid items-center gap-12 lg:grid-cols-2">
-          <Reveal className="overflow-hidden rounded-2xl bg-[#102f29] p-6 text-white sm:p-8">
-            <div className="flex items-center justify-between border-b border-white/15 pb-5 text-xs">
-              <span className="font-semibold">MOCK EXAM PREVIEW</span>
-              <span className="flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 font-mono">
-                <Clock3 size={14}/> 01:48:22
-              </span>
-            </div>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {['English','Mathematics','Physics','Chemistry'].map((s,i) => (
-                <span key={s} className={`rounded-full px-3 py-2 text-xs ${i === 0 ? 'bg-[#e7b85a] text-[#102f29]' : 'bg-white/10 text-white/80'}`}>
-                  {s}
-                </span>
-              ))}
-            </div>
-            <p className="mt-7 text-sm text-white/70">Your questions. Your pace.</p>
-            <div className="mt-4 grid grid-cols-6 gap-2 sm:grid-cols-10" aria-label="Illustrative question palette">
-              {Array.from({length:30},(_,i) => (
-                <span key={i} className={`flex aspect-square items-center justify-center rounded-lg text-xs ${i === 13 ? 'bg-[#e7b85a] text-[#102f29]' : i < 12 ? 'bg-[#367361]' : 'bg-white/10'}`}>
-                  {i+1}
-                </span>
-              ))}
-            </div>
-            <div className="mt-6 flex flex-wrap gap-4 text-xs text-white/80">
-              <span>■ Answered</span>
-              <span className="text-[#e7b85a]">⚑ Flagged</span>
-              <span>□ To do</span>
-            </div>
-            <p className="mt-7 border-t border-white/15 pt-4 text-xs text-white/60">
-              Accurate JAMB exam software layout · Autosave enabled
-            </p>
-          </Reveal>
-          <Reveal>
-            <p className="eyebrow">BUILD CONFIDENCE BEFORE EXAM DAY</p>
-            <h2 className="section-title mt-4">
-              Get familiar with<br/><span className="serif-accent">the rhythm of CBT.</span>
-            </h2>
-            <p className="mt-5 leading-relaxed text-slate-600">
-              The full mock brings together 180 questions, four subjects and a two-hour timer, so you can train knowledge, speed, and exam stamina together.
-            </p>
-            <div className="mt-7 space-y-5">
-              {[
-                [Clock3,'Keep an eye on your pace','A clear countdown and easy subject switching.'],
-                [Flag,'Come back with a fresh eye','Flag a tricky question and return to it later.'],
-                [ShieldCheck,'Prepare with fewer distractions','A focused interface with continuous answer autosave and session recovery.']
-              ].map(([Icon,title,body]) => {
-                const Symbol = Icon as typeof Clock3;
-                return (
-                  <div key={String(title)} className="flex gap-4">
-                    <Symbol size={20} className="mt-1 shrink-0 text-[#116149]"/>
-                    <div>
-                      <h3 className="text-sm font-semibold">{String(title)}</h3>
-                      <p className="mt-1 text-sm leading-relaxed text-slate-600">{String(body)}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </Reveal>
-        </section>
-
         {/* Subject Combination Explorer */}
         <section id="subjects" className="border-y border-emerald-950/10 bg-white">
           <div className="shell section-space">
@@ -548,8 +490,8 @@ export default function Home() {
           {!isPremium && (
             <Reveal className="mx-auto mt-8 flex max-w-4xl flex-col gap-3 rounded-2xl bg-[#f1e8cc] p-6 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="font-semibold text-amber-950 flex items-center gap-2">
-                  <Sparkles size={16} className="text-amber-800" /> Refer & Earn 50% Off
+                <p className="font-semibold text-amber-950">
+                  Refer & Earn 50% Off
                 </p>
                 <p className="max-w-lg text-sm leading-relaxed text-amber-900 mt-1">
                   Invite two friends who complete account onboarding and get your <strong>first 30 days of Premium for ₦500</strong>!

@@ -1,7 +1,8 @@
 import { cache } from "react";
 import { db } from "@/db";
-import { subscriptionEntitlements } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { subscriptionEntitlements, schoolStudents, schools } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
+import type { SchoolAffiliation } from "./api/app-dtos";
 
 export interface SubscriptionStatus {
   isPremium: boolean;
@@ -10,6 +11,8 @@ export interface SubscriptionStatus {
   planCode: string | null;
   autoRenew: boolean;
   cancelledAt: Date | null;
+  isSchoolAttached: boolean;
+  school: SchoolAffiliation | null;
 }
 
 /**
@@ -17,9 +20,33 @@ export interface SubscriptionStatus {
  */
 export const getUserSubscriptionStatus = cache(async (userId: string): Promise<SubscriptionStatus> => {
   try {
-    const entitlement = await db.query.subscriptionEntitlements.findFirst({
-      where: eq(subscriptionEntitlements.userId, userId),
-    });
+    const [entitlement, studentRow] = await Promise.all([
+      db.query.subscriptionEntitlements.findFirst({
+        where: eq(subscriptionEntitlements.userId, userId),
+      }),
+      db.query.schoolStudents.findFirst({
+        where: eq(schoolStudents.studentUserId, userId),
+        orderBy: [desc(schoolStudents.createdAt)],
+      }),
+    ]);
+
+    let school: SchoolAffiliation | null = null;
+    if (studentRow) {
+      const schoolEntity = await db.query.schools.findFirst({
+        where: eq(schools.id, studentRow.schoolId),
+      });
+      if (schoolEntity) {
+        school = {
+          schoolId: schoolEntity.id,
+          schoolName: schoolEntity.name,
+          schoolCode: schoolEntity.code,
+          licenseStatus: (studentRow.licenseStatus as 'inactive' | 'active' | 'expired') || 'inactive',
+          licenseExpiresAt: studentRow.licenseExpiresAt ? new Date(studentRow.licenseExpiresAt).toISOString() : null,
+        };
+      }
+    }
+
+    const isSchoolAttached = Boolean(school);
 
     if (!entitlement) {
       return {
@@ -29,6 +56,8 @@ export const getUserSubscriptionStatus = cache(async (userId: string): Promise<S
         planCode: null,
         autoRenew: true,
         cancelledAt: null,
+        isSchoolAttached,
+        school,
       };
     }
 
@@ -45,6 +74,8 @@ export const getUserSubscriptionStatus = cache(async (userId: string): Promise<S
       planCode: entitlement.planCode,
       autoRenew: isPremium ? (entitlement.autoRenew ?? true) : false,
       cancelledAt: entitlement.cancelledAt ? new Date(entitlement.cancelledAt) : null,
+      isSchoolAttached,
+      school,
     };
   } catch (err) {
     console.warn("Notice checking subscription status:", err);
@@ -55,6 +86,8 @@ export const getUserSubscriptionStatus = cache(async (userId: string): Promise<S
       planCode: null,
       autoRenew: false,
       cancelledAt: null,
+      isSchoolAttached: false,
+      school: null,
     };
   }
 });

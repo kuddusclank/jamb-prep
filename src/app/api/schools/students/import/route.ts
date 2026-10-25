@@ -6,9 +6,7 @@ import { profiles, schools, schoolMembers, schoolStudents } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 function computeDefaultPassword(lastName: string): string {
-  const clean = lastName.trim().toUpperCase();
-  if (clean.length >= 6) return clean;
-  return `${clean}123456`.slice(0, 6);
+  return lastName.trim().toUpperCase();
 }
 
 interface RawImportItem {

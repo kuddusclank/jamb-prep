@@ -156,6 +156,7 @@ test("T05.1: static build artifact (out/) contains all canonical route shells, 4
     "analytics/index.html",
     "referrals/index.html",
     "pricing/index.html",
+    "combinations/index.html",
     "schools/index.html",
     "schools/register/index.html",
     "schools/login/index.html",

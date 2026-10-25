@@ -8,7 +8,7 @@ interface MathRendererProps {
 }
 
 const INLINE_FORMAT_REGEX =
-  /(\*\*[^*\n]+?\*\*|(?<![\w*])\*(?!\s)[^*\n]+?(?<!\s)\*(?![\w*])|(?<![\w_])_(?!\s)[^_\n]+?(?<!\s)_(?![\w_])|<(?:u|i|em|b|strong|sub|sup)>[\s\S]+?<\/(?:u|i|em|b|strong|sub|sup)>)/gi;
+  /(\*\*\*(?:(?!\*\*\*|\n\n)[\s\S])+?\*\*\*|\*\*(?:(?!\*\*|\n\n)[\s\S])+?\*\*|(?<![\w*])\*(?!\s)(?:(?!\*|\n\n)[\s\S])+?(?<!\s)\*(?![\w*])|(?<![\w_])_(?!\s)(?:(?!_|\n\n)[\s\S])+?(?<!\s)_(?![\w_])|<(?:u|i|em|b|strong|sub|sup)(?:\s+[^>]*)?>[\s\S]+?<\/(?:u|i|em|b|strong|sub|sup)>)/gi;
 
 function renderInlineFormatting(text: string, keyPrefix: string, depth = 0): React.ReactNode {
   if (!text || depth > 3) return text;
@@ -19,6 +19,15 @@ function renderInlineFormatting(text: string, keyPrefix: string, depth = 0): Rea
   return tokens.map((token, idx) => {
     if (!token) return null;
     const key = `${keyPrefix}-${idx}`;
+
+    // ***bold italic***
+    if (token.startsWith('***') && token.endsWith('***') && token.length > 6) {
+      return (
+        <strong key={key} className="font-semibold italic">
+          {renderInlineFormatting(token.slice(3, -3), key, depth + 1)}
+        </strong>
+      );
+    }
 
     // **bold**
     if (token.startsWith('**') && token.endsWith('**') && token.length > 4) {
@@ -48,7 +57,7 @@ function renderInlineFormatting(text: string, keyPrefix: string, depth = 0): Rea
     }
 
     // Safe inline HTML tags: <u>, <i>, <em>, <b>, <strong>, <sub>, <sup>
-    const tagMatch = token.match(/^<(u|i|em|b|strong|sub|sup)>([\s\S]+)<\/\1>$/i);
+    const tagMatch = token.match(/^<(u|i|em|b|strong|sub|sup)(?:\s+[^>]*)?>([\s\S]+)<\/\1>$/i);
     if (tagMatch) {
       const tag = tagMatch[1].toLowerCase();
       const inner = renderInlineFormatting(tagMatch[2], key, depth + 1);
@@ -86,6 +95,27 @@ function renderInlineFormatting(text: string, keyPrefix: string, depth = 0): Rea
 }
 
 /**
+ * Normalizes common chemical and LaTeX edge cases so KaTeX can render without double-subscript errors.
+ */
+function normalizeMath(math: string): string {
+  if (!math) return '';
+  let res = math
+    // Fix chemical double subscripts e.g. \text{SO}_4^{2-}_{(aq)} -> \text{SO}_4^{2-}{}_{(aq)}
+    .replace(/(_(?:\{[^}]*\}|[0-9a-zA-Z]+)\^(?:\{[^}]*\}|[0-9a-zA-Z+-]+))(_(?:\{[^}]*\}|\([^)]*\)|[0-9a-zA-Z]+))/g, '$1{}$2')
+    // Fix double subscripts without superscripts e.g. X_a_b -> X_a{}_b
+    .replace(/(_(?:\{[^}]*\}|[0-9a-zA-Z]+))(_(?:\{[^}]*\}|\([^)]*\)|[0-9a-zA-Z]+))/g, '$1{}$2')
+    // Fix illegal escapes like \-- -> --
+    .replace(/\\--/g, '--');
+
+  // Strip @{...} unsupported array column spacing
+  while (/@\{[^}]*\}/.test(res)) {
+    res = res.replace(/(\\begin\{array\}\{[^}]*?)@\{[^}]*\}([^}]*?\})/g, '$1$2');
+  }
+
+  return res;
+}
+
+/**
  * MathRenderer parses inline math ($...$) and block math ($$...$$)
  * using KaTeX, and renders inline emphasis (*italic*, **bold**, <u>underline</u>, etc.)
  * in standard text segments.
@@ -111,7 +141,8 @@ export function MathRenderer({ content, className = '' }: MathRendererProps) {
     >
       {parts.map((part, index) => {
         if (part.startsWith('$$') && part.endsWith('$$')) {
-          const math = part.slice(2, -2).trim();
+          const rawMath = part.slice(2, -2).trim();
+          const math = normalizeMath(rawMath);
           try {
             const html = katex.renderToString(math, {
               displayMode: true,
@@ -129,7 +160,8 @@ export function MathRenderer({ content, className = '' }: MathRendererProps) {
             return <code key={index} className="text-red-600">{part}</code>;
           }
         } else if (part.startsWith('$') && part.endsWith('$')) {
-          const math = part.slice(1, -1).trim();
+          const rawMath = part.slice(1, -1).trim();
+          const math = normalizeMath(rawMath);
           try {
             const html = katex.renderToString(math, {
               displayMode: false,

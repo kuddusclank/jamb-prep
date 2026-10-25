@@ -17,7 +17,7 @@ Users,
 BookA,
 BookOpen,
 Gamepad2,
-Sparkles,
+Building2,
 X
 } from "lucide-react";
 import Link from "@/components/pending-link";
@@ -150,6 +150,8 @@ export default function DashboardPage() {
             planCode: resource.data.subscription.planCode,
             autoRenew: resource.data.subscription.autoRenew,
             cancelledAt: null,
+            isSchoolAttached: Boolean(resource.data.subscription.isSchoolAttached),
+            school: resource.data.subscription.school ?? null,
           },
           studyStreak: resource.data.studyStreak,
         },
@@ -193,6 +195,8 @@ export default function DashboardPage() {
   if (!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry} /></StudyWorkspace>;
   const { subscription, coach, qualifiedReferrals, has50PercentReward } = resource.data;
   const isPremium = subscription.isPremium;
+  const isSchoolAttached = Boolean(subscription.isSchoolAttached);
+  const schoolName = subscription.school?.schoolName || "your school";
   const studentName = account.identity?.user.displayName ?? account.session.user?.displayName ?? '';
   const { targetScore, latestScore, gapToTarget, coachRecommendation, weakestTopics, subjectSummaries, recentMockHistory, totalMocksCompleted } = coach;
 
@@ -394,9 +398,15 @@ export default function DashboardPage() {
                 <div className="flex flex-wrap items-start justify-between gap-5">
                   <div className="max-w-xl">
                     <h4 className="text-lg font-semibold">Build a more focused revision plan</h4>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-600">Premium highlights the topics to revisit using your practice and mock results. Your free practice session and diagnostic mock are available.</p>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                      {isSchoolAttached
+                        ? `Detailed topic revision analytics and lab CBT simulations are unlocked through ${schoolName}. Contact your school administrator to activate your candidate license.`
+                        : "Premium highlights the topics to revisit using your practice and mock results. Your free practice session and diagnostic mock are available."}
+                    </p>
                   </div>
-                  <Link href="/pricing" className="inline-flex min-h-12 items-center rounded-full border border-slate-300 px-5 text-sm font-semibold">Explore Premium <ArrowRight size={16} className="ml-2" /></Link>
+                  <Link href="/pricing" className="inline-flex min-h-12 items-center rounded-full border border-slate-300 px-5 text-sm font-semibold">
+                    {isSchoolAttached ? "View School License" : "Explore Premium"} <ArrowRight size={16} className="ml-2" />
+                  </Link>
                 </div>
               </div>
             ) : (
@@ -849,14 +859,22 @@ export default function DashboardPage() {
                       onClick={handleDismissLexisModal}
                       className="inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 text-amber-950 px-5 py-3 text-xs sm:text-sm font-bold hover:bg-amber-300 transition shadow-md flex-1 text-center cursor-pointer"
                     >
-                      <Lock size={16} /> Unlock with Pro (₦1,000)
+                      {isSchoolAttached ? (
+                        <>
+                          <Building2 size={16} /> Contact School Admin to Unlock
+                        </>
+                      ) : (
+                        <>
+                          <Lock size={16} /> Unlock with Pro (₦1,000)
+                        </>
+                      )}
                     </Link>
                     <Link
                       href="/pricing"
                       onClick={handleDismissLexisModal}
                       className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-800/40 px-5 py-3 text-xs sm:text-sm font-semibold text-emerald-100 hover:bg-emerald-800/70 transition flex-1 text-center cursor-pointer"
                     >
-                      View Pro Plans <ArrowRight size={16} />
+                      {isSchoolAttached ? "View School License" : "View Pro Plans"} <ArrowRight size={16} />
                     </Link>
                   </>
                 )}

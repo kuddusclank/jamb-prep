@@ -64,11 +64,39 @@ export default function SchoolRegisterPage() {
       return;
     }
 
-    const prefix = cleanSchoolName.replace(/[^a-zA-Z0-9]/g, "").slice(0, 4).toUpperCase();
-    const schoolCode = `SCH-${prefix || "XYZ"}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const prefix = cleanSchoolName.replace(/[^a-zA-Z0-9]/g, "").slice(0, 4).toUpperCase() || "XYZ";
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const randomBytes = new Uint8Array(6);
+    crypto.getRandomValues(randomBytes);
+    const randomSuffix = Array.from(randomBytes, (b) => alphabet[b % alphabet.length]).join("");
+    const schoolCode = `SCH-${prefix}${randomSuffix}`;
 
     try {
       const supabase = createClient();
+
+      // Preflight check: prevent duplicate accounts or cross-role collisions
+      try {
+        const { data: emailCheck } = await supabase.rpc("check_email_availability", {
+          check_email: cleanEmail,
+        });
+
+        if (emailCheck && emailCheck.exists) {
+          if (emailCheck.has_school || emailCheck.role === "school_admin") {
+            setError(
+              "A school administration account with this email already exists. Please sign in to your school portal."
+            );
+          } else {
+            setError(
+              `An account with this email is already registered as a ${emailCheck.role || "student"}. Please use a dedicated official administrator email or sign in.`
+            );
+          }
+          setIsPending(false);
+          return;
+        }
+      } catch (checkErr) {
+        console.warn("Email preflight check warning:", checkErr);
+      }
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
@@ -90,22 +118,40 @@ export default function SchoolRegisterPage() {
         return;
       }
 
-      // Best-effort call to backend API if running in an SSR environment
+      // Security check: Supabase returns user with empty identities when email already exists without throwing
+      if (authData?.user && Array.isArray(authData.user.identities) && authData.user.identities.length === 0) {
+        setError(
+          "An account with this email already exists. Please sign in to the portal instead of creating a new registration."
+        );
+        setIsPending(false);
+        return;
+      }
+
+      // Eagerly provision the school record on the Cloudflare Worker so invite links (?school=SCH-XXXX) work immediately
       try {
-        await fetch("/api/schools/auth/signup/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            schoolName: cleanSchoolName,
-            schoolType,
-            state,
-            adminName: cleanAdminName,
-            email: cleanEmail,
-            password,
-          }),
-        });
+        const apiBase =
+          process.env.NEXT_PUBLIC_API_BASE_URL ||
+          "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
+        const accessToken = authData?.session?.access_token;
+        if (accessToken) {
+          await fetch(`${apiBase}/api/v1/schools/register`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              schoolName: cleanSchoolName,
+              schoolCode,
+              schoolType,
+              state,
+              adminName: cleanAdminName,
+              email: cleanEmail,
+            }),
+          });
+        }
       } catch {
-        // Silent catch on static hosting (e.g. Cloudflare Pages)
+        // Fallback auto-provisioning still runs on dashboard load if offline
       }
 
       window.location.assign("/schools/dashboard");
@@ -116,9 +162,9 @@ export default function SchoolRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafbf7] text-[#092E28]">
-      {/* Header matching student auth-shell */}
-      <header className="shell flex min-h-24 items-center justify-between gap-4 py-4">
+    <div className="min-h-screen bg-[#fafbf7] text-[#092E28] lg:h-screen lg:overflow-hidden lg:flex lg:flex-col">
+      {/* Header matching student auth-shell - fixed at top */}
+      <header className="shell flex min-h-20 sm:min-h-24 items-center justify-between gap-4 py-4 shrink-0">
         <Link 
           href="/schools" 
           aria-label="JAMBPrep schools home" 
@@ -140,36 +186,36 @@ export default function SchoolRegisterPage() {
         </Link>
       </header>
 
-      {/* Main 2-column grid matching student auth-shell */}
-      <main className="shell grid items-start gap-10 pb-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-20">
-        {/* Left Editorial Card matching AuthShell */}
-        <aside className="relative hidden min-w-0 flex-col gap-10 self-start rounded-[2rem] bg-[#102f29] p-10 text-white lg:flex xl:p-12 shadow-xl">
+      {/* Main 2-column grid - fill viewport on desktop while right form scrolls */}
+      <main className="shell grid items-start gap-10 pb-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16 xl:gap-20 lg:flex-1 lg:min-h-0 lg:pb-4">
+        {/* Left Editorial Card - fixed/non-scrolling on desktop */}
+        <aside className="relative hidden min-w-0 flex-col justify-between self-stretch rounded-[2rem] bg-[#102f29] p-8 text-white lg:flex xl:p-10 shadow-xl overflow-hidden shrink-0">
           <div className="entrance">
             <p className="text-[11px] font-semibold tracking-[.16em] text-[#e7b85a]">
               INSTITUTIONAL COHORT LICENSING
             </p>
-            <h2 className="mt-8 text-5xl leading-[1.12] font-medium tracking-tight">
+            <h2 className="mt-6 text-4xl xl:text-5xl leading-[1.12] font-medium tracking-tight">
               Equip your hall.<br />
               <span className="serif-accent text-[#e7b85a]">Empower every candidate.</span>
             </h2>
-            <p className="mt-6 max-w-sm leading-relaxed text-emerald-50/75">
+            <p className="mt-4 max-w-sm leading-relaxed text-sm text-emerald-50/75">
               Transform your school computer lab into an authentic UTME mock examination centre with unified scoring and real-time teacher diagnostics.
             </p>
           </div>
 
-          <div className="entrance delay-2 rounded-2xl border border-white/15 bg-white/5 p-6">
+          <div className="entrance delay-2 rounded-2xl border border-white/15 bg-white/5 p-5 my-auto">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium">3 simple steps to lab launch</p>
               <Target size={18} className="text-[#e7b85a]" />
             </div>
-            <ol className="mt-6 space-y-5">
+            <ol className="mt-4 space-y-4">
               {[
                 "Register your school or tutorial centre",
                 "Import your student roster (CSV, manual, or invite link)",
                 "Activate cohort licenses with one-time Paystack checkout"
               ].map((step, index) => (
-                <li key={step} className="flex items-center gap-3 text-sm text-emerald-50/90">
-                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-white/20 text-xs text-[#e7b85a]">
+                <li key={step} className="flex items-center gap-3 text-xs sm:text-sm text-emerald-50/90">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-white/20 text-xs text-[#e7b85a]">
                     0{index + 1}
                   </span>
                   {step}
@@ -178,15 +224,15 @@ export default function SchoolRegisterPage() {
             </ol>
           </div>
 
-          <p className="flex items-center gap-2 text-xs text-emerald-50/70">
+          <p className="flex items-center gap-2 text-xs text-emerald-50/70 pt-2">
             <Check size={15} />
             ₦1,500 / student / month · Zero lab servers required.
           </p>
         </aside>
 
-        {/* Right Form Section matching AuthShell */}
-        <section className="entrance delay-1 flex min-w-0 flex-col self-start py-5 sm:py-8 lg:pr-8">
-          <div className="mx-auto w-full max-w-md">
+        {/* Right Form Section - scrollable independently on desktop */}
+        <section className="entrance delay-1 flex min-w-0 flex-col self-stretch py-2 sm:py-4 lg:pr-6 lg:overflow-y-auto lg:max-h-full scrollbar-thin">
+          <div className="mx-auto w-full max-w-md pb-6">
             <Link 
               href="/schools" 
               className="mb-8 inline-flex min-h-11 items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-800 transition"
@@ -352,8 +398,8 @@ export default function SchoolRegisterPage() {
         </section>
       </main>
 
-      {/* Footer matching student auth-shell */}
-      <footer className="shell flex flex-col gap-4 pb-6 text-xs leading-relaxed text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+      {/* Footer matching school login page */}
+      <footer className="shell flex flex-col gap-4 py-3 text-xs leading-relaxed text-slate-500 sm:flex-row sm:items-center sm:justify-between shrink-0">
         <span>JAMBPrep for Schools · Institutional UTME examination & diagnostics platform.</span>
         <PolicyLinks />
       </footer>

@@ -47,7 +47,12 @@ export async function allocatePractice(tx: SqlTagExecutor, userId: string, input
   const [active]=await tx`SELECT id FROM attempts WHERE user_id=${userId}::uuid AND mode='practice' AND (blueprint_manifest IS NULL OR (blueprint_manifest->>'type') IS DISTINCT FROM 'weekly_pack') AND status='in_progress' AND expires_at>${now.toISOString()}::timestamptz AND practice_requested_count IN(5,10,15) AND EXISTS(SELECT 1 FROM attempt_questions aq WHERE aq.attempt_id=attempts.id AND aq.snapshot IS NOT NULL AND NOT EXISTS(SELECT 1 FROM attempt_answers aa WHERE aa.attempt_id=aq.attempt_id AND aa.question_id=aq.question_id AND aa.selected_option_id IS NOT NULL)) ORDER BY started_at DESC,id DESC LIMIT 1`;
   if(active) throw new ApiError({status:409,code:'CONFLICT',message:'Resume or end your current practice session before starting another.'});
   const past = await tx`SELECT id FROM attempts WHERE user_id=${userId}::uuid AND mode='practice' AND (blueprint_manifest IS NULL OR (blueprint_manifest->>'type') IS DISTINCT FROM 'weekly_pack') LIMIT 1`;
-  if(!subscription.isPremium && past.length) throw new ApiError({status:403,code:'FORBIDDEN_ENTITLEMENT_REQUIRED',message:'Your free practice session has been used. Upgrade to Pro for unlimited practice sessions.'});
+  if(!subscription.isPremium && past.length) {
+    const message = subscription.isSchoolAttached
+      ? 'Your free practice session has been used. Please contact your school administrator to activate your institution license.'
+      : 'Your free practice session has been used. Upgrade to Pro for unlimited practice sessions.';
+    throw new ApiError({ status: 403, code: 'FORBIDDEN_ENTITLEMENT_REQUIRED', message });
+  }
   const rows=await selectPublishedQuestions(tx,userId,subjects[0].id,data.count,topicId,true);
   if(rows.length!==data.count) throw new ApiError({status:409,code:'CONFLICT',message:`This selection has ${rows.length} available questions; ${data.count} are required. No free session has been used.`});
   const [attempt]=await tx<Array<{id:string}>>`INSERT INTO attempts(user_id,mode,status,started_at,expires_at,practice_subject_id,practice_topic_id,practice_requested_count)
@@ -82,14 +87,23 @@ export async function checkIssuedPractice(tx: SqlTagExecutor, userId: string, in
   if(answers.length)await tx`UPDATE attempts a SET status='completed',completed_at=${now.toISOString()}::timestamptz WHERE a.id=${input.sessionId}::uuid AND a.user_id=${userId}::uuid AND a.status='in_progress' AND NOT EXISTS(SELECT 1 FROM attempt_questions aq WHERE aq.attempt_id=a.id AND NOT EXISTS(SELECT 1 FROM attempt_answers aa WHERE aa.attempt_id=aq.attempt_id AND aa.question_id=aq.question_id AND aa.selected_option_id IS NOT NULL))`;
   return { isCorrect, correctOption: correct.label, explanation: row.frozen_explanation ?? 'An explanation has not been supplied.' };
 }
-export async function startFrozenMock(tx: SqlTagExecutor, userId: string, input: { examConditions: boolean }, now: Date) {
+export async function startFrozenMock(tx: SqlTagExecutor, userId: string, input: { examConditions: boolean; labSessionCode?: string | null }, now: Date) {
   if (typeof input.examConditions !== 'boolean') throw new ApiError({ status: 422, code: 'VALIDATION_FAILED', message: 'Choose a valid mock mode.' });
   await lockStudent(tx, userId);
-  const active = await tx<Array<{ id: string }>>`SELECT id FROM attempts WHERE user_id=${userId}::uuid AND mode='mock' AND status='in_progress' ORDER BY started_at DESC LIMIT 1 FOR UPDATE`;
-  if (active.length) return { attemptId: active[0].id, resumed: true };
+  const active = await tx<Array<{ id: string; expires_at?: string }>>`SELECT id, expires_at FROM attempts WHERE user_id=${userId}::uuid AND mode='mock' AND status='in_progress' ORDER BY started_at DESC LIMIT 1 FOR UPDATE`;
+  if (active.length) {
+    const exp = active[0].expires_at ? Date.parse(String(active[0].expires_at)) : NaN;
+    if (!Number.isFinite(exp) || exp > now.getTime()) return { attemptId: active[0].id, resumed: true };
+    await tx`UPDATE attempts SET status='expired',completed_at=${now.toISOString()}::timestamptz WHERE id=${active[0].id}::uuid AND status='in_progress'`;
+  }
   const subscription = await getUserSubscriptionStatus(tx, userId, now);
   const past = await tx`SELECT id FROM attempts WHERE user_id=${userId}::uuid AND mode='mock' LIMIT 1`;
-  if (!subscription.isPremium && past.length) throw new ApiError({ status: 403, code: 'FORBIDDEN_ENTITLEMENT_REQUIRED', message: 'Your free diagnostic has been used. Upgrade to take another mock.' });
+  if (!subscription.isPremium && past.length) {
+    const message = subscription.isSchoolAttached
+      ? 'Your free diagnostic mock has been used. Please contact your school administrator to activate your institution license.'
+      : 'Your free diagnostic has been used. Upgrade to take another mock.';
+    throw new ApiError({ status: 403, code: 'FORBIDDEN_ENTITLEMENT_REQUIRED', message });
+  }
   const subjects = await tx<Array<{ id: string; code: string; is_compulsory: boolean }>>`SELECT s.id,s.code,s.is_compulsory FROM student_subjects ss JOIN subjects s ON s.id=ss.subject_id WHERE ss.user_id=${userId}::uuid AND s.is_active ORDER BY s.is_compulsory DESC,s.display_order,s.code`;
   if (subjects.length !== 4 || subjects.filter((s) => s.code==='ENG' && s.is_compulsory).length !== 1 || subjects.filter((s) => s.code!=='ENG' && !s.is_compulsory).length!==3) throw new ApiError({ status: 409, code: 'CONFLICT', message: 'Complete your English and three-elective subject combination first.' });
   const [preferences]=await tx`SELECT exam_year FROM student_preferences WHERE user_id=${userId}::uuid`;
@@ -104,8 +118,9 @@ export async function startFrozenMock(tx: SqlTagExecutor, userId: string, input:
   if(selected.length!==180||new Set(selected.map(q=>q.id)).size!==180||new Set(selected.map(q=>q.family)).size!==180)throw new ApiError({status:409,code:'CONFLICT',message:'The complete mock cannot be assembled uniquely. No diagnostic allowance has been consumed.'});
   const [budget]=await tx`SELECT COALESCE(sum(octet_length(q.snapshot::text)+120),0)::int AS bytes FROM study_question_pool q WHERE id IN(SELECT (x->>'id')::uuid FROM jsonb_array_elements(${JSON.stringify(selected)}::text::jsonb) x)`;
   if(Number(budget.bytes)>524288)throw new ApiError({status:409,code:'CONFLICT',message:'The selected mock exceeds its safe transport size. No diagnostic allowance has been consumed.'});
+  const labSessionCode = typeof input.labSessionCode === 'string' && input.labSessionCode.trim() ? input.labSessionCode.trim().toUpperCase() : null;
   const [attempt]=await tx<Array<{id:string}>>`INSERT INTO attempts(user_id,mode,status,exam_conditions,started_at,expires_at,blueprint_manifest)
-    VALUES(${userId}::uuid,'mock','in_progress',${input.examConditions},${now.toISOString()}::timestamptz,${new Date(now.getTime()+7200000).toISOString()}::timestamptz,${JSON.stringify({selectorVersion:1,seed,subjects:manifests})}::text::jsonb) RETURNING id`;
+    VALUES(${userId}::uuid,'mock','in_progress',${input.examConditions},${now.toISOString()}::timestamptz,${new Date(now.getTime()+7200000).toISOString()}::timestamptz,${JSON.stringify({selectorVersion:1,seed,...(labSessionCode?{labSessionCode}:{}),subjects:manifests})}::text::jsonb) RETURNING id`;
   const [frozen]=await tx`WITH chosen AS(SELECT * FROM jsonb_to_recordset(${JSON.stringify(selected)}::text::jsonb) AS x(id uuid,position int)), inserted AS(
     INSERT INTO attempt_questions(attempt_id,question_id,subject_id,topic_id,position,snapshot,correct_option_id,frozen_explanation)
     SELECT ${attempt.id}::uuid,q.id,q.subject_id,q.topic_id,c.position,q.snapshot||jsonb_build_object('position',c.position),q.correct_option_id,q.explanation

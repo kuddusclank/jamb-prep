@@ -5,7 +5,15 @@ import { useRouter } from "next/navigation";
 import { startMockAttempt } from "@/lib/client-actions";
 import { buildCanonicalExamUrl } from "@/lib/routing/deep-links";
 
-export function MockStartButton({canStart=true,activeAttemptId=null}:{canStart?:boolean;activeAttemptId?:string|null}) {
+export function MockStartButton({
+  canStart = true,
+  activeAttemptId = null,
+  labSessionCode = null,
+}: {
+  canStart?: boolean;
+  activeAttemptId?: string | null;
+  labSessionCode?: string | null;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [conditions, setConditions] = useState(false);
@@ -35,7 +43,7 @@ export function MockStartButton({canStart=true,activeAttemptId=null}:{canStart?:
         return;
       }
       try {
-        const payload = await startMockAttempt(conditions);
+        const payload = await startMockAttempt(conditions, labSessionCode);
         router.push(buildCanonicalExamUrl(payload.attemptId));
       } catch (error) {
         setError(error instanceof Error ? error.message : "We could not start your mock. Please retry.");

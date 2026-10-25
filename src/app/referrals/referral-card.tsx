@@ -4,7 +4,7 @@ import { shareOrCopy } from "@/lib/share";
 import { SITE_URL } from "@/lib/seo";
 import { useState } from "react";
 import Link from "@/components/pending-link";
-import { Copy, Check, Share2, Sparkles, ArrowRight, Users } from "lucide-react";
+import { Copy, Check, Share2, ArrowRight, Users } from "lucide-react";
 
 export function ReferralCard({
   code,
@@ -136,7 +136,7 @@ export function ReferralCard({
         <div className="rounded-2xl border-2 border-amber-400 bg-[#F8F2DF] p-6 text-[#092E28] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-200/60 text-amber-900 text-[11px] font-bold uppercase mb-1">
-              <Sparkles size={13} /> Reward Unlocked
+              Reward Unlocked
             </div>
             <h4 className="text-xl font-bold">50% Off First Month Voucher</h4>
             <p className="mt-1 text-xs text-amber-900/80">

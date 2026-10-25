@@ -13,7 +13,6 @@ import {
   CheckCircle2,
   XCircle,
   RotateCcw,
-  Sparkles,
   Trophy,
   Flame,
 } from "lucide-react";

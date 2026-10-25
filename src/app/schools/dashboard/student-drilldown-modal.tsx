@@ -23,11 +23,27 @@ interface StudentDrilldownModalProps {
     email: string;
     studentIdentifier?: string | null;
     subjects?: string[];
-    licenseStatus: "active" | "inactive";
+    licenseStatus: "active" | "inactive" | "expired";
     daysLeft?: number;
     averageScore?: number | null;
   } | null;
   schoolName: string;
+}
+
+function parseSubjectsArray(val: unknown): string[] {
+  if (Array.isArray(val)) {
+    return val.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  }
+  if (typeof val === "string") {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+      }
+    } catch {}
+    return val.replace(/[{}"\s]/g, "").split(",").filter((s) => s.length > 0);
+  }
+  return [];
 }
 
 export function StudentDrilldownModal({ isOpen, onClose, student, schoolName }: StudentDrilldownModalProps) {
@@ -92,7 +108,7 @@ export function StudentDrilldownModal({ isOpen, onClose, student, schoolName }: 
 
       let resData: any = null;
 
-      // 1. Try Worker API endpoint
+      // Query authoritative Worker API endpoint
       try {
         const res = await fetch(`${apiBase}/api/v1/schools/students/drilldown`, {
           method: "POST",
@@ -103,23 +119,7 @@ export function StudentDrilldownModal({ isOpen, onClose, student, schoolName }: 
           resData = await res.json();
         }
       } catch {
-        // Fall through
-      }
-
-      // 2. Try Next.js API route if worker endpoint was unreachable
-      if (!resData) {
-        try {
-          const res = await fetch("/api/schools/students/drilldown/", {
-            method: "POST",
-            headers,
-            body: JSON.stringify({ studentId: student.id }),
-          });
-          if (res.ok) {
-            resData = await res.json();
-          }
-        } catch {
-          // Fall through
-        }
+        // Fall through to local roster summary
       }
 
       if (!active) return;
@@ -131,7 +131,7 @@ export function StudentDrilldownModal({ isOpen, onClose, student, schoolName }: 
         return;
       }
 
-      const studentSubjects = student.subjects || ["ENG", "MTH", "PHY", "CHM"];
+      const studentSubjects = parseSubjectsArray(student.subjects);
       setData({
         student: {
           id: student.id,
@@ -292,31 +292,37 @@ export function StudentDrilldownModal({ isOpen, onClose, student, schoolName }: 
                 <span>4-Subject Combination Score Breakdown</span>
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-2.5 print:gap-2">
-                {(data?.subjects || []).map((sub: any) => {
-                  const hasScore = typeof sub.score === "number" && sub.score !== null;
-                  return (
-                    <div key={sub.code || sub.name} className="rounded-md border border-[#E3E8E4] p-3 print:p-2 space-y-2 print:space-y-1 bg-white">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-[#17231F]">{sub.name}</span>
-                        <span className="font-semibold text-[#12664F] font-mono tabular-nums">
-                          {hasScore ? `${sub.score} / 100` : "— / 100"}
-                        </span>
+                {(data?.subjects || []).length > 0 ? (
+                  data.subjects.map((sub: any) => {
+                    const hasScore = typeof sub.score === "number" && sub.score !== null;
+                    return (
+                      <div key={sub.code || sub.name} className="rounded-md border border-[#E3E8E4] p-3 print:p-2 space-y-2 print:space-y-1 bg-white">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-[#17231F]">{sub.name}</span>
+                          <span className="font-semibold text-[#12664F] font-mono tabular-nums">
+                            {hasScore ? `${sub.score} / 100` : "— / 100"}
+                          </span>
+                        </div>
+                        <div className="w-full bg-[#F7F8F6] rounded-full h-1.5 overflow-hidden border border-[#E3E8E4]/50">
+                          <div 
+                            className={`h-full rounded-full ${hasScore ? (sub.score >= 70 ? "bg-[#12664F]" : "bg-amber-500") : "bg-slate-200"}`} 
+                            style={{ width: hasScore ? `${sub.score}%` : "0%" }} 
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] text-[#68766F]">
+                          <span>Accuracy: {hasScore ? (sub.accuracy ?? `${sub.score}%`) : "—"}</span>
+                          <span className={hasScore ? (sub.score >= 70 ? "text-[#12664F] font-semibold" : "text-amber-800 font-semibold") : "text-[#68766F]"}>
+                            {hasScore ? (sub.score >= 70 ? "Mastered" : "Revision Advised") : "Not yet attempted"}
+                          </span>
+                        </div>
                       </div>
-                      <div className="w-full bg-[#F7F8F6] rounded-full h-1.5 overflow-hidden border border-[#E3E8E4]/50">
-                        <div 
-                          className={`h-full rounded-full ${hasScore ? (sub.score >= 70 ? "bg-[#12664F]" : "bg-amber-500") : "bg-slate-200"}`} 
-                          style={{ width: hasScore ? `${sub.score}%` : "0%" }} 
-                        />
-                      </div>
-                      <div className="flex items-center justify-between text-[10px] text-[#68766F]">
-                        <span>Accuracy: {hasScore ? (sub.accuracy ?? `${sub.score}%`) : "—"}</span>
-                        <span className={hasScore ? (sub.score >= 70 ? "text-[#12664F] font-semibold" : "text-amber-800 font-semibold") : "text-[#68766F]"}>
-                          {hasScore ? (sub.score >= 70 ? "Mastered" : "Revision Advised") : "Not yet attempted"}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full rounded-md border border-dashed border-[#E3E8E4] bg-[#F7F8F6] p-4 text-center text-xs text-[#68766F]">
+                    Candidate has not selected their 4 UTME subjects yet. They will select them upon their first sign-in.
+                  </div>
+                )}
               </div>
             </div>
 

@@ -14,7 +14,7 @@ import {
   ArrowRight,
   ShieldCheck,
   Check,
-  Sparkles,
+  Zap,
   Keyboard,
   Award,
   ChevronDown
@@ -396,7 +396,7 @@ export default function SchoolsPage() {
         <section id="comparison" className="shell py-20 sm:py-28 border-t border-slate-200/80 bg-slate-50/50">
           <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16 space-y-3 reveal-on-scroll">
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-100 text-[#116149] text-xs font-bold uppercase tracking-wider">
-              <Sparkles size={13} />
+              <Award size={13} />
               <span>Institutional Capability Comparison</span>
             </div>
             <h2 className="text-3xl sm:text-5xl font-serif font-normal text-[#092E28] tracking-tight">

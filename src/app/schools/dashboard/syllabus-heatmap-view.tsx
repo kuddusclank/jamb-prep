@@ -1,17 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { 
   BarChart3, 
   AlertTriangle, 
-  Sparkles, 
+  CheckCheck, 
   Calendar, 
   Download, 
   Search, 
   Clock, 
   Loader2 
 } from "lucide-react";
-import { DiagnosticTopicItem } from "@/app/api/schools/diagnostics/summary/route";
+export interface DiagnosticTopicItem {
+  id: string;
+  subject: string;
+  subjectCode?: string;
+  topic: string;
+  accuracyRate: number;
+  questionsAttempted: number;
+  status: "urgent_remedial" | "revision_recommended" | "exam_ready";
+  recommendedAction: string;
+}
 
 interface SyllabusHeatmapViewProps {
   schoolName: string;
@@ -26,39 +36,79 @@ export function SyllabusHeatmapView({ schoolName }: SyllabusHeatmapViewProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/schools/diagnostics/summary/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    })
-      .then(async (res) => {
-        if (!res.ok) throw new Error("Static fallback");
-        return res.json();
-      })
-      .then((data) => {
+    let active = true;
+    setLoading(true);
+
+    const loadSummary = async () => {
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
+      let token: string | undefined;
+      try {
+        const supabase = createClient();
+        const sessionRes = await supabase.auth.getSession();
+        token = sessionRes?.data?.session?.access_token;
+      } catch {
+        // Proceed without token
+      }
+
+      const headers = {
+        "Content-Type": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+      };
+
+      let data: any = null;
+
+      // 1. Query tenant-scoped Worker API
+      try {
+        const res = await fetch(`${apiBase}/api/v1/schools/diagnostics/summary`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({}),
+        });
+        if (res.ok) {
+          data = await res.json();
+        }
+      } catch {
+        // Fall through
+      }
+
+      if (!active) return;
+
+      if (data) {
         if (data.topics) setTopics(data.topics);
         if (data.revisionTimetable) setTimetable(data.revisionTimetable);
         setLoading(false);
-      })
-      .catch(() => {
+      } else {
         setTopics([]);
         setTimetable([]);
         setLoading(false);
-      });
+      }
+    };
+
+    void loadSummary();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const subjects = [
-    { id: "all", label: "All Subjects" },
-    { id: "Use of English", label: "Use of English" },
-    { id: "Mathematics", label: "Mathematics" },
-    { id: "Physics", label: "Physics" },
-    { id: "Chemistry", label: "Chemistry" },
-    { id: "Biology", label: "Biology" },
-    { id: "Economics", label: "Economics" },
-    { id: "Government", label: "Government" },
+    { id: "all", code: "ALL", label: "All Subjects" },
+    { id: "Use of English", code: "ENG", label: "Use of English" },
+    { id: "Mathematics", code: "MTH", label: "Mathematics" },
+    { id: "Physics", code: "PHY", label: "Physics" },
+    { id: "Chemistry", code: "CHM", label: "Chemistry" },
+    { id: "Biology", code: "BIO", label: "Biology" },
+    { id: "Economics", code: "ECN", label: "Economics" },
+    { id: "Government", code: "GOV", label: "Government" },
+    { id: "Literature in English", code: "LIT", label: "Literature" },
   ];
 
-  const filteredTopics = topics.filter((t) => {
-    const matchesSubject = selectedSubject === "all" || t.subject.toLowerCase() === selectedSubject.toLowerCase();
+  const filteredTopics = topics.filter((t: any) => {
+    const selectedObj = subjects.find((s) => s.id === selectedSubject);
+    const matchesSubject =
+      selectedSubject === "all" ||
+      (t.subject && t.subject.toLowerCase() === selectedSubject.toLowerCase()) ||
+      (selectedObj && (t.subject?.toUpperCase() === selectedObj.code || t.subjectCode?.toUpperCase() === selectedObj.code));
     const matchesStatus = statusFilter === "all" || t.status === statusFilter;
     const matchesSearch = !searchQuery || 
       t.topic.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -167,7 +217,7 @@ export function SyllabusHeatmapView({ schoolName }: SyllabusHeatmapViewProps) {
             <span className="text-[10px] font-semibold uppercase tracking-wider text-[#12664F]">
               Examination Ready
             </span>
-            <Sparkles size={14} className="text-[#12664F]" />
+            <CheckCheck size={15} className="text-[#12664F]" />
           </div>
           <p className="text-2xl font-semibold tabular-nums text-[#0B3028]">{readyCount} Topics</p>
           <span className="text-[11px] text-[#12664F] block">

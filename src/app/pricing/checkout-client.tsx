@@ -3,13 +3,17 @@
 import { useState } from "react";
 import { initializePaystackCheckoutAction, CheckoutPricing } from "@/lib/client-actions";
 import { 
-  Sparkles, 
   Check, 
   ArrowRight, 
   Loader2, 
   ShieldCheck, 
   Users,
-  CreditCard
+  CreditCard,
+  Building2,
+  Copy,
+  CheckCircle2,
+  HelpCircle,
+  GraduationCap
 } from "lucide-react";
 import Link from "@/components/pending-link";
 
@@ -20,7 +24,15 @@ interface CheckoutClientProps {
 export function CheckoutClient({ pricing }: CheckoutClientProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [copiedDetails, setCopiedDetails] = useState(false);
   const pendingReference = errorMessage?.match(/JAMB-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0];
+
+  const handleCopyDetails = () => {
+    const text = `Candidate Account: ${pricing.userEmail}\nSchool: ${pricing.school?.schoolName || "My School"}\nSchool Code: ${pricing.school?.schoolCode || "N/A"}\nPlease activate my JAMBPrep institutional CBT mock & practice license.`;
+    navigator.clipboard.writeText(text);
+    setCopiedDetails(true);
+    setTimeout(() => setCopiedDetails(false), 2500);
+  };
 
   const handleCheckout = async () => {
     setIsLoading(true);
@@ -49,13 +61,123 @@ export function CheckoutClient({ pricing }: CheckoutClientProps) {
       })
     : null;
 
+  // 1. School-Attached Student View: Replace self-checkout with School Management Card
+  if (pricing.isSchoolAttached) {
+    const schoolName = pricing.school?.schoolName || "Institutional Partner School";
+    const schoolCode = pricing.school?.schoolCode || "SCH-ENROLLED";
+    const isActive = pricing.isAlreadyPremium;
+
+    return (
+      <div className="space-y-8">
+        <div className="rounded-3xl border-2 border-emerald-900/15 bg-white p-6 sm:p-10 shadow-lg space-y-8">
+          {/* Header Badge */}
+          <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-[#116149] border border-emerald-100">
+                <Building2 size={24} />
+              </span>
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100/70 px-2.5 py-0.5 rounded-full inline-block">
+                  Institutional Candidate Account
+                </span>
+                <h2 className="text-xl sm:text-2xl font-bold text-[#092E28] mt-1">
+                  {schoolName}
+                </h2>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 font-medium">School Code:</span>
+              <span className="font-mono text-xs font-bold bg-slate-100 text-slate-800 px-3 py-1.5 rounded-xl border border-slate-200">
+                {schoolCode}
+              </span>
+            </div>
+          </div>
+
+          {/* Status Details */}
+          {isActive ? (
+            <div className="rounded-2xl border border-emerald-300 bg-emerald-50/70 p-5 space-y-2 text-[#092E28]">
+              <div className="flex items-center gap-2 font-bold text-emerald-900">
+                <CheckCircle2 size={18} className="text-[#116149]" />
+                <span>Your School CBT License is Active</span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                Your computer lab CBT simulations, unlimited practice, and diagnostic reviews are fully funded and active through{" "}
+                <strong>{formattedExpiry || "your school's active term"}</strong>.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-amber-300 bg-[#FDFBF4] p-5 sm:p-6 space-y-3 text-[#092E28]">
+              <div className="flex items-center gap-2 font-bold text-amber-950 text-base">
+                <GraduationCap size={20} className="text-amber-700" />
+                <span>Candidate License Inactive or Awaiting Renewal</span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                Your account is enrolled under <strong>{schoolName}</strong>. Individual payments are disabled for institutional candidates because license quotas and cohort mock exams are administered directly by your school.
+              </p>
+            </div>
+          )}
+
+          {/* Action Guide for Upgrades */}
+          <div className="rounded-2xl border border-slate-200 bg-[#F8FAF7] p-6 space-y-4">
+            <h3 className="text-sm font-bold text-[#092E28] flex items-center gap-2">
+              <HelpCircle size={16} className="text-[#116149]" />
+              How to Upgrade or Extend Your Candidate Access
+            </h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-slate-600">
+              <div className="bg-white p-4 rounded-xl border border-slate-200/80 space-y-1">
+                <strong className="text-slate-900 block font-semibold">1. Contact Your School</strong>
+                <span>Notify your ICT coordinator, principal, or class teacher that your license needs activation.</span>
+              </div>
+              <div className="bg-white p-4 rounded-xl border border-slate-200/80 space-y-1">
+                <strong className="text-slate-900 block font-semibold">2. Provide Your Details</strong>
+                <span>Give them your registered email (<span className="font-mono text-slate-800">{pricing.userEmail}</span>) and school code.</span>
+              </div>
+              <div className="bg-white p-4 rounded-xl border border-slate-200/80 space-y-1">
+                <strong className="text-slate-900 block font-semibold">3. Automatic Activation</strong>
+                <span>As soon as your school completes their cohort checkout, your full CBT access unlocks automatically.</span>
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+              <button
+                type="button"
+                onClick={handleCopyDetails}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 py-3 text-xs font-semibold text-white hover:bg-[#0c4a37] transition cursor-pointer shadow-xs"
+              >
+                {copiedDetails ? (
+                  <>
+                    <CheckCircle2 size={15} /> Details Copied to Clipboard!
+                  </>
+                ) : (
+                  <>
+                    <Copy size={15} /> Copy My Details for School Admin
+                  </>
+                )}
+              </button>
+
+              <Link
+                href="/dashboard"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+              >
+                Go to Study Dashboard <ArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Independent Student View: Standard Individual Paystack Checkout
   return (
     <div className="space-y-8">
       {/* Referral Discount Notice if available */}
       {pricing.hasDiscount ? (
         <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-4 sm:p-5 flex items-start gap-3.5 text-[#092E28]">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#116149] text-white">
-            <Sparkles size={18} />
+            <CheckCircle2 size={18} />
           </span>
           <div className="text-sm">
             <strong className="font-semibold block text-[#116149]">

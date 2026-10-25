@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "node --test tests/offline-profile-cache.test.mjs tests/weekly-pack.test.mjs tests/offline-outbox-sync.test.mjs tests/pwa-foundation.test.mjs tests/school-partnerships.test.mjs tests/t05-static-export-routing.test.mjs",
+    "test": "node --import ./tests/helpers/mock-ready-fixture.mjs --test tests/offline-profile-cache.test.mjs tests/weekly-pack.test.mjs tests/offline-outbox-sync.test.mjs tests/pwa-foundation.test.mjs tests/school-partnerships.test.mjs tests/course-combinations.test.mjs tests/t05-static-export-routing.test.mjs tests/math-renderer.test.mjs tests/worker-api-foundation.test.mjs tests/t04-session-provisioning.test.mjs tests/continuous-study-payment.test.mjs",
     "build": "next build --webpack && node scripts/build-pwa.mjs",
     "dev": "next dev",
     "start": "next start",
