@@ -156,7 +156,7 @@ export function SyllabusHeatmapView({ schoolName }: SyllabusHeatmapViewProps) {
         <button
           type="button"
           onClick={exportDiagnosticLedger}
-          className="inline-flex items-center gap-1.5 rounded-md border border-[#E3E8E4] bg-white px-3 py-1.5 text-xs font-medium text-[#17231F] shadow-xs hover:bg-[#F7F8F6] transition cursor-pointer self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer self-start sm:self-auto"
         >
           <Download size={13} />
           <span>Export Diagnostic Ledger (.csv)</span>
@@ -284,7 +284,7 @@ export function SyllabusHeatmapView({ schoolName }: SyllabusHeatmapViewProps) {
             return (
               <div
                 key={item.id}
-                className={`rounded-lg border p-4 space-y-2.5 bg-white transition hover:shadow-xs ${
+                className={`rounded-xl border p-4 space-y-2.5 bg-white transition hover:border-slate-300 ${
                   isUrgent
                     ? "border-red-200"
                     : isRevision

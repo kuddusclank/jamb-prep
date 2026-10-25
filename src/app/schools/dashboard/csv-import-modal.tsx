@@ -228,71 +228,71 @@ Fatima,Danjuma,f.danjuma@school.edu.ng,ST-104,08045678901,2026`;
   const invalidCount = parsedRows.length - validCount;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-lg rounded-lg bg-white p-5 sm:p-6 text-[#17231F] shadow-xl border border-[#E3E8E4] animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-lg rounded-2xl bg-white p-6 sm:p-7 text-slate-900 border border-slate-200 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
         role="dialog"
         aria-modal="true"
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-md text-[#68766F] hover:bg-[#F7F8F6] hover:text-[#17231F] transition cursor-pointer"
+          className="absolute right-5 top-5 flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
           aria-label="Close modal"
         >
           <X size={16} />
         </button>
 
         {importResult ? (
-          <div className="space-y-5 text-center py-2">
-            <div className="size-11 rounded-lg bg-[#EAF4EF] text-[#12664F] flex items-center justify-center mx-auto shadow-2xs">
+          <div className="space-y-6 text-center py-2">
+            <div className="size-12 rounded-xl bg-[#EAF4EF] text-[#12664F] flex items-center justify-center mx-auto border border-[#12664F]/15">
               <CheckCircle2 size={24} />
             </div>
 
-            <div className="space-y-1">
-              <h3 className="text-base sm:text-lg font-semibold text-[#17231F]">Batch Ingestion Completed</h3>
-              <p className="text-xs text-[#68766F]">
-                <strong>{importResult.importedCount}</strong> student accounts provisioned under school code <strong>{schoolCode}</strong>.
+            <div className="space-y-1.5">
+              <h3 className="text-base sm:text-lg font-semibold text-slate-900">Batch Ingestion Completed</h3>
+              <p className="text-xs text-slate-500 font-normal">
+                <span className="font-medium text-slate-800">{importResult.importedCount}</span> student accounts provisioned under school code <span className="font-mono font-medium text-[#12664F]">{schoolCode}</span>.
               </p>
             </div>
 
-            <div className="rounded-md border border-[#E3E8E4] bg-[#F7F8F6] p-4 text-left space-y-2">
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <span className="text-[#17231F]">Roster Summary:</span>
-                <span className="text-[#12664F] font-mono">{importResult.importedCount} accounts ready</span>
+            <div className="rounded-xl border border-slate-200 bg-slate-50/75 p-4 text-left space-y-3 font-mono text-xs">
+              <div className="flex items-center justify-between font-sans">
+                <span className="text-slate-500 text-xs">Roster Summary:</span>
+                <span className="text-[#12664F] font-mono font-medium bg-[#EAF4EF] px-2 py-0.5 rounded border border-[#12664F]/20 text-[11px]">{importResult.importedCount} accounts ready</span>
               </div>
               {importResult.skippedCount > 0 && (
-                <div className="rounded border border-amber-200 bg-amber-50 p-2.5 text-[11px] text-amber-900 space-y-1">
-                  <p className="font-semibold">
+                <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-[11px] text-amber-900 space-y-1 font-sans">
+                  <p className="font-medium">
                     {importResult.skippedCount} row(s) skipped due to conflicts:
                   </p>
                   {Array.isArray(importResult.skipped) &&
                     importResult.skipped.slice(0, 5).map((item: { email: string; reason: string }, idx: number) => (
-                      <p key={idx} className="font-mono text-[10px]">
+                      <p key={idx} className="font-mono text-[10px] text-amber-800">
                         • {item.email}: {item.reason}
                       </p>
                     ))}
                 </div>
               )}
-              <p className="text-xs text-[#68766F] leading-relaxed">
+              <p className="text-xs text-slate-500 font-sans font-normal leading-relaxed">
                 Default passwords have been set to each candidate&apos;s uppercase surname. Download the printable classroom handout below to distribute credentials to students in the lab.
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
               <button
                 type="button"
                 onClick={downloadClassroomHandout}
-                className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-md bg-[#12664F] px-3.5 text-xs font-medium text-white shadow-2xs hover:bg-[#0B3028] transition cursor-pointer"
+                className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-[#12664F] px-4 text-xs font-medium text-white hover:bg-[#0B3028] transition cursor-pointer"
               >
-                <Download size={13} />
+                <Download size={14} />
                 <span>Download Lab Handout (.csv)</span>
               </button>
 
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-md border border-[#E3E8E4] bg-white px-3.5 text-xs font-medium text-[#17231F] hover:bg-[#F7F8F6] transition cursor-pointer"
+                className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
               >
                 <span>Return to Portal</span>
               </button>
@@ -300,31 +300,31 @@ Fatima,Danjuma,f.danjuma@school.edu.ng,ST-104,08045678901,2026`;
           </div>
         ) : (
           <div>
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#E3E8E4]">
-              <div className="flex items-center gap-3">
-                <div className="size-9 rounded-lg bg-[#EAF4EF] text-[#12664F] flex items-center justify-center">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3.5">
+                <div className="size-10 rounded-xl bg-[#EAF4EF] text-[#12664F] flex items-center justify-center border border-[#12664F]/15">
                   <FileSpreadsheet size={18} />
                 </div>
                 <div>
-                  <h2 className="text-base sm:text-lg font-semibold tracking-tight text-[#17231F]">Bulk CSV Ingestion</h2>
-                  <p className="text-xs text-[#68766F]">Upload cohort roster under {schoolCode}</p>
+                  <h2 className="text-base sm:text-lg font-semibold tracking-tight text-slate-900">Bulk CSV Ingestion</h2>
+                  <p className="text-xs text-slate-500 font-normal">Upload cohort roster under {schoolCode}</p>
                 </div>
               </div>
 
               <button
                 type="button"
                 onClick={downloadSampleTemplate}
-                className="inline-flex items-center gap-1.5 rounded-md border border-[#E3E8E4] bg-white px-2.5 py-1 text-xs font-medium text-[#17231F] hover:bg-[#F7F8F6] transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
                 title="Download formatted CSV template"
               >
-                <Download size={12} />
+                <Download size={13} />
                 <span className="hidden sm:inline">CSV Template</span>
               </button>
             </div>
 
             {error && (
-              <div role="alert" className="mb-3.5 rounded-md border border-red-200 bg-red-50 p-2.5 text-xs text-red-800 flex items-start gap-2">
-                <AlertCircle size={14} className="shrink-0 mt-0.5 text-red-600" />
+              <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50/70 p-3 text-xs text-red-800 flex items-start gap-2.5">
+                <AlertCircle size={15} className="shrink-0 mt-0.5 text-red-600" />
                 <span>{error}</span>
               </div>
             )}
@@ -332,7 +332,7 @@ Fatima,Danjuma,f.danjuma@school.edu.ng,ST-104,08045678901,2026`;
             {/* Upload Drag & Drop Area */}
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="cursor-pointer rounded-lg border-2 border-dashed border-[#E3E8E4] bg-[#F7F8F6] p-6 text-center hover:border-[#12664F] hover:bg-[#EAF4EF]/30 transition"
+              className="cursor-pointer rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 p-7 text-center hover:border-[#12664F] hover:bg-[#EAF4EF]/25 transition-all"
             >
               <input
                 ref={fileInputRef}
@@ -341,66 +341,66 @@ Fatima,Danjuma,f.danjuma@school.edu.ng,ST-104,08045678901,2026`;
                 onChange={handleFileUpload}
                 className="hidden"
               />
-              <div className="size-10 rounded-md bg-white border border-[#E3E8E4] text-[#68766F] shadow-2xs flex items-center justify-center mx-auto mb-2.5">
+              <div className="size-10 rounded-xl bg-white border border-slate-200 text-slate-500 flex items-center justify-center mx-auto mb-3">
                 <Upload size={18} />
               </div>
-              <p className="text-xs font-semibold text-[#17231F]">
+              <p className="text-xs font-semibold text-slate-800">
                 {fileName ? fileName : "Click to select or drop student CSV file"}
               </p>
-              <p className="mt-1 text-[11px] text-[#68766F]">
+              <p className="mt-1 text-[11px] text-slate-400 font-normal">
                 Supports standard .csv format with headers: first_name, last_name, email
               </p>
             </div>
 
             {/* Preflight Analysis Results */}
             {parsedRows.length > 0 && (
-              <div className="mt-4 space-y-2.5">
+              <div className="mt-5 space-y-3">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-[#17231F]">Preflight Validation:</span>
-                  <div className="flex gap-1.5 text-[11px]">
-                    <span className="font-semibold text-[#12664F] bg-[#EAF4EF] px-2 py-0.5 rounded border border-[#12664F]/20">
+                  <span className="font-medium text-slate-800">Preflight Validation:</span>
+                  <div className="flex gap-2 text-[11px]">
+                    <span className="font-medium text-[#12664F] bg-[#EAF4EF] px-2.5 py-0.5 rounded-md border border-[#12664F]/20">
                       {validCount} Ready
                     </span>
                     {invalidCount > 0 && (
-                      <span className="font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-200">
+                      <span className="font-medium text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-md border border-amber-200">
                         {invalidCount} Skipped
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="max-h-36 overflow-y-auto rounded-md border border-[#E3E8E4] bg-white p-2 text-xs divide-y divide-[#E3E8E4] font-mono">
+                <div className="max-h-36 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2.5 text-xs divide-y divide-slate-100 font-mono">
                   {parsedRows.slice(0, 10).map((row, idx) => (
                     <div key={idx} className="py-1.5 px-2 flex items-center justify-between text-[11px]">
-                      <span className="truncate max-w-[200px] text-[#17231F]">
+                      <span className="truncate max-w-[220px] text-slate-800 font-sans">
                         {row.firstName} {row.lastName} ({row.email})
                       </span>
                       {row.isValid ? (
                         <span className="text-[#12664F] font-semibold text-[10px]">PASS</span>
                       ) : (
-                        <span className="text-red-600 font-semibold text-[10px]">{row.errorReason}</span>
+                        <span className="text-red-600 font-medium text-[10px]">{row.errorReason}</span>
                       )}
                     </div>
                   ))}
                   {parsedRows.length > 10 && (
-                    <div className="py-1 px-2 text-[10px] text-[#68766F] italic text-center">
+                    <div className="py-1.5 px-2 text-[10px] text-slate-400 italic text-center font-sans">
                       + {parsedRows.length - 10} additional candidates
                     </div>
                   )}
                 </div>
 
                 {/* Password Rule Notice */}
-                <p className="text-[11px] text-[#68766F]">
+                <p className="text-[11px] text-slate-500 font-normal">
                   Note: Default password for every candidate will be set to their uppercase surname (e.g. OKONKWO).
                 </p>
               </div>
             )}
 
-            <div className="mt-5 flex gap-2.5">
+            <div className="mt-6 flex gap-3 pt-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={onClose}
-                className="min-h-9 flex-1 rounded-md border border-[#E3E8E4] bg-white text-xs font-medium text-[#68766F] hover:bg-[#F7F8F6] transition cursor-pointer"
+                className="min-h-10 flex-1 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition cursor-pointer"
               >
                 Cancel
               </button>
@@ -408,17 +408,17 @@ Fatima,Danjuma,f.danjuma@school.edu.ng,ST-104,08045678901,2026`;
                 type="button"
                 disabled={isPending || validCount === 0}
                 onClick={handleCommitImport}
-                className="min-h-9 flex-1 inline-flex items-center justify-center gap-1.5 rounded-md bg-[#12664F] text-xs font-medium text-white shadow-2xs hover:bg-[#0B3028] disabled:opacity-40 transition cursor-pointer"
+                className="min-h-10 flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[#12664F] text-xs font-medium text-white hover:bg-[#0B3028] disabled:opacity-40 transition cursor-pointer"
               >
                 {isPending ? (
                   <>
-                    <Loader2 size={13} className="animate-spin" />
+                    <Loader2 size={14} className="animate-spin text-white" />
                     <span>Processing {validCount} Accounts...</span>
                   </>
                 ) : (
                   <>
                     <span>Import {validCount > 0 ? `${validCount} Students` : "Roster"}</span>
-                    <ArrowRight size={12} />
+                    <ArrowRight size={13} />
                   </>
                 )}
               </button>

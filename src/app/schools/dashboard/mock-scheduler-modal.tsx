@@ -134,18 +134,18 @@ export function MockSchedulerModal({
   return (
     <div 
       data-print-target="mock-scheduler"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200 print:static print:p-0 print:bg-white print:backdrop-blur-none print:z-auto print:block print:w-full print:h-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200 print:static print:p-0 print:bg-white print:backdrop-blur-none print:z-auto print:block print:w-full print:h-auto"
     >
       <div 
         data-print-dialog="true"
-        className="relative w-full max-w-lg rounded-lg bg-white p-5 sm:p-6 text-[#17231F] shadow-xl border border-[#E3E8E4] animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto print:max-h-none print:overflow-visible print:p-0 print:border-none print:shadow-none print:max-w-none print:w-full"
+        className="relative w-full max-w-lg rounded-2xl bg-white p-6 sm:p-7 text-slate-900 border border-slate-200 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto print:max-h-none print:overflow-visible print:p-0 print:border-none print:shadow-none print:max-w-none print:w-full"
         role="dialog"
         aria-modal="true"
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-md text-[#68766F] hover:bg-[#F7F8F6] hover:text-[#17231F] transition cursor-pointer print:hidden"
+          className="absolute right-5 top-5 flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer print:hidden"
           aria-label="Close modal"
         >
           <X size={16} />
@@ -153,29 +153,29 @@ export function MockSchedulerModal({
 
         {!scheduledSession ? (
           <form onSubmit={handleScheduleSubmit} className="space-y-4">
-            <div className="space-y-1 pb-3 border-b border-[#E3E8E4]">
-              <div className="inline-flex items-center gap-1.5 rounded bg-[#EAF4EF] border border-[#12664F]/20 px-2 py-0.5 text-[10px] font-semibold text-[#12664F]">
-                <Clock size={11} />
+            <div className="space-y-1.5 pb-4 border-b border-slate-100">
+              <div className="inline-flex items-center gap-1.5 rounded-md bg-[#EAF4EF] border border-[#12664F]/20 px-2 py-0.5 text-[11px] font-medium text-[#12664F]">
+                <Clock size={12} />
                 <span>Synchronized CBT Lab Session</span>
               </div>
-              <h2 className="text-lg font-semibold text-[#17231F]">
+              <h2 className="text-lg font-semibold text-slate-900">
                 Launch Synchronized Computer Lab Mock
               </h2>
-              <p className="text-xs text-[#68766F]">
+              <p className="text-xs text-slate-500 font-normal">
                 Simulate official JAMB examination conditions across your computer laboratory desktop workstations.
               </p>
             </div>
 
             {error && (
-              <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-800 flex items-start gap-2">
-                <AlertCircle size={14} className="shrink-0 text-red-600 mt-0.5" />
+              <div role="alert" className="rounded-xl border border-red-200 bg-red-50/70 p-3 text-xs text-red-800 flex items-start gap-2.5">
+                <AlertCircle size={15} className="shrink-0 text-red-600 mt-0.5" />
                 <span>{error}</span>
               </div>
             )}
 
             {/* Exam Name */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-[#17231F] block">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-700 block">
                 Mock Examination Title
               </label>
               <input
@@ -184,46 +184,46 @@ export function MockSchedulerModal({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Term 2 Grand UTME Simulation"
-                className="w-full rounded-md border border-[#E3E8E4] bg-white px-3 py-2 text-xs text-[#17231F] placeholder:text-[#68766F]/60 focus:outline-none focus:ring-1 focus:ring-[#12664F] focus:border-[#12664F]"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#12664F]/20 focus:border-[#12664F] transition-all"
               />
             </div>
 
             {/* Launch Timing */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[#17231F] block">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-slate-700 block">
                 Session Commencement
               </label>
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setTimingMode("immediate")}
-                  className={`p-3 rounded-md border text-left transition cursor-pointer ${
+                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
                     timingMode === "immediate"
-                      ? "border-[#12664F] bg-[#EAF4EF] ring-1 ring-[#12664F]"
-                      : "border-[#E3E8E4] bg-[#F7F8F6] hover:bg-white"
+                      ? "border-[#12664F] bg-[#EAF4EF]/70 ring-1 ring-[#12664F]"
+                      : "border-slate-200 bg-slate-50/60 hover:bg-slate-50"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 font-semibold text-xs text-[#17231F]">
-                    <Zap size={13} className="text-[#12664F]" />
+                  <div className="flex items-center gap-1.5 font-medium text-xs text-slate-900">
+                    <Zap size={14} className="text-[#12664F]" />
                     <span>Launch Immediately</span>
                   </div>
-                  <span className="text-[10px] text-[#68766F] block mt-0.5">Students enter code right now</span>
+                  <span className="text-[11px] text-slate-500 font-normal block mt-1">Students enter code right now</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setTimingMode("scheduled")}
-                  className={`p-3 rounded-md border text-left transition cursor-pointer ${
+                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
                     timingMode === "scheduled"
-                      ? "border-[#12664F] bg-[#EAF4EF] ring-1 ring-[#12664F]"
-                      : "border-[#E3E8E4] bg-[#F7F8F6] hover:bg-white"
+                      ? "border-[#12664F] bg-[#EAF4EF]/70 ring-1 ring-[#12664F]"
+                      : "border-slate-200 bg-slate-50/60 hover:bg-slate-50"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 font-semibold text-xs text-[#17231F]">
-                    <Calendar size={13} className="text-[#68766F]" />
+                  <div className="flex items-center gap-1.5 font-medium text-xs text-slate-900">
+                    <Calendar size={14} className="text-slate-500" />
                     <span>Schedule Date/Time</span>
                   </div>
-                  <span className="text-[10px] text-[#68766F] block mt-0.5">Pick lab exam timetable slot</span>
+                  <span className="text-[11px] text-slate-500 font-normal block mt-1">Pick lab exam timetable slot</span>
                 </button>
               </div>
 
@@ -233,71 +233,71 @@ export function MockSchedulerModal({
                   required
                   value={scheduledDateTime}
                   onChange={(e) => setScheduledDateTime(e.target.value)}
-                  className="w-full rounded-md border border-[#E3E8E4] bg-white px-3 py-2 text-xs text-[#17231F] mt-1.5 focus:outline-none focus:ring-1 focus:ring-[#12664F] focus:border-[#12664F]"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 mt-2 focus:outline-none focus:ring-2 focus:ring-[#12664F]/20 focus:border-[#12664F] transition-all"
                 />
               )}
             </div>
 
             {/* Examination Parameters Badge */}
-            <div className="rounded-md border border-[#E3E8E4] bg-[#F7F8F6] p-3 text-xs space-y-2">
-              <span className="font-semibold text-[#17231F] block text-[11px] uppercase tracking-wider">
+            <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-xs space-y-3">
+              <span className="font-semibold text-slate-800 block text-[11px] uppercase tracking-wider">
                 Standard UTME Simulation Parameters
               </span>
-              <div className="grid grid-cols-2 gap-2 text-[11px] text-[#68766F]">
-                <div className="flex items-center justify-between bg-white p-2 rounded border border-[#E3E8E4]">
+              <div className="grid grid-cols-2 gap-2.5 text-[11px] text-slate-500">
+                <div className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200">
                   <span>Duration:</span>
-                  <strong className="text-[#17231F]">120 Minutes (2h)</strong>
+                  <span className="font-medium text-slate-900">120 Minutes (2h)</span>
                 </div>
-                <div className="flex items-center justify-between bg-white p-2 rounded border border-[#E3E8E4]">
+                <div className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200">
                   <span>Questions:</span>
-                  <strong className="text-[#17231F]">180 Questions</strong>
+                  <span className="font-medium text-slate-900">180 Questions</span>
                 </div>
-                <div className="flex items-center justify-between bg-white p-2 rounded border border-[#E3E8E4]">
+                <div className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200">
                   <span>Eligible Candidates:</span>
-                  <strong className="text-[#12664F]">{activeCandidatesCount} Active</strong>
+                  <span className="font-medium text-[#12664F]">{activeCandidatesCount} Active</span>
                 </div>
-                <div className="flex items-center justify-between bg-white p-2 rounded border border-[#E3E8E4]">
+                <div className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200">
                   <span>Navigation:</span>
-                  <strong className="text-[#17231F]">8-Key Hotkeys</strong>
+                  <span className="font-medium text-slate-900">8-Key Hotkeys</span>
                 </div>
               </div>
 
               {/* Hotkey Mode Switch */}
-              <label className="flex items-center gap-2 pt-1.5 cursor-pointer">
+              <label className="flex items-center gap-2.5 pt-1 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={hotkeyMode}
                   onChange={(e) => setHotkeyMode(e.target.checked)}
-                  className="rounded text-[#12664F] focus:ring-[#12664F] size-3.5"
+                  className="rounded border-slate-300 text-[#12664F] focus:ring-[#12664F] size-3.5"
                 />
-                <span className="text-[11px] text-[#68766F]">
+                <span className="text-[11px] text-slate-500 font-normal">
                   Enforce strict 8-key examination navigation (A, B, C, D, P, N, S, R keyboard shortcuts).
                 </span>
               </label>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-2">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-3.5 py-1.5 rounded-md border border-[#E3E8E4] text-xs font-medium text-[#68766F] hover:bg-[#F7F8F6] transition cursor-pointer"
+                className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isPending}
-                className="inline-flex items-center gap-1.5 rounded-md bg-[#12664F] px-4 py-1.5 text-xs font-medium text-white shadow-xs hover:bg-[#0B3028] transition cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#12664F] px-5 py-2.5 text-xs font-medium text-white hover:bg-[#0B3028] transition cursor-pointer disabled:opacity-50"
               >
                 {isPending ? (
                   <>
-                    <Loader2 size={13} className="animate-spin text-white" />
+                    <Loader2 size={14} className="animate-spin text-white" />
                     <span>Scheduling Session...</span>
                   </>
                 ) : (
                   <>
                     <span>Generate Lab Session Code</span>
-                    <ArrowRight size={12} />
+                    <ArrowRight size={13} />
                   </>
                 )}
               </button>
@@ -305,67 +305,67 @@ export function MockSchedulerModal({
           </form>
         ) : (
           /* Success / Active Lab Session View */
-          <div className="space-y-4">
-            <div className="text-center space-y-1">
-              <span className="flex size-11 items-center justify-center rounded-lg bg-[#EAF4EF] text-[#12664F] mx-auto">
+          <div className="space-y-5">
+            <div className="text-center space-y-1.5">
+              <span className="flex size-12 items-center justify-center rounded-xl bg-[#EAF4EF] text-[#12664F] mx-auto border border-[#12664F]/15">
                 <CheckCircle2 size={24} />
               </span>
-              <h2 className="text-base sm:text-lg font-semibold text-[#17231F]">Lab Mock Session Initialized!</h2>
-              <p className="text-xs text-[#68766F]">{scheduledSession.session.title}</p>
+              <h2 className="text-base sm:text-lg font-semibold text-slate-900">Lab Mock Session Initialized!</h2>
+              <p className="text-xs text-slate-500 font-normal">{scheduledSession.session.title}</p>
             </div>
 
             {/* Session Code Slip */}
-            <div className="rounded-md border border-[#12664F]/30 bg-[#EAF4EF] p-4 text-center space-y-2">
+            <div className="rounded-xl border border-[#12664F]/30 bg-[#EAF4EF]/60 p-5 text-center space-y-2.5">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-[#12664F] block">
                 Candidate Lab Entry Code
               </span>
-              <p className="font-mono text-2xl sm:text-3xl font-bold text-[#0B3028] tracking-widest">
+              <p className="font-mono text-3xl font-semibold text-[#0B3028] tracking-widest">
                 {scheduledSession.session.labSessionCode}
               </p>
-              <p className="text-[11px] text-[#68766F] max-w-sm mx-auto">
+              <p className="text-[11px] text-slate-500 font-normal max-w-sm mx-auto">
                 Write this code on the computer lab whiteboard. Candidates enter this code on their screens to start the synchronized mock.
               </p>
               <button
                 type="button"
                 onClick={() => handleCopyCode(scheduledSession.session.labSessionCode)}
-                className="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1 text-xs font-medium text-[#17231F] shadow-2xs border border-[#E3E8E4] hover:bg-[#F7F8F6] transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-1.5 text-xs font-medium text-slate-700 border border-slate-200 hover:bg-slate-50 transition cursor-pointer"
               >
-                {copiedCode ? <Check size={12} className="text-[#12664F]" /> : <Copy size={12} />}
+                {copiedCode ? <Check size={13} className="text-[#12664F]" /> : <Copy size={13} />}
                 <span>{copiedCode ? "Copied" : "Copy Session Code"}</span>
               </button>
             </div>
 
             {/* Proctoring Briefing Card */}
-            <div className="rounded-md border border-[#E3E8E4] bg-[#F7F8F6] p-3.5 space-y-2 text-xs">
-              <div className="flex items-center justify-between font-semibold text-[#17231F] pb-1 border-b border-[#E3E8E4]">
+            <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-2.5 text-xs">
+              <div className="flex items-center justify-between font-medium text-slate-800 pb-2 border-b border-slate-200/80">
                 <span>Teacher Proctor Key</span>
-                <span className="font-mono text-xs text-[#12664F] bg-white px-2 py-0.5 rounded border border-[#E3E8E4]">
+                <span className="font-mono text-xs font-semibold text-[#12664F] bg-white px-2.5 py-0.5 rounded-md border border-slate-200">
                   {scheduledSession.session.proctorKey}
                 </span>
               </div>
-              <ul className="space-y-1 text-[11px] text-[#68766F] pt-0.5">
+              <ul className="space-y-1.5 text-[11px] text-slate-500 pt-1 font-normal">
                 {(scheduledSession.instructions || []).map((ins: string, idx: number) => (
-                  <li key={idx} className="flex items-start gap-1.5">
-                    <span className="text-[#12664F] font-bold">•</span>
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="text-[#12664F] font-semibold">•</span>
                     <span>{ins}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="flex items-center justify-between pt-1 print:hidden">
+            <div className="flex items-center justify-between pt-2 print:hidden border-t border-slate-100">
               <button
                 type="button"
                 onClick={handlePrint}
-                className="inline-flex items-center gap-1.5 rounded-md border border-[#E3E8E4] bg-white px-3 py-1.5 text-xs font-medium text-[#17231F] hover:bg-[#F7F8F6] transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
               >
-                <Printer size={13} />
+                <Printer size={14} />
                 <span>Print Proctoring Sheet</span>
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-md bg-[#12664F] px-4 py-1.5 text-xs font-medium text-white hover:bg-[#0B3028] transition cursor-pointer"
+                className="rounded-xl bg-[#12664F] px-5 py-2.5 text-xs font-medium text-white hover:bg-[#0B3028] transition cursor-pointer"
               >
                 Done
               </button>

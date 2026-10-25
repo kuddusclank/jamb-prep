@@ -158,9 +158,9 @@ export function EditStudentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">
       <div
-        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-white p-5 sm:p-6 text-[#17231F] shadow-xl border border-[#E3E8E4] animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 sm:p-7 text-slate-900 border border-slate-200 animate-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-candidate-title"
@@ -168,37 +168,37 @@ export function EditStudentModal({
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-md text-[#68766F] hover:bg-[#F7F8F6] hover:text-[#17231F] transition cursor-pointer"
+          className="absolute right-5 top-5 flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
           aria-label="Close modal"
         >
           <X size={16} />
         </button>
 
-        <div className="flex items-center gap-3 mb-5 pb-3 border-b border-[#E3E8E4]">
-          <div className="size-9 rounded-lg bg-[#EAF4EF] text-[#12664F] flex items-center justify-center">
-            <Pencil size={17} />
+        <div className="flex items-center gap-3.5 mb-6 pb-4 border-b border-slate-100">
+          <div className="size-10 rounded-xl bg-[#EAF4EF] text-[#12664F] flex items-center justify-center border border-[#12664F]/15">
+            <Pencil size={18} />
           </div>
           <div>
-            <h2 id="edit-candidate-title" className="text-base sm:text-lg font-semibold tracking-tight text-[#17231F]">
+            <h2 id="edit-candidate-title" className="text-base sm:text-lg font-semibold tracking-tight text-slate-900">
               Edit Candidate Record
             </h2>
-            <p className="text-xs text-[#68766F]">
+            <p className="text-xs text-slate-500 font-normal">
               Update candidate identity, UTME subject combination, or reset surname password.
             </p>
           </div>
         </div>
 
         {error && (
-          <div role="alert" className="mb-4 rounded-md border border-red-200 bg-red-50 p-2.5 text-xs text-red-800 flex items-start gap-2">
-            <AlertCircle size={14} className="shrink-0 mt-0.5 text-red-600" />
+          <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50/70 p-3 text-xs text-red-800 flex items-start gap-2.5">
+            <AlertCircle size={15} className="shrink-0 mt-0.5 text-red-600" />
             <span>{error}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 text-left">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3.5">
             <div>
-              <label htmlFor="edit-fn" className="block text-xs font-medium text-[#17231F] mb-1">
+              <label htmlFor="edit-fn" className="block text-xs font-medium text-slate-700 mb-1.5">
                 First Name *
               </label>
               <input
@@ -207,12 +207,12 @@ export function EditStudentModal({
                 required
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="w-full rounded-md border border-[#E3E8E4] bg-white px-3 py-2 text-xs text-[#17231F] focus:outline-none focus:ring-1 focus:ring-[#12664F] focus:border-[#12664F]"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#12664F]/20 focus:border-[#12664F] transition-all"
               />
             </div>
 
             <div>
-              <label htmlFor="edit-ln" className="block text-xs font-medium text-[#17231F] mb-1">
+              <label htmlFor="edit-ln" className="block text-xs font-medium text-slate-700 mb-1.5">
                 Last Name / Surname *
               </label>
               <input
@@ -221,14 +221,14 @@ export function EditStudentModal({
                 required
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="w-full rounded-md border border-[#E3E8E4] bg-white px-3 py-2 text-xs text-[#17231F] focus:outline-none focus:ring-1 focus:ring-[#12664F] focus:border-[#12664F]"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#12664F]/20 focus:border-[#12664F] transition-all"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label htmlFor="edit-email" className="block text-xs font-medium text-[#17231F] mb-1">
+              <label htmlFor="edit-email" className="block text-xs font-medium text-slate-700 mb-1.5">
                 Candidate Email *
               </label>
               <input
@@ -237,12 +237,12 @@ export function EditStudentModal({
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-md border border-[#E3E8E4] bg-white px-3 py-2 text-xs text-[#17231F] focus:outline-none focus:ring-1 focus:ring-[#12664F] focus:border-[#12664F]"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#12664F]/20 focus:border-[#12664F] transition-all"
               />
             </div>
 
             <div>
-              <label htmlFor="edit-id" className="block text-xs font-medium text-[#17231F] mb-1">
+              <label htmlFor="edit-id" className="block text-xs font-medium text-slate-700 mb-1.5">
                 Candidate / Admission ID
               </label>
               <input
@@ -251,26 +251,29 @@ export function EditStudentModal({
                 placeholder="e.g. ST-2026-001"
                 value={studentIdentifier}
                 onChange={(e) => setStudentIdentifier(e.target.value)}
-                className="w-full rounded-md border border-[#E3E8E4] bg-white px-3 py-2 text-xs text-[#17231F] focus:outline-none focus:ring-1 focus:ring-[#12664F] focus:border-[#12664F]"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#12664F]/20 focus:border-[#12664F] transition-all"
               />
             </div>
           </div>
 
-          {/* 4-Subject UTME Combination Selector */}
-          <div className="space-y-2 pt-1">
+          {/* 4-Subject UTME Combination Selector with Subject Key Tags */}
+          <div className="space-y-2.5 pt-1">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-medium text-[#17231F]">
-                UTME 4-Subject Combination <span className="text-[#68766F] font-normal">(ENG + 3 Electives)</span>
+              <label className="block text-xs font-medium text-slate-700">
+                UTME 4-Subject Combination <span className="text-slate-400 font-normal">(EN + 3 Electives)</span>
               </label>
-              <span className="text-[11px] font-mono font-semibold text-[#12664F]">
-                {selectedElectives.length}/3 electives
+              <span className="text-[11px] font-mono font-medium text-[#12664F] bg-[#EAF4EF] px-2 py-0.5 rounded-md border border-[#12664F]/20">
+                {selectedElectives.length}/3 electives chosen
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-1.5">
-              <div className="flex items-center justify-between rounded border border-[#12664F]/30 bg-[#EAF4EF]/60 px-2.5 py-1.5 text-[11px] font-semibold text-[#12664F]">
-                <span>ENG (Compulsory)</span>
-                <CheckCircle2 size={12} />
+            <div className="grid grid-cols-3 gap-2">
+              <div className="flex items-center justify-between rounded-xl border border-[#12664F]/25 bg-[#EAF4EF]/70 px-2.5 py-2 text-[11px] font-medium text-[#12664F]">
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className="font-mono font-semibold px-1 py-0.2 rounded bg-[#12664F]/10 text-[10px]">EN</span>
+                  <span className="truncate">English (Compulsory)</span>
+                </div>
+                <CheckCircle2 size={13} className="shrink-0 ml-1 text-[#12664F]" />
               </div>
               {UTME_ELECTIVE_SUBJECTS.map((sub) => {
                 const isPicked = selectedElectives.includes(sub.code);
@@ -279,15 +282,22 @@ export function EditStudentModal({
                     key={sub.code}
                     type="button"
                     onClick={() => toggleElective(sub.code)}
-                    className={`flex items-center justify-between rounded border px-2.5 py-1.5 text-[11px] font-medium transition cursor-pointer ${
+                    className={`flex items-center justify-between rounded-xl border px-2.5 py-2 text-[11px] font-medium transition cursor-pointer text-left ${
                       isPicked
-                        ? "border-[#12664F] bg-[#EAF4EF] text-[#12664F] font-semibold"
-                        : "border-[#E3E8E4] bg-white text-[#68766F] hover:text-[#17231F]"
+                        ? "border-[#12664F] bg-[#EAF4EF] text-[#12664F]"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50"
                     }`}
                     title={sub.name}
                   >
-                    <span className="truncate">{sub.code} · {sub.name.split(" ")[0]}</span>
-                    {isPicked && <CheckCircle2 size={11} className="shrink-0 ml-1" />}
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className={`font-mono text-[10px] px-1 py-0.2 rounded ${
+                        isPicked ? "bg-[#12664F]/10 font-semibold" : "bg-slate-100 text-slate-500 font-medium"
+                      }`}>
+                        {sub.code}
+                      </span>
+                      <span className="truncate">{sub.name.split(" ")[0]}</span>
+                    </div>
+                    {isPicked && <CheckCircle2 size={12} className="shrink-0 ml-1 text-[#12664F]" />}
                   </button>
                 );
               })}
@@ -295,40 +305,40 @@ export function EditStudentModal({
           </div>
 
           {/* Reset Password to Surname Option */}
-          <label className="flex items-start gap-2.5 rounded-md border border-[#E3E8E4] bg-[#F7F8F6] p-3 text-xs cursor-pointer">
+          <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 text-xs cursor-pointer hover:bg-slate-50 transition">
             <input
               type="checkbox"
               checked={resetPasswordToSurname}
               onChange={(e) => setResetPasswordToSurname(e.target.checked)}
-              className="mt-0.5 rounded border-[#E3E8E4] text-[#12664F] focus:ring-[#12664F]"
+              className="mt-0.5 rounded border-slate-300 text-[#12664F] focus:ring-[#12664F]"
             />
-            <div className="space-y-0.5">
-              <span className="font-semibold text-[#17231F] flex items-center gap-1.5">
-                <KeyRound size={12} className="text-[#12664F]" />
+            <div className="space-y-1">
+              <span className="font-medium text-slate-900 flex items-center gap-1.5">
+                <KeyRound size={13} className="text-[#12664F]" />
                 <span>Reset candidate login password to uppercase surname</span>
               </span>
-              <p className="text-[11px] text-[#68766F]">
-                Sets the candidate&apos;s password to <code className="font-mono font-bold text-[#12664F]">{predictedSurnamePassword}</code> so they can sign in immediately in the CBT lab.
+              <p className="text-[11px] text-slate-500 font-normal leading-relaxed">
+                Sets the candidate&apos;s password to <code className="font-mono font-medium text-[#12664F] bg-white px-1.5 py-0.5 rounded border border-slate-200">{predictedSurnamePassword}</code> so they can sign in immediately in the CBT lab.
               </p>
             </div>
           </label>
 
-          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[#E3E8E4]">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-[#E3E8E4] bg-white px-3.5 py-2 text-xs font-medium text-[#68766F] hover:bg-[#F7F8F6] hover:text-[#17231F] transition cursor-pointer"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isPending}
-              className="inline-flex items-center gap-1.5 rounded-md bg-[#12664F] px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#0B3028] transition cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#12664F] px-5 py-2.5 text-xs font-medium text-white hover:bg-[#0B3028] transition cursor-pointer disabled:opacity-50"
             >
               {isPending ? (
                 <>
-                  <Loader2 size={13} className="animate-spin" />
+                  <Loader2 size={14} className="animate-spin text-white" />
                   <span>Saving Changes...</span>
                 </>
               ) : (

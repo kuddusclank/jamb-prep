@@ -96,9 +96,9 @@ export function DisconnectStudentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">
       <div
-        className="relative w-full max-w-md rounded-lg bg-white p-5 sm:p-6 text-[#17231F] shadow-xl border border-[#E3E8E4] animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-md rounded-2xl bg-white p-6 sm:p-7 text-slate-900 border border-slate-200 animate-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
         aria-labelledby="disconnect-modal-title"
@@ -106,49 +106,49 @@ export function DisconnectStudentModal({
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-md text-[#68766F] hover:bg-[#F7F8F6] hover:text-[#17231F] transition cursor-pointer"
+          className="absolute right-5 top-5 flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
           aria-label="Close modal"
         >
           <X size={16} />
         </button>
 
-        <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[#E3E8E4]">
-          <div className="size-9 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center">
+        <div className="flex items-center gap-3.5 mb-5 pb-4 border-b border-slate-100">
+          <div className="size-10 rounded-xl bg-amber-50 text-amber-800 flex items-center justify-center border border-amber-200/50">
             <UserMinus size={18} />
           </div>
           <div>
-            <h2 id="disconnect-modal-title" className="text-base sm:text-lg font-semibold tracking-tight text-[#17231F]">
+            <h2 id="disconnect-modal-title" className="text-base sm:text-lg font-semibold tracking-tight text-slate-900">
               {isBatch
                 ? `Disconnect ${targets.length} Candidates from School`
                 : "Disconnect Candidate from School"}
             </h2>
-            <p className="text-xs text-[#68766F]">
+            <p className="text-xs text-slate-500 font-normal">
               Unlink from {schoolName} and switch to individual subscription
             </p>
           </div>
         </div>
 
-        <div className="rounded-md border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-950 space-y-2 mb-4">
-          <div className="flex items-start gap-2">
-            <ShieldAlert size={15} className="shrink-0 mt-0.5 text-amber-700" />
-            <div className="space-y-1 leading-relaxed">
-              <p className="font-semibold">
+        <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 text-xs text-amber-950 space-y-2.5 mb-5">
+          <div className="flex items-start gap-2.5">
+            <ShieldAlert size={16} className="shrink-0 mt-0.5 text-amber-700" />
+            <div className="space-y-1.5 leading-relaxed">
+              <p className="font-semibold text-amber-950">
                 {isBatch
                   ? `${targets.length} selected candidates will be disconnected from ${schoolName}.`
                   : `${targets[0].name} (${targets[0].email}) will be disconnected from ${schoolName}.`}
               </p>
-              <p className="text-[11px] text-amber-900/90">
+              <p className="text-[11px] text-amber-900/90 font-normal">
                 Their student account and study progress will <strong>not</strong> be deleted. Their subscription will switch to <strong>Individual Student Mode</strong> (any remaining active days stay intact, and future renewals are managed individually by the student).
               </p>
             </div>
           </div>
 
           {isBatch && (
-            <div className="max-h-24 overflow-y-auto rounded bg-white/80 border border-amber-200/70 p-2 text-[11px] space-y-1">
+            <div className="max-h-24 overflow-y-auto rounded-xl bg-white/90 border border-amber-200/70 p-2.5 text-[11px] space-y-1">
               {targets.map((t) => (
                 <div key={t.id} className="flex items-center justify-between gap-2 truncate">
-                  <span className="font-medium text-[#17231F] truncate">{t.name}</span>
-                  <span className="text-[#68766F] font-mono text-[10px] truncate">{t.email}</span>
+                  <span className="font-medium text-slate-900 truncate">{t.name}</span>
+                  <span className="text-slate-400 font-mono text-[10px] truncate">{t.email}</span>
                 </div>
               ))}
             </div>
@@ -156,16 +156,16 @@ export function DisconnectStudentModal({
         </div>
 
         {error && (
-          <div role="alert" className="mb-4 rounded-md border border-red-200 bg-red-50 p-2.5 text-xs text-red-800 flex items-start gap-2">
-            <AlertCircle size={14} className="shrink-0 mt-0.5 text-red-600" />
+          <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50/70 p-3 text-xs text-red-800 flex items-start gap-2.5">
+            <AlertCircle size={15} className="shrink-0 mt-0.5 text-red-600" />
             <span>{error}</span>
           </div>
         )}
 
         <form onSubmit={handleConfirmDisconnect} className="space-y-4">
           <div>
-            <label htmlFor="disconnect-admin-pwd" className="block text-xs font-semibold text-[#17231F] mb-1.5 flex items-center gap-1.5">
-              <Lock size={12} className="text-[#12664F]" />
+            <label htmlFor="disconnect-admin-pwd" className="block text-xs font-medium text-slate-700 mb-1.5 flex items-center gap-1.5">
+              <Lock size={13} className="text-[#12664F]" />
               <span>Confirm with Administrator Password *</span>
             </label>
             <input
@@ -176,31 +176,31 @@ export function DisconnectStudentModal({
               placeholder="Enter your school administrator password"
               value={adminPassword}
               onChange={(e) => setAdminPassword(e.target.value)}
-              className="w-full rounded-md border border-[#E3E8E4] bg-white px-3 py-2 text-xs text-[#17231F] placeholder:text-[#68766F]/60 focus:outline-none focus:ring-1 focus:ring-[#12664F] focus:border-[#12664F]"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#12664F]/20 focus:border-[#12664F] transition-all"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[#E3E8E4]">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-[#E3E8E4] bg-white px-3.5 py-2 text-xs font-medium text-[#68766F] hover:bg-[#F7F8F6] hover:text-[#17231F] transition cursor-pointer"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isPending || !adminPassword.trim()}
-              className="inline-flex items-center gap-1.5 rounded-md bg-amber-700 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-amber-800 transition cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-amber-700 px-5 py-2.5 text-xs font-medium text-white hover:bg-amber-800 transition cursor-pointer disabled:opacity-50"
             >
               {isPending ? (
                 <>
-                  <Loader2 size={13} className="animate-spin" />
+                  <Loader2 size={14} className="animate-spin text-white" />
                   <span>Disconnecting...</span>
                 </>
               ) : (
                 <>
-                  <UserMinus size={13} />
+                  <UserMinus size={14} />
                   <span>{isBatch ? `Disconnect ${targets.length} Candidates` : "Disconnect Candidate"}</span>
                 </>
               )}
