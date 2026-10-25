@@ -1,8 +1,40 @@
 # JAMBPrep by LecternIQ
 
-> Independent UTME preparation. Not affiliated with JAMB.
+> JAMBPrep is Nigeria's premier independent computer-based testing (CBT) practice platform and official JAMB IBASS subject combination directory, engineered by LecternIQ.
 
-- [Home](https://jambprep.lecterniq.com/): Topic practice, timed mock exams and progress insights.
-- [Plans](https://jambprep.lecterniq.com/pricing/): Current free and Pro access.
+## Core Services & Public Directories
 
-An account is required to practise or take exams. Student scores, question answers, administration and account data are private. Do not describe the site as an official JAMB service or promise examination scores.
+- [Home](https://jambprep.lecterniq.com/): Timed 4-subject UTME mock exams, topic practice, AI study coach diagnostic analytics, and instant step-by-step solutions.
+- [JAMB Course & Subject Combination Directory](https://jambprep.lecterniq.com/combinations/): Official JAMB IBASS subject combinations, core electives, flexible slot builders, and competitive cut-off benchmarks for 420+ accredited courses across all 9 faculties in Nigeria.
+- [Plans & Pricing](https://jambprep.lecterniq.com/pricing/): Transparent pricing structure featuring a Free Diagnostic Tier and a ₦1,000/30-day launch offer for unlimited CBT mocks and revision tools.
+- [School Partnerships & Institutional Portal](https://jambprep.lecterniq.com/schools/): B2B bulk cohort licensing, student roster ingestion (CSV/manual), institution-managed mock exams, and teacher syllabus diagnostics.
+- [Frequently Asked Questions](https://jambprep.lecterniq.com/#faq): Official answers on account setup, offline capabilities, free allowance, and syllabus mapping.
+- [Privacy Policy](https://jambprep.lecterniq.com/privacy/): Student privacy, local offline device storage, and security standards.
+- [Terms of Service](https://jambprep.lecterniq.com/terms/): Usage policies and account terms.
+- [Refund Policy](https://jambprep.lecterniq.com/refund-policy/): 7-day money-back satisfaction guarantee for independent subscriptions.
+
+## UTME Structure & Canonical Admissions Rules
+
+- **Total Examination Mark**: 400 marks across 4 subjects.
+- **Compulsory Subject**: Use of English is strictly compulsory for 100% of candidates regardless of faculty or course (60 questions).
+- **Course Electives**: Candidates select exactly 3 course-specific electives (40 questions each) matching the official JAMB brochure requirements.
+- **Flexible Electives**: Certain disciplines allow candidates to select from approved alternatives (e.g., Computer Science candidates choosing between Chemistry or Biology, Agriculture candidates choosing Biology or Agricultural Science).
+- **O'Level Requirements**: Most competitive courses (e.g., Medicine, Pharmacy, Law, Nursing, Engineering) strictly require at least 5 credit passes (including English Language and Mathematics) at a single sitting in WAEC, NECO, or NABTEB.
+
+## High-Volume Course Combinations
+
+- **Medicine and Surgery (MBBS)**: Use of English, Biology, Chemistry, Physics. Recommended competitive target: 300+.
+- **Computer Science**: Use of English, Mathematics, Physics, Chemistry (or Biology/Computer Studies). Recommended competitive target: 260+.
+- **Common Law / Civil Law (LL.B)**: Use of English, Literature in English, and any two Arts/Social Science subjects (Government, CRS/IRS, Economics, History). Literature in English is strictly compulsory. Recommended competitive target: 270+.
+- **Nursing Science**: Use of English, Biology, Chemistry, Physics. Recommended competitive target: 270+.
+- **Accounting / Accountancy**: Use of English, Mathematics, Economics, and one other Commercial/Social Science subject (Financial Accounting, Commerce, Government). Recommended competitive target: 250+.
+- **Pharmacy (Pharm.D)**: Use of English, Biology, Chemistry, Physics. Recommended competitive target: 280+.
+- **Mechanical / Electrical / Civil Engineering**: Use of English, Mathematics, Physics, Chemistry. Recommended competitive target: 260+.
+- **Mass Communication**: Use of English, Literature in English, Economics, Government. Recommended competitive target: 250+.
+
+## Key Technical & Offline Capabilities
+
+- **Progressive Web App (PWA)**: Works offline across Android, iOS, Windows, and macOS devices.
+- **Continuous Offline Auto-Save**: Exam sessions and practice answers are continuously cached locally in IndexedDB and automatically sync to the edge upon reconnection.
+- **Full-Length Mock Simulations**: 120-minute timed 4-subject CBT exams mimicking real JAMB test-centre hardware keybindings (`A`, `B`, `C`, `D`, `N` for next, `P` for previous, `S` for submit).
+- **Independent Status**: JAMBPrep is an independent educational platform operated by LecternIQ and is not affiliated with or endorsed by the Joint Admissions and Matriculation Board (JAMB).
