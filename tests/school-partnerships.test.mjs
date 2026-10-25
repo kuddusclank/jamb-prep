@@ -445,6 +445,11 @@ test("Stage 6 Diagnostic Heatmap: Implements accuracy categorization and remedia
   // Weekly timetable
   assert.ok(source.includes("Recommended Weekly Remedial Timetable"));
 
+  // Dynamic enrolled subjects & subject-grouped department hierarchy
+  assert.ok(source.includes("groupedData"));
+  assert.ok(source.includes("subjectsList"));
+  assert.ok(source.includes("All Offered Subjects"));
+
   // Export functionality
   assert.ok(source.includes("exportDiagnosticLedger"));
   assert.ok(source.includes("Syllabus_Diagnostic_Ledger.csv"));

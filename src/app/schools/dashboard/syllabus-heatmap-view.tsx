@@ -23,11 +23,13 @@ import {
   Table as TableIcon,
   RotateCw,
   HelpCircle,
-  TrendingDown
+  TrendingDown,
+  GraduationCap
 } from "lucide-react";
 
 export interface DiagnosticTopicItem {
   id: string;
+  subjectId?: string;
   subject: string;
   subjectCode?: string;
   topic: string;
@@ -35,6 +37,20 @@ export interface DiagnosticTopicItem {
   questionsAttempted: number;
   status: "urgent_remedial" | "revision_recommended" | "exam_ready";
   recommendedAction: string;
+}
+
+export interface OfferedSubject {
+  id: string;
+  name: string;
+  code: string;
+  isCompulsory: boolean;
+  enrolledCandidateCount: number;
+  topicsAssessedCount: number;
+  totalQuestionsAttempted: number;
+  averageAccuracy: number | null;
+  urgentCount: number;
+  revisionCount: number;
+  readyCount: number;
 }
 
 interface SyllabusHeatmapViewProps {
@@ -45,25 +61,14 @@ interface SyllabusHeatmapViewProps {
 type SortOption = "lowest_accuracy" | "highest_accuracy" | "attempts" | "alphabetical";
 type ViewMode = "grid" | "table";
 
-const SUBJECTS = [
-  { id: "all", code: "ALL", label: "All Subjects" },
-  { id: "Use of English", code: "ENG", label: "Use of English" },
-  { id: "Mathematics", code: "MTH", label: "Mathematics" },
-  { id: "Physics", code: "PHY", label: "Physics" },
-  { id: "Chemistry", code: "CHM", label: "Chemistry" },
-  { id: "Biology", code: "BIO", label: "Biology" },
-  { id: "Economics", code: "ECN", label: "Economics" },
-  { id: "Government", code: "GOV", label: "Government" },
-  { id: "Literature in English", code: "LIT", label: "Literature" },
-];
-
 export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeatmapViewProps) {
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("lowest_accuracy");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [searchQuery, setSearchQuery] = useState("");
   const [topics, setTopics] = useState<DiagnosticTopicItem[]>([]);
+  const [offeredSubjects, setOfferedSubjects] = useState<OfferedSubject[]>([]);
   const [timetable, setTimetable] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -103,9 +108,11 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
     }
 
     if (data) {
-      if (data.topics) setTopics(data.topics);
-      if (data.revisionTimetable) setTimetable(data.revisionTimetable);
+      if (Array.isArray(data.offeredSubjects)) setOfferedSubjects(data.offeredSubjects);
+      if (Array.isArray(data.topics)) setTopics(data.topics);
+      if (Array.isArray(data.revisionTimetable)) setTimetable(data.revisionTimetable);
     } else {
+      setOfferedSubjects([]);
       setTopics([]);
       setTimetable([]);
     }
@@ -118,61 +125,34 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
     void fetchDiagnostics(false);
   }, []);
 
-  // Subject-specific topic counts for filter badges
-  const subjectCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: topics.length };
-    for (const sub of SUBJECTS) {
-      if (sub.id === "all") continue;
-      counts[sub.id] = topics.filter(
-        (t) =>
-          (t.subject && t.subject.toLowerCase() === sub.id.toLowerCase()) ||
-          t.subjectCode?.toUpperCase() === sub.code ||
-          t.subject?.toUpperCase() === sub.code
-      ).length;
+  // Dynamically resolve only subjects offered by the candidate cohort (no hardcoded ghost subjects!)
+  const subjectsList = useMemo<OfferedSubject[]>(() => {
+    if (offeredSubjects.length > 0) return offeredSubjects;
+
+    // Fallback: extract distinct subjects dynamically from loaded topics
+    const map = new Map<string, OfferedSubject>();
+    for (const t of topics) {
+      const code = t.subjectCode || t.subject.slice(0, 3).toUpperCase();
+      if (!map.has(code)) {
+        map.set(code, {
+          id: t.subjectId || code,
+          name: t.subject,
+          code,
+          isCompulsory: code === "ENG",
+          enrolledCandidateCount: cohortSize,
+          topicsAssessedCount: 0,
+          totalQuestionsAttempted: 0,
+          averageAccuracy: null,
+          urgentCount: 0,
+          revisionCount: 0,
+          readyCount: 0,
+        });
+      }
     }
-    return counts;
-  }, [topics]);
+    return Array.from(map.values());
+  }, [offeredSubjects, topics, cohortSize]);
 
-  // Filtered and Sorted Topics
-  const processedTopics = useMemo(() => {
-    return topics
-      .filter((t) => {
-        const selectedObj = SUBJECTS.find((s) => s.id === selectedSubject);
-        const matchesSubject =
-          selectedSubject === "all" ||
-          (t.subject && t.subject.toLowerCase() === selectedSubject.toLowerCase()) ||
-          (selectedObj && (t.subject?.toUpperCase() === selectedObj.code || t.subjectCode?.toUpperCase() === selectedObj.code));
-
-        const matchesStatus = statusFilter === "all" || t.status === statusFilter;
-
-        const cleanSearch = searchQuery.trim().toLowerCase();
-        const matchesSearch =
-          !cleanSearch ||
-          t.topic.toLowerCase().includes(cleanSearch) ||
-          t.subject.toLowerCase().includes(cleanSearch) ||
-          (t.subjectCode && t.subjectCode.toLowerCase().includes(cleanSearch));
-
-        return matchesSubject && matchesStatus && matchesSearch;
-      })
-      .sort((a, b) => {
-        switch (sortBy) {
-          case "lowest_accuracy":
-            if (a.accuracyRate !== b.accuracyRate) return a.accuracyRate - b.accuracyRate;
-            return b.questionsAttempted - a.questionsAttempted;
-          case "highest_accuracy":
-            if (a.accuracyRate !== b.accuracyRate) return b.accuracyRate - a.accuracyRate;
-            return b.questionsAttempted - a.questionsAttempted;
-          case "attempts":
-            if (a.questionsAttempted !== b.questionsAttempted) return b.questionsAttempted - a.questionsAttempted;
-            return a.accuracyRate - b.accuracyRate;
-          case "alphabetical":
-            return a.topic.localeCompare(b.topic);
-          default:
-            return 0;
-        }
-      });
-  }, [topics, selectedSubject, statusFilter, searchQuery, sortBy]);
-
+  // Global counts for top overview
   const urgentCount = topics.filter((t) => t.status === "urgent_remedial").length;
   const revisionCount = topics.filter((t) => t.status === "revision_recommended").length;
   const readyCount = topics.filter((t) => t.status === "exam_ready").length;
@@ -189,14 +169,103 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
     return Math.round(sum / assessed.length);
   }, [topics]);
 
+  // Grouped by Subject: Filters topics and groups them strictly under their respective subject department
+  const groupedData = useMemo(() => {
+    const cleanSearch = searchQuery.trim().toLowerCase();
+
+    // 1. Filter topics by status and search
+    const filtered = topics.filter((t) => {
+      const matchesStatus = statusFilter === "all" || t.status === statusFilter;
+      const matchesSearch =
+        !cleanSearch ||
+        t.topic.toLowerCase().includes(cleanSearch) ||
+        t.subject.toLowerCase().includes(cleanSearch) ||
+        (t.subjectCode && t.subjectCode.toLowerCase().includes(cleanSearch));
+
+      return matchesStatus && matchesSearch;
+    });
+
+    // 2. Sorting function within each subject group
+    const sortFn = (a: DiagnosticTopicItem, b: DiagnosticTopicItem) => {
+      switch (sortBy) {
+        case "lowest_accuracy":
+          if (a.accuracyRate !== b.accuracyRate) return a.accuracyRate - b.accuracyRate;
+          return b.questionsAttempted - a.questionsAttempted;
+        case "highest_accuracy":
+          if (a.accuracyRate !== b.accuracyRate) return b.accuracyRate - a.accuracyRate;
+          return b.questionsAttempted - a.questionsAttempted;
+        case "attempts":
+          if (a.questionsAttempted !== b.questionsAttempted) return b.questionsAttempted - a.questionsAttempted;
+          return a.accuracyRate - b.accuracyRate;
+        case "alphabetical":
+          return a.topic.localeCompare(b.topic);
+        default:
+          return 0;
+      }
+    };
+
+    // 3. Filter target subjects if single subject pill is selected
+    const targetSubjects =
+      selectedSubject === "all"
+        ? subjectsList
+        : subjectsList.filter(
+            (s) =>
+              s.code.toUpperCase() === selectedSubject.toUpperCase() ||
+              s.name.toLowerCase() === selectedSubject.toLowerCase()
+          );
+
+    return targetSubjects
+      .map((subj) => {
+        const subjTopics = filtered
+          .filter(
+            (t) =>
+              (t.subjectCode && t.subjectCode.toUpperCase() === subj.code.toUpperCase()) ||
+              t.subject.toLowerCase() === subj.name.toLowerCase()
+          )
+          .sort(sortFn);
+
+        const subUrgent = subjTopics.filter((t) => t.status === "urgent_remedial").length;
+        const subRevision = subjTopics.filter((t) => t.status === "revision_recommended").length;
+        const subReady = subjTopics.filter((t) => t.status === "exam_ready").length;
+        const subAttempts = subjTopics.reduce((sum, t) => sum + t.questionsAttempted, 0);
+        const subAvgAccuracy =
+          subjTopics.length > 0
+            ? Math.round(subjTopics.reduce((sum, t) => sum + t.accuracyRate, 0) / subjTopics.length)
+            : null;
+
+        return {
+          subject: subj,
+          topics: subjTopics,
+          urgentCount: subUrgent,
+          revisionCount: subRevision,
+          readyCount: subReady,
+          totalAttempts: subAttempts,
+          averageAccuracy: subAvgAccuracy,
+        };
+      })
+      .filter((group) => {
+        // If searching, hide subjects with zero matching topics
+        if (cleanSearch && group.topics.length === 0) return false;
+        return true;
+      });
+  }, [topics, subjectsList, selectedSubject, statusFilter, searchQuery, sortBy]);
+
+  const totalMatchingTopics = useMemo(() => {
+    return groupedData.reduce((acc, g) => acc + g.topics.length, 0);
+  }, [groupedData]);
+
   const exportDiagnosticLedger = () => {
     if (!topics.length) return;
     let csv = "Subject,Subject Code,Syllabus Topic,Accuracy Rate,Questions Attempted,Diagnostic Status,Recommended Teaching Action\n";
-    for (const t of topics) {
-      const safeTopic = `"${t.topic.replace(/"/g, '""')}"`;
-      const safeAction = `"${t.recommendedAction.replace(/"/g, '""')}"`;
-      const code = t.subjectCode || t.subject.slice(0, 3).toUpperCase();
-      csv += `"${t.subject}","${code}",${safeTopic},${t.accuracyRate}%,${t.questionsAttempted},"${t.status.replace(/_/g, " ")}",${safeAction}\n`;
+
+    // Export sorted strictly by subject first, then accuracy
+    for (const group of groupedData) {
+      for (const t of group.topics) {
+        const safeTopic = `"${t.topic.replace(/"/g, '""')}"`;
+        const safeAction = `"${t.recommendedAction.replace(/"/g, '""')}"`;
+        const code = t.subjectCode || group.subject.code;
+        csv += `"${group.subject.name}","${code}",${safeTopic},${t.accuracyRate}%,${t.questionsAttempted},"${t.status.replace(/_/g, " ")}",${safeAction}\n`;
+      }
     }
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -220,7 +289,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
               <span>Syllabus Diagnostic Heatmap</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Identify topic-level learning gaps and prioritise revision across your candidate cohort.
+              Identify topic-level learning gaps grouped strictly by department across your enrolled candidates.
             </p>
           </div>
 
@@ -248,8 +317,8 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
               type="button"
               onClick={exportDiagnosticLedger}
               disabled={topics.length === 0}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-1.5 text-xs font-medium text-slate-700 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Export complete diagnostic ledger to CSV"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 transition cursor-pointer disabled:opacity-50"
+              title="Download full cohort syllabus diagnostic ledger as CSV"
             >
               <Download size={13} className="text-slate-500" />
               <span>Export CSV</span>
@@ -257,8 +326,8 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
           </div>
         </div>
 
-        {/* 2. THREE COMPACT RESTRAINED OVERVIEW METRICS */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
+        {/* 2. THREE SUMMARY KPI CARDS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
           {/* Card 1: Urgent Remedial */}
           <div
             role="button"
@@ -273,7 +342,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
             }}
             className={`rounded-xl border p-4 space-y-1.5 transition cursor-pointer select-none ${
               statusFilter === "urgent_remedial"
-                ? "border-slate-400 bg-slate-50 ring-1 ring-slate-300"
+                ? "border-slate-800 bg-slate-50 ring-1 ring-slate-800"
                 : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50"
             }`}
           >
@@ -292,7 +361,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
             <p className="text-xs text-slate-500 leading-relaxed">
               {urgentCount > 0
                 ? "<40% cohort accuracy · Re-teach core syllabus fundamentals"
-                : "No urgent remedial gaps identified across assessed topics"}
+                : "No critical topic-level syllabus failure detected"}
             </p>
 
             <div className="pt-1 flex items-center justify-between text-[11px] text-slate-400">
@@ -465,7 +534,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
             {statusFilter !== "all" && (
               <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200">
                 <span className="text-slate-600">
-                  Showing <strong>{statusFilter.replace(/_/g, " ")}</strong> topics ({processedTopics.length} of {totalTracked})
+                  Showing <strong>{statusFilter.replace(/_/g, " ")}</strong> topics ({totalMatchingTopics} of {totalTracked})
                 </span>
                 <button
                   type="button"
@@ -480,41 +549,64 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
         )}
       </section>
 
-      {/* 4. PRACTICAL CONTROLS & FILTER TOOLBAR */}
+      {/* 4. DYNAMIC SUBJECT FILTER PILLS (Only Enrolled Subjects) */}
       <section className="space-y-3">
-        {/* Subject Filter Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
-          {SUBJECTS.map((sub) => {
-            const count = subjectCounts[sub.id] || 0;
-            const isSelected = selectedSubject === sub.id;
+          {/* All Subjects Pill */}
+          <button
+            type="button"
+            onClick={() => setSelectedSubject("all")}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium shrink-0 transition cursor-pointer select-none ${
+              selectedSubject === "all"
+                ? "bg-[#12664F] text-white font-semibold"
+                : "bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+            }`}
+          >
+            <Layers size={13} />
+            <span>All Offered Subjects</span>
+            <span
+              className={`text-[10px] rounded-full px-1.5 py-0.2 font-medium ${
+                selectedSubject === "all" ? "bg-white/25 text-white" : "bg-slate-100 text-slate-500"
+              }`}
+            >
+              {totalTracked}
+            </span>
+          </button>
+
+          {/* Dynamic Subject Pills (Strictly for subjects enrolled by candidates) */}
+          {subjectsList.map((sub) => {
+            const isSelected = selectedSubject.toUpperCase() === sub.code.toUpperCase();
+            const subjectTopicCount = topics.filter(
+              (t) =>
+                t.subjectCode?.toUpperCase() === sub.code.toUpperCase() ||
+                t.subject.toLowerCase() === sub.name.toLowerCase()
+            ).length;
 
             return (
               <button
                 key={sub.id}
                 type="button"
-                onClick={() => setSelectedSubject(sub.id)}
+                onClick={() => setSelectedSubject(sub.code)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium shrink-0 transition cursor-pointer select-none ${
                   isSelected
                     ? "bg-[#12664F] text-white font-semibold"
                     : "bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                 }`}
               >
-                <span>{sub.label}</span>
-                {sub.id !== "all" && (
-                  <span
-                    className={`text-[10px] px-1 py-0.2 rounded font-mono ${
-                      isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
-                    {sub.code}
-                  </span>
-                )}
+                <span>{sub.name}</span>
+                <span
+                  className={`text-[10px] px-1 py-0.2 rounded font-mono ${
+                    isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                  }`}
+                >
+                  {sub.code}
+                </span>
                 <span
                   className={`text-[10px] rounded-full px-1.5 py-0.2 font-medium ${
                     isSelected ? "bg-white/25 text-white" : "bg-slate-100 text-slate-500"
                   }`}
                 >
-                  {count}
+                  {subjectTopicCount}
                 </span>
               </button>
             );
@@ -530,7 +622,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search syllabus topic, concept or code..."
+              placeholder="Search syllabus topic, concept or code across active subjects..."
               className="w-full rounded-lg border border-slate-200 bg-white pl-8 pr-8 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-slate-400 transition"
             />
             {searchQuery && (
@@ -550,7 +642,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
             <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white">
               <ArrowUpDown size={12} className="text-slate-400" />
               <label htmlFor="diagnostic-sort" className="text-slate-500 font-normal">
-                Sort:
+                Sort within department:
               </label>
               <select
                 id="diagnostic-sort"
@@ -569,17 +661,6 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
             <div className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-100 p-0.5">
               <button
                 type="button"
-                onClick={() => setViewMode("grid")}
-                className={`p-1.5 rounded-md text-xs transition cursor-pointer ${
-                  viewMode === "grid" ? "bg-white text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
-                }`}
-                title="Grid Cards View"
-                aria-label="Grid cards view"
-              >
-                <LayoutGrid size={14} />
-              </button>
-              <button
-                type="button"
                 onClick={() => setViewMode("table")}
                 className={`p-1.5 rounded-md text-xs transition cursor-pointer ${
                   viewMode === "table" ? "bg-white text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
@@ -589,23 +670,34 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
               >
                 <TableIcon size={14} />
               </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`p-1.5 rounded-md text-xs transition cursor-pointer ${
+                  viewMode === "grid" ? "bg-white text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
+                }`}
+                title="Grid Cards View"
+                aria-label="Grid cards view"
+              >
+                <LayoutGrid size={14} />
+              </button>
             </div>
 
             {/* Results count */}
             <span className="text-[11px] text-slate-500 font-medium pl-1">
-              {processedTopics.length} of {totalTracked}
+              {totalMatchingTopics} of {totalTracked} topics
             </span>
           </div>
         </div>
       </section>
 
-      {/* 5. TOPIC DIAGNOSTIC DATA DISPLAY */}
+      {/* 5. TOPIC DIAGNOSTIC DATA DISPLAY (Cleanly Grouped by Subject) */}
       {loading ? (
         <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center space-y-3">
           <Loader2 size={24} className="animate-spin text-slate-500 mx-auto" />
-          <p className="text-xs text-slate-500 font-medium">Analyzing cohort syllabus mastery...</p>
+          <p className="text-xs text-slate-500 font-medium">Analyzing cohort syllabus mastery by department...</p>
         </div>
-      ) : processedTopics.length === 0 ? (
+      ) : totalMatchingTopics === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center space-y-3">
           <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
             <BarChart3 size={22} />
@@ -634,174 +726,214 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
             </button>
           )}
         </div>
-      ) : viewMode === "grid" ? (
-        /* RESTRAINED CLEAN GRID CARDS VIEW */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
-          {processedTopics.map((item) => {
-            const isUrgent = item.status === "urgent_remedial";
-            const isRevision = item.status === "revision_recommended";
-            const isReady = item.status === "exam_ready";
-            const attempts = item.questionsAttempted || 0;
-            const isUnassessed = attempts === 0;
-            const isInsufficient = attempts > 0 && attempts < 3;
-
-            // Subject Code Tag
-            const subjectCode =
-              item.subjectCode ||
-              SUBJECTS.find((s) => s.id.toLowerCase() === item.subject?.toLowerCase())?.code ||
-              item.subject.slice(0, 3).toUpperCase();
+      ) : (
+        /* SUBJECT-GROUPED SECTIONS */
+        <div className="space-y-6">
+          {groupedData.map((group) => {
+            const hasTopics = group.topics.length > 0;
+            if (!hasTopics && searchQuery) return null;
 
             return (
-              <div
-                key={item.id}
-                className="rounded-xl border border-slate-200 bg-white p-4 space-y-3 transition hover:border-slate-300"
+              <section
+                key={group.subject.id || group.subject.code}
+                className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs"
               >
-                {/* TOP ROW: Subject Label + Key Tag, Topic Title, Accuracy/Status Badge */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                        {item.subject}
-                      </span>
-                      <span className="font-mono text-[9px] font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                        {subjectCode}
-                      </span>
+                {/* Department / Subject Header Banner */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 bg-slate-50/80 border-b border-slate-200">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-white text-[#12664F] border border-[#12664F]/20 shadow-xs">
+                      {group.subject.code}
+                    </span>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-semibold text-slate-900 flex items-center gap-2">
+                        <span>{group.subject.name}</span>
+                        {group.subject.isCompulsory && (
+                          <span className="text-[10px] font-medium px-2 py-0.2 rounded-full bg-slate-200/80 text-slate-700">
+                            Compulsory
+                          </span>
+                        )}
+                      </h3>
+                      <p className="text-xs text-slate-500 font-normal mt-0.5">
+                        <span>{group.subject.enrolledCandidateCount} {group.subject.enrolledCandidateCount === 1 ? "Candidate enrolled" : "Candidates enrolled"}</span>
+                        {group.averageAccuracy !== null && (
+                          <span> · <strong className="text-slate-800">{group.averageAccuracy}%</strong> department accuracy</span>
+                        )}
+                        <span> · {group.topics.length} {group.topics.length === 1 ? "topic assessed" : "topics assessed"}</span>
+                      </p>
                     </div>
-                    <h4 className="text-sm font-semibold text-slate-900 leading-snug truncate" title={item.topic}>
-                      {item.topic}
-                    </h4>
                   </div>
 
-                  {/* Accuracy Badge */}
-                  <div className="shrink-0">
-                    {isUnassessed ? (
-                      <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 border border-slate-200">
-                        Not Assessed
+                  {/* Status Pills for this specific department */}
+                  <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                    {group.urgentCount > 0 && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-50 text-red-700 border border-red-200 text-xs font-semibold">
+                        <span className="size-1.5 rounded-full bg-red-600" />
+                        {group.urgentCount} Urgent Remedial
                       </span>
-                    ) : (
-                      <span className="rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-slate-800 border border-slate-200">
-                        {item.accuracyRate}% Accuracy
+                    )}
+                    {group.revisionCount > 0 && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold">
+                        <span className="size-1.5 rounded-full bg-amber-600" />
+                        {group.revisionCount} Revision
+                      </span>
+                    )}
+                    {group.readyCount > 0 && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+                        <span className="size-1.5 rounded-full bg-emerald-600" />
+                        {group.readyCount} Ready
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* MIDDLE ROW: Clean Progress Bar + Cohort Attempt Context */}
-                <div className="space-y-1.5">
-                  <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-slate-800 transition-all"
-                      style={{ width: `${isUnassessed ? 0 : Math.max(item.accuracyRate, 2)}%` }}
-                    />
+                {/* Subject-Specific Topic Content */}
+                {!hasTopics ? (
+                  <div className="p-8 text-center text-xs text-slate-500">
+                    No evaluated topics for this subject matching current filter.
                   </div>
+                ) : viewMode === "table" ? (
+                  /* DENSE TABLE VIEW GROUPED UNDER SUBJECT */
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse min-w-[650px]">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-white text-slate-500 font-medium uppercase tracking-wider text-[11px] select-none">
+                          <th className="py-3 px-4 sm:px-5">Syllabus Topic</th>
+                          <th className="py-3 px-4 text-center">Attempts</th>
+                          <th className="py-3 px-4">Cohort Accuracy</th>
+                          <th className="py-3 px-4">Diagnostic Status</th>
+                          <th className="py-3 px-4 sm:px-5">Recommended Intervention</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {group.topics.map((item) => {
+                          const isUrgent = item.status === "urgent_remedial";
+                          const isRevision = item.status === "revision_recommended";
+                          const isReady = item.status === "exam_ready";
+                          const attempts = item.questionsAttempted || 0;
 
-                  <div className="flex items-center justify-between text-[11px] text-slate-500">
-                    <span>
-                      {isUnassessed
-                        ? "No cohort attempts recorded"
-                        : attempts === 1
-                        ? "1 question attempted across cohort"
-                        : `${attempts} questions attempted across cohort`}
-                      {isInsufficient && " (Early signal)"}
-                    </span>
-                    <span className="font-medium text-slate-600">
-                      {isReady
-                        ? "Target met"
-                        : isUrgent
-                        ? `${70 - item.accuracyRate}% below target`
-                        : `${70 - item.accuracyRate}% to target`}
-                    </span>
+                          return (
+                            <tr key={item.id} className="hover:bg-slate-50/70 transition">
+                              <td className="py-3.5 px-4 sm:px-5 font-medium text-slate-900 max-w-[260px] truncate" title={item.topic}>
+                                {item.topic}
+                              </td>
+                              <td className="py-3.5 px-4 text-center tabular-nums text-slate-600 font-medium">
+                                {attempts}
+                              </td>
+                              <td className="py-3.5 px-4 whitespace-nowrap">
+                                <div className="flex items-center gap-2 min-w-[130px]">
+                                  <div className="w-20 bg-slate-100 rounded-full h-1.5 overflow-hidden shrink-0">
+                                    <div
+                                      className={`h-full rounded-full transition-all ${
+                                        isReady ? "bg-[#12664F]" : isUrgent ? "bg-red-600" : "bg-amber-500"
+                                      }`}
+                                      style={{ width: `${Math.max(item.accuracyRate, 2)}%` }}
+                                    />
+                                  </div>
+                                  <span className="font-semibold tabular-nums text-slate-800 text-xs">
+                                    {item.accuracyRate}%
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-3.5 px-4 whitespace-nowrap">
+                                <span
+                                  className={`rounded-md px-2 py-0.5 text-[10px] font-semibold border ${
+                                    isUrgent
+                                      ? "bg-red-50 text-red-700 border-red-200"
+                                      : isRevision
+                                      ? "bg-amber-50 text-amber-700 border-amber-200"
+                                      : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                  }`}
+                                >
+                                  {isUrgent ? "Urgent Remedial" : isRevision ? "Revision Recommended" : "Examination Ready"}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4 sm:px-5 text-[11px] text-slate-600 max-w-[340px] truncate" title={item.recommendedAction}>
+                                {item.recommendedAction}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
-                </div>
+                ) : (
+                  /* GRID CARDS VIEW GROUPED UNDER SUBJECT */
+                  <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 bg-slate-50/30">
+                    {group.topics.map((item) => {
+                      const isUrgent = item.status === "urgent_remedial";
+                      const isRevision = item.status === "revision_recommended";
+                      const isReady = item.status === "exam_ready";
+                      const attempts = item.questionsAttempted || 0;
+                      const isUnassessed = attempts === 0;
 
-                {/* BOTTOM ROW: Context-Aware Concise Teacher Action */}
-                <div className="rounded-lg bg-slate-50 border border-slate-200/80 p-2.5 text-xs text-slate-600 space-y-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">
-                      Action:
-                    </span>
-                    <span className="text-[10px] font-medium text-slate-700">
-                      {isUrgent ? "Re-teach Concept" : isRevision ? "Speed Drill" : "Retention Check"}
-                    </span>
+                      return (
+                        <div
+                          key={item.id}
+                          className="rounded-xl border border-slate-200 bg-white p-4 space-y-3 transition hover:border-slate-300 shadow-2xs"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <h4 className="text-sm font-semibold text-slate-900 leading-snug truncate" title={item.topic}>
+                              {item.topic}
+                            </h4>
+
+                            <span
+                              className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold tabular-nums border ${
+                                isReady
+                                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                  : isUrgent
+                                  ? "bg-red-50 text-red-800 border-red-200"
+                                  : "bg-amber-50 text-amber-800 border-amber-200"
+                              }`}
+                            >
+                              {item.accuracyRate}% Accuracy
+                            </span>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all ${
+                                  isReady ? "bg-[#12664F]" : isUrgent ? "bg-red-600" : "bg-amber-500"
+                                }`}
+                                style={{ width: `${Math.max(item.accuracyRate, 2)}%` }}
+                              />
+                            </div>
+
+                            <div className="flex items-center justify-between text-[11px] text-slate-500">
+                              <span>
+                                {attempts === 1 ? "1 question attempted" : `${attempts} questions attempted across cohort`}
+                              </span>
+                              <span className="font-medium text-slate-600">
+                                {isReady
+                                  ? "Target met"
+                                  : isUrgent
+                                  ? `${70 - item.accuracyRate}% below target`
+                                  : `${70 - item.accuracyRate}% to target`}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="rounded-lg bg-slate-50 border border-slate-200/80 p-2.5 text-xs text-slate-600 space-y-0.5">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">
+                                Action:
+                              </span>
+                              <span className="text-[10px] font-semibold text-slate-700">
+                                {isUrgent ? "Re-teach Concept" : isRevision ? "Speed Drill" : "Retention Check"}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-600 leading-relaxed font-normal">
+                              {item.recommendedAction}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <p className="text-[11px] text-slate-600 leading-relaxed font-normal">
-                    {item.recommendedAction}
-                  </p>
-                </div>
-              </div>
+                )}
+              </section>
             );
           })}
-        </div>
-      ) : (
-        /* DENSE TABLE VIEW (For teachers scanning large volumes of topics) */
-        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse min-w-[700px]">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-medium uppercase tracking-wider text-[11px] select-none">
-                  <th className="py-3 px-4">Subject</th>
-                  <th className="py-3 px-4">Syllabus Topic</th>
-                  <th className="py-3 px-4 text-center">Attempts</th>
-                  <th className="py-3 px-4">Cohort Accuracy</th>
-                  <th className="py-3 px-4">Diagnostic Status</th>
-                  <th className="py-3 px-4">Recommended Intervention</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {processedTopics.map((item) => {
-                  const isUrgent = item.status === "urgent_remedial";
-                  const isRevision = item.status === "revision_recommended";
-                  const isReady = item.status === "exam_ready";
-                  const attempts = item.questionsAttempted || 0;
-
-                  const subjectCode =
-                    item.subjectCode ||
-                    SUBJECTS.find((s) => s.id.toLowerCase() === item.subject?.toLowerCase())?.code ||
-                    item.subject.slice(0, 3).toUpperCase();
-
-                  return (
-                    <tr key={item.id} className="hover:bg-slate-50/70 transition">
-                      <td className="py-3 px-4 whitespace-nowrap font-medium text-slate-900">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
-                            {subjectCode}
-                          </span>
-                          <span className="text-slate-600 text-xs">{item.subject}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 font-medium text-slate-900 max-w-[240px] truncate" title={item.topic}>
-                        {item.topic}
-                      </td>
-                      <td className="py-3 px-4 text-center tabular-nums text-slate-600 font-medium">
-                        {attempts}
-                      </td>
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2 min-w-[120px]">
-                          <div className="w-16 bg-slate-100 rounded-full h-1.5 overflow-hidden shrink-0">
-                            <div
-                              className="h-full rounded-full bg-slate-800"
-                              style={{ width: `${Math.max(item.accuracyRate, 2)}%` }}
-                            />
-                          </div>
-                          <span className="font-semibold tabular-nums text-slate-800 text-xs">
-                            {item.accuracyRate}%
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <span className="rounded px-2 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                          {isUrgent ? "Urgent Remedial" : isRevision ? "Revision Recommended" : "Examination Ready"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-[11px] text-slate-600 max-w-[320px] truncate" title={item.recommendedAction}>
-                        {item.recommendedAction}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
 

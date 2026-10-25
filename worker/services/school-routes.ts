@@ -1526,7 +1526,7 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
     },
   },
 
-  // 4. POST /api/v1/schools/diagnostics/summary — Cohort syllabus diagnostics (Tenant-Scoped)
+  // 4. POST /api/v1/schools/diagnostics/summary — Cohort syllabus diagnostics (Tenant-Scoped & Subject-Grouped)
   {
     id: 'schools.diagnostics.summary',
     method: 'POST',
@@ -1543,14 +1543,42 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
           status: 200,
           body: {
             success: true,
+            offeredSubjects: [],
+            topicsBySubject: {},
             topics: [],
             revisionTimetable: [],
           },
         };
       }
 
+      // 1. Discover all subjects actively enrolled by the school's candidate cohort (excludes ghost subjects)
+      const enrolledSubjectRows = await dbCtx.sql<Array<{
+        id: string;
+        name: string;
+        code: string;
+        is_compulsory: boolean;
+        display_order: number;
+        enrolled_candidate_count: string;
+      }>>`
+        SELECT DISTINCT
+          s.id,
+          s.name,
+          s.code,
+          s.is_compulsory,
+          s.display_order,
+          COUNT(DISTINCT ss.student_user_id)::text AS enrolled_candidate_count
+        FROM school_students ss
+        JOIN student_subjects st_sub ON st_sub.user_id = ss.student_user_id
+        JOIN subjects s ON s.id = st_sub.subject_id
+        WHERE ss.school_id = ${school.id}::uuid
+        GROUP BY s.id, s.name, s.code, s.is_compulsory, s.display_order
+        ORDER BY s.is_compulsory DESC, s.display_order ASC, s.name ASC
+      `;
+
+      // 2. Fetch topic diagnostics strictly scoped to subjects offered by enrolled candidates
       const topicRows = await dbCtx.sql<Array<{
         id: string;
+        subject_id: string;
         subject_name: string;
         subject_code: string;
         topic: string;
@@ -1560,21 +1588,22 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
       }>>`
         SELECT
           t.id,
-          s.name as subject_name,
-          s.code as subject_code,
-          t.title as topic,
-          sum(m.total_attempted) as total_attempted,
-          sum(m.total_correct) as total_correct,
-          round((sum(m.total_correct)::float / nullif(sum(m.total_attempted), 0)::float) * 100) as accuracy_rate
+          s.id AS subject_id,
+          s.name AS subject_name,
+          s.code AS subject_code,
+          t.title AS topic,
+          SUM(m.total_attempted)::text AS total_attempted,
+          SUM(m.total_correct)::text AS total_correct,
+          ROUND((SUM(m.total_correct)::float / NULLIF(SUM(m.total_attempted), 0)::float) * 100)::text AS accuracy_rate
         FROM student_topic_mastery m
         JOIN school_students ss ON ss.student_user_id = m.user_id
+        JOIN student_subjects st_sub ON st_sub.user_id = ss.student_user_id AND st_sub.subject_id = m.subject_id
         JOIN topics t ON m.topic_id = t.id
         JOIN subjects s ON m.subject_id = s.id
         WHERE ss.school_id = ${school.id}::uuid
-        GROUP BY t.id, s.name, s.code, t.title
-        HAVING sum(m.total_attempted) > 0
-        ORDER BY accuracy_rate ASC, total_attempted DESC
-        LIMIT 50
+        GROUP BY t.id, s.id, s.name, s.code, s.is_compulsory, s.display_order, t.title
+        HAVING SUM(m.total_attempted) > 0
+        ORDER BY s.is_compulsory DESC, s.display_order ASC, accuracy_rate ASC, total_attempted DESC
       `;
 
       const diagnosticTopics = topicRows.map((r) => {
@@ -1592,6 +1621,7 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
 
         return {
           id: r.id,
+          subjectId: r.subject_id,
           subject: r.subject_name,
           subjectCode: r.subject_code,
           topic: r.topic,
@@ -1602,6 +1632,46 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
         };
       });
 
+      // 3. Compute department health metrics per offered subject
+      const offeredSubjects = enrolledSubjectRows.map((s) => {
+        const subTopics = diagnosticTopics.filter(
+          (t) => t.subjectId === s.id || t.subjectCode?.toUpperCase() === s.code?.toUpperCase()
+        );
+        const enrolledCount = Number(s.enrolled_candidate_count) || 0;
+        const totalAttempts = subTopics.reduce((sum, t) => sum + t.questionsAttempted, 0);
+        const avgAccuracy =
+          subTopics.length > 0
+            ? Math.round(subTopics.reduce((sum, t) => sum + t.accuracyRate, 0) / subTopics.length)
+            : null;
+
+        const urgentCount = subTopics.filter((t) => t.status === 'urgent_remedial').length;
+        const revisionCount = subTopics.filter((t) => t.status === 'revision_recommended').length;
+        const readyCount = subTopics.filter((t) => t.status === 'exam_ready').length;
+
+        return {
+          id: s.id,
+          name: s.name,
+          code: s.code,
+          isCompulsory: Boolean(s.is_compulsory),
+          enrolledCandidateCount: enrolledCount,
+          topicsAssessedCount: subTopics.length,
+          totalQuestionsAttempted: totalAttempts,
+          averageAccuracy: avgAccuracy,
+          urgentCount,
+          revisionCount,
+          readyCount,
+        };
+      });
+
+      // 4. Group topics dictionary by subject code
+      const topicsBySubject: Record<string, typeof diagnosticTopics> = {};
+      for (const subj of offeredSubjects) {
+        topicsBySubject[subj.code] = diagnosticTopics.filter(
+          (t) => t.subjectId === subj.id || t.subjectCode?.toUpperCase() === subj.code.toUpperCase()
+        );
+      }
+
+      // 5. Build prioritized remedial revision timetable
       const revisionTimetable = diagnosticTopics
         .filter((t) => t.status === 'urgent_remedial' || t.status === 'revision_recommended')
         .slice(0, 5)
@@ -1621,6 +1691,8 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
         status: 200,
         body: {
           success: true,
+          offeredSubjects,
+          topicsBySubject,
           topics: diagnosticTopics,
           revisionTimetable,
         },
