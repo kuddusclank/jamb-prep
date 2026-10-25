@@ -257,7 +257,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
           </div>
         </div>
 
-        {/* 2. THREE COMPACT DIAGNOSTIC OVERVIEW METRICS */}
+        {/* 2. THREE COMPACT RESTRAINED OVERVIEW METRICS */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
           {/* Card 1: Urgent Remedial */}
           <div
@@ -273,16 +273,15 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
             }}
             className={`rounded-xl border p-4 space-y-1.5 transition cursor-pointer select-none ${
               statusFilter === "urgent_remedial"
-                ? "border-red-300 bg-red-50/80 ring-2 ring-red-500/20 shadow-2xs"
-                : "border-slate-200 bg-white hover:border-red-200 hover:bg-red-50/20"
+                ? "border-slate-400 bg-slate-50 ring-1 ring-slate-300"
+                : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50"
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-red-700">
-                <span className="size-1.5 rounded-full bg-red-600" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-700">
                 Urgent Remedial
               </span>
-              <AlertTriangle size={15} className="text-red-600" />
+              <AlertTriangle size={15} className="text-slate-400" />
             </div>
 
             <div className="flex items-baseline gap-2 pt-0.5">
@@ -290,16 +289,16 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
               <span className="text-xs text-slate-500 font-medium">Topics</span>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-500 leading-relaxed">
               {urgentCount > 0
                 ? "<40% cohort accuracy · Re-teach core syllabus fundamentals"
                 : "No urgent remedial gaps identified across assessed topics"}
             </p>
 
-            <div className="pt-1 flex items-center justify-between text-[11px]">
-              <span className="text-slate-500">Benchmark: &lt;40%</span>
-              <span className={`font-semibold ${statusFilter === "urgent_remedial" ? "text-red-700" : "text-slate-500"}`}>
-                {statusFilter === "urgent_remedial" ? "Active filter (click to reset)" : "Click to isolate"}
+            <div className="pt-1 flex items-center justify-between text-[11px] text-slate-400">
+              <span>Benchmark: &lt;40%</span>
+              <span className="font-medium text-slate-600">
+                {statusFilter === "urgent_remedial" ? "Filtered (click to reset)" : "Filter"}
               </span>
             </div>
           </div>
@@ -318,16 +317,15 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
             }}
             className={`rounded-xl border p-4 space-y-1.5 transition cursor-pointer select-none ${
               statusFilter === "revision_recommended"
-                ? "border-amber-300 bg-amber-50/80 ring-2 ring-amber-500/20 shadow-2xs"
-                : "border-slate-200 bg-white hover:border-amber-200 hover:bg-amber-50/20"
+                ? "border-slate-400 bg-slate-50 ring-1 ring-slate-300"
+                : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50"
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-800">
-                <span className="size-1.5 rounded-full bg-amber-500" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-700">
                 Revision Recommended
               </span>
-              <Clock size={15} className="text-amber-700" />
+              <Clock size={15} className="text-slate-400" />
             </div>
 
             <div className="flex items-baseline gap-2 pt-0.5">
@@ -335,16 +333,16 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
               <span className="text-xs text-slate-500 font-medium">Topics</span>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-500 leading-relaxed">
               {revisionCount > 0
                 ? "40% – 69% accuracy · Speed drills and exam practice suggested"
                 : "No topics currently flagged for intermediate revision"}
             </p>
 
-            <div className="pt-1 flex items-center justify-between text-[11px]">
-              <span className="text-slate-500">Benchmark: 40% – 69%</span>
-              <span className={`font-semibold ${statusFilter === "revision_recommended" ? "text-amber-800" : "text-slate-500"}`}>
-                {statusFilter === "revision_recommended" ? "Active filter (click to reset)" : "Click to isolate"}
+            <div className="pt-1 flex items-center justify-between text-[11px] text-slate-400">
+              <span>Benchmark: 40% – 69%</span>
+              <span className="font-medium text-slate-600">
+                {statusFilter === "revision_recommended" ? "Filtered (click to reset)" : "Filter"}
               </span>
             </div>
           </div>
@@ -363,16 +361,15 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
             }}
             className={`rounded-xl border p-4 space-y-1.5 transition cursor-pointer select-none ${
               statusFilter === "exam_ready"
-                ? "border-emerald-300 bg-emerald-50/80 ring-2 ring-emerald-500/20 shadow-2xs"
-                : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/20"
+                ? "border-slate-400 bg-slate-50 ring-1 ring-slate-300"
+                : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50"
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#12664F]">
-                <span className="size-1.5 rounded-full bg-[#12664F]" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-700">
                 Examination Ready
               </span>
-              <CheckCheck size={16} className="text-[#12664F]" />
+              <CheckCheck size={16} className="text-slate-400" />
             </div>
 
             <div className="flex items-baseline gap-2 pt-0.5">
@@ -380,7 +377,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
               <span className="text-xs text-slate-500 font-medium">Topics</span>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-500 leading-relaxed">
               {readyCount > 0
                 ? "≥70% accuracy · Strong syllabus mastery and candidate retention"
                 : totalTracked > 0
@@ -388,62 +385,62 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
                 : "No completed test data yet"}
             </p>
 
-            <div className="pt-1 flex items-center justify-between text-[11px]">
-              <span className="text-slate-500">Benchmark: ≥70% Target</span>
-              <span className={`font-semibold ${statusFilter === "exam_ready" ? "text-[#12664F]" : "text-slate-500"}`}>
-                {statusFilter === "exam_ready" ? "Active filter (click to reset)" : "Click to isolate"}
+            <div className="pt-1 flex items-center justify-between text-[11px] text-slate-400">
+              <span>Benchmark: ≥70% Target</span>
+              <span className="font-medium text-slate-600">
+                {statusFilter === "exam_ready" ? "Filtered (click to reset)" : "Filter"}
               </span>
             </div>
           </div>
         </div>
 
-        {/* 3. COHORT MASTERY DISTRIBUTION MATRIX BAR & CONTEXT */}
+        {/* 3. RESTRAINED COHORT MASTERY BREAKDOWN BAR */}
         {totalTracked > 0 && (
-          <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3">
+          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-slate-800">Cohort Mastery Distribution:</span>
+                <span className="font-medium text-slate-700">Cohort Mastery Distribution:</span>
                 <span className="text-slate-500">
-                  {totalTracked} total topics tracked
-                  {averageAccuracy !== null && ` · ${averageAccuracy}% cohort average accuracy`}
+                  {totalTracked} topics
+                  {averageAccuracy !== null && ` · ${averageAccuracy}% avg accuracy`}
                 </span>
               </div>
 
-              {/* Compact Legend */}
-              <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-600">
-                <span className="inline-flex items-center gap-1">
-                  <span className="size-2 rounded-full bg-red-600" />
+              {/* Clean Muted Legend */}
+              <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-slate-800" />
                   Urgent ({urgentCount})
                 </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="size-2 rounded-full bg-amber-500" />
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-slate-500" />
                   Revision ({revisionCount})
                 </span>
-                <span className="inline-flex items-center gap-1">
+                <span className="inline-flex items-center gap-1.5">
                   <span className="size-2 rounded-full bg-[#12664F]" />
                   Ready ({readyCount})
                 </span>
                 {unassessedCount > 0 && (
-                  <span className="inline-flex items-center gap-1">
-                    <span className="size-2 rounded-full bg-slate-300" />
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-slate-200" />
                     Unassessed ({unassessedCount})
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Proportional Segmented Bar */}
-            <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden flex">
+            {/* Muted Segmented Bar */}
+            <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden flex">
               {urgentCount > 0 && (
                 <div
-                  className="bg-red-600 h-full transition-all"
+                  className="bg-slate-800 h-full transition-all"
                   style={{ width: `${(urgentCount / totalTracked) * 100}%` }}
                   title={`Urgent Remedial: ${urgentCount} topics (${Math.round((urgentCount / totalTracked) * 100)}%)`}
                 />
               )}
               {revisionCount > 0 && (
                 <div
-                  className="bg-amber-500 h-full transition-all"
+                  className="bg-slate-500 h-full transition-all"
                   style={{ width: `${(revisionCount / totalTracked) * 100}%` }}
                   title={`Revision Recommended: ${revisionCount} topics (${Math.round((revisionCount / totalTracked) * 100)}%)`}
                 />
@@ -468,7 +465,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
             {statusFilter !== "all" && (
               <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200">
                 <span className="text-slate-600">
-                  Showing only <strong>{statusFilter.replace(/_/g, " ")}</strong> topics ({processedTopics.length} of {totalTracked})
+                  Showing <strong>{statusFilter.replace(/_/g, " ")}</strong> topics ({processedTopics.length} of {totalTracked})
                 </span>
                 <button
                   type="button"
@@ -485,7 +482,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
 
       {/* 4. PRACTICAL CONTROLS & FILTER TOOLBAR */}
       <section className="space-y-3">
-        {/* Subject Filter Pills with Subject Key & Count */}
+        {/* Subject Filter Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
           {SUBJECTS.map((sub) => {
             const count = subjectCounts[sub.id] || 0;
@@ -498,23 +495,23 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
                 onClick={() => setSelectedSubject(sub.id)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium shrink-0 transition cursor-pointer select-none ${
                   isSelected
-                    ? "bg-[#12664F] text-white shadow-2xs font-semibold"
-                    : "bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50"
+                    ? "bg-[#12664F] text-white font-semibold"
+                    : "bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                 }`}
               >
                 <span>{sub.label}</span>
                 {sub.id !== "all" && (
                   <span
                     className={`text-[10px] px-1 py-0.2 rounded font-mono ${
-                      isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+                      isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
                     }`}
                   >
                     {sub.code}
                   </span>
                 )}
                 <span
-                  className={`text-[10px] rounded-full px-1.5 py-0.2 font-semibold ${
-                    isSelected ? "bg-white/25 text-white" : "bg-slate-100 text-slate-600"
+                  className={`text-[10px] rounded-full px-1.5 py-0.2 font-medium ${
+                    isSelected ? "bg-white/25 text-white" : "bg-slate-100 text-slate-500"
                   }`}
                 >
                   {count}
@@ -533,8 +530,8 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search syllabus topic, concept or code (e.g. Calculus, Concord, ENG)..."
-              className="w-full rounded-lg border border-slate-200 bg-white pl-8 pr-8 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-[#12664F] focus:ring-1 focus:ring-[#12664F] transition"
+              placeholder="Search syllabus topic, concept or code..."
+              className="w-full rounded-lg border border-slate-200 bg-white pl-8 pr-8 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-slate-400 transition"
             />
             {searchQuery && (
               <button
@@ -559,7 +556,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
                 id="diagnostic-sort"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="bg-transparent text-slate-800 font-medium focus:outline-hidden cursor-pointer"
+                className="bg-transparent text-slate-700 font-medium focus:outline-hidden cursor-pointer"
               >
                 <option value="lowest_accuracy">Lowest Accuracy First</option>
                 <option value="highest_accuracy">Highest Accuracy First</option>
@@ -574,7 +571,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
                 type="button"
                 onClick={() => setViewMode("grid")}
                 className={`p-1.5 rounded-md text-xs transition cursor-pointer ${
-                  viewMode === "grid" ? "bg-white text-slate-900 shadow-2xs font-semibold" : "text-slate-500 hover:text-slate-900"
+                  viewMode === "grid" ? "bg-white text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
                 }`}
                 title="Grid Cards View"
                 aria-label="Grid cards view"
@@ -585,7 +582,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
                 type="button"
                 onClick={() => setViewMode("table")}
                 className={`p-1.5 rounded-md text-xs transition cursor-pointer ${
-                  viewMode === "table" ? "bg-white text-slate-900 shadow-2xs font-semibold" : "text-slate-500 hover:text-slate-900"
+                  viewMode === "table" ? "bg-white text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
                 }`}
                 title="Dense Diagnostic Table View"
                 aria-label="Dense table view"
@@ -596,7 +593,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
 
             {/* Results count */}
             <span className="text-[11px] text-slate-500 font-medium pl-1">
-              {processedTopics.length} of {totalTracked} {totalTracked === 1 ? "topic" : "topics"}
+              {processedTopics.length} of {totalTracked}
             </span>
           </div>
         </div>
@@ -605,8 +602,8 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
       {/* 5. TOPIC DIAGNOSTIC DATA DISPLAY */}
       {loading ? (
         <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center space-y-3">
-          <Loader2 size={24} className="animate-spin text-[#12664F] mx-auto" />
-          <p className="text-xs text-slate-600 font-medium">Analyzing cohort syllabus mastery matrix...</p>
+          <Loader2 size={24} className="animate-spin text-slate-500 mx-auto" />
+          <p className="text-xs text-slate-500 font-medium">Analyzing cohort syllabus mastery...</p>
         </div>
       ) : processedTopics.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center space-y-3">
@@ -631,14 +628,14 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
                 setStatusFilter("all");
                 setSearchQuery("");
               }}
-              className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-[#12664F] hover:bg-slate-50 cursor-pointer"
+              className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
             >
               Reset all filters
             </button>
           )}
         </div>
       ) : viewMode === "grid" ? (
-        /* GRID CARDS VIEW */
+        /* RESTRAINED CLEAN GRID CARDS VIEW */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
           {processedTopics.map((item) => {
             const isUrgent = item.status === "urgent_remedial";
@@ -654,19 +651,10 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
               SUBJECTS.find((s) => s.id.toLowerCase() === item.subject?.toLowerCase())?.code ||
               item.subject.slice(0, 3).toUpperCase();
 
-            // Refined border and indicator colors
-            const cardAccentClass = isUrgent
-              ? "border-l-4 border-l-red-500"
-              : isRevision
-              ? "border-l-4 border-l-amber-500"
-              : isReady
-              ? "border-l-4 border-l-emerald-600"
-              : "border-l-4 border-l-slate-300";
-
             return (
               <div
                 key={item.id}
-                className={`rounded-xl border border-slate-200 bg-white p-4 space-y-3.5 transition hover:border-slate-300 hover:shadow-2xs ${cardAccentClass}`}
+                className="rounded-xl border border-slate-200 bg-white p-4 space-y-3 transition hover:border-slate-300"
               >
                 {/* TOP ROW: Subject Label + Key Tag, Topic Title, Accuracy/Status Badge */}
                 <div className="flex items-start justify-between gap-3">
@@ -675,7 +663,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
                       <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
                         {item.subject}
                       </span>
-                      <span className="font-mono text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                      <span className="font-mono text-[9px] font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
                         {subjectCode}
                       </span>
                     </div>
@@ -687,32 +675,22 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
                   {/* Accuracy Badge */}
                   <div className="shrink-0">
                     {isUnassessed ? (
-                      <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600 border border-slate-200">
+                      <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 border border-slate-200">
                         Not Assessed
                       </span>
                     ) : (
-                      <span
-                        className={`rounded-md px-2 py-1 text-[11px] font-semibold tabular-nums inline-flex items-center gap-1 border ${
-                          isUrgent
-                            ? "bg-red-50 text-red-700 border-red-200"
-                            : isRevision
-                            ? "bg-amber-50 text-amber-800 border-amber-200"
-                            : "bg-emerald-50 text-[#12664F] border-emerald-200"
-                        }`}
-                      >
+                      <span className="rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-slate-800 border border-slate-200">
                         {item.accuracyRate}% Accuracy
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* MIDDLE ROW: Meaningful Progress Bar + Cohort Attempt Context */}
+                {/* MIDDLE ROW: Clean Progress Bar + Cohort Attempt Context */}
                 <div className="space-y-1.5">
                   <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all ${
-                        isUrgent ? "bg-red-600" : isRevision ? "bg-amber-500" : "bg-[#12664F]"
-                      }`}
+                      className="h-full rounded-full bg-slate-800 transition-all"
                       style={{ width: `${isUnassessed ? 0 : Math.max(item.accuracyRate, 2)}%` }}
                     />
                   </div>
@@ -726,35 +704,27 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
                         : `${attempts} questions attempted across cohort`}
                       {isInsufficient && " (Early signal)"}
                     </span>
-                    <span className="font-medium">
+                    <span className="font-medium text-slate-600">
                       {isReady
-                        ? "+ Mastered"
+                        ? "Target met"
                         : isUrgent
-                        ? `${70 - item.accuracyRate}% below 70% target`
+                        ? `${70 - item.accuracyRate}% below target`
                         : `${70 - item.accuracyRate}% to target`}
                     </span>
                   </div>
                 </div>
 
                 {/* BOTTOM ROW: Context-Aware Concise Teacher Action */}
-                <div className="rounded-lg bg-slate-50 border border-slate-200/80 p-2.5 text-xs text-slate-600 space-y-1">
+                <div className="rounded-lg bg-slate-50 border border-slate-200/80 p-2.5 text-xs text-slate-600 space-y-0.5">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">
-                      Recommended Action:
+                      Action:
                     </span>
-                    <span
-                      className={`text-[9px] font-semibold px-1.5 py-0.2 rounded ${
-                        isUrgent
-                          ? "bg-red-100 text-red-800"
-                          : isRevision
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-emerald-100 text-[#12664F]"
-                      }`}
-                    >
+                    <span className="text-[10px] font-medium text-slate-700">
                       {isUrgent ? "Re-teach Concept" : isRevision ? "Speed Drill" : "Retention Check"}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-700 leading-relaxed font-normal">
+                  <p className="text-[11px] text-slate-600 leading-relaxed font-normal">
                     {item.recommendedAction}
                   </p>
                 </div>
@@ -764,7 +734,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
         </div>
       ) : (
         /* DENSE TABLE VIEW (For teachers scanning large volumes of topics) */
-        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-2xs">
+        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse min-w-[700px]">
               <thead>
@@ -799,7 +769,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
                           <span className="text-slate-600 text-xs">{item.subject}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-4 font-semibold text-slate-900 max-w-[240px] truncate" title={item.topic}>
+                      <td className="py-3 px-4 font-medium text-slate-900 max-w-[240px] truncate" title={item.topic}>
                         {item.topic}
                       </td>
                       <td className="py-3 px-4 text-center tabular-nums text-slate-600 font-medium">
@@ -809,9 +779,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
                         <div className="flex items-center gap-2 min-w-[120px]">
                           <div className="w-16 bg-slate-100 rounded-full h-1.5 overflow-hidden shrink-0">
                             <div
-                              className={`h-full rounded-full ${
-                                isUrgent ? "bg-red-600" : isRevision ? "bg-amber-500" : "bg-[#12664F]"
-                              }`}
+                              className="h-full rounded-full bg-slate-800"
                               style={{ width: `${Math.max(item.accuracyRate, 2)}%` }}
                             />
                           </div>
@@ -821,15 +789,7 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
                         </div>
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap">
-                        <span
-                          className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
-                            isUrgent
-                              ? "bg-red-100 text-red-800"
-                              : isRevision
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-emerald-100 text-[#12664F]"
-                          }`}
-                        >
+                        <span className="rounded px-2 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
                           {isUrgent ? "Urgent Remedial" : isRevision ? "Revision Recommended" : "Examination Ready"}
                         </span>
                       </td>
@@ -870,38 +830,27 @@ export function SyllabusHeatmapView({ schoolName, cohortSize = 0 }: SyllabusHeat
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-1">
             {timetable.map((slot, idx) => {
-              const isUrgent = slot.priority === "Urgent";
-              const isMock = slot.priority === "Mock";
-
               return (
                 <div
                   key={idx}
-                  className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-2 text-xs flex flex-col justify-between"
+                  className="rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 space-y-2 text-xs flex flex-col justify-between"
                 >
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900 text-xs">{slot.day}</span>
-                      <span
-                        className={`rounded px-1.5 py-0.5 text-[9px] font-semibold ${
-                          isUrgent
-                            ? "bg-red-100 text-red-800"
-                            : isMock
-                            ? "bg-emerald-100 text-[#12664F]"
-                            : "bg-amber-100 text-amber-800"
-                        }`}
-                      >
+                      <span className="font-semibold text-slate-900 text-xs">{slot.day}</span>
+                      <span className="rounded px-1.5 py-0.5 text-[9px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
                         {slot.priority || "Remedial"}
                       </span>
                     </div>
 
-                    <p className="text-slate-500 text-[11px] flex items-center gap-1 font-medium">
+                    <p className="text-slate-500 text-[11px] flex items-center gap-1 font-normal">
                       <Clock size={11} className="text-slate-400" />
                       <span>{slot.time || "45 Mins Block"}</span>
                     </p>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-200/80 space-y-1">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block">
+                  <div className="pt-2 border-t border-slate-200/80 space-y-0.5">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500 block">
                       {slot.subject}
                     </span>
                     <strong className="text-xs font-semibold text-slate-900 line-clamp-2" title={slot.topic}>
