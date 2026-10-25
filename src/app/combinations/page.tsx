@@ -5,6 +5,7 @@ import {
   POPULAR_COURSE_IDS,
   resolveCourseElectives,
 } from '@/lib/curriculum/jamb-course-combinations';
+import { COMBINATIONS_FAQS } from './combinations-faq-data';
 import { CombinationsClient } from './combinations-client';
 
 export const metadata: Metadata = {
@@ -34,20 +35,54 @@ export default function CombinationsPage() {
     JAMB_COURSE_COMBINATIONS.find((c) => c.id === id)
   ).filter((c): c is NonNullable<typeof c> => Boolean(c));
 
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: `${SITE_URL}/`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'JAMB Subject Combinations',
+        item: `${SITE_URL}/combinations/`,
+      },
+    ],
+  };
+
+  const collectionSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'JAMB UTME Subject Combinations for 420+ Accredited Courses',
+    description:
+      'Official JAMB IBASS 4-subject UTME requirements, flexible electives, and cut-off benchmarks for accredited Nigerian higher education courses.',
+    url: `${SITE_URL}/combinations/`,
+    isPartOf: {
+      '@type': 'WebSite',
+      name: 'JAMBPrep by LecternIQ',
+      url: `${SITE_URL}/`,
+    },
+    about: {
+      '@type': 'Thing',
+      name: 'JAMB UTME Subject Combinations',
+    },
+  };
+
   const faqSchema = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: popularCourses.slice(0, 8).map((course) => {
-      const resolved = resolveCourseElectives(course);
-      return {
-        '@type': 'Question',
-        name: `What is the JAMB UTME subject combination for ${course.title} in Nigeria?`,
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: `The official JAMB UTME subject combination for ${course.title} (${course.faculty}) is Use of English, ${resolved.electiveNames.join(', ')}. ${course.ibassNote} Recommended competitive UTME target score: ${course.recommendedTargetScore}+ (${course.competitiveScoreRange}).`,
-        },
-      };
-    }),
+    mainEntity: COMBINATIONS_FAQS.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
   };
 
   const itemListSchema = {
@@ -70,6 +105,14 @@ export default function CombinationsPage() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}

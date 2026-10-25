@@ -698,6 +698,7 @@ export function MobileMenu() {
                 ['Check Combination', '/combinations'],
                 ['How it works', '#how-it-works'],
                 ['Pricing', '#pricing'],
+                ['FAQs', '#faq'],
                 ['For Schools', '/schools'],
                 ['Getting started', '#get-started'],
               ].map(([name, href]) => (

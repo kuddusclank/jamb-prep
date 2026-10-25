@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+import { pageMetadata, SITE_URL } from '@/lib/seo';
 import { BrandMark } from "@/components/brand-mark";
 import { BrowserAccountBoundary, BrowserAccountNavigation } from "@/components/browser-account-boundary";
 import Link from "@/components/pending-link";
@@ -17,13 +19,56 @@ import { CombinationPromptDialog, MobileMenu, Reveal } from "./landing-interacti
 import { UserDropdown } from "@/components/user-dropdown";
 import { PolicyLinks } from "@/components/legal-page";
 
+export const metadata: Metadata = {
+  ...pageMetadata(
+    'JAMB UTME CBT Practice & Mock Exam Simulator',
+    'Prepare for Nigeria JAMB UTME 2026 with full-length 4-subject CBT mock exams, 420+ accredited course combinations, instant step-by-step explanations, and offline practice.',
+    '/',
+    true
+  ),
+  keywords: [
+    'JAMB CBT practice',
+    'JAMB mock exam simulator',
+    'JAMB 2026 practice questions',
+    'UTME practice online',
+    'JAMB subject combinations',
+    'JAMB CBT software Nigeria',
+    'free JAMB mock test',
+    'JAMB past questions and answers',
+    'LecternIQ JAMBPrep',
+  ],
+};
+
 const button = "inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-[#116149] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0b4936] hover:-translate-y-0.5";
 const faq = [
-  ['Do I need an account to practise or take an exam?', 'Yes. You must create an account and sign in before starting any practice questions, diagnostic mock or exam, including free sessions. Registration is open.'],
-  ['Will it work on my phone?', 'The platform is optimized for phones, tablets and computers. The mock interface includes touch-friendly question navigation as well as desktop keyboard controls.'],
-  ['What happens if my internet disconnects?', 'The exam engine automatically saves answers on your device and syncs them continuously. You can continue answering questions without interruption.'],
-  ['What will the free plan include?', 'One full diagnostic mock, a detailed score breakdown, and one topic-practice session of 5, 10 or 15 questions each day with comprehensive step-by-step explanations. The daily allowance resets at midnight West Africa Time.'],
-  ['How does Premium access work?', 'Premium access is ₦1,000 for 30 days during our launch offer (regularly ₦2,000) through December 31, 2026. It includes unlimited CBT mocks, unlimited practice questions, full answer explanations, and advanced study coach analytics. An eligible referral reward can reduce the first month to ₦500.'],
+  [
+    'Do I need an account to practise or take an exam?',
+    'Yes. You must create an account and sign in before starting any practice questions, diagnostic mock or exam, including free sessions. Registration is open.',
+  ],
+  [
+    'Will it work on my phone?',
+    'The platform is optimized for phones, tablets and computers. The mock interface includes touch-friendly question navigation as well as desktop keyboard controls.',
+  ],
+  [
+    'What happens if my internet disconnects?',
+    'The exam engine automatically saves answers on your device and syncs them continuously. You can continue answering questions without interruption.',
+  ],
+  [
+    'What will the free plan include?',
+    'One full diagnostic mock, a detailed score breakdown, and one topic-practice session of 5, 10 or 15 questions each day with comprehensive step-by-step explanations. The daily allowance resets at midnight West Africa Time.',
+  ],
+  [
+    'How does Premium access work?',
+    'Premium access is ₦1,000 for 30 days during our launch offer (regularly ₦2,000) through December 31, 2026. It includes unlimited CBT mocks, unlimited practice questions, full answer explanations, and advanced study coach analytics. An eligible referral reward can reduce the first month to ₦500.',
+  ],
+  [
+    'How do I find the correct JAMB subject combination for my course?',
+    'You can use the JAMBPrep Course & Subject Directory to search through 420+ accredited Nigerian university, polytechnic, and college courses. It displays official core subjects, flexible elective choices, and target cut-off scores based on the official JAMB IBASS brochure.',
+  ],
+  [
+    'Are the CBT exam questions aligned with the official JAMB syllabus?',
+    'Yes. All questions and mock blueprints are mapped directly to official JAMB syllabus leaf topics across all 25 canonical subjects, including Use of English, Mathematics, Biology, Chemistry, Physics, Economics, Government, and Literature in English.',
+  ],
 ];
 
 export default function Home() {
@@ -32,8 +77,94 @@ export default function Home() {
   const entitlement = null as { expiresAt: Date } | null;
   const displayName = "Candidate";
 
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faq.map(([question, answer]) => ({
+      '@type': 'Question',
+      name: question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: answer,
+      },
+    })),
+  };
+
+  const webSiteSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'JAMBPrep by LecternIQ',
+    alternateName: ['JAMBPrep', 'LecternIQ JAMB CBT', 'JAMBPrep Nigeria'],
+    url: SITE_URL,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${SITE_URL}/combinations?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  };
+
+  const softwareAppSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'JAMBPrep CBT Simulator & Study Coach',
+    applicationCategory: 'EducationalApplication',
+    operatingSystem: 'All (Web, Android, iOS, Windows, macOS)',
+    url: SITE_URL,
+    description:
+      'Practice official JAMB UTME past questions, full 4-subject timed mock simulations, and 420+ accredited course combination guides.',
+    offers: [
+      {
+        '@type': 'Offer',
+        name: 'Free Diagnostic Plan',
+        price: '0',
+        priceCurrency: 'NGN',
+        availability: 'https://schema.org/InStock',
+      },
+      {
+        '@type': 'Offer',
+        name: 'Premium Monthly Access',
+        price: '1000',
+        priceCurrency: 'NGN',
+        priceValidUntil: '2026-12-31',
+        availability: 'https://schema.org/InStock',
+      },
+    ],
+  };
+
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: `${SITE_URL}/`,
+      },
+    ],
+  };
+
   return (
     <BrowserAccountBoundary mode="public">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <a href="#main" className="skip-link">Skip to content</a>
       <CombinationPromptDialog />
 
@@ -82,6 +213,7 @@ export default function Home() {
               </Link>
               <a href="#how-it-works" className="hover:text-[#116149] transition-colors">How it works</a>
               <a href="#pricing" className="hover:text-[#116149] transition-colors">Pricing</a>
+              <a href="#faq" className="hover:text-[#116149] transition-colors">FAQs</a>
               <Link href="/schools" className="hover:text-[#116149] font-medium text-[#116149] transition-colors">For Schools</Link>
             </nav>
           )}
@@ -489,15 +621,15 @@ export default function Home() {
         </section>
 
         {/* FAQs */}
-        <section className="shell grid gap-10 pb-24 md:grid-cols-[.7fr_1fr]">
+        <section id="faq" aria-labelledby="faq-heading" className="shell grid gap-10 pb-24 md:grid-cols-[.7fr_1fr] scroll-mt-24">
           <Reveal>
             <p className="eyebrow">A FEW THINGS YOU MIGHT ASK</p>
-            <h2 className="section-title mt-4">Before you<br/><span className="serif-accent">get started.</span></h2>
+            <h2 id="faq-heading" className="section-title mt-4">Before you<br/><span className="serif-accent">get started.</span></h2>
           </Reveal>
           <div>
             {faq.map(([question,answer]) => (
               <details key={question} className="group border-b border-emerald-950/15 py-5">
-                <summary className="cursor-pointer text-base font-semibold">{question}</summary>
+                <summary className="cursor-pointer text-base font-semibold text-slate-900 hover:text-[#116149] transition-colors">{question}</summary>
                 <p className="mt-4 text-sm leading-relaxed text-slate-600">{answer}</p>
               </details>
             ))}
@@ -532,7 +664,10 @@ export default function Home() {
         <p className="max-w-lg leading-relaxed">
           An independent UTME preparation platform. Not affiliated with the Joint Admissions and Matriculation Board.
         </p>
-        <a href="#main" className="inline-flex min-h-11 items-center gap-2 self-start">Back to top ↑</a>
+        <div className="flex items-center gap-4 self-start">
+          <a href="#faq" className="hover:text-[#116149] transition-colors">FAQs</a>
+          <a href="#main" className="inline-flex min-h-11 items-center gap-2">Back to top ↑</a>
+        </div>
         <PolicyLinks className="sm:justify-end"/>
       </footer>
     </BrowserAccountBoundary>

@@ -30,6 +30,7 @@ import {
   type LockedCourseCombination,
   saveLockedCombination,
 } from '@/lib/curriculum/locked-combination-storage';
+import { COMBINATIONS_FAQS } from './combinations-faq-data';
 import {
   ArrowLeft,
   ArrowRight,
@@ -145,9 +146,9 @@ function CourseListRow({
               </span>
             )}
           </div>
-          <h2 className="text-base font-bold text-slate-900 truncate">
+          <h3 className="text-base font-bold text-slate-900 truncate">
             {course.title}
-          </h2>
+          </h3>
           <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">
             {course.ibassNote}
           </p>
@@ -439,6 +440,9 @@ function CombinationsFinderInner() {
             <Link href="/pricing" className="hover:text-[#116149] transition-colors">
               Pricing
             </Link>
+            <a href="#faq" className="hover:text-[#116149] transition-colors">
+              FAQs
+            </a>
             <Link
               href="/schools"
               className="hover:text-[#116149] font-medium text-[#116149] transition-colors"
@@ -487,6 +491,21 @@ function CombinationsFinderInner() {
 
       <main id="main" className="flex-1 py-10 sm:py-14">
         <div className="shell">
+          {/* Breadcrumb Navigation */}
+          <nav aria-label="Breadcrumb" className="mb-6 text-xs text-slate-500">
+            <ol className="flex items-center gap-1.5 flex-wrap">
+              <li>
+                <Link href="/" className="hover:text-[#116149] transition-colors">
+                  Home
+                </Link>
+              </li>
+              <li aria-hidden="true" className="text-slate-400">/</li>
+              <li className="font-semibold text-slate-800" aria-current="page">
+                JAMB Subject Combinations
+              </li>
+            </ol>
+          </nav>
+
           {/* Header Title Section */}
           <div className="max-w-3xl mb-8">
             <p className="eyebrow mb-2">
@@ -782,12 +801,47 @@ function CombinationsFinderInner() {
               )}
             </>
           )}
+
+          {/* SEO Authority FAQ Section */}
+          <section id="faq" aria-labelledby="faq-heading" className="mt-16 pt-12 border-t border-slate-200/80 scroll-mt-24">
+            <div className="max-w-3xl mb-8">
+              <p className="eyebrow mb-2">
+                <span className="size-2 rounded-full bg-[#116149]" />
+                OFFICIAL IBASS GUIDANCE &amp; ADMISSIONS FAQ
+              </p>
+              <h2 id="faq-heading" className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900 leading-tight">
+                Frequently Asked <span className="serif-accent text-[#116149]">Questions</span>
+              </h2>
+              <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                Clear answers to frequent candidate questions regarding official JAMB UTME 4-subject requirements, flexible electives, O&apos;Level requirements, and cutoff scores across Nigerian universities.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/80 bg-white divide-y divide-slate-100 overflow-hidden shadow-2xs">
+              {COMBINATIONS_FAQS.map((faqItem, idx) => (
+                <details key={idx} className="group p-5 hover:bg-slate-50/50 transition-colors">
+                  <summary className="cursor-pointer font-semibold text-slate-900 flex items-center justify-between gap-4 text-sm sm:text-base list-none">
+                    <span>{faqItem.question}</span>
+                    <span className="shrink-0 size-6 rounded-full bg-slate-100 group-open:bg-emerald-50 text-slate-500 group-open:text-[#116149] flex items-center justify-center text-xs font-bold transition">
+                      +
+                    </span>
+                  </summary>
+                  <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed pl-1">
+                    {faqItem.answer}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </section>
         </div>
       </main>
 
       {/* Minimalist Footer */}
       <footer className="shell flex flex-col justify-between gap-4 py-8 border-t border-slate-200/80 text-xs text-slate-500 sm:flex-row mt-16">
-        <span className="font-bold text-slate-800">JAMBPrep by LecternIQ</span>
+        <div className="flex items-center gap-4">
+          <span className="font-bold text-slate-800">JAMBPrep by LecternIQ</span>
+          <a href="#faq" className="hover:text-[#116149] transition-colors">FAQs</a>
+        </div>
         <p className="max-w-md text-slate-500">
           Independent UTME brochure directory. Not affiliated with the Joint Admissions and Matriculation Board.
         </p>
