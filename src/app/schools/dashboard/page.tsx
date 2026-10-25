@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { createClient } from "@/lib/supabase/client";
@@ -34,12 +34,26 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
   AlertCircle,
   Play,
   Share2,
   FileSpreadsheet,
   Pencil,
-  UserMinus
+  UserMinus,
+  Menu,
+  X,
+  Search,
+  RotateCw,
+  MoreHorizontal,
+  Lock,
+  Layers,
+  HelpCircle,
+  TrendingUp,
+  TrendingDown,
+  ShieldCheck,
+  Shield,
+  Download
 } from "lucide-react";
 
 interface StudentItem {
@@ -58,6 +72,22 @@ interface StudentItem {
   enrolmentMethod?: string;
 }
 
+type DashboardView = "candidates" | "diagnostics" | "lab" | "billing" | "profile";
+type FilterStatus = "all" | "active" | "unlicensed" | "expired";
+
+interface NavItem {
+  id: DashboardView;
+  label: string;
+  icon: any;
+  badge: string | null;
+  badgeColor?: string;
+}
+
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
 function parseSubjectsArray(val: unknown): string[] {
   if (Array.isArray(val)) {
     return val.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
@@ -74,23 +104,33 @@ function parseSubjectsArray(val: unknown): string[] {
   return [];
 }
 
+const AVATAR_COLORS = [
+  "bg-emerald-100 text-emerald-800 border-emerald-200",
+  "bg-blue-100 text-blue-800 border-blue-200",
+  "bg-purple-100 text-purple-800 border-purple-200",
+  "bg-amber-100 text-amber-800 border-amber-200",
+  "bg-rose-100 text-rose-800 border-rose-200",
+  "bg-teal-100 text-teal-800 border-teal-200",
+  "bg-indigo-100 text-indigo-800 border-indigo-200",
+];
+
+function getAvatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[index];
+}
+
 export default function SchoolDashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedPasswordId, setCopiedPasswordId] = useState<string | null>(null);
 
-  // Active workspace tab with shimmer transition state
-  const [activeTab, setActiveTab] = useState<"roster" | "diagnostics" | "lab">("roster");
-  const [tabTransitioning, setTabTransitioning] = useState(false);
-
-  const handleTabChange = (tab: "roster" | "diagnostics" | "lab") => {
-    if (tab === activeTab) return;
-    setTabTransitioning(true);
-    setActiveTab(tab);
-    setTimeout(() => {
-      setTabTransitioning(false);
-    }, 280);
-  };
+  // Active navigation view state
+  const [activeView, setActiveView] = useState<DashboardView>("candidates");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Modals state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -105,10 +145,17 @@ export default function SchoolDashboardPage() {
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [expandedStudentIds, setExpandedStudentIds] = useState<string[]>([]);
 
+  // Search & Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
   // School cohort roster starts clean for fresh institutional registrations
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [scheduledMock, setScheduledMock] = useState<any | null>(null);
   const [origin, setOrigin] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Loading phase state: "auth_loading" (StudyLoading) -> "data_loading" (shimmer skeleton) -> "ready"
   const [loadingPhase, setLoadingPhase] = useState<"auth_loading" | "data_loading" | "ready">("auth_loading");
@@ -119,123 +166,135 @@ export default function SchoolDashboardPage() {
     }
   }, []);
 
+  const fetchCohortData = async (supabaseClient?: any) => {
+    const supabase = supabaseClient || createClient();
+    const res = await supabase.auth.getUser();
+    const u = res?.data?.user;
+    if (!u) {
+      window.location.assign("/schools/login?redirectTo=/schools/dashboard");
+      return;
+    }
+    const role = u.user_metadata?.role || "student";
+    if (role === "student") {
+      window.location.assign("/dashboard?error=unauthorized_school_portal");
+      return;
+    }
+    setUser(u);
+
+    const code = (u.user_metadata?.school_code as string) || (u.id ? "SCH-" + u.id.slice(0, 8).toUpperCase() : "SCH-DEFAULT");
+
+    // Load any actual scheduled lab mock for this school
+    try {
+      if (typeof window !== "undefined") {
+        const storedMock = localStorage.getItem(`jambprep_school_lab_mock_${code}`);
+        if (storedMock) {
+          setScheduledMock(JSON.parse(storedMock));
+        }
+      }
+    } catch (e) {
+      console.warn("Could not read scheduled mock:", e);
+    }
+
+    // Load any actual previously added or imported candidates for this school
+    let localCohort: StudentItem[] = [];
+    try {
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem(`jambprep_school_students_${code}`);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            localCohort = parsed.map((item: any) => ({
+              ...item,
+              subjects: parseSubjectsArray(item.subjects),
+            }));
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Could not read local cohort:", e);
+    }
+
+    // Attempt to load enrolled students from native worker API or fallback to local
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
+      const sessionRes = await supabase.auth.getSession();
+      const token = sessionRes?.data?.session?.access_token;
+
+      const listRes = await fetch(`${apiBase}/api/v1/schools/students`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        },
+      });
+
+      if (listRes.ok) {
+        const data = await listRes.json();
+        if (data.activeLabMock) {
+          setScheduledMock(data.activeLabMock);
+          try {
+            if (typeof window !== "undefined") {
+              localStorage.setItem(`jambprep_school_lab_mock_${code}`, JSON.stringify(data.activeLabMock));
+            }
+          } catch {}
+        }
+        if (data.students && Array.isArray(data.students)) {
+          const mappedStudents: StudentItem[] = data.students.map((s: any) => {
+            const daysLeft = s.licenseExpiresAt
+              ? Math.max(0, Math.ceil((new Date(s.licenseExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+              : 0;
+            const rawStatus = s.licenseStatus || "inactive";
+            const effectiveStatus: "active" | "inactive" | "expired" =
+              rawStatus === "active" && s.licenseExpiresAt && daysLeft <= 0 ? "expired" : rawStatus;
+            return {
+              id: s.id,
+              name: s.name,
+              email: s.email,
+              studentIdentifier: s.studentIdentifier || null,
+              defaultPassword: s.defaultPassword,
+              subjects: parseSubjectsArray(s.subjects),
+              licenseStatus: effectiveStatus,
+              daysLeft,
+              lastActive: s.ingestionMethod === "link" ? "Self-Registered (Link)" : "Enrolled",
+              averageScore: typeof s.averageScore === "number" ? s.averageScore : null,
+              practiceAccuracy: typeof s.practiceAccuracy === "number" ? s.practiceAccuracy : null,
+              totalPracticeQuestions: typeof s.totalPracticeQuestions === "number" ? s.totalPracticeQuestions : 0,
+              enrolmentMethod: s.ingestionMethod || "link",
+            };
+          });
+
+          setStudents(mappedStudents);
+          try {
+            if (typeof window !== "undefined") {
+              localStorage.setItem(`jambprep_school_students_${code}`, JSON.stringify(mappedStudents));
+            }
+          } catch (e) {
+            console.warn("Could not cache cohort:", e);
+          }
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Could not load dynamic roster from native API, checking local cohort state:", err);
+    }
+
+    setStudents(localCohort);
+  };
+
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(async (res: any) => {
-      const u = res?.data?.user;
-      if (!u) {
-        window.location.assign("/schools/login?redirectTo=/schools/dashboard");
-        return;
-      }
-      const role = u.user_metadata?.role || "student";
-      if (role === "student") {
-        window.location.assign("/dashboard?error=unauthorized_school_portal");
-        return;
-      }
-      setUser(u);
-
-      const code = (u.user_metadata?.school_code as string) || (u.id ? "SCH-" + u.id.slice(0, 8).toUpperCase() : "SCH-DEFAULT");
-
-      // Load any actual scheduled lab mock for this school
-      try {
-        if (typeof window !== "undefined") {
-          const storedMock = localStorage.getItem(`jambprep_school_lab_mock_${code}`);
-          if (storedMock) {
-            setScheduledMock(JSON.parse(storedMock));
-          }
-        }
-      } catch (e) {
-        console.warn("Could not read scheduled mock:", e);
-      }
-
-      // Load any actual previously added or imported candidates for this school
-      let localCohort: StudentItem[] = [];
-      try {
-        if (typeof window !== "undefined") {
-          const stored = localStorage.getItem(`jambprep_school_students_${code}`);
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed)) {
-              localCohort = parsed.map((item: any) => ({
-                ...item,
-                subjects: parseSubjectsArray(item.subjects),
-              }));
-            }
-          }
-        }
-      } catch (e) {
-        console.warn("Could not read local cohort:", e);
-      }
-
-      // Attempt to load enrolled students from native worker API or fallback to local
-      try {
-        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
-        const sessionRes = await supabase.auth.getSession();
-        const token = sessionRes?.data?.session?.access_token;
-
-        const listRes = await fetch(`${apiBase}/api/v1/schools/students`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { "Authorization": `Bearer ${token}` } : {})
-          },
-        });
-
-        if (listRes.ok) {
-          const data = await listRes.json();
-          if (data.activeLabMock) {
-            setScheduledMock(data.activeLabMock);
-            try {
-              if (typeof window !== "undefined") {
-                localStorage.setItem(`jambprep_school_lab_mock_${code}`, JSON.stringify(data.activeLabMock));
-              }
-            } catch {}
-          }
-          if (data.students && Array.isArray(data.students)) {
-            const mappedStudents: StudentItem[] = data.students.map((s: any) => {
-              const daysLeft = s.licenseExpiresAt
-                ? Math.max(0, Math.ceil((new Date(s.licenseExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-                : 0;
-              const rawStatus = s.licenseStatus || "inactive";
-              const effectiveStatus: "active" | "inactive" | "expired" =
-                rawStatus === "active" && s.licenseExpiresAt && daysLeft <= 0 ? "expired" : rawStatus;
-              return {
-                id: s.id,
-                name: s.name,
-                email: s.email,
-                studentIdentifier: s.studentIdentifier || null,
-                defaultPassword: s.defaultPassword,
-                subjects: parseSubjectsArray(s.subjects),
-                licenseStatus: effectiveStatus,
-                daysLeft,
-                lastActive: s.ingestionMethod === "link" ? "Self-Registered (Link)" : "Enrolled",
-                averageScore: typeof s.averageScore === "number" ? s.averageScore : null,
-                practiceAccuracy: typeof s.practiceAccuracy === "number" ? s.practiceAccuracy : null,
-                totalPracticeQuestions: typeof s.totalPracticeQuestions === "number" ? s.totalPracticeQuestions : 0,
-                enrolmentMethod: s.ingestionMethod || "link",
-              };
-            });
-
-            setStudents(mappedStudents);
-            try {
-              if (typeof window !== "undefined") {
-                localStorage.setItem(`jambprep_school_students_${code}`, JSON.stringify(mappedStudents));
-              }
-            } catch (e) {
-              console.warn("Could not cache cohort:", e);
-            }
-            return;
-          }
-        }
-      } catch (err) {
-        console.warn("Could not load dynamic roster from native API, checking local cohort state:", err);
-      }
-
-      setStudents(localCohort);
-    }).finally(() => {
+    fetchCohortData().finally(() => {
       setLoadingPhase("ready");
     });
   }, []);
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      await fetchCohortData();
+    } finally {
+      setTimeout(() => setIsSyncing(false), 500);
+    }
+  };
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -281,7 +340,7 @@ export default function SchoolDashboardPage() {
     }
   };
 
-  // Selection handlers — "Select All" only selects unlicensed candidates so already-subscribed students aren't selected by default
+  // Selection handlers
   const unlicensedStudentIds = students.filter((s) => s.licenseStatus !== "active").map((s) => s.id);
   const isAllSelected =
     unlicensedStudentIds.length > 0
@@ -319,7 +378,7 @@ export default function SchoolDashboardPage() {
 
   const unlicensedCount = students.filter((s) => s.licenseStatus !== "active").length;
 
-  /** Checkout URL that carries the exact candidates to licence, so activation never guesses. */
+  /** Checkout URL that carries the exact candidates to licence */
   const checkoutUrlFor = (ids: string[]) =>
     `/schools/checkout?students=${Math.max(1, ids.length)}${ids.length > 0 ? `&ids=${ids.map(encodeURIComponent).join(",")}` : ""}`;
 
@@ -334,7 +393,7 @@ export default function SchoolDashboardPage() {
     const unlicensedIds = students.filter((s) => s.licenseStatus !== "active").map((s) => s.id);
     if (unlicensedIds.length > 0) {
       setSelectedStudentIds(unlicensedIds);
-      setActiveTab("roster");
+      setActiveView("candidates");
     }
   };
 
@@ -440,12 +499,67 @@ export default function SchoolDashboardPage() {
     setSelectedStudentIds((prev) => [...prev, ...formatted.map((f) => f.id)]);
   };
 
+  // Export CSV handler
+  const handleExportCsv = () => {
+    if (students.length === 0) return;
+    const headers = ["Candidate Name", "Email", "Student ID", "Default Password", "Subjects", "Licence Status", "Average Score", "Enrolment Channel"];
+    const rows = students.map((s) => [
+      `"${s.name.replace(/"/g, '""')}"`,
+      `"${s.email}"`,
+      `"${s.studentIdentifier || ""}"`,
+      `"${s.defaultPassword || ""}"`,
+      `"${(s.subjects || []).join("; ")}"`,
+      `"${s.licenseStatus}"`,
+      `"${s.averageScore ?? ""}"`,
+      `"${s.enrolmentMethod || "link"}"`
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `${schoolCode}_candidates_roster.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const activeCount = students.filter((s) => s.licenseStatus === "active").length;
+  const expiredCount = students.filter((s) => s.licenseStatus === "expired").length;
   const activeSpend = activeCount * 1500;
   const studentsWithScores = students.filter((s) => typeof s.averageScore === "number" && s.averageScore !== null);
   const cohortAvg = studentsWithScores.length > 0 
     ? Math.round(studentsWithScores.reduce((acc, s) => acc + (s.averageScore as number), 0) / studentsWithScores.length)
     : null;
+
+  // Filtered and Paginated Candidates list
+  const filteredStudents = useMemo(() => {
+    return students.filter((s) => {
+      // Status filter
+      if (filterStatus === "active" && s.licenseStatus !== "active") return false;
+      if (filterStatus === "unlicensed" && s.licenseStatus !== "inactive") return false;
+      if (filterStatus === "expired" && s.licenseStatus !== "expired") return false;
+
+      // Query filter
+      if (searchQuery.trim().length > 0) {
+        const q = searchQuery.toLowerCase();
+        const matchesName = s.name.toLowerCase().includes(q);
+        const matchesEmail = s.email.toLowerCase().includes(q);
+        const matchesId = (s.studentIdentifier || "").toLowerCase().includes(q);
+        return matchesName || matchesEmail || matchesId;
+      }
+      return true;
+    });
+  }, [students, filterStatus, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / pageSize));
+  const paginatedStudents = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredStudents.slice(start, start + pageSize);
+  }, [filteredStudents, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, searchQuery]);
 
   if (loadingPhase === "auth_loading") {
     return <StudyLoading />;
@@ -455,950 +569,1432 @@ export default function SchoolDashboardPage() {
     return <SchoolDashboardSkeleton />;
   }
 
+  const adminDisplayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "Administrator";
+  const adminEmail = user?.email || "admin@school.ng";
+
+  // Sidebar navigation sections
+  const navSections: NavSection[] = [
+    {
+      title: "COMMAND",
+      items: [
+        {
+          id: "candidates" as DashboardView,
+          label: "Candidate Queue",
+          icon: Users,
+          badge: students.length > 0 ? `${students.length}` : null,
+        },
+        {
+          id: "diagnostics" as DashboardView,
+          label: "Syllabus Monitor",
+          icon: BarChart3,
+          badge: null,
+        },
+        {
+          id: "lab" as DashboardView,
+          label: "CBT Mock Controller",
+          icon: Clock,
+          badge: scheduledMock ? "1 Ready" : null,
+        },
+      ],
+    },
+    {
+      title: "COMMERCE & LICENSING",
+      items: [
+        {
+          id: "billing" as DashboardView,
+          label: "Licences & Billing",
+          icon: CreditCard,
+          badge: unlicensedCount > 0 ? `${unlicensedCount}` : null,
+          badgeColor: "bg-amber-100 text-amber-900 font-bold",
+        },
+      ],
+    },
+    {
+      title: "PLATFORM & SETTINGS",
+      items: [
+        {
+          id: "profile" as DashboardView,
+          label: "School Settings",
+          icon: Building2,
+          badge: null,
+        },
+      ],
+    },
+  ];
+
+  const getBreadcrumbTitle = () => {
+    switch (activeView) {
+      case "candidates": return "Candidate Queue";
+      case "diagnostics": return "Syllabus Monitor";
+      case "lab": return "CBT Mock Controller";
+      case "billing": return "Licences & Billing";
+      case "profile": return "School Settings";
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#F7F8F6] text-[#17231F] flex flex-col justify-between selection:bg-[#EAF4EF] selection:text-[#12664F] animate-in fade-in duration-200">
-      {/* Application Header */}
-      <header className="sticky top-0 z-40 border-b border-[#E3E8E4] bg-white">
-        <div className="shell flex h-16 items-center justify-between gap-4">
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+    <div className="min-h-screen bg-[#F4F5F7] text-[#0F172A] flex antialiased selection:bg-[#12664F]/15 selection:text-[#12664F]">
+      {/* Mobile Sidebar Overlay Backdrop */}
+      {mobileSidebarOpen && (
+        <div 
+          onClick={() => setMobileSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-black/30 backdrop-blur-xs lg:hidden transition-opacity"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Modern Left Sidebar (Matches reference "Confidency OS" design) */}
+      <aside 
+        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-white border-r border-[#E2E8F0] flex flex-col justify-between transition-transform duration-200 ease-in-out lg:translate-x-0 ${
+          mobileSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0"
+        }`}
+      >
+        <div className="flex flex-col h-full overflow-hidden">
+          {/* Brand Header */}
+          <div className="p-5 border-b border-[#F1F5F9] flex items-center justify-between shrink-0">
             <Link 
               href="/schools" 
-              className="flex items-center gap-2.5 text-base font-semibold tracking-tight text-[#17231F] shrink-0"
+              className="flex items-center gap-3 font-semibold tracking-tight text-[#0F172A] group"
             >
-              <span className="flex size-8 items-center justify-center rounded-lg bg-[#12664F] text-white shadow-xs">
-                <BrandMark size={24} />
+              <span className="flex size-9 items-center justify-center rounded-xl bg-[#12664F] text-white shadow-xs group-hover:bg-[#0B3028] transition">
+                <BrandMark size={22} />
               </span>
-              <span>JAMBPrep</span>
+              <div className="flex flex-col leading-tight">
+                <span className="text-sm font-bold text-[#0F172A]">JAMBPrep OS</span>
+                <span className="text-[11px] text-[#64748B] font-medium truncate max-w-[140px]">
+                  {schoolName}
+                </span>
+              </div>
             </Link>
 
-            <span className="hidden sm:inline-block h-4 w-px bg-[#E3E8E4] shrink-0" />
-
-            <div className="hidden sm:flex items-center gap-2 min-w-0 text-xs">
-              <span className="font-semibold text-[#17231F] truncate max-w-[200px] md:max-w-[280px]">
-                {schoolName}
-              </span>
-              <span className="rounded bg-[#EAF4EF] px-2 py-0.5 text-[11px] font-mono font-medium text-[#12664F] border border-[#12664F]/20 shrink-0">
-                {schoolCode}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button
               type="button"
-              onClick={() => setIsMockSchedulerOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-md bg-[#12664F] px-3 py-1.5 text-xs font-medium text-white shadow-xs hover:bg-[#0B3028] transition cursor-pointer"
+              onClick={() => setMobileSidebarOpen(false)}
+              className="p-1 rounded text-slate-400 hover:text-slate-700 lg:hidden cursor-pointer"
+              aria-label="Close sidebar"
             >
-              <Play size={12} fill="currentColor" />
-              <span className="hidden sm:inline">Schedule CBT Mock</span>
-              <span className="sm:hidden">Mock</span>
-            </button>
-
-            <span className="hidden md:inline-block h-4 w-px bg-[#E3E8E4]" />
-
-            <div className="hidden md:flex flex-col text-right">
-              <span className="text-xs font-semibold text-[#17231F] leading-tight">
-                {(user?.user_metadata?.display_name as string) || user?.email || "Administrator"}
-              </span>
-              <span className="text-[11px] text-[#68766F] font-medium leading-tight">
-                School Administrator
-              </span>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="inline-flex items-center gap-1.5 rounded-md border border-[#E3E8E4] bg-white px-2.5 py-1.5 text-xs font-medium text-[#68766F] shadow-xs hover:bg-[#F7F8F6] hover:text-[#17231F] transition cursor-pointer"
-              title="Sign out of school portal"
-            >
-              <LogOut size={13} />
-              <span className="hidden sm:inline">Sign Out</span>
+              <X size={18} />
             </button>
           </div>
-        </div>
-      </header>
 
-      {/* Main Examination Operations Console */}
-      <main className="shell flex-1 py-6 sm:py-8 space-y-6">
-        {/* Page Introduction & Enrolment Link Card */}
-        <section className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 rounded-lg border border-[#E3E8E4] bg-white p-5 sm:p-6 shadow-xs">
-          <div className="space-y-1 max-w-xl">
-            <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#68766F]">
-              <span>SCHOOL ADMINISTRATION</span>
-              <span>·</span>
-              <span className="text-[#12664F]">{schoolType.replace(/_/g, " ").toUpperCase()}</span>
-              <span>·</span>
-              <span>{state.toUpperCase()}</span>
-            </div>
-            <h1 className="text-2xl sm:text-[28px] font-semibold tracking-tight text-[#17231F]">
-              {schoolName}
-            </h1>
-            <p className="text-xs sm:text-sm text-[#68766F] leading-relaxed">
-              Manage student enrolment, examination access, and CBT performance from one workspace.
-            </p>
-          </div>
-
-          {/* Compact Registration Link Console */}
-          <div className="rounded-md border border-[#E3E8E4] bg-[#F7F8F6] p-3.5 sm:p-4 min-w-[280px] sm:min-w-[340px] space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-[#68766F]">Dedicated School Code</span>
-              <span className="font-mono font-semibold text-[#12664F] bg-white px-2 py-0.5 rounded border border-[#E3E8E4] text-xs">
-                {schoolCode}
+          {/* Quick Search Input */}
+          <div className="px-4 pt-4 pb-2">
+            <div className="relative flex items-center">
+              <Search size={14} className="absolute left-3 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (activeView !== "candidates") setActiveView("candidates");
+                }}
+                placeholder="Search candidates..."
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-8 pr-10 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#12664F] focus:outline-hidden transition"
+              />
+              <span className="absolute right-2.5 rounded border border-slate-200 bg-white px-1 text-[10px] font-medium text-slate-400 shadow-2xs">
+                ⌘K
               </span>
             </div>
-            <p className="text-[11px] text-[#68766F]">
-              Share this registration link with students for instant cohort enrolment:
-            </p>
-            <div className="flex items-center rounded-md border border-[#E3E8E4] bg-white overflow-hidden shadow-2xs">
-              <span className="truncate flex-1 pl-2.5 pr-2 py-1.5 font-mono text-[11px] text-[#17231F] select-all">
-                {inviteLink}
-              </span>
-              <button
-                type="button"
-                onClick={handleCopyInviteLink}
-                className="inline-flex shrink-0 items-center gap-1.5 bg-[#12664F] hover:bg-[#0B3028] px-3 py-1.5 text-xs font-medium text-white transition cursor-pointer"
-                title="Copy student registration link"
-              >
-                {copiedLink ? (
-                  <>
-                    <Check size={13} className="text-emerald-200" />
-                    <span>Copied</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy size={13} />
-                    <span>Copy Link</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* 4 Overview Metrics */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="rounded-lg border border-[#E3E8E4] bg-white p-4 sm:p-5 shadow-xs space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#68766F] block">
-              Total Candidates
-            </span>
-            <p className="text-2xl sm:text-[26px] font-semibold tabular-nums text-[#17231F]">
-              {students.length} Candidates
-            </p>
-            <span className="text-[11px] text-[#68766F] block">
-              {activeCount} active paid {activeCount === 1 ? "licence" : "licences"}
-            </span>
           </div>
 
-          <div className="rounded-lg border border-[#E3E8E4] bg-white p-4 sm:p-5 shadow-xs space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#68766F] block">
-              Active Paid Licences
-            </span>
-            <p className="text-2xl sm:text-[26px] font-semibold tabular-nums text-[#17231F]">
-              {activeCount} Licences
-            </p>
-            <div className="flex items-center justify-between pt-0.5 text-[11px]">
-              <span className="text-[#12664F] font-medium truncate">
-                ₦1,500 / candidate / month
-              </span>
-              {students.length > activeCount && (
-                <button
-                  type="button"
-                  onClick={selectedStudentIds.length > 0 ? handleCheckoutClick : handleSelectPendingForCheckout}
-                  className="font-semibold text-[#12664F] hover:text-[#0B3028] hover:underline cursor-pointer shrink-0 ml-1 inline-flex items-center gap-0.5"
-                >
-                  <span>
-                    {selectedStudentIds.length > 0
-                      ? `Checkout ${selectedStudentIds.length} selected`
-                      : `Select ${students.length - activeCount} pending`}
-                  </span>
-                  <ArrowRight size={10} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-[#E3E8E4] bg-white p-4 sm:p-5 shadow-xs space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#68766F] block">
-              CBT Lab Readiness
-            </span>
-            <p className="text-2xl sm:text-[26px] font-semibold text-[#17231F]">
-              {scheduledMock ? "1 Session Ready" : "CBT Lab Ready"}
-            </p>
-            <span className="text-[11px] text-[#68766F] block truncate">
-              120-min timed simulation · {scheduledMock ? (scheduledMock.labSessionCode || "Proctor session ready") : "8-key proctor mode"}
-            </span>
-          </div>
-
-          <div className="rounded-lg border border-[#E3E8E4] bg-white p-4 sm:p-5 shadow-xs space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#68766F] block">
-              Cohort Performance
-            </span>
-            <p className="text-2xl sm:text-[26px] font-semibold tabular-nums text-[#17231F]">
-              {cohortAvg !== null ? `${cohortAvg} / 400` : "No data yet"}
-            </p>
-            <span className="text-[11px] text-[#68766F] block truncate">
-              {cohortAvg !== null 
-                ? `${Math.round((cohortAvg / 400) * 100)}% target reach` 
-                : "Students haven't completed any assessments yet"}
-            </span>
-          </div>
-        </section>
-
-        {/* Primary Workspace Navigation Tabs */}
-        <nav aria-label="Dashboard views" className="border-b border-[#E3E8E4] flex items-center gap-1 sm:gap-2">
-          <button
-            type="button"
-            onClick={() => handleTabChange("roster")}
-            className={`pb-2.5 px-3 text-xs flex items-center gap-2 border-b-2 transition cursor-pointer ${
-              activeTab === "roster"
-                ? "border-[#12664F] text-[#12664F] font-semibold"
-                : "border-transparent text-[#68766F] hover:text-[#17231F] font-medium"
-            }`}
-          >
-            <Users size={14} />
-            <span>Candidate Roster & Licences ({students.length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleTabChange("diagnostics")}
-            className={`pb-2.5 px-3 text-xs flex items-center gap-2 border-b-2 transition cursor-pointer ${
-              activeTab === "diagnostics"
-                ? "border-[#12664F] text-[#12664F] font-semibold"
-                : "border-transparent text-[#68766F] hover:text-[#17231F] font-medium"
-            }`}
-          >
-            <BarChart3 size={14} />
-            <span>Syllabus Diagnostic Heatmap</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleTabChange("lab")}
-            className={`pb-2.5 px-3 text-xs flex items-center gap-2 border-b-2 transition cursor-pointer ${
-              activeTab === "lab"
-                ? "border-[#12664F] text-[#12664F] font-semibold"
-                : "border-transparent text-[#68766F] hover:text-[#17231F] font-medium"
-            }`}
-          >
-            <Clock size={14} />
-            <span>CBT Lab Mock Controller</span>
-          </button>
-        </nav>
-
-        {/* Tab Transition Shimmer State */}
-        {tabTransitioning && (
-          <div className="rounded-lg border border-[#E3E8E4] bg-white p-6 shadow-xs space-y-4 animate-in fade-in duration-100">
-            <div className="flex items-center justify-between gap-4 pb-3 border-b border-slate-100">
-              <div className="space-y-1.5">
-                <div className="h-5 w-40 rounded bg-slate-200/70 animate-pulse" />
-                <div className="h-3 w-64 rounded bg-slate-100 animate-pulse" />
-              </div>
-              <div className="h-8 w-28 rounded-md bg-slate-100 animate-pulse" />
-            </div>
-            <div className="space-y-3 pt-2">
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center justify-between gap-4 py-2 border-b border-slate-50 last:border-0">
-                  <div className="h-4 w-48 rounded bg-slate-100 animate-pulse" />
-                  <div className="h-4 w-32 rounded bg-slate-100 animate-pulse" />
-                  <div className="h-5 w-20 rounded bg-slate-100 animate-pulse" />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 1: Candidates Management Workspace (Main Focus) */}
-        {!tabTransitioning && activeTab === "roster" && (
-          <section className="rounded-lg border border-[#E3E8E4] bg-white shadow-xs overflow-hidden animate-in fade-in duration-150">
-            {/* Header & Compact Actions Toolbar */}
-            <div className="p-4 sm:p-5 border-b border-[#E3E8E4] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-base sm:text-lg font-semibold text-[#17231F]">Candidates</h2>
-                <p className="text-xs text-[#68766F] mt-0.5">
-                  Manage enrolment, examination access, and candidate records.
+          {/* Grouped Sidebar Navigation Links */}
+          <div className="flex-1 overflow-y-auto px-3 py-2 space-y-5">
+            {navSections.map((section) => (
+              <div key={section.title}>
+                <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  {section.title}
                 </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[#E3E8E4] bg-white px-3 py-1.5 text-xs font-medium text-[#17231F] shadow-xs hover:bg-[#F7F8F6] transition cursor-pointer"
-                >
-                  <UserPlus size={13} />
-                  <span>Add Candidate</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsCsvModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[#E3E8E4] bg-white px-3 py-1.5 text-xs font-medium text-[#17231F] shadow-xs hover:bg-[#F7F8F6] transition cursor-pointer"
-                >
-                  <Upload size={13} />
-                  <span>Import CSV</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleCheckoutClick}
-                  disabled={selectedStudentIds.length === 0}
-                  title={
-                    selectedStudentIds.length === 0
-                      ? "Select at least one candidate from the table below to checkout licences"
-                      : `Checkout licences for ${selectedStudentIds.length} selected candidate(s)`
-                  }
-                  className="inline-flex items-center gap-1.5 rounded-md bg-[#12664F] px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-[#0B3028] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <CreditCard size={13} />
-                  <span>Checkout Licences</span>
-                  {selectedStudentIds.length > 0 && (
-                    <span className="rounded-full bg-white/20 px-1.5 py-0.2 text-[10px] font-bold">
-                      {selectedStudentIds.length}
-                    </span>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Compact Password Policy & View Bar */}
-            <div className="px-4 sm:px-5 py-2.5 bg-[#F7F8F6] border-b border-[#E3E8E4] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-[#68766F]">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <div className="inline-flex items-center gap-1.5">
-                  <KeyRound size={13} className="text-[#68766F] shrink-0" />
-                  <span>
-                    Default password: <strong className="text-[#17231F] font-semibold">LASTNAME in capital letters</strong>
-                  </span>
-                </div>
-                {unlicensedCount > 0 ? (
-                  <span className="inline-flex items-center gap-1 rounded bg-amber-100/70 border border-amber-200 px-2 py-0.5 text-[11px] font-semibold text-amber-900">
-                    <AlertCircle size={11} className="text-amber-700" />
-                    {unlicensedCount} awaiting licence
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 rounded bg-[#EAF4EF] border border-[#12664F]/20 px-2 py-0.5 text-[11px] font-semibold text-[#12664F]">
-                    <CheckCircle2 size={11} />
-                    All candidates licensed
-                  </span>
-                )}
-              </div>
-
-              <div>
-                <button
-                  type="button"
-                  onClick={toggleExpandAll}
-                  className="text-xs font-medium text-[#68766F] hover:text-[#17231F] transition cursor-pointer"
-                >
-                  {expandedStudentIds.length === students.length && students.length > 0 ? "Collapse All" : "Expand All"}
-                </button>
-              </div>
-            </div>
-
-            {/* Roster Multi-Select Action Bar */}
-            {selectedStudentIds.length > 0 && (
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-[#0B3028] px-4 sm:px-5 py-2.5 text-white text-xs border-b border-[#E3E8E4] animate-in fade-in">
-                <div className="flex items-center gap-2">
-                  <span className="flex size-5 items-center justify-center rounded bg-white/20 text-white font-semibold text-[11px]">
-                    {selectedStudentIds.length}
-                  </span>
-                  <span className="text-slate-200">
-                    candidate{selectedStudentIds.length > 1 ? "s" : ""} selected
-                  </span>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedStudentIds([])}
-                    className="text-slate-300 hover:text-white transition cursor-pointer text-xs underline underline-offset-2"
-                  >
-                    Clear
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setDisconnectTargets(students.filter((s) => selectedStudentIds.includes(s.id)))
-                    }
-                    className="inline-flex items-center gap-1.5 rounded-md border border-amber-300/40 bg-amber-950/60 text-amber-200 px-3 py-1 font-semibold text-xs hover:bg-amber-900 hover:text-white transition cursor-pointer"
-                  >
-                    <UserMinus size={12} />
-                    <span>Disconnect Selected ({selectedStudentIds.length})</span>
-                  </button>
-                  <Link
-                    href={checkoutUrlFor(selectedStudentIds)}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-[#EAF4EF] text-[#0B3028] px-3 py-1 font-semibold text-xs hover:bg-white transition cursor-pointer"
-                  >
-                    <CreditCard size={12} />
-                    <span>Proceed to Checkout (₦{(selectedStudentIds.length * 1500).toLocaleString()})</span>
-                    <ArrowRight size={11} />
-                  </Link>
-                </div>
-              </div>
-            )}
-
-            {/* Candidate Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse min-w-[760px]">
-                <thead>
-                  <tr className="border-b border-[#E3E8E4] bg-[#F7F8F6] text-[#68766F] font-medium select-none">
-                    <th className="py-2.5 px-3 w-8 text-center" title="Expand row details">
-                      <span className="sr-only">Expand</span>
-                    </th>
-                    <th className="py-2.5 px-3 w-10">
+                <nav className="space-y-0.5">
+                  {section.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeView === item.id;
+                    return (
                       <button
+                        key={item.id}
                         type="button"
-                        onClick={toggleSelectAll}
-                        className="flex items-center justify-center text-[#68766F] hover:text-[#12664F] transition cursor-pointer"
-                        title={isAllSelected ? "Deselect all" : "Select all candidates"}
+                        onClick={() => {
+                          setActiveView(item.id);
+                          setMobileSidebarOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition cursor-pointer ${
+                          isActive
+                            ? "bg-slate-100/90 text-slate-900 font-semibold shadow-2xs"
+                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                        }`}
                       >
-                        {isAllSelected ? (
-                          <CheckSquare size={15} className="text-[#12664F]" />
-                        ) : (
-                          <Square size={15} />
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Icon 
+                            size={16} 
+                            className={isActive ? "text-[#12664F]" : "text-slate-400"} 
+                          />
+                          <span className="truncate">{item.label}</span>
+                        </div>
+                        {item.badge && (
+                          <span 
+                            className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold shrink-0 ${
+                              item.badgeColor || (isActive ? "bg-white text-slate-800" : "bg-slate-100 text-slate-600")
+                            }`}
+                          >
+                            {item.badge}
+                          </span>
                         )}
                       </button>
-                    </th>
-                    <th className="py-2.5 px-4">Candidate Name</th>
-                    <th className="py-2.5 px-4">Email</th>
-                    <th className="py-2.5 px-4">Default Password</th>
-                    <th className="py-2.5 px-4">Subject Pack</th>
-                    <th className="py-2.5 px-4">Status</th>
-                    <th className="py-2.5 px-4">Score & Practice Progress</th>
-                    <th className="py-2.5 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E3E8E4] text-[#17231F]">
-                  {students.length === 0 ? (
-                    <tr>
-                      <td colSpan={9} className="py-12 px-4 text-center">
-                        <div className="mx-auto flex size-10 items-center justify-center rounded-lg bg-[#EAF4EF] text-[#12664F] mb-2.5">
-                          <Users size={20} />
-                        </div>
-                        <h3 className="text-sm font-semibold text-[#17231F]">No candidates enrolled yet.</h3>
-                        <p className="text-xs text-[#68766F] max-w-sm mx-auto mt-1 mb-4 leading-relaxed">
-                          Add students individually, import your class list, or share the school registration link.
-                        </p>
-                        <div className="flex items-center justify-center gap-2.5">
-                          <button
-                            type="button"
-                            onClick={() => setIsAddModalOpen(true)}
-                            className="inline-flex items-center gap-1.5 rounded-md bg-[#12664F] px-3.5 py-1.5 text-xs font-medium text-white shadow-xs hover:bg-[#0B3028] transition cursor-pointer"
-                          >
-                            <UserPlus size={13} />
-                            <span>Add Candidate</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setIsCsvModalOpen(true)}
-                            className="inline-flex items-center gap-1.5 rounded-md border border-[#E3E8E4] bg-white px-3.5 py-1.5 text-xs font-medium text-[#17231F] shadow-xs hover:bg-[#F7F8F6] transition cursor-pointer"
-                          >
-                            <Upload size={13} />
-                            <span>Import CSV</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    students.map((std) => {
-                      const isSelected = selectedStudentIds.includes(std.id);
-                      const isExpanded = expandedStudentIds.includes(std.id);
-                      const isSelfRegistered = std.enrolmentMethod === "link" || !std.defaultPassword;
-                      const pwd = std.defaultPassword || null;
-                      const isCopied = copiedPasswordId === std.id;
-                      const validSubjects = parseSubjectsArray(std.subjects);
+                    );
+                  })}
+                </nav>
+              </div>
+            ))}
+          </div>
 
-                      return (
-                        <div key={std.id} className="contents">
-                          <tr 
-                            className={`transition select-none ${isSelected ? "bg-[#EAF4EF]/40" : "hover:bg-[#F7F8F6]"} ${isExpanded ? "border-b-0" : ""}`}
-                          >
-                            <td className="py-3 px-3 w-8 text-center">
-                              <button
-                                type="button"
-                                onClick={() => toggleExpandStudent(std.id)}
-                                className="p-1 rounded text-[#68766F] hover:text-[#12664F] hover:bg-[#EAF4EF] transition cursor-pointer"
-                                title={isExpanded ? "Collapse candidate details" : "Expand candidate details"}
-                              >
-                                <ChevronDown 
-                                  size={15} 
-                                  className={`transition-transform duration-200 ${isExpanded ? "rotate-180 text-[#12664F]" : "text-[#68766F]"}`} 
-                                />
-                              </button>
-                            </td>
-                            <td className="py-3 px-3 w-10">
-                              <button
-                                type="button"
-                                onClick={() => toggleSelectStudent(std.id)}
-                                className="flex items-center justify-center text-[#68766F] hover:text-[#12664F] transition cursor-pointer"
-                              >
-                                {isSelected ? (
-                                  <CheckSquare size={15} className="text-[#12664F]" />
-                                ) : (
-                                  <Square size={15} />
-                                )}
-                              </button>
-                            </td>
-                            <td className="py-3 px-4 font-medium text-[#17231F]">
-                              <button
-                                type="button"
-                                onClick={() => toggleExpandStudent(std.id)}
-                                className="flex items-center gap-2 hover:text-[#12664F] text-left cursor-pointer"
-                              >
-                                <span className="font-semibold">{std.name}</span>
-                                {std.studentIdentifier && (
-                                  <span className="rounded bg-[#F7F8F6] border border-[#E3E8E4] px-1.5 py-0.5 text-[10px] font-mono text-[#68766F]">
-                                    {std.studentIdentifier}
-                                  </span>
-                                )}
-                              </button>
-                            </td>
-                            <td className="py-3 px-4 text-[#68766F]">
-                              {std.email}
-                            </td>
-                            <td className="py-3 px-4">
-                              {isSelfRegistered || !pwd ? (
-                                <span 
-                                  className="inline-flex items-center gap-1 rounded bg-[#F7F8F6] border border-[#E3E8E4] px-2 py-0.5 text-[11px] text-[#68766F]"
-                                  title="Candidate created their own private password via the registration link"
-                                >
-                                  Self-registered
-                                </span>
-                              ) : (
-                                <div className="inline-flex items-center gap-1.5">
-                                  <code className="rounded bg-[#F7F8F6] border border-[#E3E8E4] px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[#17231F]">
-                                    {pwd}
-                                  </code>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleCopyPassword(std.id, pwd)}
-                                    className="text-[#68766F] hover:text-[#17231F] transition cursor-pointer p-0.5"
-                                    title="Copy default password"
-                                  >
-                                    {isCopied ? (
-                                      <Check size={12} className="text-[#12664F]" />
-                                    ) : (
-                                      <Copy size={12} />
-                                    )}
-                                  </button>
-                                </div>
-                              )}
-                            </td>
-                            <td className="py-3 px-4">
-                              {validSubjects.length > 0 ? (
-                                <div className="flex items-center gap-1">
-                                  {validSubjects.map((sub) => (
-                                    <span key={sub} className="rounded bg-[#F7F8F6] border border-[#E3E8E4] px-1.5 py-0.5 text-[10px] font-medium text-[#68766F]">
-                                      {sub}
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-[#68766F] text-[11px] italic">Not selected</span>
-                              )}
-                            </td>
-                            <td className="py-3 px-4">
-                              {std.licenseStatus === "active" ? (
-                                <span className="inline-flex items-center gap-1 rounded bg-[#EAF4EF] px-2 py-0.5 text-[10px] font-medium text-[#12664F] border border-[#12664F]/20">
-                                  <span className="size-1.5 rounded-full bg-[#12664F]" />
-                                  Active ({std.daysLeft ?? 28}d left)
-                                </span>
-                              ) : std.licenseStatus === "expired" ? (
-                                <button
-                                  type="button"
-                                  onClick={() => window.location.assign(checkoutUrlFor([std.id]))}
-                                  className="inline-flex items-center gap-1 rounded bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-900 border border-red-200 hover:bg-red-100 transition cursor-pointer"
-                                  title="Candidate licence expired. Click to renew."
-                                >
-                                  <AlertCircle size={10} className="text-red-700" />
-                                  <span>Expired</span>
-                                  <span className="text-[9px] underline">Renew</span>
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => window.location.assign(checkoutUrlFor([std.id]))}
-                                  className="inline-flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-900 border border-amber-200 hover:bg-amber-100 transition cursor-pointer"
-                                  title="Candidate unlicensed. Click to checkout 1 licence."
-                                >
-                                  <AlertCircle size={10} className="text-amber-700" />
-                                  <span>Unlicensed</span>
-                                  <span className="text-[9px] underline">Licence</span>
-                                </button>
-                              )}
-                            </td>
-                            <td className="py-3 px-4">
-                              {std.averageScore ? (
-                                <div>
-                                  <span className="font-semibold tabular-nums text-[#17231F] block">
-                                    {std.averageScore} / 400
-                                  </span>
-                                  {typeof std.practiceAccuracy === "number" && (
-                                    <span className="text-[10px] text-[#68766F] block">
-                                      {std.practiceAccuracy}% practice accuracy
-                                    </span>
-                                  )}
-                                </div>
-                              ) : typeof std.practiceAccuracy === "number" ? (
-                                <div>
-                                  <span className="font-medium text-[#12664F] block">
-                                    {std.practiceAccuracy}% Practice
-                                  </span>
-                                  <span className="text-[10px] text-[#68766F] block">
-                                    {std.totalPracticeQuestions || 0} questions solved
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className="text-[#68766F]">—</span>
-                              )}
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <div className="flex items-center justify-end gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingStudent(std)}
-                                  className="p-1.5 rounded text-[#68766F] hover:text-[#12664F] hover:bg-[#EAF4EF] transition cursor-pointer"
-                                  title="Edit candidate record"
-                                  aria-label={`Edit ${std.name}`}
-                                >
-                                  <Pencil size={13} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setDisconnectTargets([std])}
-                                  className="p-1.5 rounded text-[#68766F] hover:text-amber-800 hover:bg-amber-50 transition cursor-pointer"
-                                  title="Disconnect candidate from school"
-                                  aria-label={`Disconnect ${std.name}`}
-                                >
-                                  <UserMinus size={13} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedDrilldownStudent(std)}
-                                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#12664F] hover:underline cursor-pointer pl-1"
-                                >
-                                  <span>Inspect</span>
-                                  <ChevronRight size={13} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-
-                          {/* Expandable Accordion Drawer */}
-                          {isExpanded && (
-                            <tr className="bg-[#F8FAF8] border-b border-[#E3E8E4] animate-in fade-in duration-150">
-                              <td colSpan={9} className="p-4 sm:p-5">
-                                <div className="rounded-lg border border-[#E3E8E4] bg-white p-4 space-y-4 shadow-2xs">
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                                    {/* Card 1: CBT Mock & Practice Performance */}
-                                    <div className="rounded-md border border-[#E3E8E4] bg-[#F7F8F6] p-3.5 space-y-2.5">
-                                      <div className="flex items-center justify-between">
-                                        <span className="font-semibold text-[#17231F] flex items-center gap-1.5">
-                                          <BarChart3 size={13} className="text-[#12664F]" />
-                                          <span>Performance & Diagnostics</span>
-                                        </span>
-                                        <span className="font-mono text-xs font-bold text-[#12664F]">
-                                          {std.averageScore ? `${std.averageScore} / 400` : "No Mock Taken"}
-                                        </span>
-                                      </div>
-
-                                      <div className="space-y-1.5 text-[11px]">
-                                        <div className="flex items-center justify-between text-[#68766F]">
-                                          <span>Practice Accuracy:</span>
-                                          <span className="font-semibold text-[#17231F]">
-                                            {typeof std.practiceAccuracy === "number" ? `${std.practiceAccuracy}%` : "—"}
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-[#68766F]">
-                                          <span>Questions Solved:</span>
-                                          <span className="font-semibold text-[#17231F]">
-                                            {std.totalPracticeQuestions || 0} questions
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-[#68766F]">
-                                          <span>Subject Combination:</span>
-                                          <span className="font-mono text-[#12664F] font-medium">
-                                            {validSubjects.length > 0 ? validSubjects.join(" · ") : "Not selected yet"}
-                                          </span>
-                                        </div>
-                                      </div>
-
-                                      <button
-                                        type="button"
-                                        onClick={() => setSelectedDrilldownStudent(std)}
-                                        className="w-full inline-flex items-center justify-center gap-1.5 rounded-md border border-[#12664F]/30 bg-[#EAF4EF] text-[#12664F] py-1.5 text-xs font-semibold hover:bg-[#12664F] hover:text-white transition cursor-pointer"
-                                      >
-                                        <BarChart3 size={12} />
-                                        <span>Open Full Diagnostic Drilldown</span>
-                                        <ArrowRight size={11} />
-                                      </button>
-                                    </div>
-
-                                    {/* Card 2: Account & Security Profile */}
-                                    <div className="rounded-md border border-[#E3E8E4] bg-[#F7F8F6] p-3.5 space-y-2.5">
-                                      <span className="font-semibold text-[#17231F] flex items-center gap-1.5">
-                                        <KeyRound size={13} className="text-[#68766F]" />
-                                        <span>Enrolment & Credentials</span>
-                                      </span>
-
-                                      <div className="space-y-1.5 text-[11px]">
-                                        <div className="flex items-center justify-between text-[#68766F]">
-                                          <span>Candidate ID:</span>
-                                          <span className="font-mono text-[#17231F] font-semibold">
-                                            {std.studentIdentifier || std.id.slice(0, 8)}
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-[#68766F]">
-                                          <span>Enrolment Channel:</span>
-                                          <span className="font-medium text-[#17231F]">
-                                            {std.enrolmentMethod === "link"
-                                              ? "Self-registered (Link)"
-                                              : std.enrolmentMethod === "csv"
-                                              ? "CSV Class Ingestion"
-                                              : "Manual Enrolment"}
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-[#68766F]">
-                                          <span>Account Password:</span>
-                                          {isSelfRegistered || !pwd ? (
-                                            <span className="text-[#68766F] italic">Private Password</span>
-                                          ) : (
-                                            <div className="inline-flex items-center gap-1 font-mono font-bold text-[#17231F]">
-                                              <span>{pwd}</span>
-                                              <button
-                                                type="button"
-                                                onClick={() => handleCopyPassword(std.id, pwd)}
-                                                className="text-[#68766F] hover:text-[#17231F] p-0.5 cursor-pointer"
-                                                title="Copy password"
-                                              >
-                                                {isCopied ? <Check size={11} className="text-[#12664F]" /> : <Copy size={11} />}
-                                              </button>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-
-                                      <div className="pt-2 border-t border-[#E3E8E4] flex items-center gap-2">
-                                        <button
-                                          type="button"
-                                          onClick={() => setEditingStudent(std)}
-                                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-md border border-[#E3E8E4] bg-white py-1.5 text-[11px] font-semibold text-[#17231F] hover:bg-[#F7F8F6] transition cursor-pointer"
-                                        >
-                                          <Pencil size={11} />
-                                          <span>Edit Record</span>
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => setDisconnectTargets([std])}
-                                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 py-1.5 text-[11px] font-semibold text-amber-900 hover:bg-amber-100 transition cursor-pointer"
-                                        >
-                                          <UserMinus size={11} />
-                                          <span>Disconnect</span>
-                                        </button>
-                                      </div>
-                                    </div>
-
-                                    {/* Card 3: Licensing Status & Instant Action */}
-                                    <div className="rounded-md border border-[#E3E8E4] bg-[#F7F8F6] p-3.5 space-y-2.5 flex flex-col justify-between">
-                                      <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                          <span className="font-semibold text-[#17231F] flex items-center gap-1.5">
-                                            <CreditCard size={13} className="text-[#12664F]" />
-                                            <span>Institutional Licence</span>
-                                          </span>
-                                          {std.licenseStatus === "active" ? (
-                                            <span className="rounded bg-[#EAF4EF] text-[#12664F] px-1.5 py-0.5 text-[10px] font-semibold border border-[#12664F]/20">
-                                              Active
-                                            </span>
-                                          ) : (
-                                            <span className="rounded bg-amber-100 text-amber-900 px-1.5 py-0.5 text-[10px] font-semibold border border-amber-200">
-                                              Unlicensed
-                                            </span>
-                                          )}
-                                        </div>
-
-                                        {std.licenseStatus === "active" ? (
-                                          <p className="text-[11px] text-[#68766F] leading-relaxed">
-                                            Active licence with full access to CBT mock tests and AI study tools. Expires in <strong className="text-[#17231F]">{std.daysLeft ?? 28} days</strong>.
-                                          </p>
-                                        ) : (
-                                          <p className="text-[11px] text-amber-900 leading-relaxed bg-amber-50/80 p-2 rounded border border-amber-200/60">
-                                            Candidate has demo-only access. CBT mock exams and weak topic remedial plans require an active licence.
-                                          </p>
-                                        )}
-                                      </div>
-
-                                      {std.licenseStatus !== "active" ? (
-                                        <Link
-                                          href={checkoutUrlFor([std.id])}
-                                          className="w-full inline-flex items-center justify-center gap-1.5 rounded-md bg-[#12664F] text-white py-2 text-xs font-semibold hover:bg-[#0B3028] shadow-xs transition cursor-pointer"
-                                        >
-                                          <CreditCard size={13} />
-                                          <span>Licence Candidate (₦1,500 / mo)</span>
-                                          <ArrowRight size={12} />
-                                        </Link>
-                                      ) : (
-                                        <Link
-                                          href={checkoutUrlFor([std.id])}
-                                          className="w-full inline-flex items-center justify-center gap-1.5 rounded-md border border-[#E3E8E4] bg-white text-[#17231F] py-1.5 text-xs font-medium hover:bg-[#F7F8F6] transition cursor-pointer"
-                                        >
-                                          <CreditCard size={12} />
-                                          <span>Renew / Extend Licence</span>
-                                        </Link>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
-
-        {/* TAB 2: Diagnostics & Heatmap View */}
-        {!tabTransitioning && activeTab === "diagnostics" && (
-          <section className="rounded-lg border border-[#E3E8E4] bg-white p-5 sm:p-6 shadow-xs animate-in fade-in duration-150">
-            <SyllabusHeatmapView schoolName={schoolName} />
-          </section>
-        )}
-
-        {/* TAB 3: CBT Lab Controller View */}
-        {!tabTransitioning && activeTab === "lab" && (
-          <section className="rounded-lg border border-[#E3E8E4] bg-white p-5 sm:p-6 shadow-xs space-y-6 animate-in fade-in duration-150">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E3E8E4]">
-              <div>
-                <h2 className="text-base sm:text-lg font-semibold text-[#17231F] flex items-center gap-2">
-                  <Clock size={18} className="text-[#12664F]" />
-                  <span>Computer Laboratory Mock Controller</span>
-                </h2>
-                <p className="text-xs text-[#68766F] mt-0.5">
-                  Synchronize and proctor full 120-minute, 180-question mock exams across all laboratory monitors simultaneously.
-                </p>
+          {/* Bottom Administrator Profile Card */}
+          <div className="p-3 border-t border-[#F1F5F9] bg-white">
+            <div className="flex items-center justify-between gap-2 p-1.5 rounded-xl hover:bg-slate-50 transition">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="size-8 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-xs font-bold text-emerald-800 shrink-0">
+                  {adminDisplayName.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-slate-900 truncate leading-tight">
+                    {adminDisplayName}
+                  </p>
+                  <p className="text-[11px] text-slate-400 truncate leading-tight mt-0.5">
+                    {adminEmail}
+                  </p>
+                </div>
               </div>
 
               <button
                 type="button"
-                onClick={() => setIsMockSchedulerOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-md bg-[#12664F] px-3.5 py-1.5 text-xs font-medium text-white shadow-xs hover:bg-[#0B3028] transition cursor-pointer self-start sm:self-auto"
+                onClick={handleSignOut}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer shrink-0"
+                title="Sign out of portal"
+                aria-label="Sign out"
               >
-                <Play size={12} fill="currentColor" />
-                <span>Launch New Lab Session</span>
+                <LogOut size={15} />
               </button>
             </div>
+          </div>
+        </div>
+      </aside>
 
-            {/* Scheduled Session Card or Clean Empty State */}
-            {!scheduledMock ? (
-              <div className="rounded-lg border border-dashed border-[#E3E8E4] bg-[#F7F8F6] p-8 sm:p-10 text-center space-y-3">
-                <div className="mx-auto flex size-10 items-center justify-center rounded-lg bg-white border border-[#E3E8E4] text-[#68766F] shadow-xs">
-                  <Clock size={20} />
-                </div>
-                <div className="space-y-1 max-w-md mx-auto">
-                  <h3 className="text-sm font-semibold text-[#17231F]">No mock exam session scheduled yet</h3>
-                  <p className="text-xs text-[#68766F] leading-relaxed">
-                    You haven&apos;t scheduled any computer laboratory mock exams. Launch a new lab session to configure your title, duration, and generate a synchronized entry code.
-                  </p>
-                </div>
+      {/* Main App Container */}
+      <div className="lg:pl-64 flex-1 flex flex-col min-w-0">
+        {/* Top Header / Breadcrumb & Action Toolbar */}
+        <header className="sticky top-0 z-30 bg-[#F4F5F7]/90 backdrop-blur-md px-4 sm:px-6 lg:px-8 pt-5 pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            {/* Breadcrumb line & Big Heading */}
+            <div className="space-y-1 min-w-0">
+              <div className="flex items-center gap-2 text-xs text-slate-500">
                 <button
                   type="button"
-                  onClick={() => setIsMockSchedulerOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-[#12664F] px-3.5 py-1.5 text-xs font-medium text-white shadow-xs hover:bg-[#0B3028] transition cursor-pointer"
+                  onClick={() => setMobileSidebarOpen(true)}
+                  className="p-1 rounded-md border border-slate-200 bg-white text-slate-600 hover:text-slate-900 lg:hidden cursor-pointer shrink-0 mr-1"
+                  aria-label="Open sidebar"
                 >
-                  <Play size={12} fill="currentColor" />
-                  <span>Schedule First Lab Mock</span>
+                  <Menu size={15} />
                 </button>
+                <Lock size={12} className="text-slate-400" />
+                <Link href="/schools" className="hover:text-slate-900 transition">
+                  School Portal
+                </Link>
+                <span>/</span>
+                <span className="text-slate-700 font-medium truncate max-w-[150px] sm:max-w-none">
+                  {getBreadcrumbTitle()}
+                </span>
+                <span className="hidden md:inline-block text-[11px] text-slate-400 ml-2">
+                  · Auto-refreshing every 30s
+                </span>
               </div>
-            ) : (
-              <div className="rounded-lg border border-[#E3E8E4] bg-[#F7F8F6] p-5 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="inline-flex items-center gap-1.5 rounded bg-[#EAF4EF] border border-[#12664F]/20 px-2 py-0.5 text-[10px] font-medium text-[#12664F]">
-                      <span className="size-1.5 rounded-full bg-[#12664F]" />
-                      <span>Synchronized Lab Ready</span>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+                {getBreadcrumbTitle()}
+              </h1>
+            </div>
+
+            {/* Right Action Buttons */}
+            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                disabled={students.length === 0}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs hover:bg-slate-50 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Export candidates to CSV file"
+              >
+                <Download size={13} />
+                <span className="hidden sm:inline">Export</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSync}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs hover:bg-slate-50 transition cursor-pointer"
+                title="Synchronize cohort records"
+              >
+                <RotateCw size={13} className={isSyncing ? "animate-spin text-[#12664F]" : ""} />
+                <span className="hidden sm:inline">Sync</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#12664F] hover:bg-[#0B3028] px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition cursor-pointer"
+              >
+                <UserPlus size={13} />
+                <span>New Candidate</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* View Content Body */}
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-10 space-y-6 max-w-7xl w-full mx-auto">
+          {/* VIEW 1: CANDIDATES (QUEUE) */}
+          {activeView === "candidates" && (
+            <div className="space-y-6">
+              {/* Quick Stats Row (Matches reference screenshot 100%) */}
+              <section className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Quick Stats
+                  </h2>
+                  <button 
+                    type="button" 
+                    onClick={() => setActiveView("billing")}
+                    className="text-xs text-slate-400 hover:text-slate-600 p-1"
+                    title="View Billing breakdown"
+                  >
+                    <MoreHorizontal size={15} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+                  {/* Stat 1: Total Candidates */}
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                      <span className="flex size-6 items-center justify-center rounded-lg bg-emerald-50 text-[#12664F]">
+                        <Users size={13} />
+                      </span>
+                      <span className="truncate">Total Enrolled</span>
                     </div>
-                    <h3 className="text-base font-semibold text-[#17231F]">
-                      {scheduledMock.title || "UTME Computer Lab Mock"}
-                    </h3>
-                    <p className="text-xs text-[#68766F]">
-                      Standard 4-subject exam (Use of English 60 questions + 3 Subjects 40 questions = 180 questions).
+                    <p className="text-2xl font-bold text-slate-900 tracking-tight tabular-nums">
+                      {students.length}
+                    </p>
+                    <div className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                      <TrendingUp size={11} />
+                      <span>{students.length} active</span>
+                    </div>
+                  </div>
+
+                  {/* Stat 2: Unlicensed */}
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                      <span className="flex size-6 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+                        <Clock size={13} />
+                      </span>
+                      <span className="truncate">Unlicensed</span>
+                    </div>
+                    <p className="text-2xl font-bold text-slate-900 tracking-tight tabular-nums">
+                      {unlicensedCount < 10 && unlicensedCount > 0 ? `0${unlicensedCount}` : unlicensedCount}
+                    </p>
+                    {unlicensedCount > 0 ? (
+                      <div className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                        <AlertCircle size={11} />
+                        <span>needs action</span>
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                        <Check size={11} />
+                        <span>all licensed</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Stat 3: Active Licences */}
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                      <span className="flex size-6 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                        <ShieldCheck size={13} />
+                      </span>
+                      <span className="truncate">Active Paid</span>
+                    </div>
+                    <p className="text-2xl font-bold text-slate-900 tracking-tight tabular-nums">
+                      {activeCount < 10 && activeCount > 0 ? `0${activeCount}` : activeCount}
+                    </p>
+                    <div className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+                      <span>₦1,500 / seat</span>
+                    </div>
+                  </div>
+
+                  {/* Stat 4: CBT Lab Ready */}
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                      <span className="flex size-6 items-center justify-center rounded-lg bg-purple-50 text-purple-700">
+                        <Calendar size={13} />
+                      </span>
+                      <span className="truncate">Lab Readiness</span>
+                    </div>
+                    <p className="text-2xl font-bold text-slate-900 tracking-tight">
+                      {scheduledMock ? "01" : "00"}
+                    </p>
+                    <div className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-700">
+                      <span>{scheduledMock ? "Session ready" : "Idle"}</span>
+                    </div>
+                  </div>
+
+                  {/* Stat 5: Monthly Spend */}
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                      <span className="flex size-6 items-center justify-center rounded-lg bg-emerald-50 text-[#12664F]">
+                        <CreditCard size={13} />
+                      </span>
+                      <span className="truncate">Active Spend</span>
+                    </div>
+                    <p className="text-2xl font-bold text-slate-900 tracking-tight tabular-nums">
+                      ₦{activeSpend.toLocaleString()}
+                    </p>
+                    <div className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                      <TrendingUp size={11} />
+                      <span>30-day cycle</span>
+                    </div>
+                  </div>
+
+                  {/* Stat 6: Cohort Avg Score */}
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                      <span className="flex size-6 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                        <BarChart3 size={13} />
+                      </span>
+                      <span className="truncate">Avg Mock Score</span>
+                    </div>
+                    <p className="text-2xl font-bold text-slate-900 tracking-tight tabular-nums">
+                      {cohortAvg ? `${cohortAvg}` : "—"}
+                    </p>
+                    <div className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+                      <span>target 280 / 400</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Main Candidate Table Card (Matches reference "All Orders" table) */}
+              <section className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
+                {/* Table Filter & Search Controls Header */}
+                <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-base font-bold text-slate-900">
+                      All Candidates
+                    </h2>
+                    <span className="text-xs text-slate-400">
+                      ({filteredStudents.length} candidate{filteredStudents.length === 1 ? "" : "s"})
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    {/* Search Bar */}
+                    <div className="relative flex items-center min-w-[220px]">
+                      <Search size={14} className="absolute left-3 text-slate-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search orders, customers..."
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#12664F] focus:outline-hidden transition"
+                      />
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setSearchQuery("")}
+                          className="absolute right-2.5 text-slate-400 hover:text-slate-600 text-xs"
+                        >
+                          <X size={13} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Filter Segmented Pill Tabs (Exact visual match to screenshot: All, Unfulfilled, Processing, etc.) */}
+                    <div className="inline-flex items-center rounded-xl bg-slate-100 p-1 text-xs font-medium">
+                      <button
+                        type="button"
+                        onClick={() => setFilterStatus("all")}
+                        className={`rounded-lg px-3 py-1 transition cursor-pointer ${
+                          filterStatus === "all"
+                            ? "bg-[#12664F] text-white shadow-xs font-semibold"
+                            : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFilterStatus("active")}
+                        className={`rounded-lg px-3 py-1 transition cursor-pointer ${
+                          filterStatus === "active"
+                            ? "bg-[#12664F] text-white shadow-xs font-semibold"
+                            : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        Active Licences
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFilterStatus("unlicensed")}
+                        className={`rounded-lg px-3 py-1 transition cursor-pointer ${
+                          filterStatus === "unlicensed"
+                            ? "bg-[#12664F] text-white shadow-xs font-semibold"
+                            : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        Unlicensed {unlicensedCount > 0 && `(${unlicensedCount})`}
+                      </button>
+                      {expiredCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setFilterStatus("expired")}
+                          className={`rounded-lg px-3 py-1 transition cursor-pointer ${
+                            filterStatus === "expired"
+                              ? "bg-[#12664F] text-white shadow-xs font-semibold"
+                              : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          Expired
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Multi-Select Floating Notification Bar */}
+                {selectedStudentIds.length > 0 && (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-[#0B3028] px-5 py-2.5 text-white text-xs border-b border-emerald-900 animate-in fade-in">
+                    <div className="flex items-center gap-2">
+                      <span className="flex size-5 items-center justify-center rounded-full bg-white/20 text-white font-semibold text-[11px]">
+                        {selectedStudentIds.length}
+                      </span>
+                      <span className="text-slate-200">
+                        candidate{selectedStudentIds.length > 1 ? "s" : ""} selected for cohort action
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStudentIds([])}
+                        className="text-slate-300 hover:text-white transition cursor-pointer text-xs underline underline-offset-2"
+                      >
+                        Clear
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDisconnectTargets(students.filter((s) => selectedStudentIds.includes(s.id)))
+                        }
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-rose-300/40 bg-rose-950/60 text-rose-200 px-3 py-1 font-semibold text-xs hover:bg-rose-900 hover:text-white transition cursor-pointer"
+                      >
+                        <UserMinus size={12} />
+                        <span>Disconnect Selected</span>
+                      </button>
+                      <Link
+                        href={checkoutUrlFor(selectedStudentIds)}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 text-[#0B3028] px-3.5 py-1 font-semibold text-xs hover:bg-white transition cursor-pointer shadow-xs"
+                      >
+                        <CreditCard size={12} />
+                        <span>Checkout Selected (₦{(selectedStudentIds.length * 1500).toLocaleString()})</span>
+                        <ArrowRight size={11} />
+                      </Link>
+                    </div>
+                  </div>
+                )}
+
+                {/* Candidate List Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse min-w-[800px]">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-400 font-semibold select-none">
+                        <th className="py-3 px-3 w-8 text-center">
+                          <span className="sr-only">Details</span>
+                        </th>
+                        <th className="py-3 px-3 w-10">
+                          <button
+                            type="button"
+                            onClick={toggleSelectAll}
+                            className="flex items-center justify-center text-slate-400 hover:text-slate-700 transition cursor-pointer"
+                            title={isAllSelected ? "Deselect all" : "Select all candidates"}
+                          >
+                            {isAllSelected ? (
+                              <CheckSquare size={15} className="text-[#12664F]" />
+                            ) : (
+                              <Square size={15} />
+                            )}
+                          </button>
+                        </th>
+                        <th className="py-3 px-4 font-semibold text-slate-600">Candidate</th>
+                        <th className="py-3 px-4 font-semibold text-slate-600">Subjects</th>
+                        <th className="py-3 px-4 font-semibold text-slate-600">Password</th>
+                        <th className="py-3 px-4 font-semibold text-slate-600">Licence</th>
+                        <th className="py-3 px-4 font-semibold text-slate-600">Mock Score</th>
+                        <th className="py-3 px-4 font-semibold text-slate-600">Channel</th>
+                        <th className="py-3 px-4 font-semibold text-slate-600 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-slate-900">
+                      {paginatedStudents.length === 0 ? (
+                        <tr>
+                          <td colSpan={9} className="py-14 px-4 text-center">
+                            <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-emerald-50 text-[#12664F] mb-3">
+                              <Users size={22} />
+                            </div>
+                            <h3 className="text-sm font-semibold text-slate-900">
+                              {searchQuery || filterStatus !== "all" 
+                                ? "No candidates match your current filter." 
+                                : "No candidates enrolled in this cohort yet."}
+                            </h3>
+                            <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4 leading-relaxed">
+                              {searchQuery || filterStatus !== "all"
+                                ? "Try resetting your search query or switching filter tabs."
+                                : "Add candidates individually, import a CSV roster, or share your school registration link."}
+                            </p>
+                            <div className="flex items-center justify-center gap-2.5">
+                              {searchQuery || filterStatus !== "all" ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSearchQuery("");
+                                    setFilterStatus("all");
+                                  }}
+                                  className="rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-700 shadow-2xs hover:bg-slate-50 transition cursor-pointer"
+                                >
+                                  Reset Filters
+                                </button>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsAddModalOpen(true)}
+                                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#12664F] px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-[#0B3028] transition cursor-pointer"
+                                  >
+                                    <UserPlus size={13} />
+                                    <span>Add Candidate</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsCsvModalOpen(true)}
+                                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-700 shadow-2xs hover:bg-slate-50 transition cursor-pointer"
+                                  >
+                                    <Upload size={13} />
+                                    <span>Import CSV</span>
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        paginatedStudents.map((std) => {
+                          const isSelected = selectedStudentIds.includes(std.id);
+                          const isExpanded = expandedStudentIds.includes(std.id);
+                          const isSelfRegistered = std.enrolmentMethod === "link" || !std.defaultPassword;
+                          const pwd = std.defaultPassword || null;
+                          const isCopied = copiedPasswordId === std.id;
+                          const validSubjects = parseSubjectsArray(std.subjects);
+                          const avatarColorClass = getAvatarColor(std.name);
+
+                          return (
+                            <div key={std.id} className="contents">
+                              <tr 
+                                className={`transition select-none group ${
+                                  isSelected ? "bg-emerald-50/40" : "hover:bg-slate-50/70"
+                                }`}
+                              >
+                                <td className="py-3 px-3 w-8 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleExpandStudent(std.id)}
+                                    className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                                    title="Toggle candidate details"
+                                  >
+                                    <ChevronDown 
+                                      size={14} 
+                                      className={`transition-transform duration-200 ${
+                                        isExpanded ? "rotate-180 text-[#12664F]" : "text-slate-400"
+                                      }`} 
+                                    />
+                                  </button>
+                                </td>
+                                <td className="py-3 px-3 w-10">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleSelectStudent(std.id)}
+                                    className="flex items-center justify-center text-slate-400 hover:text-slate-700 transition cursor-pointer"
+                                  >
+                                    {isSelected ? (
+                                      <CheckSquare size={15} className="text-[#12664F]" />
+                                    ) : (
+                                      <Square size={15} />
+                                    )}
+                                  </button>
+                                </td>
+
+                                {/* Name + Avatar column (Matches reference screenshot) */}
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className={`size-8 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 ${avatarColorClass}`}>
+                                      {std.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleExpandStudent(std.id)}
+                                        className="font-semibold text-slate-900 hover:text-[#12664F] text-left truncate block cursor-pointer"
+                                      >
+                                        {std.name}
+                                      </button>
+                                      <span className="text-[11px] text-slate-400 truncate block">
+                                        {std.email}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {/* Subjects column */}
+                                <td className="py-3 px-4 text-slate-600">
+                                  {validSubjects.length > 0 ? (
+                                    <span className="font-medium">
+                                      {validSubjects.length}× Core Subjects
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-400 italic">Not chosen</span>
+                                  )}
+                                </td>
+
+                                {/* Default Password column */}
+                                <td className="py-3 px-4">
+                                  {isSelfRegistered || !pwd ? (
+                                    <span className="text-[11px] text-slate-400 italic">
+                                      Private
+                                    </span>
+                                  ) : (
+                                    <div className="inline-flex items-center gap-1.5 font-mono text-[11px] text-slate-800">
+                                      <span>{pwd}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopyPassword(std.id, pwd)}
+                                        className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer"
+                                        title="Copy default password"
+                                      >
+                                        {isCopied ? <Check size={11} className="text-[#12664F]" /> : <Copy size={11} />}
+                                      </button>
+                                    </div>
+                                  )}
+                                </td>
+
+                                {/* Licence Status pill (Soft pastel badges matching reference: Paid, Unfulfilled, Processing) */}
+                                <td className="py-3 px-4">
+                                  {std.licenseStatus === "active" ? (
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                                      <span className="size-1.5 rounded-full bg-emerald-500" />
+                                      Active ({std.daysLeft ?? 28}d)
+                                    </span>
+                                  ) : std.licenseStatus === "expired" ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => window.location.assign(checkoutUrlFor([std.id]))}
+                                      className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700 hover:bg-rose-100 transition cursor-pointer"
+                                      title="Licence expired. Click to renew."
+                                    >
+                                      Expired · Renew
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => window.location.assign(checkoutUrlFor([std.id]))}
+                                      className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800 hover:bg-amber-100 transition cursor-pointer"
+                                      title="Unlicensed. Click to checkout 1 licence."
+                                    >
+                                      Unlicensed · Pay
+                                    </button>
+                                  )}
+                                </td>
+
+                                {/* Score & Accuracy */}
+                                <td className="py-3 px-4">
+                                  {std.averageScore ? (
+                                    <span className="font-semibold text-slate-900 tabular-nums">
+                                      {std.averageScore} / 400
+                                    </span>
+                                  ) : typeof std.practiceAccuracy === "number" ? (
+                                    <span className="font-medium text-[#12664F] tabular-nums">
+                                      {std.practiceAccuracy}% Acc
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-400">—</span>
+                                  )}
+                                </td>
+
+                                {/* Channel */}
+                                <td className="py-3 px-4 text-slate-600">
+                                  <span className="text-[11px] font-medium">
+                                    {std.enrolmentMethod === "link"
+                                      ? "Registration Link"
+                                      : std.enrolmentMethod === "csv"
+                                      ? "CSV Upload"
+                                      : "Manual"}
+                                  </span>
+                                </td>
+
+                                {/* Actions */}
+                                <td className="py-3 px-4 text-right">
+                                  <div className="flex items-center justify-end gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingStudent(std)}
+                                      className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                                      title="Edit candidate"
+                                      aria-label={`Edit ${std.name}`}
+                                    >
+                                      <Pencil size={13} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setDisconnectTargets([std])}
+                                      className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                                      title="Disconnect candidate"
+                                      aria-label={`Disconnect ${std.name}`}
+                                    >
+                                      <UserMinus size={13} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedDrilldownStudent(std)}
+                                      className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                                      title="Inspect student report"
+                                    >
+                                      <MoreHorizontal size={15} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+
+                              {/* Expandable Accordion Drawer */}
+                              {isExpanded && (
+                                <tr className="bg-slate-50/50 border-b border-slate-100 animate-in fade-in duration-150">
+                                  <td colSpan={9} className="p-4 sm:p-5">
+                                    <div className="rounded-xl border border-slate-200/80 bg-white p-4 space-y-4 shadow-2xs">
+                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                                        {/* Card 1: CBT Mock Performance */}
+                                        <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 space-y-2.5">
+                                          <div className="flex items-center justify-between">
+                                            <span className="font-semibold text-slate-900 flex items-center gap-1.5">
+                                              <BarChart3 size={13} className="text-[#12664F]" />
+                                              <span>Performance & Diagnostics</span>
+                                            </span>
+                                            <span className="font-mono text-xs font-bold text-[#12664F]">
+                                              {std.averageScore ? `${std.averageScore} / 400` : "No Mock Taken"}
+                                            </span>
+                                          </div>
+
+                                          <div className="space-y-1.5 text-[11px]">
+                                            <div className="flex items-center justify-between text-slate-500">
+                                              <span>Practice Accuracy:</span>
+                                              <span className="font-semibold text-slate-900">
+                                                {typeof std.practiceAccuracy === "number" ? `${std.practiceAccuracy}%` : "—"}
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-slate-500">
+                                              <span>Questions Solved:</span>
+                                              <span className="font-semibold text-slate-900">
+                                                {std.totalPracticeQuestions || 0} questions
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-slate-500">
+                                              <span>Subject Combination:</span>
+                                              <span className="font-medium text-[#12664F]">
+                                                {validSubjects.length > 0 ? validSubjects.join(" · ") : "Not selected yet"}
+                                              </span>
+                                            </div>
+                                          </div>
+
+                                          <button
+                                            type="button"
+                                            onClick={() => setSelectedDrilldownStudent(std)}
+                                            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 py-1.5 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
+                                          >
+                                            <BarChart3 size={12} />
+                                            <span>Full Diagnostic Drilldown</span>
+                                            <ArrowRight size={11} />
+                                          </button>
+                                        </div>
+
+                                        {/* Card 2: Credentials & Access */}
+                                        <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 space-y-2.5">
+                                          <span className="font-semibold text-slate-900 flex items-center gap-1.5">
+                                            <KeyRound size={13} className="text-slate-500" />
+                                            <span>Credentials & Identification</span>
+                                          </span>
+
+                                          <div className="space-y-1.5 text-[11px]">
+                                            <div className="flex items-center justify-between text-slate-500">
+                                              <span>Candidate ID:</span>
+                                              <span className="font-mono text-slate-900 font-semibold">
+                                                {std.studentIdentifier || std.id.slice(0, 8)}
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-slate-500">
+                                              <span>Channel:</span>
+                                              <span className="font-medium text-slate-900">
+                                                {std.enrolmentMethod === "link"
+                                                  ? "Registration Link"
+                                                  : std.enrolmentMethod === "csv"
+                                                  ? "CSV Ingestion"
+                                                  : "Manual Entry"}
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-slate-500">
+                                              <span>Password:</span>
+                                              {isSelfRegistered || !pwd ? (
+                                                <span className="text-slate-400 italic">Self-created private password</span>
+                                              ) : (
+                                                <div className="inline-flex items-center gap-1 font-mono font-bold text-slate-900">
+                                                  <span>{pwd}</span>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleCopyPassword(std.id, pwd)}
+                                                    className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer"
+                                                  >
+                                                    {isCopied ? <Check size={11} className="text-[#12664F]" /> : <Copy size={11} />}
+                                                  </button>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          <div className="pt-2 border-t border-slate-200/60 flex items-center gap-2">
+                                            <button
+                                              type="button"
+                                              onClick={() => setEditingStudent(std)}
+                                              className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                                            >
+                                              <Pencil size={11} />
+                                              <span>Edit</span>
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => setDisconnectTargets([std])}
+                                              className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg border border-rose-200 bg-rose-50 py-1.5 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 transition cursor-pointer"
+                                            >
+                                              <UserMinus size={11} />
+                                              <span>Disconnect</span>
+                                            </button>
+                                          </div>
+                                        </div>
+
+                                        {/* Card 3: Licence Status & Direct Renewal */}
+                                        <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 space-y-2.5 flex flex-col justify-between">
+                                          <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                              <span className="font-semibold text-slate-900 flex items-center gap-1.5">
+                                                <CreditCard size={13} className="text-[#12664F]" />
+                                                <span>Licence Status</span>
+                                              </span>
+                                              {std.licenseStatus === "active" ? (
+                                                <span className="rounded-full bg-emerald-50 text-emerald-700 px-2.5 py-0.5 text-[10px] font-semibold">
+                                                  Active
+                                                </span>
+                                              ) : (
+                                                <span className="rounded-full bg-amber-50 text-amber-800 px-2.5 py-0.5 text-[10px] font-semibold">
+                                                  Unlicensed
+                                                </span>
+                                              )}
+                                            </div>
+
+                                            {std.licenseStatus === "active" ? (
+                                              <p className="text-[11px] text-slate-500 leading-relaxed">
+                                                Active candidate licence. Full access to CBT mock tests and weakness analytics. Expires in <strong>{std.daysLeft ?? 28} days</strong>.
+                                              </p>
+                                            ) : (
+                                              <p className="text-[11px] text-amber-900 leading-relaxed bg-amber-50 p-2 rounded-lg border border-amber-200/50">
+                                                Candidate requires a valid licence to sit for synchronized CBT mocks and access past question solutions.
+                                              </p>
+                                            )}
+                                          </div>
+
+                                          {std.licenseStatus !== "active" ? (
+                                            <Link
+                                              href={checkoutUrlFor([std.id])}
+                                              className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#12664F] text-white py-1.5 text-xs font-semibold hover:bg-[#0B3028] shadow-xs transition cursor-pointer"
+                                            >
+                                              <CreditCard size={12} />
+                                              <span>Licence (₦1,500 / mo)</span>
+                                              <ArrowRight size={11} />
+                                            </Link>
+                                          ) : (
+                                            <Link
+                                              href={checkoutUrlFor([std.id])}
+                                              className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 py-1.5 text-xs font-medium hover:bg-slate-50 transition cursor-pointer"
+                                            >
+                                              <CreditCard size={12} />
+                                              <span>Renew Licence</span>
+                                            </Link>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Table Footer with Numbered Pagination (Matches reference screenshot 100%) */}
+                <div className="p-4 sm:p-5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-slate-500">
+                  <div>
+                    {filteredStudents.length > 0 ? (
+                      <span>
+                        Showing <strong className="font-semibold text-slate-900">{(currentPage - 1) * pageSize + 1}</strong>–<strong className="font-semibold text-slate-900">{Math.min(currentPage * pageSize, filteredStudents.length)}</strong> of <strong className="font-semibold text-slate-900">{filteredStudents.length}</strong> candidate{filteredStudents.length === 1 ? "" : "s"}
+                      </span>
+                    ) : (
+                      <span>Showing 0 of 0 candidates</span>
+                    )}
+                  </div>
+
+                  {totalPages > 1 && (
+                    <div className="flex items-center gap-1 self-center sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                        aria-label="Previous page"
+                      >
+                        <ChevronLeft size={14} />
+                      </button>
+
+                      {Array.from({ length: totalPages }).map((_, idx) => {
+                        const pageNum = idx + 1;
+                        const isCurrent = pageNum === currentPage;
+                        return (
+                          <button
+                            key={pageNum}
+                            type="button"
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`min-w-[28px] h-7 px-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                              isCurrent
+                                ? "bg-[#12664F] text-white shadow-2xs"
+                                : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                        aria-label="Next page"
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
+          )}
+
+          {/* VIEW 2: SYLLABUS DIAGNOSTICS */}
+          {activeView === "diagnostics" && (
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs">
+                <div className="pb-4 mb-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <BarChart3 size={18} className="text-[#12664F]" />
+                      <span>Syllabus Diagnostic Heatmap</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Identify topic-level weaknesses across your entire candidate cohort and optimize revision intervention.
+                    </p>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 rounded-xl bg-slate-50 px-3 py-1.5 text-xs text-slate-600 border border-slate-200">
+                    <span>Cohort Size:</span>
+                    <strong className="text-slate-900">{students.length} Candidates</strong>
+                  </div>
+                </div>
+
+                <SyllabusHeatmapView schoolName={schoolName} />
+              </div>
+            </div>
+          )}
+
+          {/* VIEW 3: CBT LAB CONTROLLER */}
+          {activeView === "lab" && (
+            <div className="space-y-6">
+              <section className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <Clock size={18} className="text-[#12664F]" />
+                      <span>Computer Laboratory Mock Controller</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Synchronize and proctor full 120-minute, 180-question mock exams across all laboratory monitors simultaneously.
                     </p>
                   </div>
 
-                  <div className="rounded-md bg-white p-3 border border-[#E3E8E4] text-center min-w-[140px] shadow-xs">
-                    <span className="text-[10px] text-[#68766F] font-semibold uppercase tracking-wider block">Session Code</span>
-                    <span className="font-mono text-base font-bold text-[#17231F]">{scheduledMock.labSessionCode || `${schoolCode}-MOCK`}</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsMockSchedulerOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#12664F] px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#0B3028] transition cursor-pointer self-start sm:self-auto"
+                  >
+                    <Play size={12} fill="currentColor" />
+                    <span>Launch New Lab Session</span>
+                  </button>
+                </div>
+
+                {/* Scheduled Session Card or Clean Empty State */}
+                {!scheduledMock ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-8 sm:p-10 text-center space-y-3">
+                    <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-500 shadow-xs">
+                      <Clock size={22} />
+                    </div>
+                    <div className="space-y-1 max-w-md mx-auto">
+                      <h3 className="text-sm font-semibold text-slate-900">No mock exam session scheduled yet</h3>
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        You haven&apos;t scheduled any computer laboratory mock exams. Launch a new lab session to configure your title, duration, and generate a synchronized entry code.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsMockSchedulerOpen(true)}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-[#12664F] px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#0B3028] transition cursor-pointer"
+                    >
+                      <Play size={12} fill="currentColor" />
+                      <span>Schedule First Lab Mock</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-5 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800">
+                          <span className="size-1.5 rounded-full bg-emerald-500" />
+                          <span>Synchronized Lab Ready</span>
+                        </div>
+                        <h3 className="text-base font-bold text-slate-900">
+                          {scheduledMock.title || "UTME Computer Lab Mock"}
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Standard 4-subject exam (Use of English 60 questions + 3 Subjects 40 questions = 180 questions).
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl bg-white p-3 border border-slate-200 text-center min-w-[140px] shadow-2xs">
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">Session Code</span>
+                        <span className="font-mono text-base font-bold text-slate-900">{scheduledMock.labSessionCode || `${schoolCode}-MOCK`}</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                      <div className="rounded-xl bg-white p-3 border border-slate-200 text-xs">
+                        <span className="text-slate-400 block text-[10px] font-medium">Timer Control</span>
+                        <strong className="text-slate-900 text-xs sm:text-sm">120:00 Countdown</strong>
+                      </div>
+                      <div className="rounded-xl bg-white p-3 border border-slate-200 text-xs">
+                        <span className="text-slate-400 block text-[10px] font-medium">Proctor Mode</span>
+                        <strong className="text-slate-900 text-xs sm:text-sm">8-Key Hotkey Strict</strong>
+                      </div>
+                      <div className="rounded-xl bg-white p-3 border border-slate-200 text-xs">
+                        <span className="text-slate-400 block text-[10px] font-medium">Eligible Roster</span>
+                        <strong className="text-[#12664F] text-xs sm:text-sm">{activeCount} Licensed Students</strong>
+                      </div>
+                      <div className="rounded-xl bg-white p-3 border border-slate-200 text-xs">
+                        <span className="text-slate-400 block text-[10px] font-medium">Instant Result</span>
+                        <strong className="text-slate-900 text-xs sm:text-sm">Immediate Diagnostic</strong>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step-by-Step Lab Proctoring Checklist */}
+                <div className="rounded-2xl border border-slate-200/80 p-5 space-y-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Laboratory Proctoring Protocol
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div className="rounded-xl bg-slate-50 p-3.5 space-y-1 border border-slate-200/70">
+                      <span className="font-semibold text-slate-900 block">1. Lab Desktops Setup</span>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        Open desktop browsers to <code className="bg-white border border-slate-200 px-1 py-0.5 rounded text-[10px]">/mock</code>. Verify keyboards are functioning for 8-key shortcuts.
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-3.5 space-y-1 border border-slate-200/70">
+                      <span className="font-semibold text-slate-900 block">2. Candidate Authentication</span>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        Students log in using their email and default surname password, then enter the whiteboard session code.
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-3.5 space-y-1 border border-slate-200/70">
+                      <span className="font-semibold text-slate-900 block">3. Immediate Diagnostics</span>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        Upon exam submission, scores synchronize directly to this dashboard, populating the syllabus heatmap.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          )}
+
+          {/* VIEW 4: LICENSING & BILLING */}
+          {activeView === "billing" && (
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <CreditCard size={18} className="text-[#12664F]" />
+                      <span>Licensing & Cohort Checkout</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Transparent institutional licensing at ₦1,500 per candidate per month with full CBT mock & diagnostic access.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsCheckoutModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#12664F] px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#0B3028] transition cursor-pointer self-start sm:self-auto"
+                  >
+                    <CreditCard size={13} />
+                    <span>Open Cohort Checkout Modal</span>
+                  </button>
+                </div>
+
+                {/* Key Stats */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 space-y-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                      Active Licences
+                    </span>
+                    <p className="text-2xl font-bold text-[#12664F]">
+                      {activeCount} / {students.length}
+                    </p>
+                    <span className="text-xs text-slate-500 block">
+                      {Math.round((activeCount / Math.max(1, students.length)) * 100)}% of cohort licensed
+                    </span>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 space-y-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                      Pending Licences
+                    </span>
+                    <p className="text-2xl font-bold text-amber-900">
+                      {unlicensedCount} Candidates
+                    </p>
+                    <span className="text-xs text-slate-500 block">
+                      Awaiting activation to sit for CBT mocks
+                    </span>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 space-y-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                      Current Monthly Spend
+                    </span>
+                    <p className="text-2xl font-bold text-slate-900">
+                      ₦{activeSpend.toLocaleString()}
+                    </p>
+                    <span className="text-xs text-slate-500 block">
+                      Billed at ₦1,500 / candidate / 30-day cycle
+                    </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-                  <div className="rounded-md bg-white p-3 border border-[#E3E8E4] text-xs">
-                    <span className="text-[#68766F] block text-[10px] font-medium">Timer Control</span>
-                    <strong className="text-[#17231F] text-xs sm:text-sm">120:00 Countdown</strong>
-                  </div>
-                  <div className="rounded-md bg-white p-3 border border-[#E3E8E4] text-xs">
-                    <span className="text-[#68766F] block text-[10px] font-medium">Proctor Mode</span>
-                    <strong className="text-[#17231F] text-xs sm:text-sm">8-Key Hotkey Strict</strong>
-                  </div>
-                  <div className="rounded-md bg-white p-3 border border-[#E3E8E4] text-xs">
-                    <span className="text-[#68766F] block text-[10px] font-medium">Eligible Roster</span>
-                    <strong className="text-[#12664F] text-xs sm:text-sm">{activeCount} Licensed Students</strong>
-                  </div>
-                  <div className="rounded-md bg-white p-3 border border-[#E3E8E4] text-xs">
-                    <span className="text-[#68766F] block text-[10px] font-medium">Instant Result</span>
-                    <strong className="text-[#17231F] text-xs sm:text-sm">Immediate Diagnostic</strong>
-                  </div>
-                </div>
-              </div>
-            )}
+                {/* Unlicensed Candidate Cohort Activation Callout */}
+                {unlicensedCount > 0 ? (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-sm font-semibold text-amber-950 flex items-center gap-1.5">
+                          <AlertCircle size={15} className="text-amber-700" />
+                          <span>{unlicensedCount} Unlicensed Candidates Ready for Activation</span>
+                        </h3>
+                        <p className="text-xs text-amber-900/80 mt-1">
+                          You have {unlicensedCount} registered candidates who currently cannot sit for synchronized CBT mocks. Activate their licences together in one single transaction.
+                        </p>
+                      </div>
 
-            {/* Step-by-Step Lab Proctoring Checklist */}
-            <div className="rounded-lg border border-[#E3E8E4] p-4 sm:p-5 space-y-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-[#17231F]">
-                Laboratory Proctoring Protocol
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                <div className="rounded-md bg-[#F7F8F6] p-3 space-y-1 border border-[#E3E8E4]">
-                  <span className="font-semibold text-[#17231F] block">1. Lab Desktops Setup</span>
-                  <p className="text-[11px] text-[#68766F] leading-relaxed">
-                    Open desktop browsers to <code className="bg-white border border-[#E3E8E4] px-1 py-0.5 rounded text-[10px]">/mock</code>. Verify keyboards are functioning for 8-key shortcuts.
-                  </p>
-                </div>
-                <div className="rounded-md bg-[#F7F8F6] p-3 space-y-1 border border-[#E3E8E4]">
-                  <span className="font-semibold text-[#17231F] block">2. Candidate Authentication</span>
-                  <p className="text-[11px] text-[#68766F] leading-relaxed">
-                    Students log in using their email and default surname password, then enter the whiteboard session code.
-                  </p>
-                </div>
-                <div className="rounded-md bg-[#F7F8F6] p-3 space-y-1 border border-[#E3E8E4]">
-                  <span className="font-semibold text-[#17231F] block">3. Immediate Diagnostics</span>
-                  <p className="text-[11px] text-[#68766F] leading-relaxed">
-                    Upon exam submission, scores synchronize directly to this dashboard, populating the syllabus heatmap.
-                  </p>
+                      <button
+                        type="button"
+                        onClick={handleSelectPendingForCheckout}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#12664F] px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#0B3028] transition cursor-pointer shrink-0"
+                      >
+                        <CreditCard size={13} />
+                        <span>Select All Pending ({unlicensedCount})</span>
+                        <ArrowRight size={12} />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-emerald-200/60 bg-emerald-50/50 p-4 flex items-center gap-3">
+                    <CheckCircle2 size={18} className="text-[#12664F] shrink-0" />
+                    <p className="text-xs text-[#12664F] font-medium">
+                      All currently enrolled candidates have active licences. Newly enrolled students will appear here for batch activation.
+                    </p>
+                  </div>
+                )}
+
+                {/* Pricing Structure & Terms */}
+                <div className="rounded-2xl border border-slate-200/80 p-5 space-y-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Institutional Pricing & Payment Terms
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div className="space-y-1.5">
+                      <h4 className="font-semibold text-slate-900">Direct Instant Activation</h4>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        Pay instantly using Paystack (Debit Card, Bank Transfer, USSD). Licences activate automatically upon payment verification without manual intervention.
+                      </p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <h4 className="font-semibold text-slate-900">Individual & Cohort Invoicing</h4>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        Each transaction issues an institutional receipt with school stamp, candidate IDs, and reference numbers for your bursary records.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </section>
-        )}
-      </main>
+          )}
 
-      {/* Institutional Footer */}
-      <footer className="border-t border-[#E3E8E4] bg-white py-5 text-center text-xs text-[#68766F]">
-        <div className="shell flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span>JAMBPrep for Schools · Institutional UTME examination & diagnostics platform.</span>
-          <div className="flex items-center gap-3 text-[11px]">
-            <span>Encrypted Session</span>
-            <span>•</span>
-            <span>Role: Administrator</span>
-            <span>•</span>
-            <Link href="/schools" className="hover:text-[#17231F] underline underline-offset-2">Schools Overview</Link>
-          </div>
-        </div>
-      </footer>
+          {/* VIEW 5: SCHOOL PROFILE & SETTINGS */}
+          {activeView === "profile" && (
+            <div className="space-y-6">
+              <section className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                  <div>
+                    <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      <span>VERIFIED INSTITUTION</span>
+                      <span>·</span>
+                      <span className="text-[#12664F]">{schoolType.replace(/_/g, " ").toUpperCase()}</span>
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 mt-1">
+                      {schoolName}
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Institutional profile, administrative credentials, and student registration link.
+                    </p>
+                  </div>
+
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/60 px-3 py-1 text-xs font-semibold text-[#12664F] self-start sm:self-auto">
+                    <ShieldCheck size={14} />
+                    <span>Verified Partner</span>
+                  </div>
+                </div>
+
+                {/* Profile Fields Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 space-y-1">
+                    <span className="text-slate-400 font-medium block text-[11px]">School Code</span>
+                    <strong className="font-mono text-sm text-[#12664F] font-bold block">{schoolCode}</strong>
+                    <span className="text-[10px] text-slate-500 block">Permanent institutional identifier</span>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 space-y-1">
+                    <span className="text-slate-400 font-medium block text-[11px]">Category</span>
+                    <strong className="text-sm text-slate-900 font-semibold block capitalize">
+                      {schoolType.replace(/_/g, " ")}
+                    </strong>
+                    <span className="text-[10px] text-slate-500 block">Accredited testing centre</span>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 space-y-1">
+                    <span className="text-slate-400 font-medium block text-[11px]">Location</span>
+                    <strong className="text-sm text-slate-900 font-semibold block">{state}, Nigeria</strong>
+                    <span className="text-[10px] text-slate-500 block">Designated examination zone</span>
+                  </div>
+                </div>
+
+                {/* Permanent Student Registration Link Widget */}
+                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                      <Share2 size={13} className="text-[#12664F]" />
+                      <span>Dedicated Student Registration Link</span>
+                    </h3>
+                    <span className="font-mono text-[11px] font-semibold bg-white border border-slate-200 text-[#12664F] px-2 py-0.5 rounded-lg">
+                      {schoolCode}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Students can use this direct link to register for JAMBPrep and automatically attach themselves to your school cohort:
+                  </p>
+                  <div className="flex items-center rounded-xl border border-slate-200 bg-white overflow-hidden shadow-2xs">
+                    <span className="truncate flex-1 pl-3 pr-2 py-2 font-mono text-xs text-slate-900 select-all">
+                      {inviteLink}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyInviteLink}
+                      className="inline-flex shrink-0 items-center gap-1.5 bg-[#12664F] hover:bg-[#0B3028] px-4 py-2 text-xs font-semibold text-white transition cursor-pointer"
+                    >
+                      {copiedLink ? (
+                        <>
+                          <Check size={13} className="text-emerald-200" />
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={13} />
+                          <span>Copy Link</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Administrator Profile Details */}
+                <div className="space-y-3 pt-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                    <Shield size={13} className="text-slate-400" />
+                    <span>Administrator Credentials</span>
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 space-y-1">
+                      <span className="text-slate-400 block text-[11px]">Primary Contact</span>
+                      <strong className="text-sm text-slate-900 block">{adminDisplayName}</strong>
+                      <span className="text-[10px] text-slate-500 block">Designated portal administrator</span>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 space-y-1">
+                      <span className="text-slate-400 block text-[11px]">Admin Login Email</span>
+                      <strong className="text-sm text-slate-900 block">{adminEmail}</strong>
+                      <span className="text-[10px] text-slate-500 block">Used for authentication and invoices</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Password Policy & Security Notes */}
+                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 text-xs text-slate-600 space-y-2">
+                  <h4 className="font-semibold text-slate-900 flex items-center gap-1.5">
+                    <KeyRound size={13} className="text-[#12664F]" />
+                    <span>Batch Candidate Password Policy</span>
+                  </h4>
+                  <p className="text-[11px] leading-relaxed">
+                    For all students added manually or via CSV import, their temporary initial password is automatically formatted as their <strong>LASTNAME in full capital letters</strong> (e.g. ADEWALE). Students who enroll themselves via the registration link create their own private credentials.
+                  </p>
+                </div>
+              </section>
+            </div>
+          )}
+        </main>
+      </div>
 
       {/* Ingestion Pathway Modals */}
       <AddStudentModal
