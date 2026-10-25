@@ -104,6 +104,129 @@ function parseSubjectsArray(val: unknown): string[] {
   return [];
 }
 
+const SUBJECT_TAG_MAP: Record<string, { code: string; name: string }> = {
+  // English (User requested EN key)
+  eng: { code: "EN", name: "Use of English" },
+  en: { code: "EN", name: "Use of English" },
+  english: { code: "EN", name: "Use of English" },
+  "use of english": { code: "EN", name: "Use of English" },
+
+  // French (User requested FR key)
+  fr: { code: "FR", name: "French" },
+  frn: { code: "FR", name: "French" },
+  french: { code: "FR", name: "French" },
+
+  // Mathematics
+  mth: { code: "MTH", name: "Mathematics" },
+  math: { code: "MTH", name: "Mathematics" },
+  maths: { code: "MTH", name: "Mathematics" },
+  mathematics: { code: "MTH", name: "Mathematics" },
+
+  // Physics
+  phy: { code: "PHY", name: "Physics" },
+  physics: { code: "PHY", name: "Physics" },
+
+  // Chemistry
+  chm: { code: "CHM", name: "Chemistry" },
+  chem: { code: "CHM", name: "Chemistry" },
+  chemistry: { code: "CHM", name: "Chemistry" },
+
+  // Biology
+  bio: { code: "BIO", name: "Biology" },
+  biology: { code: "BIO", name: "Biology" },
+
+  // Economics
+  ecn: { code: "ECN", name: "Economics" },
+  eco: { code: "ECN", name: "Economics" },
+  economics: { code: "ECN", name: "Economics" },
+
+  // Government
+  gov: { code: "GOV", name: "Government" },
+  government: { code: "GOV", name: "Government" },
+
+  // Literature in English
+  lit: { code: "LIT", name: "Literature in English" },
+  literature: { code: "LIT", name: "Literature in English" },
+  "literature in english": { code: "LIT", name: "Literature in English" },
+
+  // Commerce
+  com: { code: "COM", name: "Commerce" },
+  commerce: { code: "COM", name: "Commerce" },
+
+  // Principles of Accounting
+  acc: { code: "ACC", name: "Principles of Accounting" },
+  accounting: { code: "ACC", name: "Principles of Accounting" },
+  "principles of accounting": { code: "ACC", name: "Principles of Accounting" },
+
+  // Christian Religious Knowledge
+  crk: { code: "CRK", name: "Christian Religious Knowledge" },
+  crs: { code: "CRK", name: "Christian Religious Knowledge" },
+  "christian religious knowledge": { code: "CRK", name: "Christian Religious Knowledge" },
+
+  // Islamic Religious Studies
+  irs: { code: "IRS", name: "Islamic Religious Studies" },
+  "islamic religious studies": { code: "IRS", name: "Islamic Religious Studies" },
+
+  // Geography
+  geo: { code: "GEO", name: "Geography" },
+  geography: { code: "GEO", name: "Geography" },
+
+  // Agricultural Science
+  agr: { code: "AGR", name: "Agricultural Science" },
+  agric: { code: "AGR", name: "Agricultural Science" },
+  "agricultural science": { code: "AGR", name: "Agricultural Science" },
+
+  // History
+  his: { code: "HIS", name: "History" },
+  history: { code: "HIS", name: "History" },
+
+  // Computer Studies
+  cmp: { code: "CMP", name: "Computer Studies" },
+  cs: { code: "CMP", name: "Computer Studies" },
+  "computer studies": { code: "CMP", name: "Computer Studies" },
+
+  // Arabic
+  arb: { code: "ARB", name: "Arabic" },
+  arabic: { code: "ARB", name: "Arabic" },
+
+  // Art
+  art: { code: "ART", name: "Art" },
+
+  // Hausa
+  hau: { code: "HAU", name: "Hausa" },
+  hausa: { code: "HAU", name: "Hausa" },
+
+  // Home Economics
+  hec: { code: "HEC", name: "Home Economics" },
+  "home economics": { code: "HEC", name: "Home Economics" },
+
+  // Igbo
+  igb: { code: "IGB", name: "Igbo" },
+  igbo: { code: "IGB", name: "Igbo" },
+
+  // Music
+  mus: { code: "MUS", name: "Music" },
+  music: { code: "MUS", name: "Music" },
+
+  // Physical and Health Education
+  phe: { code: "PHE", name: "Physical and Health Education" },
+  "physical and health education": { code: "PHE", name: "Physical and Health Education" },
+
+  // Yoruba
+  yor: { code: "YOR", name: "Yoruba" },
+  yoruba: { code: "YOR", name: "Yoruba" },
+};
+
+function getSubjectTag(subject: string): { code: string; name: string } {
+  const clean = subject.trim();
+  const lower = clean.toLowerCase();
+  if (SUBJECT_TAG_MAP[lower]) {
+    return SUBJECT_TAG_MAP[lower];
+  }
+  const fallbackCode = clean.length <= 4 ? clean.toUpperCase() : clean.slice(0, 3).toUpperCase();
+  return { code: fallbackCode, name: clean };
+}
+
 const AVATAR_COLORS = [
   "bg-emerald-100 text-emerald-800 border-emerald-200",
   "bg-blue-100 text-blue-800 border-blue-200",
@@ -1263,14 +1386,30 @@ export default function SchoolDashboardPage() {
                                   </div>
                                 </td>
 
-                                {/* Subjects column */}
+                                {/* Subjects column (Shows subject key tags, e.g. EN, FR, MTH, PHY) */}
                                 <td className="py-3.5 px-4 text-slate-700">
                                   {validSubjects.length > 0 ? (
-                                    <span className="font-medium text-xs">
-                                      {validSubjects.length}× Core Subjects
-                                    </span>
+                                    <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 max-w-[220px]">
+                                      {validSubjects.map((sub, idx) => {
+                                        const info = getSubjectTag(sub);
+                                        const isCompulsoryEnglish = info.code === "EN";
+                                        return (
+                                          <span
+                                            key={idx}
+                                            title={info.name}
+                                            className={`inline-flex items-center px-1.5 py-0.5 rounded-md border text-[10.5px] font-medium tracking-wide select-none cursor-default transition ${
+                                              isCompulsoryEnglish
+                                                ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                                                : "border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200/80"
+                                            }`}
+                                          >
+                                            {info.code}
+                                          </span>
+                                        );
+                                      })}
+                                    </div>
                                   ) : (
-                                    <span className="text-slate-400 italic">Not chosen</span>
+                                    <span className="text-slate-400 italic text-[11px]">Not chosen</span>
                                   )}
                                 </td>
 
@@ -1413,11 +1552,26 @@ export default function SchoolDashboardPage() {
                                                 {std.totalPracticeQuestions || 0} questions
                                               </span>
                                             </div>
-                                            <div className="flex items-center justify-between text-slate-500">
-                                              <span>Subject Combination:</span>
-                                              <span className="font-medium text-[#12664F]">
-                                                {validSubjects.length > 0 ? validSubjects.join(" · ") : "Not selected yet"}
-                                              </span>
+                                            <div className="flex items-center justify-between text-slate-500 gap-2">
+                                              <span className="shrink-0">Subject Combination:</span>
+                                              {validSubjects.length > 0 ? (
+                                                <div className="flex flex-wrap items-center gap-1 justify-end">
+                                                  {validSubjects.map((sub, idx) => {
+                                                    const info = getSubjectTag(sub);
+                                                    return (
+                                                      <span
+                                                        key={idx}
+                                                        title={info.name}
+                                                        className="inline-flex items-center px-1.5 py-0.5 rounded border border-slate-200 bg-white text-[10px] font-medium text-slate-700"
+                                                      >
+                                                        {info.code}
+                                                      </span>
+                                                    );
+                                                  })}
+                                                </div>
+                                              ) : (
+                                                <span className="text-slate-400 italic">Not selected yet</span>
+                                              )}
                                             </div>
                                           </div>
 
