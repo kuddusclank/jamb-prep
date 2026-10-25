@@ -53,7 +53,8 @@ import {
   TrendingDown,
   ShieldCheck,
   Shield,
-  Download
+  Download,
+  Monitor
 } from "lucide-react";
 
 interface StudentItem {
@@ -998,110 +999,137 @@ export default function SchoolDashboardPage() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-                  {/* Stat 1: Total Candidates */}
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
-                      <span className="flex size-7 items-center justify-center rounded-lg bg-emerald-50 text-[#12664F] border border-emerald-200">
-                        <Users size={14} />
-                      </span>
-                      <span className="truncate">Total Enrolled</span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-3.5">
+                  {/* Card 1: Total Enrolled */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-4.5 flex flex-col justify-between hover:border-slate-300 transition-colors">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-slate-500 truncate">Total Enrolled</span>
+                      <Users size={15} className="text-slate-400 shrink-0" />
                     </div>
-                    <p className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums">
-                      {students.length}
-                    </p>
-                    <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/70 border border-emerald-300 px-2.5 py-0.5 text-[11px] font-medium text-emerald-900">
-                      <TrendingUp size={11} />
-                      <span>{students.length} active</span>
+                    <div className="my-2.5">
+                      <p className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums leading-none">
+                        {students.length}
+                      </p>
+                    </div>
+                    <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between min-h-[22px] text-[11px] text-slate-500 font-normal">
+                      <span className="truncate">
+                        {students.length === 1 ? "1 active student" : `${students.length} active students`}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Stat 2: Unlicensed */}
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
-                      <span className="flex size-7 items-center justify-center rounded-lg bg-amber-50 text-amber-800 border border-amber-200">
-                        <Clock size={14} />
-                      </span>
-                      <span className="truncate">Unlicensed</span>
+                  {/* Card 2: Unlicensed */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-4.5 flex flex-col justify-between hover:border-slate-300 transition-colors">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-slate-500 truncate">Unlicensed</span>
+                      <Clock size={15} className="text-slate-400 shrink-0" />
                     </div>
-                    <p className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums">
-                      {unlicensedCount < 10 && unlicensedCount > 0 ? `0${unlicensedCount}` : unlicensedCount}
-                    </p>
-                    {unlicensedCount > 0 ? (
-                      <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-100/80 border border-amber-300 px-2.5 py-0.5 text-[11px] font-medium text-amber-950">
-                        <AlertCircle size={11} />
-                        <span>needs action</span>
+                    <div className="my-2.5">
+                      <p className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums leading-none">
+                        {unlicensedCount}
+                      </p>
+                    </div>
+                    <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between min-h-[22px] text-[11px]">
+                      {unlicensedCount === 0 ? (
+                        <span className="inline-flex items-center gap-1.5 font-medium text-emerald-700 truncate">
+                          <span className="size-1.5 rounded-full bg-emerald-600 shrink-0" />
+                          <span>All licensed</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 font-medium text-amber-800 truncate">
+                          <span className="size-1.5 rounded-full bg-amber-600 shrink-0" />
+                          <span>{unlicensedCount} require licence</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card 3: Active Paid */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-4.5 flex flex-col justify-between hover:border-slate-300 transition-colors">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-slate-500 truncate">Active Paid</span>
+                      <ShieldCheck size={15} className="text-slate-400 shrink-0" />
+                    </div>
+                    <div className="my-2.5">
+                      <p className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums leading-none">
+                        {activeCount < 10 && activeCount > 0 ? `0${activeCount}` : activeCount}
+                      </p>
+                    </div>
+                    <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between min-h-[22px] text-[11px] text-slate-500 font-normal">
+                      <span className="truncate">₦1,500 per seat</span>
+                    </div>
+                  </div>
+
+                  {/* Card 4: Lab Readiness */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-4.5 flex flex-col justify-between hover:border-slate-300 transition-colors">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-slate-500 truncate">Lab Readiness</span>
+                      <Monitor size={15} className="text-slate-400 shrink-0" />
+                    </div>
+                    <div className="my-2.5">
+                      <p className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums leading-none">
+                        {scheduledMock ? "01" : "00"}
+                      </p>
+                    </div>
+                    <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between min-h-[22px] text-[11px]">
+                      {scheduledMock ? (
+                        <span className="inline-flex items-center gap-1.5 font-medium text-emerald-700 truncate">
+                          <span className="size-1.5 rounded-full bg-emerald-600 shrink-0" />
+                          <span>Session ready</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 font-normal text-slate-400 truncate">
+                          <span className="size-1.5 rounded-full bg-slate-300 shrink-0" />
+                          <span>Session idle</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card 5: Active Spend */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-4.5 flex flex-col justify-between hover:border-slate-300 transition-colors">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-slate-500 truncate">Active Spend</span>
+                      <CreditCard size={15} className="text-slate-400 shrink-0" />
+                    </div>
+                    <div className="my-2.5">
+                      <p className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums leading-none">
+                        ₦{activeSpend.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between min-h-[22px] text-[11px] text-slate-500 font-normal">
+                      <span className="truncate">30-day cycle</span>
+                    </div>
+                  </div>
+
+                  {/* Card 6: Avg Mock Score */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-4.5 flex flex-col justify-between hover:border-slate-300 transition-colors">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-slate-500 truncate">Avg Mock Score</span>
+                      <BarChart3 size={15} className="text-slate-400 shrink-0" />
+                    </div>
+                    <div className="my-2.5">
+                      <p className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums leading-none">
+                        {cohortAvg !== null ? `${cohortAvg}` : "—"}
+                      </p>
+                    </div>
+                    <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between min-h-[22px] text-[11px] text-slate-500 font-normal">
+                      <div className="w-full flex items-center justify-between gap-2">
+                        <span className="truncate">Target 280 / 400</span>
+                        {cohortAvg !== null && (
+                          <div 
+                            className="w-10 bg-slate-100 rounded-full h-1 overflow-hidden shrink-0"
+                            title={`Average: ${cohortAvg} / Target: 280 / Total: 400`}
+                          >
+                            <div 
+                              className={`h-full rounded-full transition-all duration-300 ${
+                                cohortAvg >= 280 ? "bg-emerald-600" : "bg-slate-700"
+                              }`}
+                              style={{ width: `${Math.min(100, Math.round((cohortAvg / 400) * 100))}%` }}
+                            />
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/70 border border-emerald-300 px-2.5 py-0.5 text-[11px] font-medium text-emerald-900">
-                        <Check size={11} />
-                        <span>all licensed</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Stat 3: Active Licences */}
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
-                      <span className="flex size-7 items-center justify-center rounded-lg bg-blue-50 text-blue-800 border border-blue-200">
-                        <ShieldCheck size={14} />
-                      </span>
-                      <span className="truncate">Active Paid</span>
-                    </div>
-                    <p className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums">
-                      {activeCount < 10 && activeCount > 0 ? `0${activeCount}` : activeCount}
-                    </p>
-                    <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-100/70 border border-blue-300 px-2.5 py-0.5 text-[11px] font-medium text-blue-950">
-                      <span>₦1,500 / seat</span>
-                    </div>
-                  </div>
-
-                  {/* Stat 4: CBT Lab Ready */}
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
-                      <span className="flex size-7 items-center justify-center rounded-lg bg-purple-50 text-purple-800 border border-purple-200">
-                        <Calendar size={14} />
-                      </span>
-                      <span className="truncate">Lab Readiness</span>
-                    </div>
-                    <p className="text-2xl font-semibold text-slate-900 tracking-tight">
-                      {scheduledMock ? "01" : "00"}
-                    </p>
-                    <div className="inline-flex items-center gap-1.5 rounded-full bg-purple-100/70 border border-purple-300 px-2.5 py-0.5 text-[11px] font-medium text-purple-950">
-                      <span>{scheduledMock ? "Session ready" : "Idle"}</span>
-                    </div>
-                  </div>
-
-                  {/* Stat 5: Monthly Spend */}
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
-                      <span className="flex size-7 items-center justify-center rounded-lg bg-emerald-50 text-[#12664F] border border-emerald-200">
-                        <CreditCard size={14} />
-                      </span>
-                      <span className="truncate">Active Spend</span>
-                    </div>
-                    <p className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums">
-                      ₦{activeSpend.toLocaleString()}
-                    </p>
-                    <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/70 border border-emerald-300 px-2.5 py-0.5 text-[11px] font-medium text-emerald-900">
-                      <TrendingUp size={11} />
-                      <span>30-day cycle</span>
-                    </div>
-                  </div>
-
-                  {/* Stat 6: Cohort Avg Score */}
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
-                      <span className="flex size-7 items-center justify-center rounded-lg bg-slate-100 text-slate-800 border border-slate-300">
-                        <BarChart3 size={14} />
-                      </span>
-                      <span className="truncate">Avg Mock Score</span>
-                    </div>
-                    <p className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums">
-                      {cohortAvg ? `${cohortAvg}` : "—"}
-                    </p>
-                    <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 border border-slate-300 px-2.5 py-0.5 text-[11px] font-medium text-slate-800">
-                      <span>target 280 / 400</span>
                     </div>
                   </div>
                 </div>
