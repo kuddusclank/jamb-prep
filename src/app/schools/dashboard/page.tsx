@@ -782,11 +782,11 @@ export default function SchoolDashboardPage() {
       {/* Main App Container */}
       <div className="lg:pl-64 flex-1 flex flex-col min-w-0">
         {/* Top Header / Breadcrumb & Action Toolbar */}
-        <header className="sticky top-0 z-30 bg-[#F1F5F9]/95 backdrop-blur-xs px-4 sm:px-6 lg:px-8 pt-5 pb-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            {/* Breadcrumb line & Big Heading */}
-            <div className="space-y-1 min-w-0">
-              <div className="flex items-center gap-2 text-xs text-slate-500">
+        <header className="sticky top-0 z-30 bg-[#F1F5F9]/95 backdrop-blur-xs px-4 sm:px-6 lg:px-8 pt-5 pb-4">
+          <div className="space-y-2.5">
+            {/* Top Breadcrumb line (Left: Location, Right: Refresh cadence) */}
+            <div className="flex items-center justify-between text-xs text-slate-500">
+              <div className="flex items-center gap-2 min-w-0">
                 <button
                   type="button"
                   onClick={() => setMobileSidebarOpen(true)}
@@ -795,66 +795,73 @@ export default function SchoolDashboardPage() {
                 >
                   <Menu size={15} />
                 </button>
-                <Lock size={12} className="text-slate-400" />
-                <Link href="/schools" className="hover:text-slate-900 transition">
+                <Lock size={12} className="text-slate-400 shrink-0" />
+                <Link href="/schools" className="hover:text-slate-900 transition text-slate-500 font-normal">
                   School Portal
                 </Link>
-                <span>/</span>
-                <span className="text-slate-700 font-medium truncate max-w-[150px] sm:max-w-none">
+                <span className="text-slate-300">/</span>
+                <span className="text-slate-600 font-normal truncate max-w-[180px] sm:max-w-none">
                   {getBreadcrumbTitle()}
                 </span>
-                <span className="hidden md:inline-block text-[11px] text-slate-400 ml-2">
-                  · Auto-refreshing every 30s
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[11px] text-slate-400 font-normal">
+                  Auto-refreshing every 30s
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900">
-                {getBreadcrumbTitle()}
-              </h1>
             </div>
 
-            {/* Right Action Buttons */}
-            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-              <button
-                type="button"
-                onClick={handleExportCsv}
-                disabled={students.length === 0}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 px-3.5 py-2 text-xs font-medium text-slate-700 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Export candidates to CSV file"
-              >
-                <Download size={14} />
-                <span className="hidden sm:inline">Export</span>
-              </button>
+            {/* Main Action Bar: Section Title on left, Action Buttons on right */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-0.5">
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+                {getBreadcrumbTitle()}
+              </h1>
 
-              <button
-                type="button"
-                onClick={handleSync}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 px-3.5 py-2 text-xs font-medium text-slate-700 transition cursor-pointer"
-                title="Synchronize cohort records"
-              >
-                <RotateCw size={14} className={isSyncing ? "animate-spin text-[#12664F]" : ""} />
-                <span className="hidden sm:inline">Sync</span>
-              </button>
+              {/* Right Action Buttons */}
+              <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleExportCsv}
+                  disabled={students.length === 0}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 px-3.5 py-2 text-xs font-medium text-slate-700 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Export candidates to CSV file"
+                >
+                  <Download size={14} />
+                  <span className="hidden sm:inline">Export</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setIsAddModalOpen(true)}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#12664F] hover:bg-[#0E5441] active:bg-[#0B3A2E] text-white font-medium text-xs px-4 py-2 border border-[#0E5441] transition cursor-pointer"
-              >
-                <UserPlus size={14} />
-                <span>New Candidate</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={handleSync}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 px-3.5 py-2 text-xs font-medium text-slate-700 transition cursor-pointer"
+                  title="Synchronize cohort records"
+                >
+                  <RotateCw size={14} className={isSyncing ? "animate-spin text-[#12664F]" : ""} />
+                  <span className="hidden sm:inline">Sync</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#12664F] hover:bg-[#0E5441] active:bg-[#0B3A2E] text-white font-medium text-xs px-4 py-2 border border-[#0E5441] transition cursor-pointer"
+                >
+                  <UserPlus size={14} />
+                  <span>New Candidate</span>
+                </button>
+              </div>
             </div>
           </div>
         </header>
 
         {/* View Content Body */}
-        <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-10 space-y-6 max-w-7xl w-full mx-auto">
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 pt-1 pb-12 space-y-7 max-w-7xl w-full mx-auto">
           {/* VIEW 1: CANDIDATES (QUEUE) */}
           {activeView === "candidates" && (
-            <div className="space-y-6">
+            <div className="space-y-7">
               {/* Quick Stats Row (Matches reference screenshot 100%) */}
-              <section className="space-y-3">
-                <div className="flex items-center justify-between">
+              <section className="space-y-3.5">
+                <div className="flex items-center justify-between pb-0.5">
                   <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                     Quick Stats
                   </h2>
@@ -1206,7 +1213,7 @@ export default function SchoolDashboardPage() {
                                   isSelected ? "bg-emerald-50/40" : "hover:bg-slate-50/70"
                                 }`}
                               >
-                                <td className="py-3 px-3 w-8 text-center">
+                                <td className="py-3.5 px-3 w-8 text-center">
                                   <button
                                     type="button"
                                     onClick={() => toggleExpandStudent(std.id)}
@@ -1221,7 +1228,7 @@ export default function SchoolDashboardPage() {
                                     />
                                   </button>
                                 </td>
-                                <td className="py-3 px-3 w-10">
+                                <td className="py-3.5 px-3 w-10">
                                   <button
                                     type="button"
                                     onClick={() => toggleSelectStudent(std.id)}
@@ -1236,7 +1243,7 @@ export default function SchoolDashboardPage() {
                                 </td>
 
                                 {/* Name + Avatar column (Matches reference screenshot) */}
-                                <td className="py-3 px-4">
+                                <td className="py-3.5 px-4">
                                   <div className="flex items-center gap-3">
                                     <div className={`size-8 rounded-full border flex items-center justify-center text-xs font-medium shrink-0 ${avatarColorClass}`}>
                                       {std.name.charAt(0).toUpperCase()}
@@ -1257,7 +1264,7 @@ export default function SchoolDashboardPage() {
                                 </td>
 
                                 {/* Subjects column */}
-                                <td className="py-3 px-4 text-slate-700">
+                                <td className="py-3.5 px-4 text-slate-700">
                                   {validSubjects.length > 0 ? (
                                     <span className="font-medium text-xs">
                                       {validSubjects.length}× Core Subjects
@@ -1268,7 +1275,7 @@ export default function SchoolDashboardPage() {
                                 </td>
 
                                 {/* Default Password column */}
-                                <td className="py-3 px-4">
+                                <td className="py-3.5 px-4">
                                   {isSelfRegistered || !pwd ? (
                                     <span className="text-[11px] text-slate-400 italic">
                                       Private
@@ -1289,7 +1296,7 @@ export default function SchoolDashboardPage() {
                                 </td>
 
                                 {/* Licence Status pill */}
-                                <td className="py-3 px-4">
+                                <td className="py-3.5 px-4">
                                   {std.licenseStatus === "active" ? (
                                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-3 py-1 text-xs font-medium text-emerald-900">
                                       <span className="size-2 rounded-full bg-emerald-600" />
@@ -1317,7 +1324,7 @@ export default function SchoolDashboardPage() {
                                 </td>
 
                                 {/* Score & Accuracy */}
-                                <td className="py-3 px-4">
+                                <td className="py-3.5 px-4">
                                   {std.averageScore ? (
                                     <span className="font-medium text-slate-900 text-xs tabular-nums">
                                       {std.averageScore} / 400
@@ -1332,7 +1339,7 @@ export default function SchoolDashboardPage() {
                                 </td>
 
                                 {/* Channel */}
-                                <td className="py-3 px-4 text-slate-700">
+                                <td className="py-3.5 px-4 text-slate-700">
                                   <span className="text-xs font-medium text-slate-600">
                                     {std.enrolmentMethod === "link"
                                       ? "Registration Link"
@@ -1343,7 +1350,7 @@ export default function SchoolDashboardPage() {
                                 </td>
 
                                 {/* Actions */}
-                                <td className="py-3 px-4 text-right">
+                                <td className="py-3.5 px-4 text-right">
                                   <div className="flex items-center justify-end gap-1.5">
                                     <button
                                       type="button"
