@@ -979,7 +979,7 @@ export default function SchoolDashboardPage() {
         </header>
 
         {/* View Content Body */}
-        <main className="flex-1 px-4 sm:px-6 lg:px-8 pt-1 pb-12 space-y-7 max-w-7xl w-full mx-auto">
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 pt-1 pb-12 space-y-7 w-full">
           {/* VIEW 1: CANDIDATES (QUEUE) */}
           {activeView === "candidates" && (
             <div className="space-y-7">
