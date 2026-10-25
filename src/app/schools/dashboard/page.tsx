@@ -79,6 +79,40 @@ interface StudentItem {
 type DashboardView = "candidates" | "diagnostics" | "lab" | "billing" | "profile";
 type FilterStatus = "all" | "active" | "unlicensed" | "expired";
 
+const VALID_DASHBOARD_VIEWS: readonly DashboardView[] = [
+  "candidates",
+  "diagnostics",
+  "lab",
+  "billing",
+  "profile",
+] as const;
+
+function isValidDashboardView(val: unknown): val is DashboardView {
+  return typeof val === "string" && (VALID_DASHBOARD_VIEWS as readonly string[]).includes(val);
+}
+
+function getInitialDashboardView(): DashboardView {
+  if (typeof window === "undefined") {
+    return "candidates";
+  }
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get("view") || params.get("tab");
+    if (isValidDashboardView(viewParam)) {
+      return viewParam;
+    }
+    const hash = window.location.hash.replace(/^#/, "");
+    if (isValidDashboardView(hash)) {
+      return hash;
+    }
+    const stored = localStorage.getItem("schools_dashboard_view");
+    if (isValidDashboardView(stored)) {
+      return stored;
+    }
+  } catch {}
+  return "candidates";
+}
+
 interface NavItem {
   id: DashboardView;
   label: string;
@@ -255,9 +289,25 @@ export default function SchoolDashboardPage() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedPasswordId, setCopiedPasswordId] = useState<string | null>(null);
 
-  // Active navigation view state
-  const [activeView, setActiveView] = useState<DashboardView>("candidates");
+  // Active navigation view state with URL and localStorage persistence
+  const [activeView, setActiveView] = useState<DashboardView>(getInitialDashboardView);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  const changeView = (nextView: DashboardView, replaceHistory = false) => {
+    setActiveView(nextView);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("schools_dashboard_view", nextView);
+        const url = new URL(window.location.href);
+        url.searchParams.set("view", nextView);
+        if (replaceHistory) {
+          window.history.replaceState({ view: nextView }, "", url.toString());
+        } else {
+          window.history.pushState({ view: nextView }, "", url.toString());
+        }
+      } catch {}
+    }
+  };
 
   // Modals state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -351,6 +401,31 @@ export default function SchoolDashboardPage() {
     if (typeof window !== "undefined") {
       setOrigin(window.location.origin);
     }
+  }, []);
+
+  // Synchronize active view with URL query parameters, hash, and browser history
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const initial = getInitialDashboardView();
+      if (initial !== activeView) {
+        setActiveView(initial);
+      }
+      try {
+        const url = new URL(window.location.href);
+        if (!url.searchParams.has("view")) {
+          url.searchParams.set("view", initial);
+          window.history.replaceState({ view: initial }, "", url.toString());
+        }
+      } catch {}
+    }
+
+    const handlePopState = () => {
+      const current = getInitialDashboardView();
+      setActiveView(current);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
   useEffect(() => {
@@ -591,7 +666,7 @@ export default function SchoolDashboardPage() {
     const unlicensedIds = students.filter((s) => s.licenseStatus !== "active").map((s) => s.id);
     if (unlicensedIds.length > 0) {
       setSelectedStudentIds(unlicensedIds);
-      setActiveView("candidates");
+      changeView("candidates");
     }
   };
 
@@ -884,7 +959,7 @@ export default function SchoolDashboardPage() {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  if (activeView !== "candidates") setActiveView("candidates");
+                  if (activeView !== "candidates") changeView("candidates");
                 }}
                 placeholder="Search candidates..."
                 className="w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-8 pr-10 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#12664F] focus:outline-hidden transition"
@@ -911,7 +986,7 @@ export default function SchoolDashboardPage() {
                         key={item.id}
                         type="button"
                         onClick={() => {
-                          setActiveView(item.id);
+                          changeView(item.id);
                           setMobileSidebarOpen(false);
                         }}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition cursor-pointer ${
@@ -1086,7 +1161,7 @@ export default function SchoolDashboardPage() {
                   </h2>
                   <button 
                     type="button" 
-                    onClick={() => setActiveView("billing")}
+                    onClick={() => changeView("billing")}
                     className="text-xs text-slate-400 hover:text-slate-600 p-1"
                     title="View Billing breakdown"
                   >

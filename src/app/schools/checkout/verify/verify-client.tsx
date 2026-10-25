@@ -248,7 +248,7 @@ export function SchoolVerifyClient() {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
                 <Link
-                  href="/schools/dashboard"
+                  href="/schools/dashboard?view=billing"
                   className="w-full flex-1 flex items-center justify-center gap-2 rounded-2xl bg-[#116149] px-6 py-3 text-xs font-bold text-white shadow-md shadow-[#116149]/20 hover:bg-[#0b4936] transition cursor-pointer"
                 >
                   <span>Return to School Dashboard</span>
