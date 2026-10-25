@@ -998,13 +998,14 @@ export default function SchoolDashboardPage() {
                   School Portal
                 </Link>
                 <span className="text-slate-300">/</span>
-                <span className="text-slate-600 font-normal truncate max-w-[180px] sm:max-w-none">
+                <span className="text-slate-700 font-medium truncate max-w-[180px] sm:max-w-none">
                   {getBreadcrumbTitle()}
                 </span>
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[11px] text-slate-400 font-normal">
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-slate-500 font-normal">
+                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Auto-refreshing every 30s
                 </span>
               </div>
@@ -1895,25 +1896,7 @@ export default function SchoolDashboardPage() {
           {/* VIEW 2: SYLLABUS DIAGNOSTICS */}
           {activeView === "diagnostics" && (
             <div className="space-y-6">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-                <div className="pb-4 mb-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-base sm:text-lg font-semibold text-slate-900 flex items-center gap-2">
-                      <BarChart3 size={18} className="text-[#12664F]" />
-                      <span>Syllabus Diagnostic Heatmap</span>
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Identify topic-level weaknesses across your entire candidate cohort and optimize revision intervention.
-                    </p>
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 rounded-xl bg-slate-50 px-3 py-1.5 text-xs text-slate-700 font-medium border border-slate-200">
-                    <span>Cohort Size:</span>
-                    <strong className="text-slate-950">{students.length} Candidates</strong>
-                  </div>
-                </div>
-
-                <SyllabusHeatmapView schoolName={schoolName} />
-              </div>
+              <SyllabusHeatmapView schoolName={schoolName} cohortSize={students.length} />
             </div>
           )}
 
