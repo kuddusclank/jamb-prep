@@ -105,10 +105,10 @@ export function MockSchedulerModal({
       if (!Array.isArray(sessionData.instructions)) {
         sessionData.instructions = [
           "Ensure all laboratory desktop monitors are connected to the school LAN or internet.",
-          "Students sign in with their email and uppercase surname default password.",
-          "Enter the Lab Session Code on the exam entry screen.",
-          "8-Key navigation (A, B, C, D for options; P for previous, N for next; S for submit; R for review) is enforced.",
-          "Exam auto-submits exactly when the 120:00 timer elapses.",
+          "Students simply visit /mock; their school mock card appears automatically.",
+          "No manual session codes or passwords required.",
+          "Strict lab hours are enforced based on the scheduled start time and duration.",
+          "Scores automatically synchronize to the live ranked leaderboard on your administrator dashboard.",
         ];
       }
 
@@ -207,7 +207,7 @@ export function MockSchedulerModal({
                     <Zap size={14} className="text-[#12664F]" />
                     <span>Launch Immediately</span>
                   </div>
-                  <span className="text-[11px] text-slate-500 font-normal block mt-1">Students enter code right now</span>
+                  <span className="text-[11px] text-slate-500 font-normal block mt-1">Students can start immediately on /mock</span>
                 </button>
 
                 <button
@@ -223,7 +223,7 @@ export function MockSchedulerModal({
                     <Calendar size={14} className="text-slate-500" />
                     <span>Schedule Date/Time</span>
                   </div>
-                  <span className="text-[11px] text-slate-500 font-normal block mt-1">Pick lab exam timetable slot</span>
+                  <span className="text-[11px] text-slate-500 font-normal block mt-1">Strict lab hours countdown</span>
                 </button>
               </div>
 
@@ -254,7 +254,7 @@ export function MockSchedulerModal({
                 </div>
                 <div className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200">
                   <span>Eligible Candidates:</span>
-                  <span className="font-medium text-[#12664F]">{activeCandidatesCount} Active</span>
+                  <span className="font-medium text-[#12664F]">{activeCandidatesCount} Enrolled</span>
                 </div>
                 <div className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200">
                   <span>Navigation:</span>
@@ -296,7 +296,7 @@ export function MockSchedulerModal({
                   </>
                 ) : (
                   <>
-                    <span>Generate Lab Session Code</span>
+                    <span>Schedule Lab Mock Session</span>
                     <ArrowRight size={13} />
                   </>
                 )}
@@ -310,11 +310,11 @@ export function MockSchedulerModal({
               <span className="flex size-12 items-center justify-center rounded-xl bg-[#EAF4EF] text-[#12664F] mx-auto border border-[#12664F]/15">
                 <CheckCircle2 size={24} />
               </span>
-              <h2 className="text-base sm:text-lg font-semibold text-slate-900">Lab Mock Session Initialized!</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-slate-900">Lab Mock Session Activated!</h2>
               <p className="text-xs text-slate-500 font-normal">{scheduledSession.session.title}</p>
             </div>
 
-            {/* Session Code Slip */}
+            {/* Session Code & Automatic Binding */}
             <div className="rounded-xl border border-[#12664F]/30 bg-[#EAF4EF]/60 p-5 text-center space-y-2.5">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-[#12664F] block">
                 Candidate Lab Entry Code
@@ -322,8 +322,8 @@ export function MockSchedulerModal({
               <p className="font-mono text-3xl font-semibold text-[#0B3028] tracking-widest">
                 {scheduledSession.session.labSessionCode}
               </p>
-              <p className="text-[11px] text-slate-500 font-normal max-w-sm mx-auto">
-                Write this code on the computer lab whiteboard. Candidates enter this code on their screens to start the synchronized mock.
+              <p className="text-[11px] text-slate-600 font-normal max-w-sm mx-auto">
+                Candidates can enter this session code on their screens, or simply log in and click <strong>&quot;Start Official School Mock&quot;</strong> during lab hours.
               </p>
               <button
                 type="button"
@@ -338,7 +338,7 @@ export function MockSchedulerModal({
             {/* Proctoring Briefing Card */}
             <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-2.5 text-xs">
               <div className="flex items-center justify-between font-medium text-slate-800 pb-2 border-b border-slate-200/80">
-                <span>Teacher Proctor Key</span>
+                <span>Teacher Proctor Reference</span>
                 <span className="font-mono text-xs font-semibold text-[#12664F] bg-white px-2.5 py-0.5 rounded-md border border-slate-200">
                   {scheduledSession.session.proctorKey}
                 </span>
@@ -367,7 +367,7 @@ export function MockSchedulerModal({
                 onClick={onClose}
                 className="rounded-xl bg-[#12664F] px-5 py-2.5 text-xs font-medium text-white hover:bg-[#0B3028] transition cursor-pointer"
               >
-                Done
+                View Leaderboard
               </button>
             </div>
           </div>

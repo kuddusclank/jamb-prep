@@ -40,6 +40,7 @@ test("E2E School & Student Onboarding: Comprehensive Production Workflow Audit",
   const { SCHOOL_ROUTES, resolveCallerSchool } = await import("../worker/services/school-routes.ts");
   const { provisionStudentAccountAtomic } = await import("../worker/services/auth-provisioning-service.ts");
   const { settleSchoolOrderFromWebhook } = await import("../worker/services/school-routes.ts");
+  const { PRACTICE_ROUTES } = await import("../worker/services/practice-routes.ts");
 
   // Helper to create mock request contexts
   function createCtx({
@@ -805,5 +806,216 @@ test("E2E School & Student Onboarding: Comprehensive Production Workflow Audit",
       () => joinRoute.handler(outsiderCtx),
       (err) => err.status === 404 && err.code === "NOT_FOUND"
     );
+  });
+
+  await t.test("5.2 CBT Lab Mock: Zero-Code Auto-Binding, Strict Lab Hours, and Privacy Rules", async () => {
+    const scheduleRoute = SCHOOL_ROUTES.find((r) => r.id === "schools.mocks.schedule");
+    const activeMockRoute = SCHOOL_ROUTES.find((r) => r.id === "schools.mocks.active.get");
+    const endMockRoute = SCHOOL_ROUTES.find((r) => r.id === "schools.mocks.end");
+    const readinessRoute = PRACTICE_ROUTES.find((r) => r.id === "practice.mock.readiness");
+
+    assert.ok(scheduleRoute, "Schedule route must exist");
+    assert.ok(activeMockRoute, "Active mock route must exist");
+    assert.ok(endMockRoute, "End mock route must exist");
+    assert.ok(readinessRoute, "Readiness route must exist");
+
+    const schoolMockRecord = {
+      id: "77777777-7777-4777-a777-777777777777",
+      school_id: schoolRecord.id,
+      title: "Senior Secondary UTME Lab Mock 1",
+      scheduled_start: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 mins ago (open)
+      duration_minutes: 120,
+      question_count: 180,
+      status: "active",
+      window_buffer_minutes: 30,
+      created_at: new Date().toISOString(),
+    };
+
+    let activeMocksTable = [schoolMockRecord];
+
+    const enrolledStudentId = "cand-apex-01";
+    const studentCombination = [
+      { id: "sub-eng", name: "Use of English" },
+      { id: "sub-mat", name: "Mathematics" },
+      { id: "sub-phy", name: "Physics" },
+      { id: "sub-che", name: "Chemistry" },
+    ];
+
+    const db = {
+      sql: async (strings, ...values) => {
+        const q = strings.join("?");
+
+        // 1. Resolve school for admin
+        if (/FROM\s+schools\s+s/i.test(q) && /admin_id/i.test(q)) {
+          return [schoolRecord];
+        }
+
+        // 2. school_mocks queries
+        if (/INSERT\s+INTO\s+school_mocks/i.test(q)) {
+          const newMock = {
+            id: "88888888-8888-4888-a888-888888888888",
+            school_id: schoolRecord.id,
+            title: values[1] || "Term UTME Mock",
+            scheduled_start: values[2],
+            duration_minutes: values[3],
+            question_count: values[4],
+            status: "active",
+            window_buffer_minutes: values[5] || 30,
+            created_at: new Date().toISOString(),
+          };
+          activeMocksTable = [newMock];
+          return [newMock];
+        }
+
+        if (/UPDATE\s+school_mocks\s+SET\s+status\s*=\s*'completed'/i.test(q)) {
+          activeMocksTable = [];
+          return [{ ...schoolMockRecord, status: "completed" }];
+        }
+
+        if (/FROM\s+school_mocks/i.test(q)) {
+          return activeMocksTable;
+        }
+
+        // 3. Student school affiliation check
+        if (/FROM\s+school_students\s+ss\s+JOIN\s+schools/i.test(q)) {
+          const studentUserId = values[0];
+          if (studentUserId === enrolledStudentId) {
+            return [
+              {
+                school_id: schoolRecord.id,
+                school_name: schoolRecord.name,
+                school_code: schoolRecord.code,
+              },
+            ];
+          }
+          return [];
+        }
+
+        // 4. Student enrolled subjects / blueprints for readiness
+        if (/FROM\s+student_subjects/i.test(q) || /FROM\s+subjects/i.test(q)) {
+          return studentCombination;
+        }
+
+        if (/FROM\s+assessment_blueprints/i.test(q)) {
+          return [
+            { id: "bp-eng", subject_id: "sub-eng", duration_minutes: 60, question_count: 60 },
+            { id: "bp-mat", subject_id: "sub-mat", duration_minutes: 40, question_count: 40 },
+            { id: "bp-phy", subject_id: "sub-phy", duration_minutes: 40, question_count: 40 },
+            { id: "bp-che", subject_id: "sub-che", duration_minutes: 40, question_count: 40 },
+          ];
+        }
+
+        // 5. Active mock leaderboard query
+        if (/FROM\s+school_students\s+ss\s+LEFT\s+JOIN\s+attempts\s+a/i.test(q)) {
+          return [
+            {
+              student_user_id: "cand-apex-01",
+              full_name: "Babajide Sanwo",
+              email: "b.sanwo@apexschool.ng",
+              candidate_number: "SCH-001",
+              attempt_id: "att-001",
+              total_score: 312,
+              attempt_status: "completed",
+              time_spent_seconds: 5400,
+              raw_breakdown: { English: 82, Mathematics: 78, Physics: 74, Chemistry: 78 },
+              submitted_at: new Date().toISOString(),
+            },
+            {
+              student_user_id: "cand-apex-02",
+              full_name: "Aminat Bello",
+              email: "a.bello@apexschool.ng",
+              candidate_number: "SCH-002",
+              attempt_id: "att-002",
+              total_score: 285,
+              attempt_status: "completed",
+              time_spent_seconds: 6100,
+              raw_breakdown: { English: 75, Mathematics: 70, Physics: 72, Chemistry: 68 },
+              submitted_at: new Date().toISOString(),
+            },
+          ];
+        }
+
+        // 6. Attempts query for readiness check
+        if (/FROM\s+attempts/i.test(q)) {
+          return [];
+        }
+
+        return [];
+      },
+    };
+
+    // A. Enrolled student checks /api/v1/mock/readiness -> automatically detects school mock
+    const studentReadinessCtx = createCtx({
+      method: "GET",
+      pathname: "/api/v1/mock/readiness",
+      actor: {
+        userId: enrolledStudentId,
+        email: "b.sanwo@apexschool.ng",
+        role: "student",
+        claims: {},
+      },
+      db,
+    });
+
+    const readinessRes = await readinessRoute.handler(studentReadinessCtx);
+    assert.equal(readinessRes.status, 200);
+    assert.ok(readinessRes.body.schoolMock, "Expected schoolMock payload to be present for enrolled candidate");
+    assert.equal(readinessRes.body.schoolMock.schoolName, schoolRecord.name);
+    assert.equal(readinessRes.body.schoolMock.title, schoolMockRecord.title);
+    assert.equal(readinessRes.body.schoolMock.windowStatus, "open");
+    assert.equal(readinessRes.body.schoolMock.isWindowOpen, true);
+
+    // CRITICAL PRIVACY RULE: Student payload MUST NOT expose class rankings or other students' scores
+    assert.equal(readinessRes.body.schoolMock.leaderboard, undefined);
+    assert.equal(readinessRes.body.schoolMock.rank, undefined);
+
+    // B. School Admin fetches /api/v1/schools/mocks/active -> receives ranked leaderboard & KPIs
+    const adminActiveMockCtx = createCtx({
+      method: "GET",
+      pathname: "/api/v1/schools/mocks/active",
+      actor: {
+        userId: schoolRecord.admin_id,
+        email: "admin@apexschool.ng",
+        role: "school_admin",
+        claims: { user_metadata: { role: "school_admin", school_code: schoolRecord.code } },
+      },
+      db,
+    });
+
+    const activeRes = await activeMockRoute.handler(adminActiveMockCtx);
+    assert.equal(activeRes.status, 200);
+    assert.ok(activeRes.body.mock);
+    assert.equal(activeRes.body.mock.title, schoolMockRecord.title);
+    assert.equal(activeRes.body.metrics.completed, 2);
+    assert.equal(activeRes.body.metrics.topScore, 312);
+    assert.equal(activeRes.body.metrics.averageScore, 299);
+
+    // Verify leaderboard is sorted by total_score descending with assigned ranks
+    assert.equal(activeRes.body.leaderboard.length, 2);
+    assert.equal(activeRes.body.leaderboard[0].rank, 1);
+    assert.equal(activeRes.body.leaderboard[0].fullName, "Babajide Sanwo");
+    assert.equal(activeRes.body.leaderboard[0].totalScore, 312);
+    assert.equal(activeRes.body.leaderboard[1].rank, 2);
+    assert.equal(activeRes.body.leaderboard[1].fullName, "Aminat Bello");
+    assert.equal(activeRes.body.leaderboard[1].totalScore, 285);
+
+    // C. School Admin ends mock session -> status transitions to completed
+    const endCtx = createCtx({
+      method: "POST",
+      pathname: `/api/v1/schools/mocks/${schoolMockRecord.id}/end`,
+      actor: {
+        userId: schoolRecord.admin_id,
+        email: "admin@apexschool.ng",
+        role: "school_admin",
+        claims: { user_metadata: { role: "school_admin", school_code: schoolRecord.code } },
+      },
+      db,
+    });
+    endCtx.params = { mockId: schoolMockRecord.id };
+
+    const endRes = await endMockRoute.handler(endCtx);
+    assert.equal(endRes.status, 200);
+    assert.equal(endRes.body.success, true);
+    assert.equal(endRes.body.mock.status, "completed");
   });
 });

@@ -5,6 +5,8 @@ import { PolicyLinks } from "@/components/legal-page";
 import { pageMetadata } from "@/lib/seo";
 import { SchoolsNavClient } from "./schools-nav-client";
 import { SchoolsScrollObserver } from "./schools-scroll-observer";
+import { SchoolsHeroActions } from "./schools-hero-actions";
+import { SchoolsFooterActions } from "./schools-footer-actions";
 import { 
   CheckCircle2, 
   XCircle, 
@@ -71,20 +73,7 @@ export default function SchoolsPage() {
             </p>
 
             {/* Centered CTA Buttons with Staggered Entry Animation */}
-            <div className="animate-hero-actions pt-2 flex flex-wrap items-center justify-center gap-3.5">
-              <Link
-                href="/schools/register"
-                className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#d6ed9f] px-8 text-sm font-semibold text-[#182518] shadow-md hover:bg-[#e4f5bb] transition whitespace-nowrap"
-              >
-                Register your school today! <ArrowRight size={15} />
-              </Link>
-              <Link
-                href="/schools/login"
-                className="inline-flex min-h-12 items-center rounded-full border border-white/20 bg-white/10 backdrop-blur-md px-7 text-sm font-semibold text-[#f2f3eb] hover:bg-white/20 transition shadow-xs whitespace-nowrap"
-              >
-                School portal sign in
-              </Link>
-            </div>
+            <SchoolsHeroActions />
           </div>
 
           {/* Bouncing Scroll Down Indicator Button */}
@@ -703,20 +692,7 @@ export default function SchoolsPage() {
               Register your institution in under two minutes, import your student roster, and begin computer-based mock testing immediately.
             </p>
 
-            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
-              <Link
-                href="/schools/register"
-                className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#116149] px-7 text-xs sm:text-sm font-semibold text-white shadow-md hover:bg-[#0c4a37] transition"
-              >
-                Register Your School <ArrowRight size={15} />
-              </Link>
-              <Link
-                href="/schools/login"
-                className="inline-flex min-h-12 items-center rounded-full border border-emerald-700/60 bg-emerald-950/40 px-6 text-xs sm:text-sm font-semibold text-white hover:bg-emerald-900/60 transition"
-              >
-                Sign In to School Portal
-              </Link>
-            </div>
+            <SchoolsFooterActions />
           </div>
         </section>
       </main>

@@ -149,7 +149,40 @@ function SchoolLabSessionEntry({
     </div>
   );
 }
-interface MockReadiness {ready:boolean;isPremium:boolean;activeAttemptId:string|null;message:string;subjects:{code:string;name:string;isCompulsory:boolean;required:number;available:number;ready:boolean;message:string}[];}
+interface MockReadiness {
+  ready: boolean;
+  isPremium: boolean;
+  activeAttemptId: string | null;
+  message: string;
+  subjects: {
+    code: string;
+    name: string;
+    isCompulsory: boolean;
+    required: number;
+    available: number;
+    ready: boolean;
+    message: string;
+  }[];
+  schoolMock?: {
+    id: string;
+    title: string;
+    schoolName: string;
+    schoolCode: string;
+    scheduledStart: string;
+    durationMinutes: number;
+    windowStatus: 'scheduled' | 'open' | 'expired';
+    hasCompleted: boolean;
+    activeAttemptId: string | null;
+    previousResult: {
+      totalScore: number;
+      englishScore: number;
+      subject2Score: number;
+      subject3Score: number;
+      subject4Score: number;
+      completedAt: string;
+    } | null;
+  } | null;
+}
 
 function MockRedirectNotice() {
   const searchParams = useSearchParams();
@@ -241,6 +274,223 @@ export default function MockLobbyPage() {
 
   if (!resource.data) return <StudyWorkspace><ResourceStatus error={resource.error} retry={resource.retry}/></StudyWorkspace>;
   const enrolledSubjects = resource.data.subjects;
+  const schoolMock = resource.data.schoolMock;
+
+  // 1. DEDICATED INSTITUTIONAL SCHOOL MOCK VIEW (Zero code entry, automatic binding)
+  if (schoolMock) {
+    return (
+      <StudyWorkspace>
+        <main className="shell section-space">
+          <div className="max-w-3xl mx-auto space-y-6">
+            <Suspense fallback={null}>
+              <MockRedirectNotice />
+            </Suspense>
+
+            <div className="rounded-3xl border border-emerald-950/15 bg-white p-6 sm:p-10 shadow-sm space-y-7">
+              {/* Institutional Header & Badges */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-5">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-50 text-[#116149] border border-emerald-200">
+                    <Building2 size={20} />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#116149] block">
+                      {schoolMock.schoolName}
+                    </span>
+                    <strong className="text-lg sm:text-xl text-[#092E28] block">
+                      {schoolMock.title}
+                    </strong>
+                  </div>
+                </div>
+
+                {schoolMock.hasCompleted ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-[#116149] text-xs font-bold">
+                    <CheckCircle2 size={13} /> Exam Completed & Graded
+                  </span>
+                ) : schoolMock.windowStatus === "open" ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-[#116149] text-xs font-bold animate-pulse">
+                    <span className="size-2 rounded-full bg-[#116149]" /> Lab Window Open
+                  </span>
+                ) : schoolMock.windowStatus === "scheduled" ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold">
+                    <Clock size={13} /> Scheduled Lab Hour
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
+                    <Clock size={13} /> Lab Window Closed
+                  </span>
+                )}
+              </div>
+
+              {/* State A: Student has already completed this school mock */}
+              {schoolMock.hasCompleted && schoolMock.previousResult ? (
+                <div className="space-y-6">
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-6 text-center space-y-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#116149] block">
+                      Official Mock Score
+                    </span>
+                    <strong className="text-4xl sm:text-5xl font-black text-[#092E28] block">
+                      {schoolMock.previousResult.totalScore}
+                      <span className="text-xl text-slate-500 font-medium"> / 400</span>
+                    </strong>
+                    <p className="text-xs text-slate-600 max-w-md mx-auto">
+                      Your examination score has been synchronized to your school dashboard. Only your school administrator has access to class rankings.
+                    </p>
+                  </div>
+
+                  {/* 4-Subject Score Breakdown */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Subject Score Breakdown
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase block">English</span>
+                        <strong className="text-lg text-[#092E28] block mt-1">
+                          {schoolMock.previousResult.englishScore}
+                        </strong>
+                        <span className="text-[10px] text-slate-400">/ 100</span>
+                      </div>
+                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase block">Subject 2</span>
+                        <strong className="text-lg text-[#092E28] block mt-1">
+                          {schoolMock.previousResult.subject2Score}
+                        </strong>
+                        <span className="text-[10px] text-slate-400">/ 100</span>
+                      </div>
+                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase block">Subject 3</span>
+                        <strong className="text-lg text-[#092E28] block mt-1">
+                          {schoolMock.previousResult.subject3Score}
+                        </strong>
+                        <span className="text-[10px] text-slate-400">/ 100</span>
+                      </div>
+                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase block">Subject 4</span>
+                        <strong className="text-lg text-[#092E28] block mt-1">
+                          {schoolMock.previousResult.subject4Score}
+                        </strong>
+                        <span className="text-[10px] text-slate-400">/ 100</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-center">
+                    <Link
+                      href="/results"
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#116149] text-white text-xs font-bold hover:bg-[#0e523e] transition"
+                    >
+                      View Past Performance History <ArrowRight size={13} />
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                /* State B: Mock is not completed yet */
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-lg sm:text-xl font-bold text-[#092E28]">
+                      Laboratory Examination Instructions
+                    </h2>
+                    <p className="mt-1 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      You are taking the official timed mock examination for <strong>{schoolMock.schoolName}</strong>. 
+                      Standard UTME examination blueprints apply across your 4 registered subjects. No session code is required.
+                    </p>
+                  </div>
+
+                  {/* Registered Subjects */}
+                  <div className="space-y-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
+                      Your Examination Subjects (180 Questions Total)
+                    </span>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {enrolledSubjects.map((sub) => (
+                        <div
+                          key={sub.code}
+                          className="flex items-center justify-between p-3 rounded-xl bg-[#F6F8F5] border border-slate-200/80 text-xs"
+                        >
+                          <span className="font-semibold text-[#092E28]">{sub.name}</span>
+                          <span className="font-mono font-bold text-[#116149]">
+                            {sub.code === "ENG" ? "60 Qs" : "40 Qs"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Exam Conditions Callout */}
+                  <div className="grid gap-3 sm:grid-cols-3 p-4 rounded-2xl bg-[#EDF2E9]/70 border border-emerald-950/10 text-xs">
+                    <div className="flex items-start gap-2.5">
+                      <Clock size={16} className="text-[#116149] shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="block font-bold text-[#092E28]">120 Minutes</strong>
+                        <span className="text-slate-600 text-[11px]">Strict countdown</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2.5">
+                      <Keyboard size={16} className="text-[#116149] shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="block font-bold text-[#092E28]">8-Key Mode</strong>
+                        <span className="text-slate-600 text-[11px]">A, B, C, D, P, N, S, R</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2.5">
+                      <Award size={16} className="text-[#116149] shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="block font-bold text-[#092E28]">400-Point Scale</strong>
+                        <span className="text-slate-600 text-[11px]">Direct school sync</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Window Status Banner */}
+                  {schoolMock.windowStatus === "scheduled" && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 flex items-start gap-2.5">
+                      <Clock size={16} className="shrink-0 mt-0.5 text-amber-700" />
+                      <div>
+                        <strong className="block font-semibold">Awaiting Scheduled Start Time</strong>
+                        <span>
+                          This lab session is scheduled to open at{" "}
+                          <strong>
+                            {new Date(schoolMock.scheduledStart).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </strong>
+                          . Your invigilator will instruct the lab when to click start.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {schoolMock.windowStatus === "expired" && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-900 flex items-start gap-2.5">
+                      <AlertTriangle size={16} className="shrink-0 mt-0.5 text-red-700" />
+                      <div>
+                        <strong className="block font-semibold">Laboratory Window Closed</strong>
+                        <span>
+                          The designated examination window for this mock has concluded. Please contact your school administrator.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Launch CTA */}
+                  <div className="pt-2 border-t border-slate-100">
+                    <MockStartButton
+                      canStart={resource.data.ready && schoolMock.windowStatus === "open"}
+                      activeAttemptId={schoolMock.activeAttemptId || resource.data.activeAttemptId}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+      </StudyWorkspace>
+    );
+  }
+
+  // 2. STANDARD INDIVIDUAL CANDIDATE MOCK VIEW (Fallback for independent students)
   return (
     <StudyWorkspace>
       <main className="shell section-space">
@@ -349,9 +599,6 @@ export default function MockLobbyPage() {
 
             {!resource.data.ready&&!resource.data.activeAttemptId&&<div role="status" className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"><p className="font-semibold">{resource.data.message}</p><ul className="mt-3 space-y-2">{resource.data.subjects.filter(s=>!s.ready).map(s=><li key={s.code}>{s.message}</li>)}</ul><a href="/practice/" className="mt-4 inline-block font-semibold underline">Practise a topic instead</a></div>}
 
-            {/* School Computer Lab Session Code Entry */}
-            <SchoolLabSessionEntry onVerifiedSessionChange={setVerifiedLabSession} />
-
             {/* Launch CTA */}
             <div className="mt-8 space-y-6 border-t border-slate-100 pt-6">
               <div className="text-xs text-slate-500">
@@ -360,7 +607,6 @@ export default function MockLobbyPage() {
               <MockStartButton
                 canStart={resource.data.ready}
                 activeAttemptId={resource.data.activeAttemptId}
-                labSessionCode={verifiedLabSession?.labSessionCode || null}
               />
             </div>
           </div>

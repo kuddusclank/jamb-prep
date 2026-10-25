@@ -119,8 +119,76 @@ export async function startFrozenMock(tx: SqlTagExecutor, userId: string, input:
   const [budget]=await tx`SELECT COALESCE(sum(octet_length(q.snapshot::text)+120),0)::int AS bytes FROM study_question_pool q WHERE id IN(SELECT (x->>'id')::uuid FROM jsonb_array_elements(${JSON.stringify(selected)}::text::jsonb) x)`;
   if(Number(budget.bytes)>524288)throw new ApiError({status:409,code:'CONFLICT',message:'The selected mock exceeds its safe transport size. No diagnostic allowance has been consumed.'});
   const labSessionCode = typeof input.labSessionCode === 'string' && input.labSessionCode.trim() ? input.labSessionCode.trim().toUpperCase() : null;
-  const [attempt]=await tx<Array<{id:string}>>`INSERT INTO attempts(user_id,mode,status,exam_conditions,started_at,expires_at,blueprint_manifest)
-    VALUES(${userId}::uuid,'mock','in_progress',${input.examConditions},${now.toISOString()}::timestamptz,${new Date(now.getTime()+7200000).toISOString()}::timestamptz,${JSON.stringify({selectorVersion:1,seed,...(labSessionCode?{labSessionCode}:{}),subjects:manifests})}::text::jsonb) RETURNING id`;
+
+  let activeSchoolMockId: string | null = null;
+  try {
+    const enrolledSchoolRows = await tx<Array<{ school_id: string }>>`
+      SELECT school_id FROM school_students WHERE student_user_id = ${userId}::uuid LIMIT 1
+    `;
+
+    if (enrolledSchoolRows[0]) {
+      const activeMocks = await tx<Array<{
+        id: string;
+        title: string;
+        scheduled_start: string;
+        duration_minutes: number;
+        window_buffer_minutes: number;
+      }>>`
+        SELECT id, title, scheduled_start, duration_minutes, window_buffer_minutes
+        FROM school_mocks
+        WHERE school_id = ${enrolledSchoolRows[0].school_id}::uuid AND status = 'active'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `;
+
+      if (activeMocks[0]) {
+        const sm = activeMocks[0];
+        const startMs = new Date(sm.scheduled_start).getTime();
+        const durationMs = (sm.duration_minutes || 120) * 60 * 1000;
+        const bufferMs = (sm.window_buffer_minutes || 30) * 60 * 1000;
+        const endMs = startMs + durationMs + bufferMs;
+        const nowMs = now.getTime();
+
+        if (nowMs < startMs) {
+          throw new ApiError({
+            status: 409,
+            code: 'CONFLICT',
+            message: `This school CBT mock ("${sm.title}") is scheduled to open at ${new Date(startMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. Please wait for the lab session to open.`,
+          });
+        }
+
+        if (nowMs > endMs) {
+          throw new ApiError({
+            status: 409,
+            code: 'CONFLICT',
+            message: `The laboratory examination window for "${sm.title}" has closed. Please contact your school administrator.`,
+          });
+        }
+
+        activeSchoolMockId = sm.id;
+      }
+    }
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+  }
+
+  const [attempt]=await tx<Array<{id:string}>>`INSERT INTO attempts(user_id,mode,status,exam_conditions,started_at,expires_at,school_mock_id,blueprint_manifest)
+    VALUES(
+      ${userId}::uuid,
+      'mock',
+      'in_progress',
+      ${input.examConditions},
+      ${now.toISOString()}::timestamptz,
+      ${new Date(now.getTime()+7200000).toISOString()}::timestamptz,
+      ${activeSchoolMockId ? activeSchoolMockId : null}::uuid,
+      ${JSON.stringify({
+        selectorVersion: 1,
+        seed,
+        ...(activeSchoolMockId ? { schoolMockId: activeSchoolMockId } : {}),
+        ...(labSessionCode ? { labSessionCode } : {}),
+        subjects: manifests
+      })}::text::jsonb
+    ) RETURNING id`;
   const [frozen]=await tx`WITH chosen AS(SELECT * FROM jsonb_to_recordset(${JSON.stringify(selected)}::text::jsonb) AS x(id uuid,position int)), inserted AS(
     INSERT INTO attempt_questions(attempt_id,question_id,subject_id,topic_id,position,snapshot,correct_option_id,frozen_explanation)
     SELECT ${attempt.id}::uuid,q.id,q.subject_id,q.topic_id,c.position,q.snapshot||jsonb_build_object('position',c.position),q.correct_option_id,q.explanation

@@ -151,10 +151,12 @@ export const attempts = pgTable('attempts', {
   startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   blueprintManifest: jsonb('blueprint_manifest'),
+  schoolMockId: uuid('school_mock_id'),
   completedAt: timestamp('completed_at', { withTimezone: true }),
 }, (table) => [
   index('attempt_user_idx').on(table.userId),
-  index('attempt_status_idx').on(table.status)
+  index('attempt_status_idx').on(table.status),
+  index('attempts_school_mock_idx').on(table.schoolMockId),
 ]).enableRLS();
 
 export const attemptQuestions = pgTable('attempt_questions', {
@@ -582,4 +584,20 @@ export const schoolActivationJobs = pgTable('school_activation_jobs', {
   uniqueIndex('school_activation_jobs_order_student_idx').on(table.orderId, table.studentUserId),
   index('school_activation_jobs_order_idx').on(table.orderId),
   index('school_activation_jobs_status_idx').on(table.status),
+]).enableRLS();
+
+export const schoolMocks = pgTable('school_mocks', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  schoolId: uuid('school_id').references(() => schools.id, { onDelete: 'cascade' }).notNull(),
+  title: text('title').notNull(),
+  scheduledStart: timestamp('scheduled_start', { withTimezone: true }).notNull(),
+  durationMinutes: integer('duration_minutes').default(120).notNull(),
+  questionCount: integer('question_count').default(180).notNull(),
+  status: text('status').default('active').notNull(), // 'scheduled' | 'active' | 'completed' | 'archived'
+  windowBufferMinutes: integer('window_buffer_minutes').default(30).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('school_mocks_school_status_idx').on(table.schoolId, table.status),
+  index('school_mocks_school_created_idx').on(table.schoolId, table.createdAt),
 ]).enableRLS();

@@ -3,11 +3,16 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
+import { useBrowserAccount } from "@/components/browser-account-boundary";
+import { ArrowRight, LayoutDashboard, Sparkles } from "lucide-react";
 
 export function SchoolsNavClient() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { session, identity } = useBrowserAccount();
 
   useEffect(() => {
+    setMounted(true);
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
@@ -16,6 +21,10 @@ export function SchoolsNavClient() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const isAuthenticated = mounted && session.status === "authenticated";
+  const role = identity?.user?.role || session.role;
+  const isSchoolAdmin = role === "school_admin";
 
   return (
     <header
@@ -53,14 +62,44 @@ export function SchoolsNavClient() {
           </div>
         </div>
 
-        {/* Right Action Button */}
+        {/* Right Action Button(s) - Auth-Aware */}
         <div className="flex items-center gap-3 shrink-0">
-          <Link
-            href="/schools/register"
-            className="rounded-full bg-[#d6ed9f] px-5 py-2.5 text-xs sm:text-sm font-semibold text-[#182518] shadow-xs hover:bg-[#e4f5bb] transition-colors whitespace-nowrap"
-          >
-            Register School
-          </Link>
+          {isAuthenticated ? (
+            isSchoolAdmin ? (
+              <Link
+                href="/schools/dashboard"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#d6ed9f] px-5 py-2.5 text-xs sm:text-sm font-semibold text-[#182518] shadow-xs hover:bg-[#e4f5bb] transition-colors whitespace-nowrap"
+              >
+                <LayoutDashboard size={14} className="text-[#182518]" />
+                <span>School Dashboard</span>
+                <ArrowRight size={13} className="text-[#182518]/70" />
+              </Link>
+            ) : (
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#d6ed9f] px-5 py-2.5 text-xs sm:text-sm font-semibold text-[#182518] shadow-xs hover:bg-[#e4f5bb] transition-colors whitespace-nowrap"
+              >
+                <Sparkles size={14} className="text-[#182518]" />
+                <span>My Study Space</span>
+                <ArrowRight size={13} className="text-[#182518]/70" />
+              </Link>
+            )
+          ) : (
+            <>
+              <Link
+                href="/schools/login"
+                className="hidden sm:inline-flex rounded-full border border-white/20 px-4 py-2 text-xs font-semibold text-[#f2f3eb] hover:bg-white/10 transition-colors whitespace-nowrap"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/schools/register"
+                className="rounded-full bg-[#d6ed9f] px-5 py-2.5 text-xs sm:text-sm font-semibold text-[#182518] shadow-xs hover:bg-[#e4f5bb] transition-colors whitespace-nowrap"
+              >
+                Register School
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

@@ -49,7 +49,136 @@ export const PRACTICE_ROUTES: RouteDefinition[] = [
       checked.push({code:subject.code,name:subject.name,isCompulsory:subject.is_compulsory,available:Number(subject.available),required,ready,message});
     }
     const ready=checked.length===4&&checked.filter(s=>s.isCompulsory).length===1&&checked.every(s=>s.ready);
-    return {status:200,body:{ready,isPremium:subscription.isPremium,activeAttemptId:active?.id??null,subjects:checked,message:ready?'Your reviewed question banks are ready.':'A complete mock is not ready yet. Topic practice remains available; no diagnostic allowance will be used.'}};
+
+    // Check if candidate belongs to a school with an active scheduled mock
+    let schoolMockPayload: {
+      id: string;
+      title: string;
+      schoolName: string;
+      schoolCode: string;
+      scheduledStart: string;
+      durationMinutes: number;
+      windowStatus: 'scheduled' | 'open' | 'expired';
+      hasCompleted: boolean;
+      activeAttemptId: string | null;
+      previousResult: {
+        totalScore: number;
+        englishScore: number;
+        subject2Score: number;
+        subject3Score: number;
+        subject4Score: number;
+        completedAt: string;
+      } | null;
+    } | null = null;
+
+    try {
+      const enrolledSchoolRows = await sql<Array<{ school_id: string; school_name: string; school_code: string }>>`
+        SELECT ss.school_id, s.name AS school_name, s.code AS school_code
+        FROM school_students ss
+        JOIN schools s ON s.id = ss.school_id
+        WHERE ss.student_user_id = ${userId}::uuid
+        LIMIT 1
+      `;
+
+      if (enrolledSchoolRows[0]) {
+        const school = enrolledSchoolRows[0];
+        const activeMockRows = await sql<Array<{
+          id: string;
+          title: string;
+          scheduled_start: string;
+          duration_minutes: number;
+          window_buffer_minutes: number;
+          status: string;
+        }>>`
+          SELECT id, title, scheduled_start, duration_minutes, window_buffer_minutes, status
+          FROM school_mocks
+          WHERE school_id = ${school.school_id}::uuid AND status = 'active'
+          ORDER BY created_at DESC
+          LIMIT 1
+        `;
+
+        if (activeMockRows[0]) {
+          const sm = activeMockRows[0];
+          const startMs = new Date(sm.scheduled_start).getTime();
+          const durationMs = (sm.duration_minutes || 120) * 60 * 1000;
+          const bufferMs = (sm.window_buffer_minutes || 30) * 60 * 1000;
+          const endMs = startMs + durationMs + bufferMs;
+          const nowMs = ctx.now.getTime();
+
+          let windowStatus: 'scheduled' | 'open' | 'expired' = 'open';
+          if (nowMs < startMs) {
+            windowStatus = 'scheduled';
+          } else if (nowMs > endMs) {
+            windowStatus = 'expired';
+          }
+
+          const mockAttemptRows = await sql<Array<{
+            id: string;
+            status: string;
+            total_score: number | null;
+            english_score: number | null;
+            subject2_score: number | null;
+            subject3_score: number | null;
+            subject4_score: number | null;
+            completed_at: string | null;
+          }>>`
+            SELECT
+              a.id,
+              a.status,
+              ar.total_score,
+              ar.english_score,
+              ar.subject2_score,
+              ar.subject3_score,
+              ar.subject4_score,
+              ar.created_at AS completed_at
+            FROM attempts a
+            LEFT JOIN attempt_results ar ON ar.attempt_id = a.id
+            WHERE a.user_id = ${userId}::uuid
+              AND (a.school_mock_id = ${sm.id}::uuid OR a.blueprint_manifest->>'schoolMockId' = ${sm.id}::text)
+            ORDER BY a.started_at DESC
+            LIMIT 1
+          `;
+
+          const prevAttempt = mockAttemptRows[0];
+          const hasCompleted = prevAttempt?.status === 'completed' && prevAttempt?.total_score !== null;
+          const mockActiveAttemptId = prevAttempt?.status === 'in_progress' ? prevAttempt.id : null;
+
+          schoolMockPayload = {
+            id: sm.id,
+            title: sm.title,
+            schoolName: school.school_name,
+            schoolCode: school.school_code,
+            scheduledStart: sm.scheduled_start,
+            durationMinutes: sm.duration_minutes || 120,
+            windowStatus,
+            hasCompleted,
+            activeAttemptId: mockActiveAttemptId,
+            previousResult: hasCompleted ? {
+              totalScore: Number(prevAttempt.total_score),
+              englishScore: Number(prevAttempt.english_score),
+              subject2Score: Number(prevAttempt.subject2_score),
+              subject3Score: Number(prevAttempt.subject3_score),
+              subject4Score: Number(prevAttempt.subject4_score),
+              completedAt: String(prevAttempt.completed_at),
+            } : null,
+          };
+        }
+      }
+    } catch {
+      // Graceful fallback if school_mocks is unavailable or not applicable
+    }
+
+    return {
+      status: 200,
+      body: {
+        ready,
+        isPremium: subscription.isPremium,
+        activeAttemptId: active?.id ?? null,
+        subjects: checked,
+        schoolMock: schoolMockPayload,
+        message: ready ? 'Your reviewed question banks are ready.' : 'A complete mock is not ready yet. Topic practice remains available; no diagnostic allowance will be used.',
+      },
+    };
   }},
   {id:'practice.catalogue',method:'GET',pattern:'/api/v1/practice/catalogue',auth:'student',handler:async ctx=>({status:200,body:await practiceCatalogue(ctx.getDb().sql,ctx.actor!.userId,ctx.now)})},
   {id:'practice.session.get',method:'GET',pattern:'/api/v1/practice/sessions/:sessionId',auth:'student',handler:async ctx=>{

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { PolicyLinks } from "@/components/legal-page";
 import { createClient } from "@/lib/supabase/client";
+import { BrowserAccountBoundary } from "@/components/browser-account-boundary";
 import { 
   ArrowLeft, 
   ArrowUpRight, 
@@ -17,10 +18,25 @@ import {
   Loader2 
 } from "lucide-react";
 
-export default function SchoolLoginPage() {
+function SchoolLoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then((res: any) => {
+      const session = res?.data?.session;
+      if (session?.user) {
+        const role = session.user.user_metadata?.role;
+        if (role === "school_admin") {
+          window.location.replace("/schools/dashboard");
+        } else {
+          window.location.replace("/dashboard");
+        }
+      }
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -269,5 +285,13 @@ export default function SchoolLoginPage() {
         <PolicyLinks />
       </footer>
     </div>
+  );
+}
+
+export default function SchoolLoginPage() {
+  return (
+    <BrowserAccountBoundary mode="auth">
+      <SchoolLoginForm />
+    </BrowserAccountBoundary>
   );
 }

@@ -122,10 +122,25 @@ export function BrowserAccountBoundary({ children, mode = 'protected', returnPat
   const identity = account.identity;
   const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const effectiveRole = identity?.user?.role || account.session.role;
-  const destination = identity
-    ? accountDestination(identity, pathname, returnPath ?? searchParams?.get('redirectTo') ?? '/dashboard', searchParams?.get('edit') === '1')
-    : effectiveRole === 'school_admin' && !pathname.startsWith('/schools')
+  const isAuthPage = [
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/schools/login',
+    '/schools/register',
+    '/schools/forgot-password',
+  ].includes(pathname);
+
+  const fallbackDestination = effectiveRole === 'school_admin'
     ? '/schools/dashboard'
+    : effectiveRole === 'admin'
+    ? '/admin'
+    : '/dashboard';
+
+  const destination = identity
+    ? accountDestination(identity, pathname, returnPath ?? searchParams?.get('redirectTo') ?? fallbackDestination, searchParams?.get('edit') === '1')
+    : account.session.status === 'authenticated' && (isAuthPage || (effectiveRole === 'school_admin' && !pathname.startsWith('/schools')))
+    ? fallbackDestination
     : null;
   useEffect(() => {
     if (isSigningOut()) return;
@@ -147,7 +162,7 @@ export function BrowserAccountBoundary({ children, mode = 'protected', returnPat
       </div>
     </section>
   </main>;
-  if (!identity || destination) return <StudyLoading />;
+  if (destination || (!identity && mode !== 'auth')) return <StudyLoading />;
   return <>{children}</>;
 }
 

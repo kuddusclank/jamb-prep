@@ -27,7 +27,10 @@ import {
   LogOut, 
   Building2, 
   Calendar, 
-  KeyRound, 
+  KeyRound,
+  Trophy,
+  Medal,
+  RefreshCw, 
   CheckSquare, 
   Square, 
   Check,
@@ -278,17 +281,83 @@ export default function SchoolDashboardPage() {
   // School cohort roster starts clean for fresh institutional registrations
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [scheduledMock, setScheduledMock] = useState<any | null>(null);
+  const [activeMockData, setActiveMockData] = useState<any | null>(null);
+  const [isMockLoading, setIsMockLoading] = useState(false);
   const [origin, setOrigin] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Loading phase state: "auth_loading" (StudyLoading) -> "data_loading" (shimmer skeleton) -> "ready"
   const [loadingPhase, setLoadingPhase] = useState<"auth_loading" | "data_loading" | "ready">("auth_loading");
 
+  const fetchActiveMock = async (token?: string) => {
+    setIsMockLoading(true);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
+      let authToken = token;
+      if (!authToken) {
+        const supabase = createClient();
+        const sessionRes = await supabase.auth.getSession();
+        authToken = sessionRes?.data?.session?.access_token;
+      }
+      if (!authToken) return;
+
+      const res = await fetch(`${apiBase}/api/v1/schools/mocks/active`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setActiveMockData(data);
+        if (data?.mock) {
+          setScheduledMock(data.mock);
+        } else {
+          setScheduledMock(null);
+        }
+      }
+    } catch (err) {
+      console.warn("Could not fetch active mock leaderboard:", err);
+    } finally {
+      setIsMockLoading(false);
+    }
+  };
+
+  const handleEndMock = async (mockId: string) => {
+    if (!confirm("Are you sure you want to conclude and archive this mock examination session?")) return;
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
+      const supabase = createClient();
+      const sessionRes = await supabase.auth.getSession();
+      const token = sessionRes?.data?.session?.access_token;
+      if (!token) return;
+
+      await fetch(`${apiBase}/api/v1/schools/mocks/${mockId}/end`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      await fetchActiveMock(token);
+    } catch (err) {
+      console.warn("Could not end mock:", err);
+    }
+  };
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       setOrigin(window.location.origin);
     }
   }, []);
+
+  useEffect(() => {
+    if (activeView === "lab") {
+      fetchActiveMock();
+    }
+  }, [activeView]);
 
   const fetchCohortData = async (supabaseClient?: any) => {
     const supabase = supabaseClient || createClient();
@@ -343,6 +412,10 @@ export default function SchoolDashboardPage() {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jambprep-api-foundation.abdulquddus-akanbi.workers.dev";
       const sessionRes = await supabase.auth.getSession();
       const token = sessionRes?.data?.session?.access_token;
+
+      if (token) {
+        fetchActiveMock(token).catch(() => {});
+      }
 
       const listRes = await fetch(`${apiBase}/api/v1/schools/students`, {
         method: "GET",
@@ -428,6 +501,7 @@ export default function SchoolDashboardPage() {
 
   const handleMockScheduled = (session: any) => {
     setScheduledMock(session);
+    fetchActiveMock();
     try {
       if (typeof window !== "undefined") {
         localStorage.setItem(`jambprep_school_lab_mock_${schoolCode}`, JSON.stringify(session));
@@ -963,6 +1037,26 @@ export default function SchoolDashboardPage() {
                 >
                   <RotateCw size={14} className={isSyncing ? "animate-spin text-[#12664F]" : ""} />
                   <span className="hidden sm:inline">Sync</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCheckoutClick}
+                  disabled={selectedStudentIds.length === 0}
+                  title={
+                    selectedStudentIds.length === 0
+                      ? "Select at least one candidate from the table below to checkout licences"
+                      : `Checkout licences for ${selectedStudentIds.length} selected candidate(s)`
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 px-3.5 py-2 text-xs font-medium text-slate-700 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <CreditCard size={14} />
+                  <span className="hidden sm:inline">Checkout Licences</span>
+                  {selectedStudentIds.length > 0 && (
+                    <span className="rounded-full bg-emerald-100 text-[#12664F] px-1.5 py-0.5 text-[10px] font-semibold">
+                      {selectedStudentIds.length}
+                    </span>
+                  )}
                 </button>
 
                 <button
@@ -1823,7 +1917,7 @@ export default function SchoolDashboardPage() {
             </div>
           )}
 
-          {/* VIEW 3: CBT LAB CONTROLLER */}
+          {/* VIEW 3: CBT LAB CONTROLLER & LIVE RANKED LEADERBOARD */}
           {activeView === "lab" && (
             <div className="space-y-6">
               <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 space-y-6">
@@ -1834,30 +1928,43 @@ export default function SchoolDashboardPage() {
                       <span>Computer Laboratory Mock Controller</span>
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Synchronize and proctor full 120-minute, 180-question mock exams across all laboratory monitors simultaneously.
+                      Proctor your school&apos;s 120-minute UTME simulation and monitor the live ranked student leaderboard.
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setIsMockSchedulerOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#12664F] hover:bg-[#0E5441] px-4 py-2 text-xs font-medium text-white transition cursor-pointer self-start sm:self-auto"
-                  >
-                    <Play size={12} fill="currentColor" />
-                    <span>Launch New Lab Session</span>
-                  </button>
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => fetchActiveMock()}
+                      disabled={isMockLoading}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 transition cursor-pointer disabled:opacity-50"
+                      title="Refresh live examination scores"
+                    >
+                      <RefreshCw size={12} className={isMockLoading ? "animate-spin text-[#12664F]" : ""} />
+                      <span>Refresh Scores</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsMockSchedulerOpen(true)}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-[#12664F] hover:bg-[#0E5441] px-4 py-2 text-xs font-medium text-white transition cursor-pointer"
+                    >
+                      <Play size={12} fill="currentColor" />
+                      <span>{activeMockData?.mock ? "Schedule New Mock" : "Schedule Lab Mock"}</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* Scheduled Session Card or Clean Empty State */}
-                {!scheduledMock ? (
+                {/* Empty State: No Mock Scheduled */}
+                {!activeMockData?.mock && !scheduledMock ? (
                   <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 sm:p-10 text-center space-y-3">
                     <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-white border border-slate-300 text-slate-600">
                       <Clock size={22} />
                     </div>
                     <div className="space-y-1 max-w-md mx-auto">
-                      <h3 className="text-sm font-semibold text-slate-900">No mock exam session scheduled yet</h3>
+                      <h3 className="text-sm font-semibold text-slate-900">No mock exam session active</h3>
                       <p className="text-xs text-slate-500 leading-relaxed">
-                        You haven&apos;t scheduled any computer laboratory mock exams. Launch a new lab session to configure your title, duration, and generate a synchronized entry code.
+                        Schedule your school&apos;s synchronized 120-minute UTME simulation. Once scheduled, your enrolled candidates will automatically see the mock card on their devices and their scores will rank here upon completion.
                       </p>
                     </div>
                     <button
@@ -1866,78 +1973,295 @@ export default function SchoolDashboardPage() {
                       className="inline-flex items-center gap-2 rounded-xl bg-[#12664F] hover:bg-[#0E5441] px-4 py-2 text-xs font-medium text-white transition cursor-pointer"
                     >
                       <Play size={12} fill="currentColor" />
-                      <span>Schedule First Lab Mock</span>
+                      <span>Schedule Lab Mock Exam</span>
                     </button>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="space-y-1">
-                        <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-3 py-0.5 text-[11px] font-medium text-emerald-900">
-                          <span className="size-2 rounded-full bg-emerald-600" />
-                          <span>Synchronized Lab Ready</span>
+                  <div className="space-y-6">
+                    {/* Active Mock Session Header Card */}
+                    {activeMockData?.mock && (
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {activeMockData.mock.windowStatus === "open" ? (
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-3 py-0.5 text-[11px] font-medium text-emerald-900">
+                                  <span className="size-2 rounded-full bg-emerald-600 animate-pulse" />
+                                  <span>Live Examination Window Open</span>
+                                </span>
+                              ) : activeMockData.mock.windowStatus === "scheduled" ? (
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 border border-amber-300 px-3 py-0.5 text-[11px] font-medium text-amber-900">
+                                  <Clock size={11} />
+                                  <span>Scheduled Lab Hour</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-200 border border-slate-300 px-3 py-0.5 text-[11px] font-medium text-slate-700">
+                                  <span>Lab Window Closed</span>
+                                </span>
+                              )}
+                            </div>
+
+                            <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                              {activeMockData.mock.title || "UTME Computer Lab Mock"}
+                            </h3>
+                            <p className="text-xs text-slate-600">
+                              Standard 4-subject UTME simulation · Automatic candidate binding · Strict lab hours enforced
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 self-start sm:self-auto">
+                            <button
+                              type="button"
+                              onClick={() => handleEndMock(activeMockData.mock.id)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-200 bg-white text-xs font-semibold text-red-700 hover:bg-red-50 transition cursor-pointer"
+                            >
+                              <span>Conclude Session</span>
+                            </button>
+                          </div>
                         </div>
-                        <h3 className="text-base font-semibold text-slate-900">
-                          {scheduledMock.title || "UTME Computer Lab Mock"}
-                        </h3>
-                        <p className="text-xs text-slate-600 font-medium">
-                          Standard 4-subject exam (Use of English 60 questions + 3 Subjects 40 questions = 180 questions).
-                        </p>
+
+                        {/* Timing and Window Specs */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1 text-xs">
+                          <div className="rounded-xl bg-white p-3 border border-slate-200">
+                            <span className="text-slate-500 block text-[10px] font-medium">Scheduled Start</span>
+                            <strong className="text-slate-900 text-xs sm:text-sm font-semibold">
+                              {new Date(activeMockData.mock.scheduled_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </strong>
+                          </div>
+
+                          <div className="rounded-xl bg-white p-3 border border-slate-200">
+                            <span className="text-slate-500 block text-[10px] font-medium">Duration</span>
+                            <strong className="text-slate-900 text-xs sm:text-sm font-semibold">
+                              {activeMockData.mock.duration_minutes || 120}:00 Countdown
+                            </strong>
+                          </div>
+
+                          <div className="rounded-xl bg-white p-3 border border-slate-200">
+                            <span className="text-slate-500 block text-[10px] font-medium">Window Closes</span>
+                            <strong className="text-slate-900 text-xs sm:text-sm font-semibold">
+                              {activeMockData.mock.windowEndsAt
+                                ? new Date(activeMockData.mock.windowEndsAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                                : "—"}
+                            </strong>
+                          </div>
+
+                          <div className="rounded-xl bg-white p-3 border border-slate-200">
+                            <span className="text-slate-500 block text-[10px] font-medium">Proctoring</span>
+                            <strong className="text-[#12664F] text-xs sm:text-sm font-semibold">
+                              8-Key Keyboard Strict
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Cohort Diagnostic Summary KPIs */}
+                    {activeMockData?.summary && (
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-1">
+                          <span className="text-xs font-medium text-slate-500 block">Class Completion</span>
+                          <div className="flex items-baseline gap-2">
+                            <strong className="text-xl sm:text-2xl font-bold text-slate-900">
+                              {activeMockData.summary.completedCount}
+                            </strong>
+                            <span className="text-xs text-slate-500">/ {activeMockData.summary.totalStudents}</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden mt-2">
+                            <div 
+                              className="h-full bg-[#12664F] rounded-full transition-all"
+                              style={{ width: `${Math.round(((activeMockData.summary.completedCount || 0) / (activeMockData.summary.totalStudents || 1)) * 100)}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-1">
+                          <span className="text-xs font-medium text-slate-500 block">Active in Lab</span>
+                          <strong className="text-xl sm:text-2xl font-bold text-blue-700 block">
+                            {activeMockData.summary.inProgressCount}
+                          </strong>
+                          <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-1">
+                            <span className="size-1.5 rounded-full bg-blue-500 animate-pulse" />
+                            <span>Currently answering</span>
+                          </span>
+                        </div>
+
+                        <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-1">
+                          <span className="text-xs font-medium text-slate-500 block">Class Average</span>
+                          <strong className="text-xl sm:text-2xl font-bold text-slate-900 block">
+                            {activeMockData.summary.averageScore !== null ? `${activeMockData.summary.averageScore}` : "—"}
+                            <span className="text-xs font-normal text-slate-500"> / 400</span>
+                          </strong>
+                          <span className="text-[11px] text-slate-500 block mt-1">
+                            {activeMockData.summary.completedCount > 0 ? "Completed candidates" : "Awaiting submissions"}
+                          </span>
+                        </div>
+
+                        <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-1">
+                          <span className="text-xs font-medium text-slate-500 block">Top Score / Pass Rate</span>
+                          <strong className="text-xl sm:text-2xl font-bold text-emerald-800 block">
+                            {activeMockData.summary.highestScore !== null ? `${activeMockData.summary.highestScore}` : "—"}
+                            <span className="text-xs font-normal text-slate-500"> / 400</span>
+                          </strong>
+                          <span className="text-[11px] text-slate-500 block mt-1">
+                            Pass Rate: <strong className="text-slate-800 font-semibold">{activeMockData.summary.passRate !== null ? `${activeMockData.summary.passRate}%` : "—"}</strong> (≥200)
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Official Ranked Student Leaderboard Table */}
+                    <div className="space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Trophy size={16} className="text-amber-500" />
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                            Class Mock Leaderboard & Ranked Scores
+                          </h4>
+                        </div>
+                        <span className="text-[11px] text-slate-500 font-medium bg-slate-100 px-2.5 py-0.5 rounded-full self-start sm:self-auto">
+                          Administrator View Only · Ranked by total score
+                        </span>
                       </div>
 
-                      <div className="rounded-xl bg-white p-3 border border-slate-300 text-center min-w-[140px]">
-                        <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider block">Session Code</span>
-                        <span className="font-mono text-base font-semibold text-slate-900">{scheduledMock.labSessionCode || `${schoolCode}-MOCK`}</span>
-                      </div>
-                    </div>
+                      {activeMockData?.leaderboard && activeMockData.leaderboard.length > 0 ? (
+                        <div className="overflow-x-auto rounded-xl border border-slate-200">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium">
+                                <th className="py-3 px-3 w-14 text-center">Rank</th>
+                                <th className="py-3 px-3">Candidate</th>
+                                <th className="py-3 px-3 text-center">Total Score</th>
+                                <th className="py-3 px-3 text-center hidden md:table-cell">English</th>
+                                <th className="py-3 px-3 text-center hidden lg:table-cell">Sub 2</th>
+                                <th className="py-3 px-3 text-center hidden lg:table-cell">Sub 3</th>
+                                <th className="py-3 px-3 text-center hidden lg:table-cell">Sub 4</th>
+                                <th className="py-3 px-3 text-center hidden sm:table-cell">Time Spent</th>
+                                <th className="py-3 px-3 text-right">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 bg-white">
+                              {activeMockData.leaderboard.map((row: any) => {
+                                const isTop1 = row.rank === 1;
+                                const isTop2 = row.rank === 2;
+                                const isTop3 = row.rank === 3;
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-                      <div className="rounded-xl bg-white p-3 border border-slate-200 text-xs">
-                        <span className="text-slate-500 block text-[10px] font-medium">Timer Control</span>
-                        <strong className="text-slate-900 text-xs sm:text-sm font-semibold">120:00 Countdown</strong>
-                      </div>
-                      <div className="rounded-xl bg-white p-3 border border-slate-200 text-xs">
-                        <span className="text-slate-500 block text-[10px] font-medium">Proctor Mode</span>
-                        <strong className="text-slate-900 text-xs sm:text-sm font-semibold">8-Key Hotkey Strict</strong>
-                      </div>
-                      <div className="rounded-xl bg-white p-3 border border-slate-200 text-xs">
-                        <span className="text-slate-500 block text-[10px] font-medium">Eligible Roster</span>
-                        <strong className="text-[#12664F] text-xs sm:text-sm font-semibold">{activeCount} Licensed Students</strong>
-                      </div>
-                      <div className="rounded-xl bg-white p-3 border border-slate-200 text-xs">
-                        <span className="text-slate-500 block text-[10px] font-medium">Instant Result</span>
-                        <strong className="text-slate-900 text-xs sm:text-sm font-semibold">Immediate Diagnostic</strong>
-                      </div>
+                                return (
+                                  <tr 
+                                    key={row.studentUserId}
+                                    className={`hover:bg-slate-50/80 transition ${
+                                      isTop1 ? "bg-amber-50/30" : ""
+                                    }`}
+                                  >
+                                    {/* Rank Column with Badges */}
+                                    <td className="py-3 px-3 text-center">
+                                      {row.status === "completed" && row.rank !== null ? (
+                                        isTop1 ? (
+                                          <span className="inline-flex items-center justify-center size-6 rounded-full bg-amber-100 text-amber-900 font-bold text-xs shadow-xs">
+                                            🥇
+                                          </span>
+                                        ) : isTop2 ? (
+                                          <span className="inline-flex items-center justify-center size-6 rounded-full bg-slate-200 text-slate-800 font-bold text-xs shadow-xs">
+                                            🥈
+                                          </span>
+                                        ) : isTop3 ? (
+                                          <span className="inline-flex items-center justify-center size-6 rounded-full bg-amber-50 text-amber-800 font-bold text-xs border border-amber-200">
+                                            🥉
+                                          </span>
+                                        ) : (
+                                          <span className="text-slate-600 font-bold">#{row.rank}</span>
+                                        )
+                                      ) : (
+                                        <span className="text-slate-300 font-mono">—</span>
+                                      )}
+                                    </td>
+
+                                    {/* Candidate Name & Identifier */}
+                                    <td className="py-3 px-3">
+                                      <div className="font-semibold text-slate-900">{row.studentName}</div>
+                                      <div className="text-[11px] text-slate-500 font-mono">
+                                        {row.studentIdentifier ? row.studentIdentifier : row.studentEmail}
+                                      </div>
+                                    </td>
+
+                                    {/* Total Score / 400 */}
+                                    <td className="py-3 px-3 text-center">
+                                      {row.totalScore !== null ? (
+                                        <div className="inline-block">
+                                          <span className={`inline-block px-2.5 py-0.5 rounded-lg font-bold text-xs ${
+                                            row.totalScore >= 250
+                                              ? "bg-emerald-100 text-emerald-900"
+                                              : row.totalScore >= 200
+                                              ? "bg-blue-100 text-blue-900"
+                                              : "bg-slate-100 text-slate-800"
+                                          }`}>
+                                            {row.totalScore}
+                                          </span>
+                                          <span className="text-[10px] text-slate-400 block font-normal mt-0.5">/ 400</span>
+                                        </div>
+                                      ) : (
+                                        <span className="text-slate-300 font-mono">—</span>
+                                      )}
+                                    </td>
+
+                                    {/* English Score */}
+                                    <td className="py-3 px-3 text-center hidden md:table-cell font-mono text-slate-700">
+                                      {row.englishScore !== null ? `${row.englishScore}` : "—"}
+                                    </td>
+
+                                    {/* Subject 2 Score */}
+                                    <td className="py-3 px-3 text-center hidden lg:table-cell font-mono text-slate-700">
+                                      {row.subject2Score !== null ? `${row.subject2Score}` : "—"}
+                                    </td>
+
+                                    {/* Subject 3 Score */}
+                                    <td className="py-3 px-3 text-center hidden lg:table-cell font-mono text-slate-700">
+                                      {row.subject3Score !== null ? `${row.subject3Score}` : "—"}
+                                    </td>
+
+                                    {/* Subject 4 Score */}
+                                    <td className="py-3 px-3 text-center hidden lg:table-cell font-mono text-slate-700">
+                                      {row.subject4Score !== null ? `${row.subject4Score}` : "—"}
+                                    </td>
+
+                                    {/* Time Spent */}
+                                    <td className="py-3 px-3 text-center hidden sm:table-cell text-slate-600 font-mono text-[11px]">
+                                      {row.timeSpentSeconds !== null ? (
+                                        `${Math.floor(row.timeSpentSeconds / 60)}m ${row.timeSpentSeconds % 60}s`
+                                      ) : (
+                                        "—"
+                                      )}
+                                    </td>
+
+                                    {/* Status Badge */}
+                                    <td className="py-3 px-3 text-right">
+                                      {row.status === "completed" ? (
+                                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                          <Check size={11} /> Completed
+                                        </span>
+                                      ) : row.status === "in_progress" ? (
+                                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-800 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
+                                          <span className="size-1.5 rounded-full bg-blue-600 animate-pulse" /> Answering
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md">
+                                          Not Started
+                                        </span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-center text-xs text-slate-500">
+                          Candidates enrolled in your school will appear here. As they submit their exams in the computer lab, their scores will rank automatically.
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
-
-                {/* Step-by-Step Lab Proctoring Checklist */}
-                <div className="rounded-2xl border border-slate-200 p-5 space-y-3">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-800">
-                    Laboratory Proctoring Protocol
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                    <div className="rounded-xl bg-slate-50 p-3.5 space-y-1 border border-slate-200">
-                      <span className="font-semibold text-slate-900 block">1. Lab Desktops Setup</span>
-                      <p className="text-[11px] text-slate-600 leading-relaxed">
-                        Open desktop browsers to <code className="bg-white border border-slate-300 px-1 py-0.5 rounded text-[10px] font-medium text-slate-900">/mock</code>. Verify keyboards are functioning for 8-key shortcuts.
-                      </p>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 p-3.5 space-y-1 border border-slate-200">
-                      <span className="font-semibold text-slate-900 block">2. Candidate Authentication</span>
-                      <p className="text-[11px] text-slate-600 leading-relaxed">
-                        Students log in using their email and default surname password, then enter the whiteboard session code.
-                      </p>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 p-3.5 space-y-1 border border-slate-200">
-                      <span className="font-semibold text-slate-900 block">3. Immediate Diagnostics</span>
-                      <p className="text-[11px] text-slate-600 leading-relaxed">
-                        Upon exam submission, scores synchronize directly to this dashboard, populating the syllabus heatmap.
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </section>
             </div>
           )}

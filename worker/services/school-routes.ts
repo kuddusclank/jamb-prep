@@ -1,5 +1,5 @@
 import type { RouteDefinition } from '../api/router';
-import { readBoundedJsonBody } from '../api/contracts';
+import { readBoundedJsonBody, assertValidUuid } from '../api/contracts';
 import { ApiError } from '../api/errors';
 import { paystackRequest, validateCheckoutUrl, type PaymentEnv } from './paystack-service';
 import { enqueueCohortActivation, processActivationBatch } from './school-activation-service';
@@ -1633,7 +1633,7 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
     id: 'schools.mocks.schedule',
     method: 'POST',
     pattern: '/api/v1/schools/mocks/schedule',
-    auth: 'student',
+    auth: 'student_live_session',
     maxBodyBytes: 32 * 1024,
     handler: async (ctx) => {
       const actor = ctx.actor!;
@@ -1654,6 +1654,7 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
       const scheduledDate = (typeof body.scheduledDate === 'string' ? body.scheduledDate.trim() : '') || new Date().toISOString();
       const durationMinutes = Number(body.durationMinutes) || 120;
       const totalQuestions = Number(body.totalQuestions) || 180;
+      const windowBufferMinutes = Number(body.windowBufferMinutes) || 30;
       const hotkeyNavigationEnabled = body.hotkeyNavigationEnabled ?? true;
 
       const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -1663,8 +1664,49 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
       const labSessionCode = `LAB-SCH-${randomSuffix}`;
       const proctorSuffix = Array.from(randomBytes, (b) => alphabet[b % alphabet.length]).join('');
 
+      // Archive any prior active mock for this school so there is only one active mock session at a time
+      await dbCtx.sql`
+        UPDATE school_mocks
+        SET status = 'completed', updated_at = NOW()
+        WHERE school_id = ${school.id}::uuid AND status = 'active'
+      `.catch(() => {});
+
+      // Insert into durable school_mocks table
+      const insertedMocks = await dbCtx.sql<Array<{
+        id: string;
+        title: string;
+        scheduled_start: string;
+        duration_minutes: number;
+        question_count: number;
+        status: string;
+        window_buffer_minutes: number;
+        created_at: string;
+      }>>`
+        INSERT INTO school_mocks (
+          school_id,
+          title,
+          scheduled_start,
+          duration_minutes,
+          question_count,
+          status,
+          window_buffer_minutes
+        ) VALUES (
+          ${school.id}::uuid,
+          ${title},
+          ${scheduledDate}::timestamptz,
+          ${durationMinutes},
+          ${totalQuestions},
+          'active',
+          ${windowBufferMinutes}
+        )
+        RETURNING id, title, scheduled_start, duration_minutes, question_count, status, window_buffer_minutes, created_at
+      `;
+
+      const persistentMock = insertedMocks[0];
+      const mockId = persistentMock?.id || `mock-sess-${Date.now()}`;
+
       const session = {
-        id: `mock-sess-${Date.now()}`,
+        id: mockId,
         schoolId: school.id,
         schoolName: school.name,
         schoolCode: school.code,
@@ -1673,9 +1715,10 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
         scheduledDate,
         durationMinutes,
         totalQuestions,
+        windowBufferMinutes,
         hotkeyNavigationEnabled,
         proctorKey: `PRC-${proctorSuffix}`,
-        status: 'scheduled',
+        status: 'active',
         createdAt: new Date().toISOString(),
       };
 
@@ -1684,26 +1727,248 @@ export const SCHOOL_ROUTES: ReadonlyArray<RouteDefinition> = [
         SET raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object('active_lab_mock', ${JSON.stringify(session)}::text::jsonb),
             updated_at = NOW()
         WHERE id = ${school.admin_id}::uuid
-      `;
+      `.catch(() => {});
 
       return {
         status: 200,
         body: {
           success: true,
+          mock: persistentMock || session,
           session,
           instructions: [
             'Ensure all laboratory desktop monitors are connected to the school LAN or internet.',
-            'Students sign in with their email and uppercase surname default password.',
-            'Enter the Lab Session Code on the exam entry screen.',
-            '8-Key navigation (A, B, C, D for options; P for previous, N for next; S for submit; R for review) is enforced.',
-            'Exam auto-submits exactly when the 120:00 timer elapses.',
+            'Students simply visit /mock; their school mock card appears automatically.',
+            'No manual session codes or passwords required.',
+            'Strict lab hours are enforced based on the scheduled start time and duration.',
+            'Scores automatically synchronize to the live ranked leaderboard on your administrator dashboard.',
           ],
         },
       };
     },
   },
 
-  // 5B. POST /api/v1/schools/mocks/join — Validate a whiteboard CBT Lab Session Code (`LAB-SCH-*`) for a student
+  // 5A. GET /api/v1/schools/mocks/active — Fetch active mock exam details and ranked student leaderboard
+  {
+    id: 'schools.mocks.active.get',
+    method: 'GET',
+    pattern: '/api/v1/schools/mocks/active',
+    auth: 'student_live_session',
+    handler: async (ctx) => {
+      const actor = ctx.actor!;
+      const dbCtx = ctx.getDb();
+      const school = await resolveCallerSchool(actor, dbCtx, { autoProvision: true });
+      if (!school) {
+        throw new ApiError({
+          status: 403,
+          code: 'FORBIDDEN',
+          message: 'You must be an authenticated school administrator to view CBT mock diagnostics.',
+        });
+      }
+
+      // Fetch active or latest mock
+      const mockRows = await dbCtx.sql<Array<{
+        id: string;
+        title: string;
+        scheduled_start: string;
+        duration_minutes: number;
+        question_count: number;
+        window_buffer_minutes: number;
+        status: string;
+        created_at: string;
+      }>>`
+        SELECT id, title, scheduled_start, duration_minutes, question_count, window_buffer_minutes, status, created_at
+        FROM school_mocks
+        WHERE school_id = ${school.id}::uuid AND status = 'active'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `;
+
+      const activeMock = mockRows[0];
+      if (!activeMock) {
+        return {
+          status: 200,
+          body: {
+            hasActiveMock: false,
+            mock: null,
+            leaderboard: [],
+            summary: null,
+          },
+        };
+      }
+
+      // Query enrolled candidates and their attempts for this mock
+      const candidateRows = await dbCtx.sql<Array<{
+        student_user_id: string;
+        student_name: string;
+        student_email: string;
+        student_identifier: string | null;
+        attempt_id: string | null;
+        attempt_status: string | null;
+        started_at: string | null;
+        total_score: number | null;
+        english_score: number | null;
+        subject2_score: number | null;
+        subject3_score: number | null;
+        subject4_score: number | null;
+        time_spent_seconds: number | null;
+        completed_at: string | null;
+      }>>`
+        SELECT
+          ss.student_user_id,
+          COALESCE(p.display_name, 'Candidate') AS student_name,
+          p.email AS student_email,
+          ss.student_identifier,
+          a.id AS attempt_id,
+          a.status AS attempt_status,
+          a.started_at,
+          ar.total_score,
+          ar.english_score,
+          ar.subject2_score,
+          ar.subject3_score,
+          ar.subject4_score,
+          ar.time_spent_seconds,
+          ar.created_at AS completed_at
+        FROM school_students ss
+        JOIN profiles p ON p.id = ss.student_user_id
+        LEFT JOIN attempts a ON a.user_id = ss.student_user_id
+          AND (a.school_mock_id = ${activeMock.id}::uuid OR a.blueprint_manifest->>'schoolMockId' = ${activeMock.id}::text)
+        LEFT JOIN attempt_results ar ON ar.attempt_id = a.id
+        WHERE ss.school_id = ${school.id}::uuid
+        ORDER BY
+          CASE WHEN ar.total_score IS NOT NULL THEN 0 ELSE 1 END,
+          ar.total_score DESC NULLS LAST,
+          ar.time_spent_seconds ASC NULLS LAST,
+          p.display_name ASC
+      `;
+
+      let currentRank = 0;
+      let lastScore: number | null = null;
+      let completedCount = 0;
+      let inProgressCount = 0;
+      let notStartedCount = 0;
+      let totalScoresSum = 0;
+      let highestScore: number | null = null;
+      let lowestScore: number | null = null;
+      let passCount = 0;
+
+      const leaderboard = candidateRows.map((c, index) => {
+        let status: 'completed' | 'in_progress' | 'not_started' = 'not_started';
+        let rank: number | null = null;
+
+        if (c.attempt_status === 'completed' && c.total_score !== null) {
+          status = 'completed';
+          completedCount++;
+          const score = Number(c.total_score);
+          totalScoresSum += score;
+          if (highestScore === null || score > highestScore) highestScore = score;
+          if (lowestScore === null || score < lowestScore) lowestScore = score;
+          if (score >= 200) passCount++;
+
+          if (lastScore === null || score < lastScore) {
+            currentRank = index + 1;
+            lastScore = score;
+          }
+          rank = currentRank;
+        } else if (c.attempt_status === 'in_progress') {
+          status = 'in_progress';
+          inProgressCount++;
+        } else {
+          notStartedCount++;
+        }
+
+        return {
+          rank,
+          studentUserId: c.student_user_id,
+          studentName: c.student_name,
+          studentEmail: c.student_email,
+          studentIdentifier: c.student_identifier,
+          status,
+          totalScore: c.total_score !== null ? Number(c.total_score) : null,
+          englishScore: c.english_score !== null ? Number(c.english_score) : null,
+          subject2Score: c.subject2_score !== null ? Number(c.subject2_score) : null,
+          subject3Score: c.subject3_score !== null ? Number(c.subject3_score) : null,
+          subject4Score: c.subject4_score !== null ? Number(c.subject4_score) : null,
+          timeSpentSeconds: c.time_spent_seconds !== null ? Number(c.time_spent_seconds) : null,
+          startedAt: c.started_at,
+          completedAt: c.completed_at,
+        };
+      });
+
+      const averageScore = completedCount > 0 ? Math.round(totalScoresSum / completedCount) : null;
+      const passRate = completedCount > 0 ? Math.round((passCount / completedCount) * 100) : null;
+
+      const startMs = new Date(activeMock.scheduled_start).getTime();
+      const durationMs = (activeMock.duration_minutes || 120) * 60 * 1000;
+      const bufferMs = (activeMock.window_buffer_minutes || 30) * 60 * 1000;
+      const endMs = startMs + durationMs + bufferMs;
+      const nowMs = ctx.now.getTime();
+
+      let windowStatus: 'scheduled' | 'open' | 'expired' = 'open';
+      if (nowMs < startMs) {
+        windowStatus = 'scheduled';
+      } else if (nowMs > endMs) {
+        windowStatus = 'expired';
+      }
+
+      return {
+        status: 200,
+        body: {
+          hasActiveMock: true,
+          mock: {
+            ...activeMock,
+            windowStatus,
+            windowEndsAt: new Date(endMs).toISOString(),
+          },
+          summary: {
+            totalStudents: candidateRows.length,
+            completedCount,
+            inProgressCount,
+            notStartedCount,
+            averageScore,
+            highestScore,
+            lowestScore,
+            passRate,
+          },
+          leaderboard,
+        },
+      };
+    },
+  },
+
+  // 5C. POST /api/v1/schools/mocks/:mockId/end — Conclude/archive an active school mock session
+  {
+    id: 'schools.mocks.end',
+    method: 'POST',
+    pattern: '/api/v1/schools/mocks/:mockId/end',
+    auth: 'student_live_session',
+    handler: async (ctx) => {
+      const actor = ctx.actor!;
+      const dbCtx = ctx.getDb();
+      const mockId = assertValidUuid(ctx.params.mockId);
+
+      const school = await resolveCallerSchool(actor, dbCtx);
+      if (!school) {
+        throw new ApiError({
+          status: 403,
+          code: 'FORBIDDEN',
+          message: 'You must be an authenticated school administrator.',
+        });
+      }
+
+      await dbCtx.sql`
+        UPDATE school_mocks
+        SET status = 'completed', updated_at = NOW()
+        WHERE id = ${mockId}::uuid AND school_id = ${school.id}::uuid
+      `;
+
+      return {
+        status: 200,
+        body: { success: true, message: 'Mock examination session concluded and archived.' },
+      };
+    },
+  },
+
+  // 5B. POST /api/v1/schools/mocks/join — Validate a whiteboard CBT Lab Session Code (`LAB-SCH-*`) for a student (retained for backward compatibility)
   {
     id: 'schools.mocks.join',
     method: 'POST',

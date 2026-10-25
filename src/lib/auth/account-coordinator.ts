@@ -11,6 +11,14 @@ export interface OnboardingData {
 
 export function accountDestination(identity: SessionIdentityResponse, pathname: string, returnPath = '/dashboard', editOnboarding = false): string | null {
   const role = identity.user.role;
+  const commonAuthPages = [
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/schools/login',
+    '/schools/register',
+    '/schools/forgot-password',
+  ];
 
   // 1. SCHOOL ADMINISTRATOR RBAC:
   if (role === 'school_admin') {
@@ -32,7 +40,7 @@ export function accountDestination(identity: SessionIdentityResponse, pathname: 
     const isStudentProtected = studentProtectedPaths.some(
       (p) => pathname === p || pathname.startsWith(`${p}/`)
     );
-    if (isStudentProtected || ['/', '/login', '/register', '/forgot-password'].includes(pathname)) {
+    if (isStudentProtected || ['/', ...commonAuthPages].includes(pathname)) {
       return '/schools/dashboard';
     }
     return null;
@@ -40,14 +48,18 @@ export function accountDestination(identity: SessionIdentityResponse, pathname: 
 
   // 2. SUPER ADMINISTRATOR RBAC:
   if (role === 'admin') {
-    if (['/', '/login', '/register'].includes(pathname)) {
+    if (['/', ...commonAuthPages].includes(pathname)) {
       return '/admin';
     }
     return null;
   }
 
   // 3. STUDENT RBAC:
-  if (pathname.startsWith('/schools/dashboard') || pathname.startsWith('/schools/checkout')) {
+  if (
+    pathname.startsWith('/schools/dashboard') ||
+    pathname.startsWith('/schools/checkout') ||
+    ['/schools/login', '/schools/register', '/schools/forgot-password'].includes(pathname)
+  ) {
     return '/dashboard';
   }
   if (pathname.startsWith('/admin')) {
@@ -57,7 +69,7 @@ export function accountDestination(identity: SessionIdentityResponse, pathname: 
   if (!identity.provisioned) return pathname === '/register' ? null : '/register?resume=1';
   if (!identity.onboardingCompleted) return pathname === '/onboarding' ? null : '/onboarding';
   if (pathname === '/onboarding' && editOnboarding) return null;
-  if (['/', '/login', '/register', '/forgot-password', '/onboarding'].includes(pathname)) {
+  if (['/', ...commonAuthPages, '/onboarding'].includes(pathname)) {
     const target = sanitizeInternalRedirect(returnPath);
     const targetUrl = new URL(target, 'https://jambprep.internal');
     const isOnboarding = targetUrl.pathname.replace(/\/$/, '') === '/onboarding';

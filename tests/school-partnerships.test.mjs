@@ -460,8 +460,8 @@ test("Stage 6 CBT Lab Mock Controller: Enforces 120-minute simulation and 8-key 
   assert.ok(source.includes("180 Questions"));
   // 8-key hotkey mode
   assert.ok(source.includes("8-Key Hotkeys") || source.includes("8-key examination navigation"));
-  // Session code and proctor sheet
-  assert.ok(source.includes("Candidate Lab Entry Code"));
+  // Zero-code automatic binding and proctor sheet
+  assert.ok(source.includes("Zero-Code Automatic Binding") || source.includes("Official School Mock"));
   assert.ok(source.includes("Print Proctoring Sheet"));
 });
 
