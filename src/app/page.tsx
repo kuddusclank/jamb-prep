@@ -13,7 +13,7 @@ import {
   BarChart3, 
   LogOut 
 } from "lucide-react";
-import { CombinationPromptDialog, MobileMenu, Reveal, SubjectPicker } from "./landing-interactions";
+import { CombinationPromptDialog, MobileMenu, Reveal } from "./landing-interactions";
 import { UserDropdown } from "@/components/user-dropdown";
 import { PolicyLinks } from "@/components/legal-page";
 
@@ -81,7 +81,6 @@ export default function Home() {
                 Check Combination
               </Link>
               <a href="#how-it-works" className="hover:text-[#116149] transition-colors">How it works</a>
-              <a href="#subjects" className="hover:text-[#116149] transition-colors">Subjects</a>
               <a href="#pricing" className="hover:text-[#116149] transition-colors">Pricing</a>
               <Link href="/schools" className="hover:text-[#116149] font-medium text-[#116149] transition-colors">For Schools</Link>
             </nav>
@@ -346,24 +345,6 @@ export default function Home() {
                 </Reveal>
               </>
             )}
-          </div>
-        </section>
-
-        {/* Subject Combination Explorer */}
-        <section id="subjects" className="border-y border-emerald-950/10 bg-white">
-          <div className="shell section-space">
-            <Reveal>
-              <div className="mb-9 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-                <div>
-                  <p className="eyebrow">YOUR SUBJECTS. YOUR STUDY PLAN.</p>
-                  <h2 className="section-title mt-4">What’s your combination?</h2>
-                </div>
-                <p className="max-w-xs text-sm leading-relaxed text-slate-600">
-                  Use of English is compulsory. Select three electives to preview your subject combination.
-                </p>
-              </div>
-              <SubjectPicker/>
-            </Reveal>
           </div>
         </section>
 

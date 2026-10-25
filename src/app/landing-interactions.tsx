@@ -697,7 +697,6 @@ export function MobileMenu() {
               {[
                 ['Check Combination', '/combinations'],
                 ['How it works', '#how-it-works'],
-                ['Subjects', '#subjects'],
                 ['Pricing', '#pricing'],
                 ['For Schools', '/schools'],
                 ['Getting started', '#get-started'],
