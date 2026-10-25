@@ -605,7 +605,7 @@ export default function SchoolDashboardPage() {
           label: "Licences & Billing",
           icon: CreditCard,
           badge: unlicensedCount > 0 ? `${unlicensedCount}` : null,
-          badgeColor: "bg-amber-100 text-amber-900 font-bold",
+          badgeColor: "bg-amber-100 text-amber-900 font-medium",
         },
       ],
     },
@@ -646,7 +646,7 @@ export default function SchoolDashboardPage() {
       {/* Modern Left Sidebar (Matches reference "Confidency OS" design) */}
       <aside 
         className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col justify-between transition-transform duration-200 ease-in-out lg:translate-x-0 ${
-          mobileSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0"
+          mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
         <div className="flex flex-col h-full overflow-hidden">
@@ -660,7 +660,7 @@ export default function SchoolDashboardPage() {
                 <BrandMark size={22} />
               </span>
               <div className="flex flex-col leading-tight">
-                <span className="text-sm font-bold text-[#0F172A]">JAMBPrep OS</span>
+                <span className="text-sm font-semibold text-[#0F172A]">JAMBPrep OS</span>
                 <span className="text-[11px] text-[#64748B] font-medium truncate max-w-[140px]">
                   {schoolName}
                 </span>
@@ -701,7 +701,7 @@ export default function SchoolDashboardPage() {
           <div className="flex-1 overflow-y-auto px-3 py-2 space-y-5">
             {navSections.map((section) => (
               <div key={section.title}>
-                <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                   {section.title}
                 </p>
                 <nav className="space-y-0.5">
@@ -718,8 +718,8 @@ export default function SchoolDashboardPage() {
                         }}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition cursor-pointer ${
                           isActive
-                            ? "bg-[#12664F] text-white font-bold border border-[#0E5441]"
-                            : "text-slate-700 hover:bg-slate-100 hover:text-slate-950 font-semibold"
+                            ? "bg-[#12664F] text-white font-medium border border-[#0E5441]"
+                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium"
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
@@ -731,7 +731,7 @@ export default function SchoolDashboardPage() {
                         </div>
                         {item.badge && (
                           <span 
-                            className={`text-[11px] px-2 py-0.5 rounded-full font-bold shrink-0 ${
+                            className={`text-[11px] px-2 py-0.5 rounded-full font-medium shrink-0 ${
                               isActive
                                 ? "bg-white text-[#12664F]"
                                 : item.badgeColor || "bg-slate-200 text-slate-800"
@@ -752,7 +752,7 @@ export default function SchoolDashboardPage() {
           <div className="p-3 border-t border-[#F1F5F9] bg-white">
             <div className="flex items-center justify-between gap-2 p-1.5 rounded-xl hover:bg-slate-50 transition">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="size-8 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-xs font-bold text-emerald-800 shrink-0">
+                <div className="size-8 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-xs font-semibold text-emerald-800 shrink-0">
                   {adminDisplayName.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -807,7 +807,7 @@ export default function SchoolDashboardPage() {
                   · Auto-refreshing every 30s
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900">
                 {getBreadcrumbTitle()}
               </h1>
             </div>
@@ -818,7 +818,7 @@ export default function SchoolDashboardPage() {
                 type="button"
                 onClick={handleExportCsv}
                 disabled={students.length === 0}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 px-3.5 py-2 text-xs font-bold text-slate-800 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 px-3.5 py-2 text-xs font-medium text-slate-700 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Export candidates to CSV file"
               >
                 <Download size={14} />
@@ -828,7 +828,7 @@ export default function SchoolDashboardPage() {
               <button
                 type="button"
                 onClick={handleSync}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 px-3.5 py-2 text-xs font-bold text-slate-800 transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 px-3.5 py-2 text-xs font-medium text-slate-700 transition cursor-pointer"
                 title="Synchronize cohort records"
               >
                 <RotateCw size={14} className={isSyncing ? "animate-spin text-[#12664F]" : ""} />
@@ -838,7 +838,7 @@ export default function SchoolDashboardPage() {
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(true)}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#12664F] hover:bg-[#0E5441] active:bg-[#0B3A2E] text-white font-bold text-xs px-4 py-2 border border-[#0E5441] transition cursor-pointer"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#12664F] hover:bg-[#0E5441] active:bg-[#0B3A2E] text-white font-medium text-xs px-4 py-2 border border-[#0E5441] transition cursor-pointer"
               >
                 <UserPlus size={14} />
                 <span>New Candidate</span>
@@ -855,7 +855,7 @@ export default function SchoolDashboardPage() {
               {/* Quick Stats Row (Matches reference screenshot 100%) */}
               <section className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                     Quick Stats
                   </h2>
                   <button 
@@ -871,16 +871,16 @@ export default function SchoolDashboardPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
                   {/* Stat 1: Total Candidates */}
                   <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-xs text-slate-700 font-bold">
+                    <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
                       <span className="flex size-7 items-center justify-center rounded-lg bg-emerald-50 text-[#12664F] border border-emerald-200">
                         <Users size={14} />
                       </span>
                       <span className="truncate">Total Enrolled</span>
                     </div>
-                    <p className="text-2xl font-black text-slate-900 tracking-tight tabular-nums">
+                    <p className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums">
                       {students.length}
                     </p>
-                    <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/70 border border-emerald-300 px-2.5 py-0.5 text-[11px] font-bold text-emerald-900">
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/70 border border-emerald-300 px-2.5 py-0.5 text-[11px] font-medium text-emerald-900">
                       <TrendingUp size={11} />
                       <span>{students.length} active</span>
                     </div>
@@ -888,22 +888,22 @@ export default function SchoolDashboardPage() {
 
                   {/* Stat 2: Unlicensed */}
                   <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-xs text-slate-700 font-bold">
+                    <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
                       <span className="flex size-7 items-center justify-center rounded-lg bg-amber-50 text-amber-800 border border-amber-200">
                         <Clock size={14} />
                       </span>
                       <span className="truncate">Unlicensed</span>
                     </div>
-                    <p className="text-2xl font-black text-slate-900 tracking-tight tabular-nums">
+                    <p className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums">
                       {unlicensedCount < 10 && unlicensedCount > 0 ? `0${unlicensedCount}` : unlicensedCount}
                     </p>
                     {unlicensedCount > 0 ? (
-                      <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-100/80 border border-amber-300 px-2.5 py-0.5 text-[11px] font-bold text-amber-950">
+                      <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-100/80 border border-amber-300 px-2.5 py-0.5 text-[11px] font-medium text-amber-950">
                         <AlertCircle size={11} />
                         <span>needs action</span>
                       </div>
                     ) : (
-                      <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/70 border border-emerald-300 px-2.5 py-0.5 text-[11px] font-bold text-emerald-900">
+                      <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/70 border border-emerald-300 px-2.5 py-0.5 text-[11px] font-medium text-emerald-900">
                         <Check size={11} />
                         <span>all licensed</span>
                       </div>
@@ -912,48 +912,48 @@ export default function SchoolDashboardPage() {
 
                   {/* Stat 3: Active Licences */}
                   <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-xs text-slate-700 font-bold">
+                    <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
                       <span className="flex size-7 items-center justify-center rounded-lg bg-blue-50 text-blue-800 border border-blue-200">
                         <ShieldCheck size={14} />
                       </span>
                       <span className="truncate">Active Paid</span>
                     </div>
-                    <p className="text-2xl font-black text-slate-900 tracking-tight tabular-nums">
+                    <p className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums">
                       {activeCount < 10 && activeCount > 0 ? `0${activeCount}` : activeCount}
                     </p>
-                    <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-100/70 border border-blue-300 px-2.5 py-0.5 text-[11px] font-bold text-blue-950">
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-100/70 border border-blue-300 px-2.5 py-0.5 text-[11px] font-medium text-blue-950">
                       <span>₦1,500 / seat</span>
                     </div>
                   </div>
 
                   {/* Stat 4: CBT Lab Ready */}
                   <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-xs text-slate-700 font-bold">
+                    <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
                       <span className="flex size-7 items-center justify-center rounded-lg bg-purple-50 text-purple-800 border border-purple-200">
                         <Calendar size={14} />
                       </span>
                       <span className="truncate">Lab Readiness</span>
                     </div>
-                    <p className="text-2xl font-black text-slate-900 tracking-tight">
+                    <p className="text-2xl font-semibold text-slate-900 tracking-tight">
                       {scheduledMock ? "01" : "00"}
                     </p>
-                    <div className="inline-flex items-center gap-1.5 rounded-full bg-purple-100/70 border border-purple-300 px-2.5 py-0.5 text-[11px] font-bold text-purple-950">
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-purple-100/70 border border-purple-300 px-2.5 py-0.5 text-[11px] font-medium text-purple-950">
                       <span>{scheduledMock ? "Session ready" : "Idle"}</span>
                     </div>
                   </div>
 
                   {/* Stat 5: Monthly Spend */}
                   <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-xs text-slate-700 font-bold">
+                    <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
                       <span className="flex size-7 items-center justify-center rounded-lg bg-emerald-50 text-[#12664F] border border-emerald-200">
                         <CreditCard size={14} />
                       </span>
                       <span className="truncate">Active Spend</span>
                     </div>
-                    <p className="text-2xl font-black text-slate-900 tracking-tight tabular-nums">
+                    <p className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums">
                       ₦{activeSpend.toLocaleString()}
                     </p>
-                    <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/70 border border-emerald-300 px-2.5 py-0.5 text-[11px] font-bold text-emerald-900">
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/70 border border-emerald-300 px-2.5 py-0.5 text-[11px] font-medium text-emerald-900">
                       <TrendingUp size={11} />
                       <span>30-day cycle</span>
                     </div>
@@ -961,16 +961,16 @@ export default function SchoolDashboardPage() {
 
                   {/* Stat 6: Cohort Avg Score */}
                   <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-xs text-slate-700 font-bold">
+                    <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
                       <span className="flex size-7 items-center justify-center rounded-lg bg-slate-100 text-slate-800 border border-slate-300">
                         <BarChart3 size={14} />
                       </span>
                       <span className="truncate">Avg Mock Score</span>
                     </div>
-                    <p className="text-2xl font-black text-slate-900 tracking-tight tabular-nums">
+                    <p className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums">
                       {cohortAvg ? `${cohortAvg}` : "—"}
                     </p>
-                    <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 border border-slate-300 px-2.5 py-0.5 text-[11px] font-bold text-slate-800">
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 border border-slate-300 px-2.5 py-0.5 text-[11px] font-medium text-slate-800">
                       <span>target 280 / 400</span>
                     </div>
                   </div>
@@ -982,10 +982,10 @@ export default function SchoolDashboardPage() {
                 {/* Table Filter & Search Controls Header */}
                 <div className="p-4 sm:p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <h2 className="text-base font-bold text-slate-900">
+                    <h2 className="text-base font-semibold text-slate-900">
                       All Candidates
                     </h2>
-                    <span className="text-xs font-semibold text-slate-500">
+                    <span className="text-xs font-medium text-slate-500">
                       ({filteredStudents.length} candidate{filteredStudents.length === 1 ? "" : "s"})
                     </span>
                   </div>
@@ -1019,8 +1019,8 @@ export default function SchoolDashboardPage() {
                         onClick={() => setFilterStatus("all")}
                         className={`rounded-lg px-3.5 py-1.5 transition cursor-pointer ${
                           filterStatus === "all"
-                            ? "bg-[#12664F] text-white font-bold"
-                            : "text-slate-700 hover:text-slate-950 hover:bg-white font-semibold"
+                            ? "bg-[#12664F] text-white font-medium"
+                            : "text-slate-600 hover:text-slate-900 hover:bg-white font-medium"
                         }`}
                       >
                         All
@@ -1030,8 +1030,8 @@ export default function SchoolDashboardPage() {
                         onClick={() => setFilterStatus("active")}
                         className={`rounded-lg px-3.5 py-1.5 transition cursor-pointer ${
                           filterStatus === "active"
-                            ? "bg-[#12664F] text-white font-bold"
-                            : "text-slate-700 hover:text-slate-950 hover:bg-white font-semibold"
+                            ? "bg-[#12664F] text-white font-medium"
+                            : "text-slate-600 hover:text-slate-900 hover:bg-white font-medium"
                         }`}
                       >
                         Active Licences
@@ -1041,8 +1041,8 @@ export default function SchoolDashboardPage() {
                         onClick={() => setFilterStatus("unlicensed")}
                         className={`rounded-lg px-3.5 py-1.5 transition cursor-pointer ${
                           filterStatus === "unlicensed"
-                            ? "bg-[#12664F] text-white font-bold"
-                            : "text-slate-700 hover:text-slate-950 hover:bg-white font-semibold"
+                            ? "bg-[#12664F] text-white font-medium"
+                            : "text-slate-600 hover:text-slate-900 hover:bg-white font-medium"
                         }`}
                       >
                         Unlicensed {unlicensedCount > 0 && `(${unlicensedCount})`}
@@ -1053,8 +1053,8 @@ export default function SchoolDashboardPage() {
                           onClick={() => setFilterStatus("expired")}
                           className={`rounded-lg px-3.5 py-1.5 transition cursor-pointer ${
                             filterStatus === "expired"
-                              ? "bg-[#12664F] text-white font-bold"
-                              : "text-slate-700 hover:text-slate-950 hover:bg-white font-semibold"
+                              ? "bg-[#12664F] text-white font-medium"
+                              : "text-slate-600 hover:text-slate-900 hover:bg-white font-medium"
                           }`}
                         >
                           Expired
@@ -1110,7 +1110,7 @@ export default function SchoolDashboardPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse min-w-[800px]">
                     <thead>
-                      <tr className="border-b border-slate-200 bg-slate-50 text-slate-700 font-bold uppercase tracking-wider text-[11px] select-none">
+                      <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-medium uppercase tracking-wider text-[11px] select-none">
                         <th className="py-3 px-3 w-8 text-center">
                           <span className="sr-only">Details</span>
                         </th>
@@ -1128,13 +1128,13 @@ export default function SchoolDashboardPage() {
                             )}
                           </button>
                         </th>
-                        <th className="py-3 px-4 font-bold text-slate-700">Candidate</th>
-                        <th className="py-3 px-4 font-bold text-slate-700">Subjects</th>
-                        <th className="py-3 px-4 font-bold text-slate-700">Password</th>
-                        <th className="py-3 px-4 font-bold text-slate-700">Licence</th>
-                        <th className="py-3 px-4 font-bold text-slate-700">Mock Score</th>
-                        <th className="py-3 px-4 font-bold text-slate-700">Channel</th>
-                        <th className="py-3 px-4 font-bold text-slate-700 text-right">Action</th>
+                        <th className="py-3 px-4 font-semibold text-slate-600">Candidate</th>
+                        <th className="py-3 px-4 font-semibold text-slate-600">Subjects</th>
+                        <th className="py-3 px-4 font-semibold text-slate-600">Password</th>
+                        <th className="py-3 px-4 font-semibold text-slate-600">Licence</th>
+                        <th className="py-3 px-4 font-semibold text-slate-600">Mock Score</th>
+                        <th className="py-3 px-4 font-semibold text-slate-600">Channel</th>
+                        <th className="py-3 px-4 font-semibold text-slate-600 text-right">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-slate-900">
@@ -1162,7 +1162,7 @@ export default function SchoolDashboardPage() {
                                     setSearchQuery("");
                                     setFilterStatus("all");
                                   }}
-                                  className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 transition cursor-pointer"
+                                  className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
                                 >
                                   Reset Filters
                                 </button>
@@ -1171,7 +1171,7 @@ export default function SchoolDashboardPage() {
                                   <button
                                     type="button"
                                     onClick={() => setIsAddModalOpen(true)}
-                                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#12664F] px-4 py-2 text-xs font-bold text-white hover:bg-[#0B3028] transition cursor-pointer"
+                                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#12664F] px-4 py-2 text-xs font-medium text-white hover:bg-[#0B3028] transition cursor-pointer"
                                   >
                                     <UserPlus size={13} />
                                     <span>Add Candidate</span>
@@ -1179,7 +1179,7 @@ export default function SchoolDashboardPage() {
                                   <button
                                     type="button"
                                     onClick={() => setIsCsvModalOpen(true)}
-                                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 transition cursor-pointer"
+                                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
                                   >
                                     <Upload size={13} />
                                     <span>Import CSV</span>
@@ -1238,18 +1238,18 @@ export default function SchoolDashboardPage() {
                                 {/* Name + Avatar column (Matches reference screenshot) */}
                                 <td className="py-3 px-4">
                                   <div className="flex items-center gap-3">
-                                    <div className={`size-8 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 ${avatarColorClass}`}>
+                                    <div className={`size-8 rounded-full border flex items-center justify-center text-xs font-medium shrink-0 ${avatarColorClass}`}>
                                       {std.name.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="min-w-0">
                                       <button
                                         type="button"
                                         onClick={() => toggleExpandStudent(std.id)}
-                                        className="font-bold text-slate-900 hover:text-[#12664F] text-left truncate block cursor-pointer"
+                                        className="font-medium text-slate-900 hover:text-[#12664F] text-left truncate block cursor-pointer"
                                       >
                                         {std.name}
                                       </button>
-                                      <span className="text-[11px] text-slate-500 font-medium truncate block">
+                                      <span className="text-[11px] text-slate-500 font-normal truncate block">
                                         {std.email}
                                       </span>
                                     </div>
@@ -1259,7 +1259,7 @@ export default function SchoolDashboardPage() {
                                 {/* Subjects column */}
                                 <td className="py-3 px-4 text-slate-700">
                                   {validSubjects.length > 0 ? (
-                                    <span className="font-semibold text-xs">
+                                    <span className="font-medium text-xs">
                                       {validSubjects.length}× Core Subjects
                                     </span>
                                   ) : (
@@ -1274,7 +1274,7 @@ export default function SchoolDashboardPage() {
                                       Private
                                     </span>
                                   ) : (
-                                    <div className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 border border-slate-300 px-2 py-0.5 font-mono text-xs font-bold text-slate-900">
+                                    <div className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 border border-slate-300 px-2 py-0.5 font-mono text-xs font-medium text-slate-900">
                                       <span>{pwd}</span>
                                       <button
                                         type="button"
@@ -1291,7 +1291,7 @@ export default function SchoolDashboardPage() {
                                 {/* Licence Status pill */}
                                 <td className="py-3 px-4">
                                   {std.licenseStatus === "active" ? (
-                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-3 py-1 text-xs font-bold text-emerald-900">
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-3 py-1 text-xs font-medium text-emerald-900">
                                       <span className="size-2 rounded-full bg-emerald-600" />
                                       Active ({std.daysLeft ?? 28}d)
                                     </span>
@@ -1299,7 +1299,7 @@ export default function SchoolDashboardPage() {
                                     <button
                                       type="button"
                                       onClick={() => window.location.assign(checkoutUrlFor([std.id]))}
-                                      className="inline-flex items-center gap-1 rounded-full bg-rose-100 border border-rose-300 px-3 py-1 text-xs font-bold text-rose-950 hover:bg-rose-200 transition cursor-pointer"
+                                      className="inline-flex items-center gap-1 rounded-full bg-rose-100 border border-rose-300 px-3 py-1 text-xs font-medium text-rose-950 hover:bg-rose-200 transition cursor-pointer"
                                       title="Licence expired. Click to renew."
                                     >
                                       Expired · Renew
@@ -1308,7 +1308,7 @@ export default function SchoolDashboardPage() {
                                     <button
                                       type="button"
                                       onClick={() => window.location.assign(checkoutUrlFor([std.id]))}
-                                      className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-3 py-1 text-xs font-bold text-amber-950 hover:bg-amber-200 transition cursor-pointer"
+                                      className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-3 py-1 text-xs font-medium text-amber-950 hover:bg-amber-200 transition cursor-pointer"
                                       title="Unlicensed. Click to checkout 1 licence."
                                     >
                                       Unlicensed · Pay
@@ -1319,11 +1319,11 @@ export default function SchoolDashboardPage() {
                                 {/* Score & Accuracy */}
                                 <td className="py-3 px-4">
                                   {std.averageScore ? (
-                                    <span className="font-bold text-slate-900 text-xs tabular-nums">
+                                    <span className="font-medium text-slate-900 text-xs tabular-nums">
                                       {std.averageScore} / 400
                                     </span>
                                   ) : typeof std.practiceAccuracy === "number" ? (
-                                    <span className="font-bold text-[#12664F] text-xs tabular-nums">
+                                    <span className="font-medium text-[#12664F] text-xs tabular-nums">
                                       {std.practiceAccuracy}% Acc
                                     </span>
                                   ) : (
@@ -1333,7 +1333,7 @@ export default function SchoolDashboardPage() {
 
                                 {/* Channel */}
                                 <td className="py-3 px-4 text-slate-700">
-                                  <span className="text-xs font-semibold">
+                                  <span className="text-xs font-medium text-slate-600">
                                     {std.enrolmentMethod === "link"
                                       ? "Registration Link"
                                       : std.enrolmentMethod === "csv"
@@ -1384,11 +1384,11 @@ export default function SchoolDashboardPage() {
                                         {/* Card 1: CBT Mock Performance */}
                                         <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 space-y-2.5">
                                           <div className="flex items-center justify-between">
-                                            <span className="font-semibold text-slate-900 flex items-center gap-1.5">
+                                            <span className="font-medium text-slate-900 flex items-center gap-1.5">
                                               <BarChart3 size={13} className="text-[#12664F]" />
                                               <span>Performance & Diagnostics</span>
                                             </span>
-                                            <span className="font-mono text-xs font-bold text-[#12664F]">
+                                            <span className="font-mono text-xs font-medium text-[#12664F]">
                                               {std.averageScore ? `${std.averageScore} / 400` : "No Mock Taken"}
                                             </span>
                                           </div>
@@ -1396,13 +1396,13 @@ export default function SchoolDashboardPage() {
                                           <div className="space-y-1.5 text-[11px]">
                                             <div className="flex items-center justify-between text-slate-500">
                                               <span>Practice Accuracy:</span>
-                                              <span className="font-semibold text-slate-900">
+                                              <span className="font-medium text-slate-900">
                                                 {typeof std.practiceAccuracy === "number" ? `${std.practiceAccuracy}%` : "—"}
                                               </span>
                                             </div>
                                             <div className="flex items-center justify-between text-slate-500">
                                               <span>Questions Solved:</span>
-                                              <span className="font-semibold text-slate-900">
+                                              <span className="font-medium text-slate-900">
                                                 {std.totalPracticeQuestions || 0} questions
                                               </span>
                                             </div>
@@ -1417,7 +1417,7 @@ export default function SchoolDashboardPage() {
                                           <button
                                             type="button"
                                             onClick={() => setSelectedDrilldownStudent(std)}
-                                            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 py-1.5 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
+                                            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 py-1.5 text-xs font-medium hover:bg-slate-50 transition cursor-pointer"
                                           >
                                             <BarChart3 size={12} />
                                             <span>Full Diagnostic Drilldown</span>
@@ -1427,7 +1427,7 @@ export default function SchoolDashboardPage() {
 
                                         {/* Card 2: Credentials & Access */}
                                         <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 space-y-2.5">
-                                          <span className="font-semibold text-slate-900 flex items-center gap-1.5">
+                                          <span className="font-medium text-slate-900 flex items-center gap-1.5">
                                             <KeyRound size={13} className="text-slate-500" />
                                             <span>Credentials & Identification</span>
                                           </span>
@@ -1435,7 +1435,7 @@ export default function SchoolDashboardPage() {
                                           <div className="space-y-1.5 text-[11px]">
                                             <div className="flex items-center justify-between text-slate-500">
                                               <span>Candidate ID:</span>
-                                              <span className="font-mono text-slate-900 font-semibold">
+                                              <span className="font-mono text-slate-900 font-medium">
                                                 {std.studentIdentifier || std.id.slice(0, 8)}
                                               </span>
                                             </div>
@@ -1454,7 +1454,7 @@ export default function SchoolDashboardPage() {
                                               {isSelfRegistered || !pwd ? (
                                                 <span className="text-slate-400 italic">Self-created private password</span>
                                               ) : (
-                                                <div className="inline-flex items-center gap-1 font-mono font-bold text-slate-900">
+                                                <div className="inline-flex items-center gap-1 font-mono font-medium text-slate-900">
                                                   <span>{pwd}</span>
                                                   <button
                                                     type="button"
@@ -1472,7 +1472,7 @@ export default function SchoolDashboardPage() {
                                             <button
                                               type="button"
                                               onClick={() => setEditingStudent(std)}
-                                              className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                                              className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
                                             >
                                               <Pencil size={11} />
                                               <span>Edit</span>
@@ -1480,7 +1480,7 @@ export default function SchoolDashboardPage() {
                                             <button
                                               type="button"
                                               onClick={() => setDisconnectTargets([std])}
-                                              className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg border border-rose-200 bg-rose-50 py-1.5 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 transition cursor-pointer"
+                                              className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg border border-rose-200 bg-rose-50 py-1.5 text-[11px] font-medium text-rose-700 hover:bg-rose-100 transition cursor-pointer"
                                             >
                                               <UserMinus size={11} />
                                               <span>Disconnect</span>
@@ -1492,16 +1492,16 @@ export default function SchoolDashboardPage() {
                                         <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 space-y-2.5 flex flex-col justify-between">
                                           <div className="space-y-2">
                                             <div className="flex items-center justify-between">
-                                              <span className="font-semibold text-slate-900 flex items-center gap-1.5">
+                                              <span className="font-medium text-slate-900 flex items-center gap-1.5">
                                                 <CreditCard size={13} className="text-[#12664F]" />
                                                 <span>Licence Status</span>
                                               </span>
                                               {std.licenseStatus === "active" ? (
-                                                <span className="rounded-full bg-emerald-50 text-emerald-700 px-2.5 py-0.5 text-[10px] font-semibold">
+                                                <span className="rounded-full bg-emerald-50 text-emerald-700 px-2.5 py-0.5 text-[10px] font-medium">
                                                   Active
                                                 </span>
                                               ) : (
-                                                <span className="rounded-full bg-amber-50 text-amber-800 px-2.5 py-0.5 text-[10px] font-semibold">
+                                                <span className="rounded-full bg-amber-50 text-amber-800 px-2.5 py-0.5 text-[10px] font-medium">
                                                   Unlicensed
                                                 </span>
                                               )}
@@ -1521,7 +1521,7 @@ export default function SchoolDashboardPage() {
                                           {std.licenseStatus !== "active" ? (
                                             <Link
                                               href={checkoutUrlFor([std.id])}
-                                              className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#12664F] text-white py-1.5 text-xs font-semibold hover:bg-[#0B3028] transition cursor-pointer"
+                                              className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#12664F] text-white py-1.5 text-xs font-medium hover:bg-[#0B3028] transition cursor-pointer"
                                             >
                                               <CreditCard size={12} />
                                               <span>Licence (₦1,500 / mo)</span>
@@ -1582,7 +1582,7 @@ export default function SchoolDashboardPage() {
                             key={pageNum}
                             type="button"
                             onClick={() => setCurrentPage(pageNum)}
-                            className={`min-w-[28px] h-7 px-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                            className={`min-w-[28px] h-7 px-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
                               isCurrent
                                 ? "bg-[#12664F] text-white"
                                 : "border border-slate-300 bg-white text-slate-800 hover:bg-slate-100"
@@ -1615,7 +1615,7 @@ export default function SchoolDashboardPage() {
               <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
                 <div className="pb-4 mb-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-semibold text-slate-900 flex items-center gap-2">
                       <BarChart3 size={18} className="text-[#12664F]" />
                       <span>Syllabus Diagnostic Heatmap</span>
                     </h2>
@@ -1623,7 +1623,7 @@ export default function SchoolDashboardPage() {
                       Identify topic-level weaknesses across your entire candidate cohort and optimize revision intervention.
                     </p>
                   </div>
-                  <div className="inline-flex items-center gap-1.5 rounded-xl bg-slate-50 px-3 py-1.5 text-xs text-slate-700 font-semibold border border-slate-200">
+                  <div className="inline-flex items-center gap-1.5 rounded-xl bg-slate-50 px-3 py-1.5 text-xs text-slate-700 font-medium border border-slate-200">
                     <span>Cohort Size:</span>
                     <strong className="text-slate-950">{students.length} Candidates</strong>
                   </div>
@@ -1640,7 +1640,7 @@ export default function SchoolDashboardPage() {
               <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
                   <div>
-                    <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-semibold text-slate-900 flex items-center gap-2">
                       <Clock size={18} className="text-[#12664F]" />
                       <span>Computer Laboratory Mock Controller</span>
                     </h2>
@@ -1652,7 +1652,7 @@ export default function SchoolDashboardPage() {
                   <button
                     type="button"
                     onClick={() => setIsMockSchedulerOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#12664F] hover:bg-[#0E5441] px-4 py-2 text-xs font-bold text-white transition cursor-pointer self-start sm:self-auto"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#12664F] hover:bg-[#0E5441] px-4 py-2 text-xs font-medium text-white transition cursor-pointer self-start sm:self-auto"
                   >
                     <Play size={12} fill="currentColor" />
                     <span>Launch New Lab Session</span>
@@ -1666,7 +1666,7 @@ export default function SchoolDashboardPage() {
                       <Clock size={22} />
                     </div>
                     <div className="space-y-1 max-w-md mx-auto">
-                      <h3 className="text-sm font-bold text-slate-900">No mock exam session scheduled yet</h3>
+                      <h3 className="text-sm font-semibold text-slate-900">No mock exam session scheduled yet</h3>
                       <p className="text-xs text-slate-500 leading-relaxed">
                         You haven&apos;t scheduled any computer laboratory mock exams. Launch a new lab session to configure your title, duration, and generate a synchronized entry code.
                       </p>
@@ -1674,7 +1674,7 @@ export default function SchoolDashboardPage() {
                     <button
                       type="button"
                       onClick={() => setIsMockSchedulerOpen(true)}
-                      className="inline-flex items-center gap-2 rounded-xl bg-[#12664F] hover:bg-[#0E5441] px-4 py-2 text-xs font-bold text-white transition cursor-pointer"
+                      className="inline-flex items-center gap-2 rounded-xl bg-[#12664F] hover:bg-[#0E5441] px-4 py-2 text-xs font-medium text-white transition cursor-pointer"
                     >
                       <Play size={12} fill="currentColor" />
                       <span>Schedule First Lab Mock</span>
@@ -1684,11 +1684,11 @@ export default function SchoolDashboardPage() {
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="space-y-1">
-                        <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-3 py-0.5 text-[11px] font-bold text-emerald-900">
+                        <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-3 py-0.5 text-[11px] font-medium text-emerald-900">
                           <span className="size-2 rounded-full bg-emerald-600" />
                           <span>Synchronized Lab Ready</span>
                         </div>
-                        <h3 className="text-base font-bold text-slate-900">
+                        <h3 className="text-base font-semibold text-slate-900">
                           {scheduledMock.title || "UTME Computer Lab Mock"}
                         </h3>
                         <p className="text-xs text-slate-600 font-medium">
@@ -1697,27 +1697,27 @@ export default function SchoolDashboardPage() {
                       </div>
 
                       <div className="rounded-xl bg-white p-3 border border-slate-300 text-center min-w-[140px]">
-                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Session Code</span>
-                        <span className="font-mono text-base font-black text-slate-900">{scheduledMock.labSessionCode || `${schoolCode}-MOCK`}</span>
+                        <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider block">Session Code</span>
+                        <span className="font-mono text-base font-semibold text-slate-900">{scheduledMock.labSessionCode || `${schoolCode}-MOCK`}</span>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
                       <div className="rounded-xl bg-white p-3 border border-slate-200 text-xs">
-                        <span className="text-slate-500 block text-[10px] font-semibold">Timer Control</span>
-                        <strong className="text-slate-900 text-xs sm:text-sm font-bold">120:00 Countdown</strong>
+                        <span className="text-slate-500 block text-[10px] font-medium">Timer Control</span>
+                        <strong className="text-slate-900 text-xs sm:text-sm font-semibold">120:00 Countdown</strong>
                       </div>
                       <div className="rounded-xl bg-white p-3 border border-slate-200 text-xs">
-                        <span className="text-slate-500 block text-[10px] font-semibold">Proctor Mode</span>
-                        <strong className="text-slate-900 text-xs sm:text-sm font-bold">8-Key Hotkey Strict</strong>
+                        <span className="text-slate-500 block text-[10px] font-medium">Proctor Mode</span>
+                        <strong className="text-slate-900 text-xs sm:text-sm font-semibold">8-Key Hotkey Strict</strong>
                       </div>
                       <div className="rounded-xl bg-white p-3 border border-slate-200 text-xs">
-                        <span className="text-slate-500 block text-[10px] font-semibold">Eligible Roster</span>
-                        <strong className="text-[#12664F] text-xs sm:text-sm font-bold">{activeCount} Licensed Students</strong>
+                        <span className="text-slate-500 block text-[10px] font-medium">Eligible Roster</span>
+                        <strong className="text-[#12664F] text-xs sm:text-sm font-semibold">{activeCount} Licensed Students</strong>
                       </div>
                       <div className="rounded-xl bg-white p-3 border border-slate-200 text-xs">
-                        <span className="text-slate-500 block text-[10px] font-semibold">Instant Result</span>
-                        <strong className="text-slate-900 text-xs sm:text-sm font-bold">Immediate Diagnostic</strong>
+                        <span className="text-slate-500 block text-[10px] font-medium">Instant Result</span>
+                        <strong className="text-slate-900 text-xs sm:text-sm font-semibold">Immediate Diagnostic</strong>
                       </div>
                     </div>
                   </div>
@@ -1725,24 +1725,24 @@ export default function SchoolDashboardPage() {
 
                 {/* Step-by-Step Lab Proctoring Checklist */}
                 <div className="rounded-2xl border border-slate-200 p-5 space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-800">
                     Laboratory Proctoring Protocol
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                     <div className="rounded-xl bg-slate-50 p-3.5 space-y-1 border border-slate-200">
-                      <span className="font-bold text-slate-900 block">1. Lab Desktops Setup</span>
+                      <span className="font-semibold text-slate-900 block">1. Lab Desktops Setup</span>
                       <p className="text-[11px] text-slate-600 leading-relaxed">
-                        Open desktop browsers to <code className="bg-white border border-slate-300 px-1 py-0.5 rounded text-[10px] font-bold text-slate-900">/mock</code>. Verify keyboards are functioning for 8-key shortcuts.
+                        Open desktop browsers to <code className="bg-white border border-slate-300 px-1 py-0.5 rounded text-[10px] font-medium text-slate-900">/mock</code>. Verify keyboards are functioning for 8-key shortcuts.
                       </p>
                     </div>
                     <div className="rounded-xl bg-slate-50 p-3.5 space-y-1 border border-slate-200">
-                      <span className="font-bold text-slate-900 block">2. Candidate Authentication</span>
+                      <span className="font-semibold text-slate-900 block">2. Candidate Authentication</span>
                       <p className="text-[11px] text-slate-600 leading-relaxed">
                         Students log in using their email and default surname password, then enter the whiteboard session code.
                       </p>
                     </div>
                     <div className="rounded-xl bg-slate-50 p-3.5 space-y-1 border border-slate-200">
-                      <span className="font-bold text-slate-900 block">3. Immediate Diagnostics</span>
+                      <span className="font-semibold text-slate-900 block">3. Immediate Diagnostics</span>
                       <p className="text-[11px] text-slate-600 leading-relaxed">
                         Upon exam submission, scores synchronize directly to this dashboard, populating the syllabus heatmap.
                       </p>
@@ -1759,7 +1759,7 @@ export default function SchoolDashboardPage() {
               <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
                   <div>
-                    <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-semibold text-slate-900 flex items-center gap-2">
                       <CreditCard size={18} className="text-[#12664F]" />
                       <span>Licensing & Cohort Checkout</span>
                     </h2>
@@ -1771,7 +1771,7 @@ export default function SchoolDashboardPage() {
                   <button
                     type="button"
                     onClick={() => setIsCheckoutModalOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#12664F] hover:bg-[#0E5441] px-4 py-2 text-xs font-bold text-white transition cursor-pointer self-start sm:self-auto"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#12664F] hover:bg-[#0E5441] px-4 py-2 text-xs font-medium text-white transition cursor-pointer self-start sm:self-auto"
                   >
                     <CreditCard size={13} />
                     <span>Open Cohort Checkout Modal</span>
@@ -1781,10 +1781,10 @@ export default function SchoolDashboardPage() {
                 {/* Key Stats */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-1">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
                       Active Licences
                     </span>
-                    <p className="text-2xl font-black text-[#12664F]">
+                    <p className="text-2xl font-semibold text-[#12664F]">
                       {activeCount} / {students.length}
                     </p>
                     <span className="text-xs text-slate-600 font-medium block">
@@ -1793,10 +1793,10 @@ export default function SchoolDashboardPage() {
                   </div>
 
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-1">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
                       Pending Licences
                     </span>
-                    <p className="text-2xl font-black text-amber-900">
+                    <p className="text-2xl font-semibold text-amber-900">
                       {unlicensedCount} Candidates
                     </p>
                     <span className="text-xs text-slate-600 font-medium block">
@@ -1805,10 +1805,10 @@ export default function SchoolDashboardPage() {
                   </div>
 
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-1">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
                       Current Monthly Spend
                     </span>
-                    <p className="text-2xl font-black text-slate-900">
+                    <p className="text-2xl font-semibold text-slate-900">
                       ₦{activeSpend.toLocaleString()}
                     </p>
                     <span className="text-xs text-slate-600 font-medium block">
@@ -1822,7 +1822,7 @@ export default function SchoolDashboardPage() {
                   <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5 space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
-                        <h3 className="text-sm font-bold text-amber-950 flex items-center gap-1.5">
+                        <h3 className="text-sm font-semibold text-amber-950 flex items-center gap-1.5">
                           <AlertCircle size={15} className="text-amber-800" />
                           <span>{unlicensedCount} Unlicensed Candidates Ready for Activation</span>
                         </h3>
@@ -1834,7 +1834,7 @@ export default function SchoolDashboardPage() {
                       <button
                         type="button"
                         onClick={handleSelectPendingForCheckout}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#12664F] hover:bg-[#0E5441] px-4 py-2 text-xs font-bold text-white transition cursor-pointer shrink-0"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#12664F] hover:bg-[#0E5441] px-4 py-2 text-xs font-medium text-white transition cursor-pointer shrink-0"
                       >
                         <CreditCard size={13} />
                         <span>Select All Pending ({unlicensedCount})</span>
@@ -1845,7 +1845,7 @@ export default function SchoolDashboardPage() {
                 ) : (
                   <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-4 flex items-center gap-3">
                     <CheckCircle2 size={18} className="text-[#12664F] shrink-0" />
-                    <p className="text-xs text-[#12664F] font-bold">
+                    <p className="text-xs text-[#12664F] font-medium">
                       All currently enrolled candidates have active licences. Newly enrolled students will appear here for batch activation.
                     </p>
                   </div>
@@ -1853,18 +1853,18 @@ export default function SchoolDashboardPage() {
 
                 {/* Pricing Structure & Terms */}
                 <div className="rounded-2xl border border-slate-200 p-5 space-y-4">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-800">
                     Institutional Pricing & Payment Terms
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                     <div className="space-y-1.5">
-                      <h4 className="font-bold text-slate-900">Direct Instant Activation</h4>
+                      <h4 className="font-semibold text-slate-900">Direct Instant Activation</h4>
                       <p className="text-[11px] text-slate-600 leading-relaxed">
                         Pay instantly using Paystack (Debit Card, Bank Transfer, USSD). Licences activate automatically upon payment verification without manual intervention.
                       </p>
                     </div>
                     <div className="space-y-1.5">
-                      <h4 className="font-bold text-slate-900">Individual & Cohort Invoicing</h4>
+                      <h4 className="font-semibold text-slate-900">Individual & Cohort Invoicing</h4>
                       <p className="text-[11px] text-slate-600 leading-relaxed">
                         Each transaction issues an institutional receipt with school stamp, candidate IDs, and reference numbers for your bursary records.
                       </p>
@@ -1881,12 +1881,12 @@ export default function SchoolDashboardPage() {
               <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
                   <div>
-                    <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <div className="inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider text-slate-500">
                       <span>VERIFIED INSTITUTION</span>
                       <span>·</span>
                       <span className="text-[#12664F]">{schoolType.replace(/_/g, " ").toUpperCase()}</span>
                     </div>
-                    <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 mt-1">
+                    <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900 mt-1">
                       {schoolName}
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -1894,7 +1894,7 @@ export default function SchoolDashboardPage() {
                     </p>
                   </div>
 
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-3.5 py-1 text-xs font-bold text-[#12664F] self-start sm:self-auto">
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-3.5 py-1 text-xs font-medium text-[#12664F] self-start sm:self-auto">
                     <ShieldCheck size={14} />
                     <span>Verified Partner</span>
                   </div>
@@ -1903,22 +1903,22 @@ export default function SchoolDashboardPage() {
                 {/* Profile Fields Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-1">
-                    <span className="text-slate-500 font-bold block text-[11px]">School Code</span>
-                    <strong className="font-mono text-sm text-[#12664F] font-black block">{schoolCode}</strong>
+                    <span className="text-slate-500 font-medium block text-[11px]">School Code</span>
+                    <strong className="font-mono text-sm text-[#12664F] font-semibold block">{schoolCode}</strong>
                     <span className="text-[10px] text-slate-500 block">Permanent institutional identifier</span>
                   </div>
 
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-1">
-                    <span className="text-slate-500 font-bold block text-[11px]">Category</span>
-                    <strong className="text-sm text-slate-900 font-bold block capitalize">
+                    <span className="text-slate-500 font-medium block text-[11px]">Category</span>
+                    <strong className="text-sm text-slate-900 font-semibold block capitalize">
                       {schoolType.replace(/_/g, " ")}
                     </strong>
                     <span className="text-[10px] text-slate-500 block">Accredited testing centre</span>
                   </div>
 
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-1">
-                    <span className="text-slate-500 font-bold block text-[11px]">Location</span>
-                    <strong className="text-sm text-slate-900 font-bold block">{state}, Nigeria</strong>
+                    <span className="text-slate-500 font-medium block text-[11px]">Location</span>
+                    <strong className="text-sm text-slate-900 font-semibold block">{state}, Nigeria</strong>
                     <span className="text-[10px] text-slate-500 block">Designated examination zone</span>
                   </div>
                 </div>
@@ -1926,11 +1926,11 @@ export default function SchoolDashboardPage() {
                 {/* Permanent Student Registration Link Widget */}
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                       <Share2 size={13} className="text-[#12664F]" />
                       <span>Dedicated Student Registration Link</span>
                     </h3>
-                    <span className="font-mono text-[11px] font-bold bg-white border border-slate-300 text-[#12664F] px-2 py-0.5 rounded-lg">
+                    <span className="font-mono text-[11px] font-medium bg-white border border-slate-300 text-[#12664F] px-2 py-0.5 rounded-lg">
                       {schoolCode}
                     </span>
                   </div>
@@ -1938,13 +1938,13 @@ export default function SchoolDashboardPage() {
                     Students can use this direct link to register for JAMBPrep and automatically attach themselves to your school cohort:
                   </p>
                   <div className="flex items-center rounded-xl border border-slate-300 bg-white overflow-hidden">
-                    <span className="truncate flex-1 pl-3 pr-2 py-2 font-mono text-xs text-slate-900 select-all font-semibold">
+                    <span className="truncate flex-1 pl-3 pr-2 py-2 font-mono text-xs text-slate-900 select-all font-normal">
                       {inviteLink}
                     </span>
                     <button
                       type="button"
                       onClick={handleCopyInviteLink}
-                      className="inline-flex shrink-0 items-center gap-1.5 bg-[#12664F] hover:bg-[#0E5441] px-4 py-2 text-xs font-bold text-white transition cursor-pointer"
+                      className="inline-flex shrink-0 items-center gap-1.5 bg-[#12664F] hover:bg-[#0E5441] px-4 py-2 text-xs font-medium text-white transition cursor-pointer"
                     >
                       {copiedLink ? (
                         <>
@@ -1963,20 +1963,20 @@ export default function SchoolDashboardPage() {
 
                 {/* Administrator Profile Details */}
                 <div className="space-y-3 pt-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                     <Shield size={13} className="text-slate-500" />
                     <span>Administrator Credentials</span>
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-1">
-                      <span className="text-slate-500 block text-[11px] font-semibold">Primary Contact</span>
-                      <strong className="text-sm text-slate-900 block font-bold">{adminDisplayName}</strong>
+                      <span className="text-slate-500 block text-[11px] font-medium">Primary Contact</span>
+                      <strong className="text-sm text-slate-900 block font-semibold">{adminDisplayName}</strong>
                       <span className="text-[10px] text-slate-500 block">Designated portal administrator</span>
                     </div>
 
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-1">
-                      <span className="text-slate-500 block text-[11px] font-semibold">Admin Login Email</span>
-                      <strong className="text-sm text-slate-900 block font-bold">{adminEmail}</strong>
+                      <span className="text-slate-500 block text-[11px] font-medium">Admin Login Email</span>
+                      <strong className="text-sm text-slate-900 block font-semibold">{adminEmail}</strong>
                       <span className="text-[10px] text-slate-500 block">Used for authentication and invoices</span>
                     </div>
                   </div>
@@ -1984,7 +1984,7 @@ export default function SchoolDashboardPage() {
 
                 {/* Password Policy & Security Notes */}
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 space-y-2">
-                  <h4 className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <h4 className="font-semibold text-slate-900 flex items-center gap-1.5">
                     <KeyRound size={13} className="text-[#12664F]" />
                     <span>Batch Candidate Password Policy</span>
                   </h4>
