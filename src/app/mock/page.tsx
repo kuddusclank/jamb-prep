@@ -374,15 +374,6 @@ export default function MockLobbyPage() {
                       </div>
                     </div>
                   </div>
-
-                  <div className="pt-2 flex justify-center">
-                    <Link
-                      href="/results"
-                      className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#116149] text-white text-xs font-bold hover:bg-[#0e523e] transition"
-                    >
-                      View Past Performance History <ArrowRight size={13} />
-                    </Link>
-                  </div>
                 </div>
               ) : (
                 /* State B: Mock is not completed yet */
