@@ -71,7 +71,7 @@ export async function enqueueLifecycleEmail(
         updated_at
       )
       VALUES (
-        ${params.userId ? `${params.userId}::uuid` : null},
+        ${params.userId ?? null},
         ${params.emailType},
         ${cleanEmail},
         ${params.recipientName ?? null},
