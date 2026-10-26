@@ -17,6 +17,10 @@ import {
 } from '../services/study-schedule-service';
 import type { VapidKeyConfig } from '../services/web-push-crypto';
 import type { SmtpConfig } from '../services/smtp-client';
+import {
+  drainEmailOutboxBatch,
+  scanAndEnqueue24hUpgradeNudges,
+} from '../services/email-outbox-service';
 
 export interface SchedulerWorkerEnv extends DatabaseBindingEnv {
   ENVIRONMENT?: string;
@@ -136,6 +140,7 @@ export function createStudyReminderSchedulerHandler(options?: SchedulerHandlerOp
       const lazyDb = createLazyDbHolder(env, options?.dbFactory);
       try {
         const db = lazyDb.getDb();
+        const smtp = resolveSmtpConfig(env);
         const summary = await runStudyReminderSchedulerTick(
           db.sql,
           {
@@ -143,11 +148,33 @@ export function createStudyReminderSchedulerHandler(options?: SchedulerHandlerOp
             batchLimit,
             concurrency,
             vapid: resolveVapidConfig(env),
-            smtp: resolveSmtpConfig(env),
+            smtp,
             pushSender: options?.pushSender,
             dispatchEnabled: true,
           }
         );
+
+        // Process queued lifecycle emails (welcome, 24h nudge, mock results)
+        if (smtp) {
+          try {
+            const nudgedCount = await scanAndEnqueue24hUpgradeNudges(db.sql, now);
+            if (nudgedCount > 0) {
+              console.info(`[scheduler] Enqueued ${nudgedCount} 24h upgrade nudges.`);
+            }
+          } catch (nudgeErr) {
+            console.error('[scheduler] Failed 24h upgrade nudge scan:', nudgeErr);
+          }
+
+          try {
+            const outboxSummary = await drainEmailOutboxBatch(db.sql, smtp, {
+              batchLimit: 10,
+              now,
+            });
+            console.info('[scheduler] Email outbox drained:', JSON.stringify(outboxSummary));
+          } catch (outboxErr) {
+            console.error('[scheduler] Failed email outbox drain batch:', outboxErr);
+          }
+        }
         console.info(
           'StudyReminderScheduler tick completed:',
           JSON.stringify({

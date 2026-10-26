@@ -12,6 +12,7 @@ import { APP_RATING_ROUTES } from '../services/app-rating-service';
 import { STUDY_SCHEDULE_ROUTES } from '../services/study-schedule-routes';
 import { SCHOOL_ROUTES, settleSchoolOrderFromWebhook } from '../services/school-routes';
 import { getStudyScheduleState, type StudyScheduleViewResponse } from '../services/study-schedule-service';
+import { enqueueLifecycleEmail } from '../services/email-outbox-service';
 /**
  * Typed Native Worker API Router & Foundation Endpoint Registry (T03)
  *
@@ -961,12 +962,33 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
       return await runWithIdempotency(ctx, 'auth.bootstrap', true, rawText, async (ctx) => {
         const dbCtx = ctx.getDb();
         const provisioned = await dbCtx.runCommittedTransaction(async (tx) => {
-          return await provisionStudentAccountAtomic(tx, {
+          const res = await provisionStudentAccountAtomic(tx, {
             userId: actor.userId,
             email: actor.email ?? null,
             displayName: data.displayName,
             referralCode: data.referralCode ?? null,
           });
+
+          // Enqueue welcome email in background queue (idempotent, takes ~1ms)
+          if (actor.email && actor.email.includes('@')) {
+            await enqueueLifecycleEmail(tx, {
+              userId: actor.userId,
+              emailType: 'welcome',
+              recipientEmail: actor.email,
+              recipientName: data.displayName,
+              subject: `Welcome to JAMBPrep, ${data.displayName}! Your 300+ UTME journey begins`,
+              payload: {
+                studentName: data.displayName,
+                dashboardUrl: 'https://jambprep.lecterniq.com/dashboard',
+                practiceUrl: 'https://jambprep.lecterniq.com/practice',
+              },
+              referenceId: `welcome:${actor.userId}`,
+            }).catch((err) => {
+              console.warn('[auth.bootstrap] Welcome email enqueue notice:', err);
+            });
+          }
+
+          return res;
         });
 
         return {
@@ -1609,11 +1631,62 @@ export const NATIVE_API_ROUTES: ReadonlyArray<RouteDefinition> = [
         true,
         rawText || attemptId,
         async (ctx) => {
-          const scored = await submitAndScoreExamAttemptAtomic(ctx.getDb(), {
+          const dbCtx = ctx.getDb();
+          const scored = await submitAndScoreExamAttemptAtomic(dbCtx, {
             attemptId,
             userId: actor.userId,
             serverSubmittedAt: ctx.now.toISOString(),
           });
+
+          // Enqueue mock result breakdown email in background outbox
+          if (actor.email && actor.email.includes('@')) {
+            try {
+              const profileRows = await dbCtx.sql<Array<{ display_name: string | null }>>`
+                SELECT display_name FROM public.profiles WHERE id = ${actor.userId}::uuid LIMIT 1
+              `;
+              const studentName = profileRows[0]?.display_name?.trim() || actor.email.split('@')[0];
+              const frozenSubjects = await dbCtx.sql<Array<{ code: string; name: string; count: number }>>`
+                SELECT snapshot->>'subjectCode' AS code,
+                  COALESCE(MAX(snapshot->>'subjectName'), snapshot->>'subjectCode') AS name,
+                  COUNT(*)::int AS count
+                FROM attempt_questions WHERE attempt_id = ${attemptId}::uuid
+                GROUP BY snapshot->>'subjectCode'
+                ORDER BY CASE WHEN snapshot->>'subjectCode' = 'ENG' THEN 0 ELSE 1 END, MIN(position)
+              `;
+              const rawScores = [scored.englishScore, scored.subject2Score, scored.subject3Score, scored.subject4Score];
+              const subjectScores = frozenSubjects.map((s, idx) => ({
+                subject: s.name,
+                score: rawScores[idx] ?? 0,
+                maxScore: 100,
+                correct: Math.round(((rawScores[idx] ?? 0) / 100) * s.count),
+                total: s.count,
+              }));
+
+              await enqueueLifecycleEmail(dbCtx.sql, {
+                userId: actor.userId,
+                emailType: 'mock_result',
+                recipientEmail: actor.email,
+                recipientName: studentName,
+                subject: `Your UTME Mock Result: ${scored.totalScore}/400 • Performance Breakdown`,
+                payload: {
+                  studentName,
+                  attemptId,
+                  totalScore: scored.totalScore,
+                  maxTotalScore: 400,
+                  englishScore: scored.englishScore,
+                  subjectScores,
+                  totalCorrect: scored.totalCorrect,
+                  totalAnswered: scored.totalAnsweredTimely,
+                  timeSpentSeconds: scored.timeSpentSeconds,
+                  resultUrl: `https://jambprep.lecterniq.com/mock/result?attemptId=${attemptId}`,
+                },
+                referenceId: `mock_result:${attemptId}`,
+              });
+            } catch (queueErr) {
+              console.warn('[exams.attempts.submit] Mock result email enqueue notice:', queueErr);
+            }
+          }
+
           return {
             status: 200,
             body: scored,

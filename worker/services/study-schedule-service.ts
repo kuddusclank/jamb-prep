@@ -2418,6 +2418,9 @@ export async function runStudyReminderSchedulerTick(
       if (delivery.state === 'subscription_gone') {
         continue;
       }
+      if (!options.vapid) {
+        continue;
+      }
 
       try {
         const signedReq = await buildSignedWebPushRequest({

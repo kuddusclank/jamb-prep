@@ -47,7 +47,7 @@ export class SmtpClient {
   }
 
   private async sendViaCloudflareSockets(options: SendMailOptions): Promise<SmtpSendResult> {
-    // @ts-expect-error cloudflare:sockets is provided by Cloudflare Workers runtime
+    // @ts-ignore cloudflare:sockets is provided by Cloudflare Workers runtime
     const { connect } = await import('cloudflare:sockets');
     const socket = connect(
       {
