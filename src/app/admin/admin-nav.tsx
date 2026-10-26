@@ -32,6 +32,7 @@ export function AdminNav() {
     { label: "Support", href: "/admin/support/" },
     { label: "System health", href: "/admin/system/" },
     { label: "Activity log", href: "/admin/audit/" },
+    { label: "Registered Schools", href: "/admin/schools/" },
     { label: "Student Reports", href: "/admin/reports/" },
     { label: "App ratings", href: "/admin/app-ratings/" },
   ];

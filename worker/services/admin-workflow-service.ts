@@ -63,4 +63,119 @@ export const ADMIN_WORKFLOW_ROUTES:RouteDefinition[]=[
  const [counts]=await ctx.getDb().sql`SELECT (SELECT count(*)::int FROM payment_transactions WHERE status='pending') AS pending_payments,(SELECT count(*)::int FROM payment_checkout_requests WHERE status='unknown') AS uncertain_checkouts,(SELECT count(*)::int FROM payment_renewal_requests WHERE status='unknown') AS uncertain_renewals,(SELECT count(*)::int FROM admin_import_jobs WHERE status='in_progress') AS unfinished_imports,(SELECT count(*)::int FROM question_reports WHERE status IN ('open','investigating')) AS unresolved_reports`;
  return {status:200,body:{database:'reachable',mediaConfigured:Boolean(ctx.env.QUESTION_MEDIA),rateLimitConfigured:Boolean(ctx.env.EDGE_RATE_LIMIT&&ctx.env.ACTOR_WRITE_LIMIT),counts}};
  }},
+ {id:'admin.schools.get',method:'GET',pattern:'/api/v1/admin/schools',auth:'admin',handler:async ctx=>{
+   const search=(ctx.url.searchParams.get('search')??'').trim();if(search.length>100)throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Search is too long.'});
+   const statusFilter=(ctx.url.searchParams.get('status')??'').trim().toLowerCase();
+   const page=Number(ctx.url.searchParams.get('page')??1);if(!Number.isInteger(page)||page<1||page>20000)throw new ApiError({status:422,code:'VALIDATION_FAILED',message:'Invalid page.'});
+   const db=ctx.getDb();
+   const [summary]=await db.sql<Array<{total_schools:number;total_students:number;active_licenses:number;expired_licenses:number;inactive_licenses:number;}>>`
+     SELECT
+       (SELECT COUNT(*)::int FROM schools) AS total_schools,
+       (SELECT COUNT(*)::int FROM school_students) AS total_students,
+       (SELECT COUNT(*)::int FROM school_students ss WHERE ss.license_status='active' AND (ss.license_expires_at IS NULL OR ss.license_expires_at > NOW())) AS active_licenses,
+       (SELECT COUNT(*)::int FROM school_students ss WHERE ss.license_status='expired' OR (ss.license_status='active' AND ss.license_expires_at IS NOT NULL AND ss.license_expires_at <= NOW())) AS expired_licenses,
+       (SELECT COUNT(*)::int FROM school_students ss WHERE ss.license_status='inactive') AS inactive_licenses
+   `;
+   const schools=await db.sql<Array<{id:string;name:string;code:string;slug:string;type:string;state:string;contact_email:string|null;contact_phone:string|null;is_active:boolean;created_at:string;admin_name:string|null;admin_email:string|null;total_students:number;active_licenses:number;expired_licenses:number;inactive_licenses:number;last_order_amount_kobo:number|null;last_order_status:string|null;last_order_settled_at:string|null;}>>`
+     SELECT
+       s.id,s.name,s.code,s.slug,s.type,s.state,s.contact_email,s.contact_phone,s.is_active,s.created_at,
+       p.display_name AS admin_name,p.email AS admin_email,
+       COUNT(ss.id)::int AS total_students,
+       COUNT(ss.id) FILTER (WHERE ss.license_status='active' AND (ss.license_expires_at IS NULL OR ss.license_expires_at > NOW()))::int AS active_licenses,
+       COUNT(ss.id) FILTER (WHERE ss.license_status='expired' OR (ss.license_status='active' AND ss.license_expires_at IS NOT NULL AND ss.license_expires_at <= NOW()))::int AS expired_licenses,
+       COUNT(ss.id) FILTER (WHERE ss.license_status='inactive')::int AS inactive_licenses,
+       (SELECT so.total_amount_kobo FROM school_orders so WHERE so.school_id=s.id AND so.status='completed' ORDER BY so.created_at DESC LIMIT 1) AS last_order_amount_kobo,
+       (SELECT so.status FROM school_orders so WHERE so.school_id=s.id ORDER BY so.created_at DESC LIMIT 1) AS last_order_status,
+       (SELECT so.settled_at FROM school_orders so WHERE so.school_id=s.id AND so.status='completed' ORDER BY so.created_at DESC LIMIT 1) AS last_order_settled_at
+     FROM schools s
+     LEFT JOIN profiles p ON p.id=s.admin_id
+     LEFT JOIN school_students ss ON ss.school_id=s.id
+     WHERE (${search}='' OR s.name ILIKE '%' || ${search} || '%' OR s.code ILIKE '%' || ${search} || '%' OR s.state ILIKE '%' || ${search} || '%' OR s.contact_email ILIKE '%' || ${search} || '%')
+     GROUP BY s.id,p.display_name,p.email
+     HAVING (${statusFilter}=''
+       OR (${statusFilter}='active' AND COUNT(ss.id) FILTER (WHERE ss.license_status='active' AND (ss.license_expires_at IS NULL OR ss.license_expires_at > NOW())) > 0)
+       OR (${statusFilter}='expired' AND COUNT(ss.id) FILTER (WHERE ss.license_status='expired' OR (ss.license_status='active' AND ss.license_expires_at IS NOT NULL AND ss.license_expires_at <= NOW())) > 0)
+       OR (${statusFilter}='inactive' AND COUNT(ss.id) FILTER (WHERE ss.license_status='inactive') > 0)
+       OR (${statusFilter}='unlicensed' AND COUNT(ss.id) FILTER (WHERE ss.license_status='active' AND (ss.license_expires_at IS NULL OR ss.license_expires_at > NOW())) = 0)
+     )
+     ORDER BY s.created_at DESC
+     LIMIT 25 OFFSET ${(page-1)*25}
+   `;
+   return {
+     status: 200,
+     body: {
+       page,
+       summary: {
+         totalSchools: summary?.total_schools ?? 0,
+         totalStudents: summary?.total_students ?? 0,
+         activeLicenses: summary?.active_licenses ?? 0,
+         expiredLicenses: summary?.expired_licenses ?? 0,
+         inactiveLicenses: summary?.inactive_licenses ?? 0,
+       },
+       schools: schools.map(s => ({
+         id: s.id,
+         name: s.name,
+         code: s.code,
+         slug: s.slug,
+         type: s.type,
+         state: s.state,
+         contactEmail: s.contact_email,
+         contactPhone: s.contact_phone,
+         isActive: s.is_active,
+         createdAt: s.created_at,
+         adminName: s.admin_name,
+         adminEmail: s.admin_email,
+         totalStudents: s.total_students,
+         activeLicenses: s.active_licenses,
+         expiredLicenses: s.expired_licenses,
+         inactiveLicenses: s.inactive_licenses,
+         lastOrderAmountKobo: s.last_order_amount_kobo,
+         lastOrderStatus: s.last_order_status,
+         lastOrderSettledAt: s.last_order_settled_at,
+       })),
+     },
+   };
+ }},
+ {id:'admin.schools.students.get',method:'GET',pattern:'/api/v1/admin/schools/:schoolId/students',auth:'admin',handler:async ctx=>{
+   const schoolId=assertValidUuid(ctx.params.schoolId,'schoolId');
+   const db=ctx.getDb();
+   const [school]=await db.sql<Array<{id:string;name:string;code:string;type:string;state:string;}>>`SELECT id,name,code,type,state FROM schools WHERE id=${schoolId}::uuid LIMIT 1`;
+   if(!school)throw new ApiError({status:404,code:'NOT_FOUND',message:'School not found.'});
+   const students=await db.sql<Array<{id:string;student_user_id:string;student_identifier:string|null;ingestion_method:string;license_status:string;license_expires_at:string|null;created_at:string;display_name:string|null;email:string|null;mock_avg_score:number|null;total_practice:number|null;}>>`
+     SELECT
+       ss.id,ss.student_user_id,ss.student_identifier,ss.ingestion_method,
+       CASE
+         WHEN ss.license_status='active' AND ss.license_expires_at IS NOT NULL AND ss.license_expires_at <= NOW()
+         THEN 'expired'
+         ELSE ss.license_status
+       END AS license_status,
+       ss.license_expires_at,ss.created_at,p.display_name,p.email,
+       (SELECT ROUND(AVG(ar.total_score))::int FROM attempt_results ar WHERE ar.user_id=ss.student_user_id) AS mock_avg_score,
+       (SELECT SUM(m.total_attempted)::int FROM student_topic_mastery m WHERE m.user_id=ss.student_user_id) AS total_practice
+     FROM school_students ss
+     LEFT JOIN profiles p ON p.id=ss.student_user_id
+     WHERE ss.school_id=${schoolId}::uuid
+     ORDER BY ss.created_at DESC
+     LIMIT 200
+   `;
+   return {
+     status: 200,
+     body: {
+       school,
+       students: students.map(st=>({
+         id: st.id,
+         studentUserId: st.student_user_id,
+         identifier: st.student_identifier,
+         ingestionMethod: st.ingestion_method,
+         licenseStatus: st.license_status,
+         licenseExpiresAt: st.license_expires_at,
+         createdAt: st.created_at,
+         displayName: st.display_name ?? 'Candidate',
+         email: st.email ?? '—',
+         mockAvgScore: st.mock_avg_score,
+         totalPractice: st.total_practice ?? 0,
+       })),
+     },
+   };
+ }},
 ];

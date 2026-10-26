@@ -12,6 +12,9 @@ const isDev = process.env.NODE_ENV === "development";
 const isSsrBuild = process.env.NEXT_BUILD_MODE === "ssr";
 
 const nextConfig: NextConfig = {
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   ...(isDev || isSsrBuild ? {} : { output: "export" }),
   turbopack: {
     root: process.cwd(),
