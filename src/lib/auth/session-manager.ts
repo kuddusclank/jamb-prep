@@ -385,8 +385,14 @@ export function createBrowserSessionManager(
       accessToken: session.access_token,
       expiresAt: resolvedExpiresAt,
       provisioned: preserveServerFields ? state.provisioned : false,
-      // Retain or detect school_admin from session metadata when available
-      role: ((session.user as any)?.user_metadata?.role === 'school_admin' ? 'school_admin' : (preserveServerFields ? state.role : null)),
+      // Retain or detect admin/school_admin from session metadata when available
+      role: (
+        (session.user as any)?.user_metadata?.role === 'admin' || (session.user as any)?.app_metadata?.role === 'admin'
+          ? 'admin'
+          : (session.user as any)?.user_metadata?.role === 'school_admin' || (session.user as any)?.app_metadata?.role === 'school_admin'
+          ? 'school_admin'
+          : (preserveServerFields ? state.role : null)
+      ),
       error: null,
     };
 

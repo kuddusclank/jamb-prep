@@ -126,7 +126,26 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Authenticated user role resolution
-  const userRole = (claims?.user_metadata?.role as string) || "student";
+  let userRole =
+    (claims?.user_metadata?.role as string) ||
+    (claims?.app_metadata?.role as string) ||
+    (claims?.role as string) ||
+    "student";
+
+  // If attempting to access admin portal and token claims do not show admin,
+  // query database profiles table directly as authoritative fallback
+  if (isAdminProtected && userRole !== "admin" && claims?.sub) {
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", claims.sub)
+        .maybeSingle();
+      if (profile?.role === "admin") {
+        userRole = "admin";
+      }
+    } catch {}
+  }
 
   // STRICT RBAC RULE 1: Students can NEVER access the school portal
   if (isSchoolProtected && userRole === "student") {
