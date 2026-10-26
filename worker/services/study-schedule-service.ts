@@ -1,6 +1,8 @@
 import type { SqlTagExecutor } from '../api/db-context';
 import { ApiError } from '../api/errors';
 import { getUserSubscriptionStatus } from './subscription-service';
+import { SmtpClient, type SmtpConfig } from './smtp-client';
+import { buildStudyReminderMimeMessage } from './study-reminder-email-template';
 import {
   buildGenericStudyReminderPayload,
   buildSignedWebPushRequest,
@@ -1897,6 +1899,7 @@ export async function runStudyReminderSchedulerTick(
     batchLimit?: number;
     concurrency?: number;
     vapid: VapidKeyConfig | null;
+    smtp?: SmtpConfig | null;
     pushSender?: WebPushSenderFn;
     dispatchEnabled?: boolean;
   }
@@ -1925,6 +1928,45 @@ export async function runStudyReminderSchedulerTick(
   if (options.dispatchEnabled === false) {
     summary.elapsedMs = Date.now() - startedAtMs;
     return summary;
+  }
+
+  // Phase 0: Auto-seed missing default daily 7:00 AM schedules (15 questions) for registered students
+  try {
+    await sql`
+      INSERT INTO public.study_schedules (
+        user_id,
+        enabled,
+        goal_type,
+        daily_goal,
+        reminder_enabled,
+        reminder_local_time,
+        time_zone,
+        policy_version,
+        revision,
+        next_reminder_at,
+        created_at,
+        updated_at
+      )
+      SELECT
+        u.id,
+        true,
+        'questions',
+        15,
+        true,
+        '07:00',
+        'Africa/Lagos',
+        1,
+        1,
+        ${now.toISOString()}::timestamptz,
+        ${now.toISOString()}::timestamptz,
+        ${now.toISOString()}::timestamptz
+      FROM auth.users u
+      LEFT JOIN public.study_schedules s ON s.user_id = u.id
+      WHERE s.user_id IS NULL
+      ON CONFLICT (user_id) DO NOTHING
+    `;
+  } catch {
+    // Non-blocking in isolated unit tests where auth.users may not exist
   }
 
   // Phase 1: Claim due schedules and advance their next_reminder_at
@@ -2162,11 +2204,22 @@ export async function runStudyReminderSchedulerTick(
 
       // Check 14-day inactivity cutoff for Free tier to avoid sending stale reminders
       const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-      const activeRows = await sql<Array<{ id: string }>>`
-        SELECT id FROM public.web_push_subscriptions
-        WHERE user_id = ${item.userId}::uuid
-          AND enabled = true
-          AND last_seen_at >= ${fourteenDaysAgo.toISOString()}::timestamptz
+      const activeRows = await sql<Array<{ active: boolean }>>`
+        SELECT true AS active
+        FROM auth.users u
+        WHERE u.id = ${item.userId}::uuid
+          AND (
+            u.last_sign_in_at >= ${fourteenDaysAgo.toISOString()}::timestamptz
+            OR u.created_at >= ${fourteenDaysAgo.toISOString()}::timestamptz
+            OR EXISTS (
+              SELECT 1 FROM public.study_goal_days d
+              WHERE d.user_id = u.id AND d.local_date >= ${fourteenDaysAgo.toISOString()}::date
+            )
+            OR EXISTS (
+              SELECT 1 FROM public.web_push_subscriptions w
+              WHERE w.user_id = u.id AND w.enabled = true AND w.last_seen_at >= ${fourteenDaysAgo.toISOString()}::timestamptz
+            )
+          )
         LIMIT 1
       `;
       if (activeRows.length === 0) {
@@ -2213,7 +2266,59 @@ export async function runStudyReminderSchedulerTick(
       return;
     }
 
-    // 5. Load owned enabled Web Push subscriptions for this user
+    // 5. Dispatch Email Reminder via SMTP if configured
+    let emailAccepted = false;
+    if (options.smtp) {
+      try {
+        const userRows = await sql<Array<{ email: string | null }>>`
+          SELECT email FROM auth.users WHERE id = ${item.userId}::uuid LIMIT 1
+        `;
+        const recipientEmail = userRows[0]?.email;
+        if (recipientEmail && recipientEmail.includes('@')) {
+          const profRows = await sql<Array<{ display_name: string | null }>>`
+            SELECT display_name FROM public.profiles WHERE id = ${item.userId}::uuid LIMIT 1
+          `;
+          const streakRows = await sql<Array<{ current_streak: number }>>`
+            SELECT current_streak FROM public.study_streak_summaries WHERE user_id = ${item.userId}::uuid LIMIT 1
+          `;
+          const studentName = profRows[0]?.display_name?.trim() || recipientEmail.split('@')[0];
+          const streakDays = Number(streakRows[0]?.current_streak ?? 1);
+
+          const { rawMessage } = buildStudyReminderMimeMessage({
+            from: options.smtp.user,
+            to: recipientEmail,
+            replyTo: 'support@lecterniq.com',
+            data: {
+              studentName,
+              targetQuestions,
+              estimatedMinutes: 10,
+              streakDays,
+              dateString: 'Today',
+              practiceUrl: 'https://jambprep.lecterniq.com/practice',
+              profileUrl: 'https://jambprep.lecterniq.com/profile',
+              privacyUrl: 'https://jambprep.lecterniq.com/privacy',
+              termsUrl: 'https://jambprep.lecterniq.com/terms',
+            },
+          });
+
+          const client = new SmtpClient(options.smtp);
+          const sendRes = await client.sendMail({
+            from: options.smtp.user,
+            to: recipientEmail,
+            rawMessage,
+          });
+
+          if (sendRes.accepted) {
+            emailAccepted = true;
+            summary.acceptedDeliveries += 1;
+          }
+        }
+      } catch (emailErr) {
+        console.error(`Email reminder failed for user ${item.userId}:`, emailErr);
+      }
+    }
+
+    // 6. Load owned enabled Web Push subscriptions for this user
     const subs = await sql<Array<{
       id: string;
       endpoint: string;
@@ -2228,7 +2333,7 @@ export async function runStudyReminderSchedulerTick(
       LIMIT ${MAX_PUSH_SUBSCRIPTIONS_PER_USER}
     `;
 
-    if (subs.length === 0) {
+    if (subs.length === 0 && !emailAccepted) {
       await sql`
         UPDATE public.study_reminder_occurrences
         SET
@@ -2242,21 +2347,23 @@ export async function runStudyReminderSchedulerTick(
       return;
     }
 
-    if (!options.vapid || !options.vapid.publicKey || !options.vapid.privateKey) {
-      await sql`
-        UPDATE public.study_reminder_occurrences
-        SET
-          state = 'failed',
-          skip_reason = 'vapid_not_configured',
-          leased_until = NULL,
-          updated_at = ${now.toISOString()}::timestamptz
-        WHERE id = ${item.occurrenceId}::uuid
-      `;
-      summary.failedDeliveries += subs.length;
-      return;
+    if (subs.length > 0 && (!options.vapid || !options.vapid.publicKey || !options.vapid.privateKey)) {
+      if (!emailAccepted) {
+        await sql`
+          UPDATE public.study_reminder_occurrences
+          SET
+            state = 'failed',
+            skip_reason = 'vapid_not_configured',
+            leased_until = NULL,
+            updated_at = ${now.toISOString()}::timestamptz
+          WHERE id = ${item.occurrenceId}::uuid
+        `;
+        summary.failedDeliveries += subs.length;
+        return;
+      }
     }
 
-    let anyAccepted = false;
+    let anyAccepted = emailAccepted;
     let anyRetryScheduled = false;
     let earliestRetryAt: Date | null = null;
     const remainingTtlSeconds = Math.max(

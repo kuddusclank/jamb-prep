@@ -16,6 +16,7 @@ import {
   type WebPushSenderFn,
 } from '../services/study-schedule-service';
 import type { VapidKeyConfig } from '../services/web-push-crypto';
+import type { SmtpConfig } from '../services/smtp-client';
 
 export interface SchedulerWorkerEnv extends DatabaseBindingEnv {
   ENVIRONMENT?: string;
@@ -26,6 +27,11 @@ export interface SchedulerWorkerEnv extends DatabaseBindingEnv {
   VAPID_PRIVATE_KEY?: string;
   VAPID_SUBJECT?: string;
   VAPID_KEY_VERSION?: string;
+  SMTP_HOST?: string;
+  SMTP_PORT?: string;
+  SMTP_USER?: string;
+  SMTP_PASS?: string;
+  SMTP_FROM?: string;
 }
 
 export interface ScheduledControllerLike {
@@ -41,6 +47,23 @@ export interface SchedulerHandlerOptions {
   dbFactory?: DbContextFactory;
   pushSender?: WebPushSenderFn;
   now?: () => Date;
+}
+
+function resolveSmtpConfig(env: SchedulerWorkerEnv): SmtpConfig | null {
+  const host = typeof env.SMTP_HOST === 'string' && env.SMTP_HOST.trim() ? env.SMTP_HOST.trim() : 'send.lecterniq.com';
+  const port = Number(env.SMTP_PORT ?? 465) || 465;
+  const user = typeof env.SMTP_USER === 'string' && env.SMTP_USER.trim() ? env.SMTP_USER.trim() : 'noreply@send.lecterniq.com';
+  const pass = typeof env.SMTP_PASS === 'string' && env.SMTP_PASS.trim() ? env.SMTP_PASS.trim() : '1{$K;AfWHbG^1VC#';
+
+  if (!host || !user || !pass) {
+    return null;
+  }
+  return {
+    host,
+    port,
+    user,
+    pass,
+  };
 }
 
 function resolveVapidConfig(env: SchedulerWorkerEnv): VapidKeyConfig | null {
@@ -120,6 +143,7 @@ export function createStudyReminderSchedulerHandler(options?: SchedulerHandlerOp
             batchLimit,
             concurrency,
             vapid: resolveVapidConfig(env),
+            smtp: resolveSmtpConfig(env),
             pushSender: options?.pushSender,
             dispatchEnabled: true,
           }

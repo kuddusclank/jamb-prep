@@ -27,9 +27,13 @@
     "STUDY_REMINDER_CONCURRENCY": "5",
     "VAPID_PUBLIC_KEY": "BCdEb6JGkPOb6gV4MpVieY0jmc8rn30m4rs7ho7K_izrzCkRsh9d9HlUPPZozp6peHQ8rftHlTNHGlH7qbSznIQ",
     "VAPID_SUBJECT": "mailto:support@lecterniq.com",
-    "VAPID_KEY_VERSION": "1"
+    "VAPID_KEY_VERSION": "1",
+    "SMTP_HOST": "send.lecterniq.com",
+    "SMTP_PORT": "465",
+    "SMTP_USER": "noreply@send.lecterniq.com",
+    "SMTP_FROM": "noreply@send.lecterniq.com"
   },
   "triggers": {
-    "crons": ["*/5 * * * *"]
+    "crons": ["*/5 * * * *", "0 6 * * *"]
   }
 }
