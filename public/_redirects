@@ -1,3 +1,6 @@
+/100 / 301
+/100/ / 301
+
 # Cloudflare Pages static-export route compatibility rules (T05)
 # Legacy UUID URLs use 404.html client recovery; Pages does not interpolate query placeholders.
 # Single-segment placeholders only — never use /mock/* splat rules that could loop.

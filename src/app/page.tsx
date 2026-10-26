@@ -575,6 +575,7 @@ export default function Home() {
                   plan.isPaid ? (
                     <Link 
                       href="/login?redirect=/pricing" 
+                      rel="nofollow"
                       className="mt-9 inline-flex min-h-12 items-center justify-center gap-2 rounded-full text-sm font-semibold bg-[#e7b85a] text-[#102f29] hover:bg-[#d8a848] transition"
                     >
                       Get Premium Access <ArrowRight size={16}/>
@@ -612,6 +613,7 @@ export default function Home() {
               </div>
               <Link 
                 href={user ? "/referrals" : "/login?redirect=/referrals"} 
+                rel={user ? undefined : "nofollow"}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#116149] px-5 text-xs font-semibold text-white hover:bg-[#0c4a37] transition whitespace-nowrap self-start sm:self-auto"
               >
                 {user ? "View Referral Hub" : "Sign In to Refer"} <ArrowRight size={14}/>

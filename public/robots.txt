@@ -3,9 +3,19 @@ Allow: /
 Allow: /combinations/
 Allow: /pricing/
 Allow: /schools/
+Allow: /login/
+Allow: /register/
+Allow: /forgot-password/
 Allow: /privacy/
 Allow: /terms/
 Allow: /refund-policy/
+
+# Exclude URL query parameters and redirect strings from search index
+Disallow: /*?redirect=*
+Disallow: /login?*
+Disallow: /register?*
+Disallow: /favicon.ico?*
+Disallow: /site.webmanifest
 
 # Private application and dynamic session routes
 Disallow: /api/
@@ -20,9 +30,6 @@ Disallow: /profile/
 Disallow: /referrals/
 Disallow: /onboarding/
 Disallow: /checkout/
-Disallow: /login/
-Disallow: /register/
-Disallow: /forgot-password/
 Disallow: /reset-password/
 Disallow: /games/
 Disallow: /dictionary/
