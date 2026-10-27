@@ -570,7 +570,7 @@ function Scorecard({attemptId}:{attemptId:string}) {
 
   return (
     <main className="shell section-space">
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="mx-auto max-w-5xl space-y-8">
         <PageHeader
           badge={{ icon: <Award size={13} />, text: "Performance Breakdown" }}
           extraTag="UTME 4-Subject CBT Simulation"

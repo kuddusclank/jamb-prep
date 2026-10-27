@@ -159,7 +159,7 @@ export function ProfileClient({
     : null;
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-8 max-w-5xl mx-auto">
 
       {/* Page Header */}
       <PageHeader

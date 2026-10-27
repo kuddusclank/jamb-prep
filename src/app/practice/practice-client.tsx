@@ -136,7 +136,7 @@ export function PracticeClient({
     if (isCompleted) {
       const percentage = Math.round((score / questions.length) * 100);
       return (
-        <div className="max-w-3xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-8">
           <PageHeader
             badge={{ icon: <Award size={13} />, text: "Practice Session Complete" }}
             title="Session Performance Summary"
@@ -230,7 +230,7 @@ export function PracticeClient({
     }
 
     return (
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-8">
         <PageHeader
           badge={{ icon: <Layers size={13} />, text: "Self-Paced Topic Mastery" }}
           title="Practice Questions & Explanations"
@@ -392,7 +392,7 @@ export function PracticeClient({
 
   // 2. ACTIVE QUESTION SCREEN
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-8">
       {errorMessage&&<p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{errorMessage}</p>}
       {/* Top Header / Progress */}
       <div className="flex items-center justify-between text-xs text-slate-600 bg-white p-4 rounded-2xl border border-slate-200/80">

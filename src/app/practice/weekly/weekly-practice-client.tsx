@@ -466,7 +466,7 @@ export function WeeklyPracticeClient() {
     const isAnswered = Boolean(answerResult);
 
     return (
-      <div className="shell section-space max-w-3xl mx-auto space-y-6 pb-20">
+      <div className="shell section-space max-w-5xl mx-auto space-y-8 pb-20">
         {/* Top Session Progress Bar & Palette */}
         <div className="space-y-3 border-b border-slate-200 pb-4">
           <div className="flex items-center justify-between gap-4">
@@ -688,7 +688,7 @@ export function WeeklyPracticeClient() {
   const percentTotal = Math.min(100, Math.round((answeredTotal / totalQuestions) * 100));
 
   return (
-    <div className="shell section-space max-w-3xl mx-auto space-y-6 pb-20">
+    <div className="shell section-space max-w-5xl mx-auto space-y-8 pb-20">
       <PageHeader
         badge={{ icon: <Layers size={13} />, text: "Offline Weekly Question Pack" }}
         title="Weekly Offline Practice Pack"

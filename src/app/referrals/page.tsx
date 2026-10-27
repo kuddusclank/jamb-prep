@@ -37,7 +37,7 @@ export default function ReferralsPage() {
 
       {/* Main Content */}
       <main className="shell section-space">
-        <div className="max-w-3xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-8">
           <PageHeader
             badge={{ icon: <Users size={13} />, text: "Referrals & Classmate Rewards" }}
             title="Invite Friends & Study Together"

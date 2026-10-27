@@ -282,7 +282,7 @@ export default function MockLobbyPage() {
     return (
       <StudyWorkspace>
         <main className="shell section-space">
-          <div className="max-w-3xl mx-auto space-y-6">
+          <div className="max-w-5xl mx-auto space-y-8">
             <Suspense fallback={null}>
               <MockRedirectNotice />
             </Suspense>
@@ -492,7 +492,7 @@ export default function MockLobbyPage() {
   return (
     <StudyWorkspace>
       <main className="shell section-space">
-        <div className="max-w-3xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-8">
           <Suspense fallback={null}>
             <MockRedirectNotice />
           </Suspense>

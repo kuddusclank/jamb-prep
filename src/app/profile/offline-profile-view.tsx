@@ -64,7 +64,7 @@ export function OfflineProfileView({ profile }: OfflineProfileViewProps) {
   };
 
   return (
-    <div className="shell section-space max-w-4xl mx-auto space-y-8">
+    <div className="shell section-space max-w-5xl mx-auto space-y-8">
       {/* Header Strip */}
       <div className="border-b border-slate-200 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
