@@ -15,6 +15,7 @@ import type { StoredWeeklyPack } from "@/lib/offline/idb-storage";
 import { getOfflineProfile, isOfflineAccessValid } from "@/lib/offline/offline-profile-cache";
 import { OfflineGatedNotice } from "@/app/dashboard/offline-gated-notice";
 import { SyncStatusIndicator } from "@/components/sync-status-indicator";
+import { PageHeader } from "@/components/page-header";
 import { MathRenderer } from "@/components/math-renderer";
 import { QuestionDiagram } from "@/components/question-diagram";
 import {
@@ -688,38 +689,22 @@ export function WeeklyPracticeClient() {
 
   return (
     <div className="shell section-space max-w-3xl mx-auto space-y-6 pb-20">
-      {/* Top Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-[#116149] transition"
-          >
-            <ArrowLeft size={16} />
-            <span>Dashboard</span>
-          </Link>
-          <span className="text-slate-300">/</span>
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            Practice
-          </span>
-        </div>
-        <SyncStatusIndicator showWhenAllSynced />
-      </div>
+      <PageHeader
+        badge={{ icon: <Layers size={13} />, text: "Offline Weekly Question Pack" }}
+        title="Weekly Offline Practice Pack"
+        subtitle="250 curated UTME questions downloaded to your device for practice without an active internet connection."
+        actions={<SyncStatusIndicator showWhenAllSynced />}
+      />
 
       {/* Overview Progress Card */}
       <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide uppercase bg-emerald-100 text-[#116149]">
-                SELF-PACED PRACTICE
-              </span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-[#092E28] mt-1">
-              Select a subject to <span className="serif-accent text-[#116149]">practise</span>
-            </h1>
-            <p className="mt-1 text-sm text-slate-600">
-              Work through verified questions with step-by-step diagnostic solutions and formulas.
+            <h2 className="text-lg font-bold text-[#092E28]">
+              Select Subject to Practise
+            </h2>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Pick from your downloaded subjects to launch a local practice session.
             </p>
           </div>
           <div className="text-right flex flex-col items-end gap-1">

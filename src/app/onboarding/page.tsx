@@ -22,20 +22,8 @@ export default function OnboardingPage() {
         </span>
       </header>
 
-      <main className="max-w-3xl w-full mx-auto my-8">
-        <div className="rounded-3xl border border-emerald-950/10 bg-white p-6 sm:p-10">
-          <div className="mb-8">
-            <p className="text-[10px] font-bold tracking-[0.14em] text-[#116149] uppercase">
-              EXAMINATION PROFILE
-            </p>
-            <h1 className="mt-2 text-3xl sm:text-4xl font-semibold tracking-tight leading-snug">
-              What is your <span className="serif-accent text-[#116149]">UTME combination?</span>
-            </h1>
-            <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-              English is compulsory for every candidate. Choose your three elective subjects and target score so your mock exams match your official test.
-            </p>
-          </div>
-
+      <main className="max-w-3xl w-full mx-auto my-6 sm:my-8">
+        <div className="rounded-3xl border border-emerald-950/10 bg-white p-6 sm:p-10 shadow-xs">
           <OnboardingWizard />
         </div>
       </main>

@@ -75,9 +75,21 @@ export default function PwaProvider() {
     window.addEventListener('error', onChunkError);
 
     // 2. Standalone / Installation detection
+    const isStandaloneEnv = () => {
+      const mode = window.matchMedia('(display-mode: standalone)');
+      const isStandaloneMedia = mode.matches;
+      const isStandaloneNav = Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+      const isPwaSource =
+        window.location.search.includes('source=pwa') ||
+        window.location.search.includes('source=homescreen');
+      const isAndroidApp = document.referrer.includes('android-app://');
+      return isStandaloneMedia || isStandaloneNav || isPwaSource || isAndroidApp;
+    };
+
     const mode = window.matchMedia('(display-mode: standalone)');
-    const detect = () =>
-      setStandalone(mode.matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
+    const detect = () => {
+      setStandalone(isStandaloneEnv());
+    };
     detect();
     mode.addEventListener('change', detect);
 
@@ -311,8 +323,8 @@ export default function PwaProvider() {
 
   return (
     <>
-      {/* Mobile Drawer Overlay when Install is available */}
-      {!update && install && <div className={styles.overlay} onClick={dismiss} />}
+      {/* Mobile Drawer Overlay only when manual instructions modal is actively open */}
+      {!update && instructions && <div className={styles.overlay} onClick={dismiss} />}
 
       <aside className={styles.notice} aria-label="JAMBPrep app notification">
         <div className={styles.grabBar} />

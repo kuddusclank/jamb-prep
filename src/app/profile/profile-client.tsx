@@ -18,8 +18,10 @@ import {
   GraduationCap,
   Lock,
   RefreshCw,
-  Building2
+  Building2,
+  UserRound
 } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import Link from "@/components/pending-link";
 import { ScheduleSection } from "./schedule-section";
 import { forcePwaReload } from "@/lib/pwa/force-refresh";
@@ -160,14 +162,11 @@ export function ProfileClient({
     <div className="space-y-8 max-w-4xl mx-auto">
 
       {/* Page Header */}
-      <div className="border-b border-slate-200 pb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#092E28]">
-          Candidate Profile & Settings
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-          Manage your academic goals, display identity, and subscription tier.
-        </p>
-      </div>
+      <PageHeader
+        badge={{ icon: <UserRound size={13} />, text: "Candidate Account & Preferences" }}
+        title="Candidate Profile & Settings"
+        subtitle="Manage your academic goals, display identity, and subscription tier."
+      />
 
       {/* Section 1: Academic & Personal Preferences */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">

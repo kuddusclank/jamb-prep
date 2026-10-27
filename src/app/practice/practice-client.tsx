@@ -34,6 +34,7 @@ import { InspectableText } from "@/components/dictionary/inspectable-text";
 import { QuickLookupDialog } from "@/components/dictionary/quick-lookup-dialog";
 import { useAccountTier } from "@/lib/auth/use-account-tier";
 
+import { PageHeader } from "@/components/page-header";
 import { useRouter } from "next/navigation";
 import type { PracticeSubject, PracticeTopic } from "@/lib/api/practice-dtos";
 type SubjectOption = PracticeSubject;
@@ -135,113 +136,138 @@ export function PracticeClient({
     if (isCompleted) {
       const percentage = Math.round((score / questions.length) * 100);
       return (
-        <div className="rounded-3xl border border-emerald-950/10 bg-white p-6 sm:p-10 shadow-sm text-center max-w-2xl mx-auto">
-          <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-emerald-50 text-[#116149] mb-4">
-            <Award size={32} />
-          </div>
-          <span className="text-[10px] font-bold tracking-[0.14em] text-[#116149] uppercase">
-            PRACTICE COMPLETE
-          </span>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-[#092E28]">
-            Practice Session <span className="serif-accent text-[#116149]">Summary</span>
-          </h2>
-          <p className="mt-2 text-sm text-slate-600">
-            You completed {questions.length} questions in {currentQ?.subjectName || "Practice Mode"}.
-          </p>
-
-          <div className="my-8 p-6 rounded-2xl bg-[#F6F8F5] border border-slate-200/80 flex items-center justify-around">
-            <div>
-              <span className="text-3xl font-bold text-[#092E28]">{score} / {questions.length}</span>
-              <span className="block text-xs text-slate-500 mt-1 font-medium">Correct Answers</span>
-            </div>
-            <div className="h-10 w-px bg-slate-300" />
-            <div>
-              <span className={`text-3xl font-bold ${percentage >= 70 ? 'text-[#116149]' : 'text-amber-600'}`}>
-                {percentage}%
-              </span>
-              <span className="block text-xs text-slate-500 mt-1 font-medium">Accuracy</span>
-            </div>
-          </div>
-
-          <p className="text-sm text-slate-600 mb-8 max-w-md mx-auto leading-relaxed">
-            {percentage >= 75
-              ? "Excellent performance! Keep reinforcing your mastery with consistent daily revision."
-              : "Good effort. Review the diagnostic explanations carefully to turn mistakes into points."}
-          </p>
-          <ResultShare
-            type="practice"
-            score={score}
-            totalQuestions={questions.length}
-            percentage={percentage}
-            subjectName={currentQ?.subjectName || "Use of English"}
-            topicTitle={new Set(questions.map(q => q.topicTitle)).size === 1 ? questions[0]?.topicTitle : undefined}
-            feedbackText={
-              percentage >= 75
-                ? "Excellent performance! Keep reinforcing your mastery with consistent daily revision."
-                : "Good effort. Review the diagnostic explanations carefully to turn mistakes into points."
-            }
+        <div className="max-w-3xl mx-auto space-y-6">
+          <PageHeader
+            badge={{ icon: <Award size={13} />, text: "Practice Session Complete" }}
+            title="Session Performance Summary"
+            subtitle={`You completed ${questions.length} questions in ${currentQ?.subjectName || "Practice Mode"}.`}
           />
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            {isPremium ? (
-              <button
-                onClick={() => {
-                  setQuestions([]);
-                  setIsCompleted(false);
-                  currentSessionRef.current=null;setSessionId(null);
-                  writeUrl(selectedSubject,selectedTopic?.slug);
-                  refreshCatalogue();
-                }}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-              >
-                <RotateCcw size={16} /> Choose Another Topic
-              </button>
-            ) : (
+
+          <div className="rounded-3xl border border-emerald-950/10 bg-white p-6 sm:p-10 shadow-sm text-center max-w-2xl mx-auto">
+            <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-emerald-50 text-[#116149] mb-4">
+              <Award size={32} />
+            </div>
+            <span className="text-[10px] font-bold tracking-[0.14em] text-[#116149] uppercase">
+              PRACTICE COMPLETE
+            </span>
+            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-[#092E28]">
+              Practice Session <span className="serif-accent text-[#116149]">Summary</span>
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              You completed {questions.length} questions in {currentQ?.subjectName || "Practice Mode"}.
+            </p>
+
+            <div className="my-8 p-6 rounded-2xl bg-[#F6F8F5] border border-slate-200/80 flex items-center justify-around">
+              <div>
+                <span className="text-3xl font-bold text-[#092E28]">{score} / {questions.length}</span>
+                <span className="block text-xs text-slate-500 mt-1 font-medium">Correct Answers</span>
+              </div>
+              <div className="h-10 w-px bg-slate-300" />
+              <div>
+                <span className={`text-3xl font-bold ${percentage >= 70 ? 'text-[#116149]' : 'text-amber-600'}`}>
+                  {percentage}%
+                </span>
+                <span className="block text-xs text-slate-500 mt-1 font-medium">Accuracy</span>
+              </div>
+            </div>
+
+            <p className="text-sm text-slate-600 mb-8 max-w-md mx-auto leading-relaxed">
+              {percentage >= 75
+                ? "Excellent performance! Keep reinforcing your mastery with consistent daily revision."
+                : "Good effort. Review the diagnostic explanations carefully to turn mistakes into points."}
+            </p>
+            <ResultShare
+              type="practice"
+              score={score}
+              totalQuestions={questions.length}
+              percentage={percentage}
+              subjectName={currentQ?.subjectName || "Use of English"}
+              topicTitle={new Set(questions.map(q => q.topicTitle)).size === 1 ? questions[0]?.topicTitle : undefined}
+              feedbackText={
+                percentage >= 75
+                  ? "Excellent performance! Keep reinforcing your mastery with consistent daily revision."
+                  : "Good effort. Review the diagnostic explanations carefully to turn mistakes into points."
+              }
+            />
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              {isPremium ? (
+                <button
+                  onClick={() => {
+                    setQuestions([]);
+                    setIsCompleted(false);
+                    currentSessionRef.current=null;setSessionId(null);
+                    writeUrl(selectedSubject,selectedTopic?.slug);
+                    refreshCatalogue();
+                  }}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <RotateCcw size={16} /> Choose Another Topic
+                </button>
+              ) : (
+                <Link
+                  href="/pricing"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-6 py-3.5 text-sm font-semibold text-amber-900 hover:bg-amber-100 transition-colors"
+                >
+                  {tier.isSchoolAttached ? (
+                    <>
+                      <Building2 size={16} className="text-[#116149]" /> Contact School Admin for Unlimited Practice
+                    </>
+                  ) : (
+                    <>Upgrade for Unlimited Practice</>
+                  )}
+                </Link>
+              )}
               <Link
-                href="/pricing"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-6 py-3.5 text-sm font-semibold text-amber-900 hover:bg-amber-100 transition-colors"
+                href="/dashboard"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 py-3.5 text-sm font-semibold text-white hover:bg-[#0e523e] transition-colors"
               >
-                {tier.isSchoolAttached ? (
-                  <>
-                    <Building2 size={16} className="text-[#116149]" /> Contact School Admin for Unlimited Practice
-                  </>
-                ) : (
-                  <>Upgrade for Unlimited Practice</>
-                )}
+                Return to Dashboard <ArrowRight size={16} />
               </Link>
-            )}
-            <Link
-              href="/dashboard"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#116149] px-6 py-3.5 text-sm font-semibold text-white hover:bg-[#0e523e] transition-colors"
-            >
-              Return to Dashboard <ArrowRight size={16} />
-            </Link>
+            </div>
           </div>
         </div>
       );
     }
 
     return (
-      <div className="rounded-3xl border border-emerald-950/10 bg-white p-6 sm:p-10 shadow-sm max-w-2xl mx-auto">
-        <div className="mb-6">
-          <p className="text-[10px] font-bold tracking-[0.14em] text-[#116149] uppercase">
-            SELF-PACED PRACTICE
-          </p>
-          <h1 className="mt-2 text-2xl sm:text-3xl font-semibold tracking-tight text-[#092E28]">
-            Select a subject to <span className="serif-accent text-[#116149]">practice</span>
-          </h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Work through verified questions with step-by-step diagnostic solutions and formulas.
-          </p>
-        </div>
+      <div className="max-w-3xl mx-auto space-y-6">
+        <PageHeader
+          badge={{ icon: <Layers size={13} />, text: "Self-Paced Topic Mastery" }}
+          title="Practice Questions & Explanations"
+          subtitle="Work through verified questions with step-by-step diagnostic solutions, formulas, and instant lexical explanations."
+          actions={
+            <Link
+              href="/practice/weekly"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white text-[#116149] border border-emerald-200 hover:bg-emerald-50 transition shadow-2xs"
+            >
+              <BookOpen size={13} /> Weekly Offline Pack
+            </Link>
+          }
+        />
 
-        {errorMessage && (
-          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 flex items-start gap-2.5">
-            <HelpCircle size={16} className="shrink-0 mt-0.5 text-amber-600" />
-            <span>{errorMessage}</span>
+        <div className="rounded-3xl border border-emerald-950/10 bg-white p-6 sm:p-10 shadow-sm">
+          <div className="mb-6 pb-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-lg font-bold text-[#092E28]">
+                Configure Practice Session
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Select an enrolled subject and choose a specific topic to target.
+              </p>
+            </div>
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+              {enrolledSubjects.length} enrolled subjects
+            </span>
           </div>
-        )}
 
-        <div className="space-y-6">
+          {errorMessage && (
+            <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 flex items-start gap-2.5">
+              <HelpCircle size={16} className="shrink-0 mt-0.5 text-amber-600" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          <div className="space-y-6">
           {/* Subject Selector */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2.5">
@@ -360,7 +386,8 @@ export function PracticeClient({
           )}
         </div>
       </div>
-    );
+    </div>
+  );
   }
 
   // 2. ACTIVE QUESTION SCREEN

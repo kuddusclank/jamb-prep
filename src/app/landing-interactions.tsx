@@ -81,6 +81,16 @@ export function CombinationPromptDialog() {
   useEffect(() => {
     if (isAuthenticated) return;
 
+    // Suppress prompt inside installed PWA / standalone environments
+    if (typeof window !== "undefined") {
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        Boolean((navigator as Navigator & { standalone?: boolean }).standalone) ||
+        window.location.search.includes("source=pwa") ||
+        document.referrer.includes("android-app://");
+      if (isStandalone) return;
+    }
+
     try {
       if (window.sessionStorage.getItem(COMBO_PROMPT_DISMISSED_SESSION_KEY) === "1") {
         return;
@@ -593,14 +603,55 @@ export function MobileMenu() {
   const user = account.identity?.user;
   const isPremium = false; // Entitlement-specific navigation is deferred to T08.
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  if (!mounted) {
+    return (
+      <div className="relative md:hidden">
+        <button
+          type="button"
+          aria-expanded={false}
+          className="min-h-11 rounded-full border border-emerald-950/15 px-4 text-sm font-semibold cursor-pointer"
+        >
+          Menu
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative md:hidden">
+    <div ref={menuRef} className="relative md:hidden">
       <button 
         type="button" 
         aria-expanded={open} 
         aria-controls="mobile-menu" 
         onClick={() => setOpen(!open)} 
-        className="min-h-11 rounded-full border border-emerald-950/15 px-4 text-sm font-semibold"
+        className="min-h-11 rounded-full border border-emerald-950/15 px-4 text-sm font-semibold cursor-pointer"
       >
         {open ? 'Close' : 'Menu'}
       </button>

@@ -19,6 +19,7 @@ import { MockStartButton } from "./mock-start-button";
 import { useNetworkStatus, isNetworkOrTimeoutError } from "@/lib/offline/network-state";
 import Link from "@/components/pending-link";
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
+import { PageHeader } from "@/components/page-header";
 import { createClient } from "@/lib/supabase/client";
 
 function SchoolLabSessionEntry({
@@ -286,6 +287,12 @@ export default function MockLobbyPage() {
               <MockRedirectNotice />
             </Suspense>
 
+            <PageHeader
+              badge={{ icon: <Building2 size={13} />, text: `${schoolMock.schoolName} Official Mock` }}
+              title="School Proctored CBT Exam"
+              subtitle="Institutional timed simulation supervised by your school administration."
+            />
+
             <div className="rounded-3xl border border-emerald-950/15 bg-white p-6 sm:p-10 shadow-sm space-y-7">
               {/* Institutional Header & Badges */}
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-5">
@@ -485,22 +492,34 @@ export default function MockLobbyPage() {
   return (
     <StudyWorkspace>
       <main className="shell section-space">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-3xl mx-auto space-y-6">
           <Suspense fallback={null}>
             <MockRedirectNotice />
           </Suspense>
 
-          <div className="rounded-3xl border border-emerald-950/10 bg-white p-6 sm:p-10 shadow-sm">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider">
-              <Clock size={13} /> Your CBT mock briefing
-            </span>
+          <PageHeader
+            badge={{ icon: <Clock size={13} />, text: "Official CBT Simulator" }}
+            title="UTME Mock Examination"
+            subtitle="Full 4-subject timed simulation with standard JAMB 8-key keyboard controls, negative marking prevention, and instant 400-point diagnostic breakdown."
+            actions={
+              <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-50 text-[#116149] border border-emerald-200">
+                180 Questions • 120 Mins
+              </span>
+            }
+          />
 
-            <h1 className="mt-4 text-2xl sm:text-4xl font-semibold tracking-tight text-[#092E28]">
-              Full 4-Subject <span className="serif-accent text-[#116149]">UTME Simulation</span>
-            </h1>
-            <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-              Practise with a timed four-subject UTME simulation, keyboard navigation and a 400-point grading scale. JAMBPrep is independent of JAMB.
-            </p>
+          <div className="rounded-3xl border border-emerald-950/10 bg-white p-6 sm:p-10 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-5 border-b border-slate-100">
+              <div>
+                <h2 className="text-lg font-bold text-[#092E28]">CBT Examination Briefing</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Confirm your registered subjects and examination instructions below.
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-200 text-xs font-bold">
+                <Clock size={12} /> Timed 120 Mins
+              </span>
+            </div>
 
             {/* Subject Breakdown Grid */}
             <div className="mt-7">

@@ -261,3 +261,46 @@ test('C06.4: locked-combination-storage saves, validates, expires after 7-day TT
   clearOnboardingDraft(env);
   assert.equal(getOnboardingDraft(env), null);
 });
+
+test('C06.5: accountDestination permits pending onboarding candidates to browse /combinations directory without being redirected back to /onboarding', async () => {
+  const { accountDestination } = await import('../src/lib/auth/account-coordinator.ts');
+
+  const pendingIdentity = {
+    authenticated: true,
+    user: {
+      id: 'student-pending-1',
+      email: 'candidate@example.com',
+      displayName: 'Candidate Test',
+      role: 'student',
+    },
+    provisioned: true,
+    onboardingCompleted: false,
+    referralCode: null,
+  };
+
+  // Navigating to /combinations must NOT be blocked (must return null so the page renders)
+  assert.equal(
+    accountDestination(pendingIdentity, '/combinations'),
+    null,
+    'Expected /combinations to be whitelisted for pending onboarding candidate'
+  );
+
+  assert.equal(
+    accountDestination(pendingIdentity, '/combinations/'),
+    null,
+    'Expected /combinations/ to be whitelisted for pending onboarding candidate'
+  );
+
+  // But visiting /dashboard or /practice must still redirect to /onboarding
+  assert.equal(
+    accountDestination(pendingIdentity, '/dashboard'),
+    '/onboarding',
+    'Expected /dashboard to redirect uncompleted onboarding candidate to /onboarding'
+  );
+
+  assert.equal(
+    accountDestination(pendingIdentity, '/practice'),
+    '/onboarding',
+    'Expected /practice to redirect uncompleted onboarding candidate to /onboarding'
+  );
+});

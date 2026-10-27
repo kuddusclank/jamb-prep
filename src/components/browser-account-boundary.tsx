@@ -168,7 +168,10 @@ export function BrowserAccountBoundary({ children, mode = 'protected', returnPat
 
 export function BrowserAccountNavigation() {
   const account = useBrowserAccount();
-  if (account.session.status === 'loading') return <span role="status">Checking session…</span>;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted || account.session.status === 'loading') return <span role="status">Checking session…</span>;
   if (account.session.status === 'authenticated') {
     const isSchoolAdmin = account.session.role === 'school_admin' || account.identity?.user?.role === 'school_admin';
     const destination = isSchoolAdmin ? '/schools/dashboard' : (account.identity && !account.identity.onboardingCompleted ? '/onboarding' : '/dashboard');

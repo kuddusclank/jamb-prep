@@ -210,7 +210,7 @@ Fatima,Danjuma,f.danjuma@school.edu.ng,ST-104,08045678901,2026`;
     let csv = "Student Name,Login Email,Default Password,Student ID,Instructions\n";
     for (const student of importResult.roster) {
       const safeName = `"${student.name.replace(/"/g, '""')}"`;
-      const instructions = `"Log in at https://jambprep.com/login using your email and default password. Choose your 4 UTME subjects to start CBT practice."`;
+      const instructions = `"Log in at https://jambprep.lecterniq.com/login using your email and default password. Choose your 4 UTME subjects to start CBT practice."`;
       csv += `${safeName},${student.email},${student.defaultPassword},${student.studentIdentifier || ""},${instructions}\n`;
     }
 

@@ -11,7 +11,8 @@ import { MathRenderer } from '@/components/math-renderer';
 import { isArabicText } from '@/lib/utils';
 import { MockResultRatingPrompt } from '@/components/mock-result-rating-prompt';
 interface ResultData {subjectScores?:{code:string;name:string;count:number;score:number}[];totalScore:number;englishScore:number;subject2Score:number;subject3Score:number;subject4Score:number;timeSpentSeconds:number;completedAt:string;}
-import { CheckCircle2, XCircle, AlertCircle, HelpCircle, ChevronDown, ChevronUp, BookOpen, Filter, Bookmark, BookA, Lock, ArrowRight, Building2 } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, HelpCircle, ChevronDown, ChevronUp, BookOpen, Filter, Bookmark, BookA, Lock, ArrowRight, Building2, Award } from 'lucide-react';
+import { PageHeader } from '@/components/page-header';
 import { ReportQuestionDialog } from '@/components/report-question-dialog';
 import { QuestionDiagram } from '@/components/question-diagram';
 import { InspectableText } from '@/components/dictionary/inspectable-text';
@@ -570,20 +571,12 @@ function Scorecard({attemptId}:{attemptId:string}) {
   return (
     <main className="shell section-space">
       <div className="mx-auto max-w-4xl space-y-6">
-        {/* Page Title */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-[#116149]">
-              Performance Breakdown
-            </p>
-            <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-              Your Mock Result
-            </h1>
-          </div>
-          <span className="text-xs text-slate-400 font-medium">
-            UTME 4-Subject CBT Simulation
-          </span>
-        </div>
+        <PageHeader
+          badge={{ icon: <Award size={13} />, text: "Performance Breakdown" }}
+          extraTag="UTME 4-Subject CBT Simulation"
+          title="Your Mock Result"
+          subtitle="Comprehensive score analysis, accuracy metrics, and question-by-question diagnostic review."
+        />
 
         {/* Minimalist Scorecard Card */}
         <section className="rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-7 shadow-xs">

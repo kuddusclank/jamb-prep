@@ -1,7 +1,8 @@
 "use client";
 import { StudyWorkspace } from "@/components/study-workspace";
 import { useEffect, useState } from "react";
-import { Check, Copy, ShieldCheck } from "lucide-react";
+import { Check, Copy, ShieldCheck, Users } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
 import type { ReferralData } from "@/lib/api/app-dtos";
@@ -36,7 +37,13 @@ export default function ReferralsPage() {
 
       {/* Main Content */}
       <main className="shell section-space">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-3xl mx-auto space-y-6">
+          <PageHeader
+            badge={{ icon: <Users size={13} />, text: "Referrals & Classmate Rewards" }}
+            title="Invite Friends & Study Together"
+            subtitle="Share your referral code with classmates and earn 50% discount rewards on JAMBPrep Pro."
+          />
+
           {/* Hero Banner */}
           <div className="rounded-3xl bg-gradient-to-br from-[#116149] to-[#092E28] text-white p-6 sm:p-10 shadow-2xl relative overflow-hidden">
             <div className="relative z-10 max-w-xl">

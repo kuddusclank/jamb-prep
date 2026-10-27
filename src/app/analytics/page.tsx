@@ -8,6 +8,7 @@ import {
   Clock,
   WifiOff,
 } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import Link from "@/components/pending-link";
 import { useBrowserAccount } from "@/components/browser-account-boundary";
 import { useNetworkStatus, isNetworkOrTimeoutError } from "@/lib/offline/network-state";
@@ -112,17 +113,11 @@ export default function AnalyticsPage() {
         <div className="max-w-5xl mx-auto space-y-8">
 
           {/* Header Bar */}
-          <div className="border-b border-slate-200 pb-6">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-[#116149] text-xs font-bold uppercase tracking-wider mb-2">
-              <BarChart3 size={14} /> DIAGNOSTIC COACH ANALYSIS
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-              Performance Analytics & Topic Mastery
-            </h1>
-            <p className="text-sm text-slate-600 mt-1">
-              Data-driven diagnosis to identify which topics will recover the most marks on exam day.
-            </p>
-          </div>
+          <PageHeader
+            badge={{ icon: <BarChart3 size={14} />, text: "Diagnostic Coach Analysis" }}
+            title="Performance Analytics & Topic Mastery"
+            subtitle="Data-driven diagnosis to identify which topics will recover the most marks on exam day."
+          />
 
           {isViewingCached && (
             <div className="flex items-center justify-between p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900">

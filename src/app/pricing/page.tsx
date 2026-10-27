@@ -2,9 +2,10 @@
 import { BrandMark } from "@/components/brand-mark";
 import type { CheckoutPricing } from "@/lib/client-actions";
 import { StudyWorkspace } from "@/components/study-workspace";
-import { HelpCircle, Building2, ArrowRight } from "lucide-react";
+import { HelpCircle, Building2, ArrowRight, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { CheckoutClient } from "./checkout-client";
+import { PageHeader } from "@/components/page-header";
 
 import { useBrowserAccount } from "@/components/browser-account-boundary";
 import { useApiResource, ResourceStatus } from "@/lib/api/use-api-resource";
@@ -34,33 +35,22 @@ export default function PricingPage() {
   const content = (
     <div className="max-w-4xl mx-auto space-y-10 py-6">
       {/* Header Title */}
-      <div className="text-center max-w-2xl mx-auto">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-[#116149] text-xs font-bold uppercase tracking-wider mb-3">
-          {pricing.isSchoolAttached ? "INSTITUTIONAL LICENSING" : "PREMIUM ACCESS PLANS"}
-        </span>
-        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[#092E28] leading-tight">
-          {pricing.isSchoolAttached ? (
-            <>
-              School Candidate <span className="serif-accent text-[#116149]">License Status.</span>
-            </>
-          ) : (
-            <>
-              Simple, transparent pricing to <span className="serif-accent text-[#116149]">reach your goal score.</span>
-            </>
-          )}
-        </h1>
-        <p className="mt-3 text-sm text-slate-600 leading-relaxed">
-          {pricing.isSchoolAttached ? (
-            <>
-              Your candidate account is linked to <strong>{pricing.school?.schoolName || "your institution"}</strong>. Review your license standing and school administration contact details below.
-            </>
-          ) : (
-            <>
-              Start with a free diagnostic mock and practice session, or upgrade to unlimited practice and authentic timed CBT hall simulations for less than ₦34 per day.
-            </>
-          )}
-        </p>
-      </div>
+      <PageHeader
+        badge={{
+          icon: <CreditCard size={13} />,
+          text: pricing.isSchoolAttached ? "INSTITUTIONAL LICENSING" : "PREMIUM ACCESS PLANS",
+        }}
+        title={
+          pricing.isSchoolAttached
+            ? "School Candidate License Status"
+            : "Subscription Plans & Pricing"
+        }
+        subtitle={
+          pricing.isSchoolAttached
+            ? `Your candidate account is linked to ${pricing.school?.schoolName || "your institution"}. Review your license standing and school administration contact details below.`
+            : "Start with a free diagnostic mock and practice session, or upgrade to unlimited practice and authentic timed CBT hall simulations for less than ₦34 per day."
+        }
+      />
 
       {/* Checkout Client Component */}
       <CheckoutClient pricing={pricing} />

@@ -67,7 +67,10 @@ export function accountDestination(identity: SessionIdentityResponse, pathname: 
   }
 
   if (!identity.provisioned) return pathname === '/register' ? null : '/register?resume=1';
-  if (!identity.onboardingCompleted) return pathname === '/onboarding' ? null : '/onboarding';
+  if (!identity.onboardingCompleted) {
+    if (pathname.startsWith('/combinations')) return null;
+    return pathname === '/onboarding' ? null : '/onboarding';
+  }
   if (pathname === '/onboarding' && editOnboarding) return null;
   if (['/', ...commonAuthPages, '/onboarding'].includes(pathname)) {
     const target = sanitizeInternalRedirect(returnPath);
