@@ -122,9 +122,12 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
         }
       : null);
 
+  const normalizedPath = pathname ? pathname.replace(/\/+$/, "") || "/" : "/";
+  const normalizedPendingHref = pendingHref ? pendingHref.replace(/\/+$/, "") || "/" : null;
+
   const showFreeLinks = effectiveProfile?.subscription.isPremium === false;
   const visibleDestinations = destinations.filter(item => showFreeLinks || !["/referrals", "/pricing"].includes(item.href));
-  const current = visibleDestinations.find(item => pathname === item.href || pathname.startsWith(`${item.href}/`));
+  const current = visibleDestinations.find(item => normalizedPath === item.href || normalizedPath.startsWith(`${item.href}/`));
 
   if (!effectiveProfile) {
     if (isOffline) {
@@ -160,19 +163,20 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     }
   };
 
-  const isOverviewActive = pathname === "/dashboard" || pathname === "/";
-  const isPracticeActive = pathname === "/practice" || pathname.startsWith("/practice/");
-  const isMockActive = pathname === "/mock" || pathname.startsWith("/mock/") || pathname.startsWith("/exam");
-  const isDictionaryActive = pathname === "/dictionary" || pathname.startsWith("/dictionary/");
-  const isAnalyticsActive = pathname === "/analytics" || pathname.startsWith("/analytics/");
+  const isOverviewActive = normalizedPath === "/dashboard" || normalizedPath === "/";
+  const isPracticeActive = normalizedPath === "/practice" || normalizedPath.startsWith("/practice/");
+  const isMockActive = normalizedPath === "/mock" || normalizedPath.startsWith("/mock/") || normalizedPath.startsWith("/exam");
+  const isDictionaryActive = normalizedPath === "/dictionary" || normalizedPath.startsWith("/dictionary/");
+  const isAnalyticsActive = normalizedPath === "/analytics" || normalizedPath.startsWith("/analytics/");
+  const isProfileActive = normalizedPath === "/profile" || normalizedPath.startsWith("/profile/");
   const isPremium = Boolean(effectiveProfile.subscription.isPremium);
   const { isFocusMode, onQuit } = useWorkspaceFocus();
 
-  const isOverviewSelected = isOverviewActive || pendingHref === "/dashboard";
-  const isPracticeSelected = isPracticeActive || pendingHref === "/practice";
-  const isMockSelected = isMockActive || pendingHref === "/mock";
-  const isDictionarySelected = isDictionaryActive || pendingHref === "/dictionary";
-  const isAnalyticsSelected = isAnalyticsActive || pendingHref === "/analytics";
+  const isOverviewSelected = isOverviewActive || normalizedPendingHref === "/dashboard";
+  const isPracticeSelected = isPracticeActive || normalizedPendingHref === "/practice";
+  const isMockSelected = isMockActive || normalizedPendingHref === "/mock";
+  const isDictionarySelected = isDictionaryActive || normalizedPendingHref === "/dictionary";
+  const isAnalyticsSelected = isAnalyticsActive || normalizedPendingHref === "/analytics";
 
   return <div className={`${styles.workspace} ${isFocusMode ? styles.workspaceFocused : ''}`}>
     <a href="#study-content" className="skip-link">Skip to study content</a>
@@ -227,12 +231,12 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
                 aria-label="Candidate profile"
                 title="Candidate profile & preferences"
                 className={`inline-flex items-center justify-center gap-2 min-h-10 min-w-10 px-2.5 sm:px-3 border rounded-xl text-sm transition ${
-                  pathname === "/profile" || pathname.startsWith("/profile/")
+                  isProfileActive
                     ? "border-[#116149] bg-emerald-50 text-[#116149] ring-2 ring-[#116149]/20 font-bold"
                     : "border-slate-200 text-slate-700 hover:bg-slate-50 font-medium"
                 }`}
               >
-                <UserRound size={18} aria-hidden="true" className={pathname === "/profile" || pathname.startsWith("/profile/") ? "text-[#116149]" : "text-slate-700"} />
+                <UserRound size={18} aria-hidden="true" className={isProfileActive ? "text-[#116149]" : "text-slate-700"} />
                 <span>Account</span>
               </Link>
             </div>
@@ -268,12 +272,12 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
               aria-label="Candidate profile"
               title="Candidate profile & preferences"
               className={`inline-flex items-center justify-center gap-2 min-h-10 min-w-10 px-2.5 sm:px-3 border rounded-xl text-sm transition ${
-                pathname === "/profile" || pathname.startsWith("/profile/")
+                isProfileActive
                   ? "border-[#116149] bg-emerald-50 text-[#116149] ring-2 ring-[#116149]/20 font-bold"
                   : "border-slate-200 text-slate-700 hover:bg-slate-50 font-medium"
               }`}
             >
-              <UserRound size={18} aria-hidden="true" className={pathname === "/profile" || pathname.startsWith("/profile/") ? "text-[#116149]" : "text-slate-700"} />
+              <UserRound size={18} aria-hidden="true" className={isProfileActive ? "text-[#116149]" : "text-slate-700"} />
               <span className="hidden sm:inline">Account</span>
             </Link>
           </>
@@ -296,7 +300,7 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
             const lockTitle = isSchoolAttached
               ? `${label} requires an active license from ${effectiveProfile?.subscription?.school?.schoolName || 'your school'} — click to view`
               : `${label} is a Pro feature — click to upgrade`;
-            const isSelected = (current?.href === href) || (pendingHref === targetHref);
+            const isSelected = (current?.href === href) || (pendingHref === targetHref) || (normalizedPendingHref === href);
             return (
               <Link
                 key={href}
