@@ -222,7 +222,7 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
   const isDictionaryActive = pathname === "/dictionary" || pathname.startsWith("/dictionary/");
   const isAnalyticsActive = pathname === "/analytics" || pathname.startsWith("/analytics/");
   const isPremium = Boolean(effectiveProfile.subscription.isPremium);
-  const { isFocusMode } = useWorkspaceFocus();
+  const { isFocusMode, onQuit } = useWorkspaceFocus();
 
   return <div className={`${styles.workspace} ${isFocusMode ? styles.workspaceFocused : ''}`}>
     <a href="#study-content" className="skip-link">Skip to study content</a>
@@ -232,44 +232,101 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
 
       <div className="ml-auto flex items-center gap-2">
         <SyncStatusIndicator />
-        {!isPremium ? (
-          <Link
-            href="/pricing"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-[#116149] to-[#092E28] text-white border border-emerald-800 shadow-xs hover:brightness-110 transition active:scale-95"
-            title="Upgrade to JAMBPrep Pro for unlimited practice and exams"
-          >
-            <Sparkles size={13} className="text-[#E7B85A]" />
-            <span>Upgrade</span>
-          </Link>
-        ) : streak ? (
-          <Link
-            href="/profile#schedule"
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition hover:scale-105"
-            style={{
-              background: streak.qualifiedToday ? '#FEF3C7' : streak.currentStreak > 0 ? '#FFFBEB' : '#F1F5F9',
-              borderColor: streak.qualifiedToday ? '#F59E0B' : streak.currentStreak > 0 ? '#FCD34D' : '#E2E8F0',
-              color: streak.currentStreak > 0 ? '#B45309' : '#64748B',
-            }}
-            title={streak.qualifiedToday ? "Today's study streak is locked in!" : streak.currentStreak > 0 ? `${streak.currentStreak}-day streak! Practice or take a mock today to extend.` : "Start your daily streak"}
-          >
-            <Flame size={14} className={streak.currentStreak > 0 ? "fill-current text-amber-500 animate-pulse" : "text-slate-400"} />
-            <span>{streak.currentStreak}d</span>
-          </Link>
-        ) : null}
+        {isFocusMode ? (
+          <>
+            {/* When in practice focus mode on mobile: replace streak and profile with Quit */}
+            {onQuit && (
+              <button
+                type="button"
+                onClick={onQuit}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition active:scale-95 cursor-pointer"
+                title="Quit practice session"
+              >
+                <span>Quit</span>
+              </button>
+            )}
+            <div className="hidden sm:flex items-center gap-2">
+              {!isPremium ? (
+                <Link
+                  href="/pricing"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-[#116149] to-[#092E28] text-white border border-emerald-800 shadow-xs hover:brightness-110 transition active:scale-95"
+                  title="Upgrade to JAMBPrep Pro for unlimited practice and exams"
+                >
+                  <Sparkles size={13} className="text-[#E7B85A]" />
+                  <span>Upgrade</span>
+                </Link>
+              ) : streak ? (
+                <Link
+                  href="/profile#schedule"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition hover:scale-105"
+                  style={{
+                    background: streak.qualifiedToday ? '#FEF3C7' : streak.currentStreak > 0 ? '#FFFBEB' : '#F1F5F9',
+                    borderColor: streak.qualifiedToday ? '#F59E0B' : streak.currentStreak > 0 ? '#FCD34D' : '#E2E8F0',
+                    color: streak.currentStreak > 0 ? '#B45309' : '#64748B',
+                  }}
+                  title={streak.qualifiedToday ? "Today's study streak is locked in!" : streak.currentStreak > 0 ? `${streak.currentStreak}-day streak! Practice or take a mock today to extend.` : "Start your daily streak"}
+                >
+                  <Flame size={14} className={streak.currentStreak > 0 ? "fill-current text-amber-500 animate-pulse" : "text-slate-400"} />
+                  <span>{streak.currentStreak}d</span>
+                </Link>
+              ) : null}
+              <Link
+                href="/profile"
+                aria-label="Candidate profile"
+                title="Candidate profile & preferences"
+                className={`inline-flex items-center justify-center gap-2 min-h-10 min-w-10 px-2.5 sm:px-3 border rounded-xl text-sm transition ${
+                  pathname === "/profile" || pathname.startsWith("/profile/")
+                    ? "border-[#116149] bg-emerald-50 text-[#116149] ring-2 ring-[#116149]/20 font-bold"
+                    : "border-slate-200 text-slate-700 hover:bg-slate-50 font-medium"
+                }`}
+              >
+                <UserRound size={18} aria-hidden="true" className={pathname === "/profile" || pathname.startsWith("/profile/") ? "text-[#116149]" : "text-slate-700"} />
+                <span>Account</span>
+              </Link>
+            </div>
+          </>
+        ) : (
+          <>
+            {!isPremium ? (
+              <Link
+                href="/pricing"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-[#116149] to-[#092E28] text-white border border-emerald-800 shadow-xs hover:brightness-110 transition active:scale-95"
+                title="Upgrade to JAMBPrep Pro for unlimited practice and exams"
+              >
+                <Sparkles size={13} className="text-[#E7B85A]" />
+                <span>Upgrade</span>
+              </Link>
+            ) : streak ? (
+              <Link
+                href="/profile#schedule"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition hover:scale-105"
+                style={{
+                  background: streak.qualifiedToday ? '#FEF3C7' : streak.currentStreak > 0 ? '#FFFBEB' : '#F1F5F9',
+                  borderColor: streak.qualifiedToday ? '#F59E0B' : streak.currentStreak > 0 ? '#FCD34D' : '#E2E8F0',
+                  color: streak.currentStreak > 0 ? '#B45309' : '#64748B',
+                }}
+                title={streak.qualifiedToday ? "Today's study streak is locked in!" : streak.currentStreak > 0 ? `${streak.currentStreak}-day streak! Practice or take a mock today to extend.` : "Start your daily streak"}
+              >
+                <Flame size={14} className={streak.currentStreak > 0 ? "fill-current text-amber-500 animate-pulse" : "text-slate-400"} />
+                <span>{streak.currentStreak}d</span>
+              </Link>
+            ) : null}
+            <Link
+              href="/profile"
+              aria-label="Candidate profile"
+              title="Candidate profile & preferences"
+              className={`inline-flex items-center justify-center gap-2 min-h-10 min-w-10 px-2.5 sm:px-3 border rounded-xl text-sm transition ${
+                pathname === "/profile" || pathname.startsWith("/profile/")
+                  ? "border-[#116149] bg-emerald-50 text-[#116149] ring-2 ring-[#116149]/20 font-bold"
+                  : "border-slate-200 text-slate-700 hover:bg-slate-50 font-medium"
+              }`}
+            >
+              <UserRound size={18} aria-hidden="true" className={pathname === "/profile" || pathname.startsWith("/profile/") ? "text-[#116149]" : "text-slate-700"} />
+              <span className="hidden sm:inline">Account</span>
+            </Link>
+          </>
+        )}
       </div>
-      <Link
-        href="/profile"
-        aria-label="Candidate profile"
-        title="Candidate profile & preferences"
-        className={`inline-flex items-center justify-center gap-2 min-h-10 min-w-10 px-2.5 sm:px-3 border rounded-xl text-sm transition ${
-          pathname === "/profile" || pathname.startsWith("/profile/")
-            ? "border-[#116149] bg-emerald-50 text-[#116149] ring-2 ring-[#116149]/20 font-bold"
-            : "border-slate-200 text-slate-700 hover:bg-slate-50 font-medium"
-        }`}
-      >
-        <UserRound size={18} aria-hidden="true" className={pathname === "/profile" || pathname.startsWith("/profile/") ? "text-[#116149]" : "text-slate-700"} />
-        <span className="hidden sm:inline">Account</span>
-      </Link>
     </header>
     {!isFocusMode && (
       <aside className={styles.sidebar}>

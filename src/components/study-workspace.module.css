@@ -63,10 +63,19 @@
   grid-column: 1 / -1 !important;
   max-width: 68rem;
   margin-inline: auto;
-  padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)) !important;
+  padding: 0 0 calc(2rem + env(safe-area-inset-bottom, 0px)) !important;
 }
 .workspaceFocused .footer {
-  grid-column: 1 / -1 !important;
-  padding-bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px)) !important;
+  display: none !important;
+}
+@media (min-width: 40rem) {
+  .workspaceFocused .content {
+    padding: 1.5rem 1.5rem calc(2rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+@media (min-width: 64rem) {
+  .workspaceFocused .content {
+    padding: 2rem 2rem calc(2rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
 }
 

@@ -89,15 +89,21 @@ export function WeeklyPracticeClient() {
   >({});
   const [isSessionCompleted, setIsSessionCompleted] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const { setFocusMode } = useWorkspaceFocus();
+  const { setFocusMode, setOnQuit } = useWorkspaceFocus();
 
   useEffect(() => {
     const isPracticing = activeQuestions.length > 0;
     setFocusMode(isPracticing);
+    if (isPracticing) {
+      setOnQuit(() => () => { setActiveQuestions([]); });
+    } else {
+      setOnQuit(undefined);
+    }
     return () => {
       setFocusMode(false);
+      setOnQuit(undefined);
     };
-  }, [activeQuestions.length, setFocusMode]);
+  }, [activeQuestions.length, setFocusMode, setOnQuit]);
 
   // Monitor network status
   useEffect(() => {

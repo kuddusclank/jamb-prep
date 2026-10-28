@@ -27,7 +27,10 @@ import {
   HelpCircle,
   Award,
   Lock,
-  Building2
+  Building2,
+  SignalLow,
+  SignalMedium,
+  SignalHigh
 } from "lucide-react";
 import Link from "@/components/pending-link";
 import { InspectableText } from "@/components/dictionary/inspectable-text";
@@ -41,6 +44,41 @@ import type { PracticeSubject, PracticeTopic } from "@/lib/api/practice-dtos";
 type SubjectOption = PracticeSubject;
 function evidenceLabel(value:{sampleSize:number;accuracy:number|null;strength:string}) {return value.strength==='unassessed'?'Not assessed':value.strength==='early'?`Early evidence · ${value.sampleSize} answered`:`${value.accuracy}% · ${value.sampleSize} answered · ${value.strength}`;}
 function topicOrder(a:PracticeTopic,b:PracticeTopic){const ranks:Record<string,number>={weak:0,developing:1,strong:2,provisional:3,early:4,unassessed:5};return ranks[a.strength]-ranks[b.strength]||a.title.localeCompare(b.title);}
+
+function DifficultyIndicator({ difficulty }: { difficulty?: string }) {
+  const diff = difficulty?.toLowerCase() || "medium";
+  if (diff === "easy") {
+    return (
+      <span
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10.5px] font-semibold"
+        title="Difficulty: Easy (1 bar)"
+      >
+        <SignalLow size={13} className="text-emerald-600 stroke-[2.2] shrink-0" />
+        <span className="hidden sm:inline uppercase">Easy</span>
+      </span>
+    );
+  }
+  if (diff === "hard") {
+    return (
+      <span
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200 text-[10.5px] font-semibold"
+        title="Difficulty: Hard (3 bars)"
+      >
+        <SignalHigh size={13} className="text-rose-600 stroke-[2.2] shrink-0" />
+        <span className="hidden sm:inline uppercase">Hard</span>
+      </span>
+    );
+  }
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[10.5px] font-semibold"
+      title="Difficulty: Medium (2 bars)"
+    >
+      <SignalMedium size={13} className="text-amber-600 stroke-[2.2] shrink-0" />
+      <span className="hidden sm:inline uppercase">Medium</span>
+    </span>
+  );
+}
 
 
 interface PracticeClientProps {
@@ -81,15 +119,21 @@ export function PracticeClient({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isQuickLookupOpen, setIsQuickLookupOpen] = useState<boolean>(false);
   const tier = useAccountTier();
-  const { setFocusMode } = useWorkspaceFocus();
+  const { setFocusMode, setOnQuit } = useWorkspaceFocus();
 
   useEffect(() => {
     const isPracticing = questions.length > 0;
     setFocusMode(isPracticing);
+    if (isPracticing) {
+      setOnQuit(() => () => { void endPractice(); });
+    } else {
+      setOnQuit(undefined);
+    }
     return () => {
       setFocusMode(false);
+      setOnQuit(undefined);
     };
-  }, [questions.length, setFocusMode]);
+  }, [questions.length, setFocusMode, setOnQuit, sessionId, selectedSubject, selectedTopic?.slug]);
 
   const subject=enrolledSubjects.find(s=>s.code===selectedSubject);
   const selectedTopic=subject?.topics.find(t=>t.slug===selectedTopicSlug||t.aliases.some(a=>a.toLowerCase()===selectedTopicSlug?.toLowerCase()));
@@ -107,7 +151,23 @@ export function PracticeClient({
     try{const result=await getPracticeQuestions(selectedSubject,selectedTopic?.slug,questionCount);currentSessionRef.current=result.sessionId;setSessionId(result.sessionId);setQuestions(result.questions);setCurrentIndex(0);setSavedFeedback({});setSelectedOption(null);setAnswerResult(null);setScore(0);setIsCompleted(false);writeUrl(selectedSubject,selectedTopic?.slug,result.sessionId);}
     catch(error){setErrorMessage(error instanceof Error?error.message:'Unable to issue practice.');}finally{setIsLoading(false);}
   };
-  async function endPractice(){if(!sessionId)return;setIsSubmitting(true);try{await finishPracticeSession(sessionId,true);setQuestions([]);currentSessionRef.current=null;setSessionId(null);writeUrl(selectedSubject,selectedTopic?.slug);refreshCatalogue();}catch(error){setErrorMessage(error instanceof Error?error.message:'Unable to end practice.');}finally{setIsSubmitting(false);}}
+  async function endPractice() {
+    setIsSubmitting(true);
+    try {
+      if (sessionId) {
+        await finishPracticeSession(sessionId, true);
+      }
+    } catch {
+      // non-blocking
+    } finally {
+      setQuestions([]);
+      currentSessionRef.current = null;
+      setSessionId(null);
+      writeUrl(selectedSubject, selectedTopic?.slug);
+      refreshCatalogue();
+      setIsSubmitting(false);
+    }
+  }
 
   const handleSelectOption = (label: string) => {
     if (answerResult || savedFeedback[questions[currentIndex]?.id]) return; // Prevent changing after answer is revealed
@@ -402,19 +462,25 @@ export function PracticeClient({
 
   // 2. ACTIVE QUESTION SCREEN
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
-      {errorMessage&&<p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{errorMessage}</p>}
-      {/* Top Header / Progress */}
-      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
-        {/* Row 1: Question Progress Badge & Action Buttons */}
+    <div className="max-w-5xl mx-auto">
+      {errorMessage && (
+        <div className="px-4 sm:px-0 pt-3">
+          <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            {errorMessage}
+          </p>
+        </div>
+      )}
+
+      {/* Top Question Metadata Card (glued to top on mobile, borderless full width) */}
+      <div className="bg-white border-b sm:border border-slate-200/90 rounded-none sm:rounded-2xl px-4 py-3 sm:p-4 shadow-none sm:shadow-2xs sticky top-16 z-20 sm:static sm:mb-8">
+        {/* Row 1: Question Progress Badge, Difficulty Icon Badge, Dictionary & Flag (Quit moved to top header) */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-800 text-sm">
-              Question {currentIndex + 1} <span className="text-slate-400 font-normal text-xs">of {questions.length}</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-bold text-slate-800 text-sm whitespace-nowrap">
+              Question {currentIndex + 1}{" "}
+              <span className="text-slate-400 font-normal text-xs">of {questions.length}</span>
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-[10px] font-semibold text-slate-600 uppercase tracking-wide">
-              {currentQ.difficulty}
-            </span>
+            <DifficultyIndicator difficulty={currentQ.difficulty} />
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
@@ -442,20 +508,11 @@ export function PracticeClient({
               </Link>
             )}
             <ReportQuestionDialog key={currentQ.id} questionId={currentQ.id} variant="icon" />
-            <button
-              type="button"
-              onClick={() => { void endPractice(); }}
-              disabled={isSubmitting}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 border border-slate-200 transition-colors cursor-pointer"
-              title="Quit practice session"
-            >
-              <span>Quit</span>
-            </button>
           </div>
         </div>
 
         {/* Row 2: Subject & Topic (Clean full width without collisions) */}
-        <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-slate-100 min-w-0">
+        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100 min-w-0">
           <span className="font-bold text-[#116149] text-xs uppercase tracking-wider shrink-0">
             {currentQ.subjectName}
           </span>
@@ -465,8 +522,14 @@ export function PracticeClient({
           </span>
         </div>
 
-        {/* Progress Bar */}
-        <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden mt-2.5" role="progressbar" aria-valuenow={currentIndex + 1} aria-valuemin={1} aria-valuemax={questions.length}>
+        {/* Row 3: Progress Bar */}
+        <div
+          className="h-1 w-full bg-slate-100 rounded-full overflow-hidden mt-2.5"
+          role="progressbar"
+          aria-valuenow={currentIndex + 1}
+          aria-valuemin={1}
+          aria-valuemax={questions.length}
+        >
           <div
             className="h-full bg-[#116149] rounded-full transition-all duration-300"
             style={{ width: `${Math.round(((currentIndex + 1) / questions.length) * 100)}%` }}
@@ -474,6 +537,7 @@ export function PracticeClient({
         </div>
       </div>
 
+      <div className="px-4 py-4 sm:px-0 space-y-6 sm:space-y-8">
 <QuestionDiagram url={currentQ.imageUrl} alt={currentQ.imageAlt} />
       {/* Reading Passage (if present) */}
       {currentQ.passage && (
@@ -668,6 +732,7 @@ export function PracticeClient({
       </div>
     );
   })()}
+      </div>
 
       <QuickLookupDialog
         isOpen={isQuickLookupOpen}
