@@ -521,14 +521,14 @@ export function WeeklyPracticeClient() {
     const isAnswered = Boolean(answerResult);
 
     return (
-      <div className="shell section-space max-w-5xl mx-auto space-y-8 pb-20">
+      <div className="max-w-5xl mx-auto space-y-2.5 sm:space-y-4 pb-16">
         {errorMessage && (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-800">
             {errorMessage}
           </div>
         )}
         {/* Top Session Progress Bar & Palette */}
-        <div className="space-y-3 border-b border-slate-200 pb-4">
+        <div className="bg-white border-b sm:border border-slate-200/90 rounded-none sm:rounded-2xl px-3.5 py-2 sm:p-3 shadow-none sm:shadow-2xs sticky top-14 z-20 sm:static space-y-2">
           <div className="flex items-center justify-between gap-4">
             <button
               type="button"
@@ -556,7 +556,7 @@ export function WeeklyPracticeClient() {
           </div>
 
           {/* Quick Question Chips (Palette for this set) */}
-          <div className="flex items-center gap-2 overflow-x-auto px-3 sm:px-4 py-2.5 rounded-2xl bg-slate-50/80 border border-slate-100 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex items-center gap-2 overflow-x-auto px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-100 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {activeQuestions.map((q, idx) => {
               const isCur = idx === currentIndex;
               const ans = sessionAnswers[q.id];
@@ -591,7 +591,7 @@ export function WeeklyPracticeClient() {
         </div>
 
         {/* Question Container */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-4 sm:p-7 shadow-sm space-y-4 sm:space-y-5">
           {/* Header with Question Number and Flag Bookmark Toggle */}
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
@@ -621,7 +621,7 @@ export function WeeklyPracticeClient() {
 
           {/* Passage Container (if applicable for English Comprehension / Cloze) */}
           {currentQ.passage && (
-            <div className="rounded-2xl bg-amber-50/70 border border-amber-200/70 p-5 space-y-2 text-slate-800 text-sm leading-relaxed max-h-72 overflow-y-auto">
+            <div className="rounded-2xl bg-amber-50/70 border border-amber-200/70 p-4 space-y-2 text-slate-800 text-sm leading-relaxed max-h-72 overflow-y-auto">
               {currentQ.passage.title && (
                 <div className="font-bold text-[#092E28] flex items-center gap-2">
                   <BookOpen size={16} className="text-amber-800" />
@@ -648,7 +648,7 @@ export function WeeklyPracticeClient() {
           </div>
 
           {/* Options List */}
-          <div className="space-y-3 pt-2">
+          <div className="space-y-2.5 pt-1">
             {currentQ.options.map((opt) => {
               const isSelected = selectedOption === opt.label;
               const isCorrectOpt = answerResult?.correctOption === opt.label;

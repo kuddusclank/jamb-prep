@@ -480,7 +480,7 @@ export function PracticeClient({
       )}
 
       {/* Top Question Metadata Card (glued to top on mobile, borderless full width) */}
-      <div className="bg-white border-b sm:border border-slate-200/90 rounded-none sm:rounded-2xl px-4 py-3 sm:p-4 shadow-none sm:shadow-2xs sticky top-16 z-20 sm:static sm:mb-8">
+      <div className="bg-white border-b sm:border border-slate-200/90 rounded-none sm:rounded-2xl px-3.5 py-2 sm:px-4 sm:py-2.5 shadow-none sm:shadow-2xs sticky top-14 z-20 sm:static sm:mb-3">
         {/* Row 1: Question Progress Badge, Difficulty Icon Badge, Dictionary & Flag (Quit moved to top header) */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -520,7 +520,7 @@ export function PracticeClient({
         </div>
 
         {/* Row 2: Subject & Topic (Clean full width without collisions) */}
-        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100 min-w-0">
+        <div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-slate-100 min-w-0">
           <span className="font-bold text-[#116149] text-xs uppercase tracking-wider shrink-0">
             {currentQ.subjectName}
           </span>
@@ -532,7 +532,7 @@ export function PracticeClient({
 
         {/* Row 3: Progress Bar */}
         <div
-          className="h-1 w-full bg-slate-100 rounded-full overflow-hidden mt-2.5"
+          className="h-1 w-full bg-slate-100 rounded-full overflow-hidden mt-2"
           role="progressbar"
           aria-valuenow={currentIndex + 1}
           aria-valuemin={1}
@@ -545,16 +545,16 @@ export function PracticeClient({
         </div>
       </div>
 
-      <div className="px-4 py-4 sm:px-0 space-y-6 sm:space-y-8">
-<QuestionDiagram url={currentQ.imageUrl} alt={currentQ.imageAlt} />
-      {/* Reading Passage (if present) */}
-      {currentQ.passage && (
-        <div
-          dir={isArabicText(currentQ.passage.content) ? "rtl" : undefined}
-          className={`rounded-3xl border border-emerald-950/10 bg-[#EDF2E9]/60 p-6 sm:p-8 ${
-            isArabicText(currentQ.passage.content) ? "text-right [direction:rtl]" : ""
-          }`}
-        >
+      <div className="px-3 sm:px-0 pt-2 pb-6 sm:pt-0 sm:pb-8 space-y-3 sm:space-y-4">
+        <QuestionDiagram url={currentQ.imageUrl} alt={currentQ.imageAlt} />
+        {/* Reading Passage (if present) */}
+        {currentQ.passage && (
+          <div
+            dir={isArabicText(currentQ.passage.content) ? "rtl" : undefined}
+            className={`rounded-2xl sm:rounded-3xl border border-emerald-950/10 bg-[#EDF2E9]/60 p-4 sm:p-6 ${
+              isArabicText(currentQ.passage.content) ? "text-right [direction:rtl]" : ""
+            }`}
+          >
           <div className="flex items-center justify-between gap-2 mb-2">
             {currentQ.passage.title ? (
               <h3 className="text-sm font-bold text-[#092E28] uppercase tracking-wider">
@@ -599,7 +599,7 @@ export function PracticeClient({
           currentQ.options.some((o) => isArabicText(o.content));
 
         return (
-          <div className="rounded-3xl border border-emerald-950/10 bg-white p-6 sm:p-10 shadow-sm space-y-6">
+          <div className="rounded-2xl sm:rounded-3xl border border-emerald-950/10 bg-white p-4 sm:p-7 shadow-sm space-y-4 sm:space-y-5">
             {/* Question Stem with KaTeX Math Rendering */}
             <div
               dir={isQArabic ? "rtl" : undefined}
@@ -611,7 +611,7 @@ export function PracticeClient({
             </div>
 
         {/* Multiple Choice Options (A, B, C, D) */}
-        <div className="space-y-3 pt-2">
+        <div className="space-y-2.5 pt-1">
           {currentQ.options.map((opt) => {
             const isSelected = selectedOption === opt.label;
             const isCorrectOption = answerResult?.correctOption === opt.label;
