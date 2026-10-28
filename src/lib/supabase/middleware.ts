@@ -64,6 +64,8 @@ export async function updateSession(request: NextRequest) {
     pathname === "/schools/forgot-password" ||
     pathname === "/schools/reset-password";
   const isAuthPage = isStudentAuthPage || isSchoolAuthPage;
+  const isHomePage = pathname === "/" || pathname === "";
+  const allowLanding = request.nextUrl.searchParams.has("guest") || request.nextUrl.searchParams.has("landing");
 
   const hasAuthCookie = request.cookies.getAll().some((c) => c.name.startsWith("sb-"));
 
@@ -80,7 +82,8 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Public routes validate identity in their data-loading code when needed.
-  if (!isProtected && !isAuthPage) {
+  // Home page is checked only if user has an auth cookie and hasn't explicitly requested the guest landing page.
+  if (!isProtected && !isAuthPage && (!isHomePage || !hasAuthCookie || allowLanding)) {
     return supabaseResponse;
   }
 
@@ -183,8 +186,8 @@ export async function updateSession(request: NextRequest) {
     return redirectRes;
   }
 
-  // Redirect signed-in users away from auth pages to their respective dashboards
-  if (claims?.sub && isAuthPage) {
+  // Redirect signed-in users away from auth pages or the home page to their respective dashboards
+  if (claims?.sub && (isAuthPage || (isHomePage && !allowLanding))) {
     const url = request.nextUrl.clone();
     if (userRole === "school_admin") {
       url.pathname = "/schools/dashboard";
@@ -193,6 +196,8 @@ export async function updateSession(request: NextRequest) {
     } else {
       url.pathname = "/dashboard";
     }
+    url.searchParams.delete("source");
+    url.searchParams.delete("redirectTo");
     const redirectRes = NextResponse.redirect(url);
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       redirectRes.cookies.set(cookie);
