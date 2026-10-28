@@ -50,10 +50,10 @@ function DifficultyIndicator({ difficulty }: { difficulty?: string }) {
   if (diff === "easy") {
     return (
       <span
-        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10.5px] font-semibold"
+        className="inline-flex items-center gap-1 sm:px-2 sm:py-0.5 sm:rounded-full sm:bg-emerald-50 sm:text-emerald-800 sm:border sm:border-emerald-200 text-[10.5px] font-semibold"
         title="Difficulty: Easy (1 bar)"
       >
-        <SignalLow size={13} className="text-emerald-600 stroke-[2.2] shrink-0" />
+        <SignalLow size={16} className="text-emerald-600 stroke-[2.4] shrink-0" />
         <span className="hidden sm:inline uppercase">Easy</span>
       </span>
     );
@@ -61,20 +61,20 @@ function DifficultyIndicator({ difficulty }: { difficulty?: string }) {
   if (diff === "hard") {
     return (
       <span
-        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200 text-[10.5px] font-semibold"
+        className="inline-flex items-center gap-1 sm:px-2 sm:py-0.5 sm:rounded-full sm:bg-rose-50 sm:text-rose-800 sm:border sm:border-rose-200 text-[10.5px] font-semibold"
         title="Difficulty: Hard (3 bars)"
       >
-        <SignalHigh size={13} className="text-rose-600 stroke-[2.2] shrink-0" />
+        <SignalHigh size={16} className="text-rose-600 stroke-[2.4] shrink-0" />
         <span className="hidden sm:inline uppercase">Hard</span>
       </span>
     );
   }
   return (
     <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[10.5px] font-semibold"
+      className="inline-flex items-center gap-1 sm:px-2 sm:py-0.5 sm:rounded-full sm:bg-amber-50 sm:text-amber-800 sm:border sm:border-amber-200 text-[10.5px] font-semibold"
       title="Difficulty: Medium (2 bars)"
     >
-      <SignalMedium size={13} className="text-amber-600 stroke-[2.2] shrink-0" />
+      <SignalMedium size={16} className="text-amber-600 stroke-[2.2] shrink-0" />
       <span className="hidden sm:inline uppercase">Medium</span>
     </span>
   );
@@ -701,7 +701,7 @@ export function PracticeClient({
           <button
             type="button"
             disabled={isSubmitting} onClick={() => { void endPractice(); }}
-            className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+            className="hidden sm:inline-flex text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
           >
             Quit Practice
           </button>

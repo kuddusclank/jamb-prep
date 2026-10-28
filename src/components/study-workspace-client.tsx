@@ -8,7 +8,7 @@ import { SyncStatusIndicator } from "./sync-status-indicator";
 import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
 import Link from "@/components/pending-link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Layers, Clock, ChartNoAxesCombined, Users, UserRound, CreditCard, LogOut, Flame, BookA, WifiOff, CheckCircle2, Sparkles } from "lucide-react";
+import { LayoutDashboard, Layers, Clock, ChartNoAxesCombined, Users, UserRound, CreditCard, LogOut, Flame, BookA, WifiOff, CheckCircle2, Sparkles, X } from "lucide-react";
 import { signOutAction } from "@/lib/client-actions";
 import { purgeAllActorOfflineData } from "@/lib/offline/idb-storage";
 import { flushPendingSync, ensureWeeklyPackDownloaded } from "@/lib/offline/weekly-pack-client";
@@ -189,9 +189,11 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={onQuit}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition active:scale-95 cursor-pointer"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition active:scale-95 cursor-pointer shrink-0"
                 title="Quit practice session"
+                aria-label="Quit practice session"
               >
+                <X size={14} className="stroke-[2.5]" />
                 <span>Quit</span>
               </button>
             )}

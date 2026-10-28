@@ -34,7 +34,45 @@ import {
   Bookmark,
   Lock,
   Building2,
+  SignalLow,
+  SignalMedium,
+  SignalHigh,
 } from "lucide-react";
+
+function DifficultyIndicator({ difficulty }: { difficulty?: string }) {
+  const diff = difficulty?.toLowerCase() || "medium";
+  if (diff === "easy") {
+    return (
+      <span
+        className="inline-flex items-center gap-1 sm:px-2 sm:py-0.5 sm:rounded-full sm:bg-emerald-50 sm:text-emerald-800 sm:border sm:border-emerald-200 text-[10.5px] font-semibold"
+        title="Difficulty: Easy (1 bar)"
+      >
+        <SignalLow size={16} className="text-emerald-600 stroke-[2.4] shrink-0" />
+        <span className="hidden sm:inline uppercase">Easy</span>
+      </span>
+    );
+  }
+  if (diff === "hard") {
+    return (
+      <span
+        className="inline-flex items-center gap-1 sm:px-2 sm:py-0.5 sm:rounded-full sm:bg-rose-50 sm:text-rose-800 sm:border sm:border-rose-200 text-[10.5px] font-semibold"
+        title="Difficulty: Hard (3 bars)"
+      >
+        <SignalHigh size={16} className="text-rose-600 stroke-[2.4] shrink-0" />
+        <span className="hidden sm:inline uppercase">Hard</span>
+      </span>
+    );
+  }
+  return (
+    <span
+      className="inline-flex items-center gap-1 sm:px-2 sm:py-0.5 sm:rounded-full sm:bg-amber-50 sm:text-amber-800 sm:border sm:border-amber-200 text-[10.5px] font-semibold"
+      title="Difficulty: Medium (2 bars)"
+    >
+      <SignalMedium size={16} className="text-amber-600 stroke-[2.2] shrink-0" />
+      <span className="hidden sm:inline uppercase">Medium</span>
+    </span>
+  );
+}
 
 interface QuestionOption {
   id: string;
@@ -499,7 +537,7 @@ export function WeeklyPracticeClient() {
                   setActiveQuestions([]);
                 }
               }}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
             >
               <ArrowLeft size={15} />
               <span>Quit Set</span>
@@ -556,9 +594,12 @@ export function WeeklyPracticeClient() {
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
           {/* Header with Question Number and Flag Bookmark Toggle */}
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Question {currentIndex + 1} of {activeQuestions.length}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Question {currentIndex + 1} of {activeQuestions.length}
+              </span>
+              <DifficultyIndicator difficulty={currentQ.difficulty} />
+            </div>
 
             <button
               type="button"
