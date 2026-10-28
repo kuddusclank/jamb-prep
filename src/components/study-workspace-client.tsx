@@ -36,66 +36,10 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
   const profile = useApiResource<ProfileData>("/api/v1/profile");
   const { isOnline, isOffline } = useNetworkStatus();
   const pathname = usePathname();
-  const navRef = useRef<HTMLElement>(null);
-
-  const handleNavScroll = useCallback(() => {
-    const nav = navRef.current;
-    if (nav && nav.scrollWidth > nav.clientWidth) {
-      try {
-        sessionStorage.setItem("jambprep_study_nav_scroll", String(nav.scrollLeft));
-      } catch {
-        // Ignore storage errors
-      }
-    }
-  }, []);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
 
   useEffect(() => {
-    const nav = navRef.current;
-    if (!nav) return;
-
-    const restoreAndCenter = () => {
-      if (!nav || nav.scrollWidth <= nav.clientWidth) return;
-
-      // 1. Restore exact scroll position if saved
-      try {
-        const saved = sessionStorage.getItem("jambprep_study_nav_scroll");
-        if (saved !== null) {
-          const val = Number(saved);
-          if (!Number.isNaN(val) && val >= 0) {
-            nav.scrollLeft = val;
-          }
-        }
-      } catch {
-        // Ignore
-      }
-
-      // 2. Ensure the active item is visible in view
-      const activeLink = nav.querySelector<HTMLElement>('[aria-current="page"]');
-      if (activeLink) {
-        const navRect = nav.getBoundingClientRect();
-        const linkRect = activeLink.getBoundingClientRect();
-
-        const isClippedLeft = linkRect.left < navRect.left;
-        const isClippedRight = linkRect.right > navRect.right;
-
-        if (isClippedLeft || isClippedRight) {
-          activeLink.scrollIntoView({
-            behavior: "auto",
-            block: "nearest",
-            inline: "center",
-          });
-          try {
-            sessionStorage.setItem("jambprep_study_nav_scroll", String(nav.scrollLeft));
-          } catch {
-            // Ignore
-          }
-        }
-      }
-    };
-
-    restoreAndCenter();
-    const t = requestAnimationFrame(restoreAndCenter);
-    return () => cancelAnimationFrame(t);
+    setPendingHref(null);
   }, [pathname]);
 
   useEffect(() => {
@@ -224,6 +168,12 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
   const isPremium = Boolean(effectiveProfile.subscription.isPremium);
   const { isFocusMode, onQuit } = useWorkspaceFocus();
 
+  const isOverviewSelected = isOverviewActive || pendingHref === "/dashboard";
+  const isPracticeSelected = isPracticeActive || pendingHref === "/practice";
+  const isMockSelected = isMockActive || pendingHref === "/mock";
+  const isDictionarySelected = isDictionaryActive || pendingHref === "/dictionary";
+  const isAnalyticsSelected = isAnalyticsActive || pendingHref === "/analytics";
+
   return <div className={`${styles.workspace} ${isFocusMode ? styles.workspaceFocused : ''}`}>
     <a href="#study-content" className="skip-link">Skip to study content</a>
     <header className={styles.header}>
@@ -332,8 +282,6 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
       <aside className={styles.sidebar}>
         <p className={styles.caption}>YOUR STUDY SPACE</p>
         <nav
-          ref={navRef}
-          onScroll={handleNavScroll}
           aria-label="Study navigation"
           className={styles.navigation}
         >
@@ -346,11 +294,18 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
             const lockTitle = isSchoolAttached
               ? `${label} requires an active license from ${effectiveProfile?.subscription?.school?.schoolName || 'your school'} — click to view`
               : `${label} is a Pro feature — click to upgrade`;
+            const isSelected = (current?.href === href) || (pendingHref === targetHref);
             return (
               <Link
                 key={href}
                 href={targetHref}
-                aria-current={current?.href === href ? 'page' : undefined}
+                prefetch={true}
+                aria-current={isSelected ? 'page' : undefined}
+                onClick={() => {
+                  if (!isOfflineDisabled && targetHref !== '#') {
+                    setPendingHref(targetHref);
+                  }
+                }}
                 className={`${styles.navLink} ${isOfflineDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                 title={isLocked ? lockTitle : (isOfflineDisabled ? `${label} requires an internet connection` : label)}
               >
@@ -388,21 +343,23 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
           {/* 1. Overview */}
           <Link
             href="/dashboard"
-            aria-current={isOverviewActive ? "page" : undefined}
-            className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95"
+            prefetch={true}
+            onClick={() => setPendingHref("/dashboard")}
+            aria-current={isOverviewSelected ? "page" : undefined}
+            className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95 cursor-pointer"
           >
             <span
               className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
-                isOverviewActive
+                isOverviewSelected
                   ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              <LayoutDashboard size={20} className={isOverviewActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
+              <LayoutDashboard size={20} className={isOverviewSelected ? "stroke-[2.3]" : "stroke-[1.8]"} />
             </span>
             <span
               className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
-                isOverviewActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
+                isOverviewSelected ? "font-bold text-[#116149]" : "font-medium text-slate-500"
               }`}
             >
               Overview
@@ -412,21 +369,23 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
           {/* 2. Practice */}
           <Link
             href="/practice"
-            aria-current={isPracticeActive ? "page" : undefined}
-            className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95"
+            prefetch={true}
+            onClick={() => setPendingHref("/practice")}
+            aria-current={isPracticeSelected ? "page" : undefined}
+            className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95 cursor-pointer"
           >
             <span
               className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
-                isPracticeActive
+                isPracticeSelected
                   ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              <Layers size={20} className={isPracticeActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
+              <Layers size={20} className={isPracticeSelected ? "stroke-[2.3]" : "stroke-[1.8]"} />
             </span>
             <span
               className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
-                isPracticeActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
+                isPracticeSelected ? "font-bold text-[#116149]" : "font-medium text-slate-500"
               }`}
             >
               Practice
@@ -436,25 +395,27 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
           {/* 3. Mock CBT Exam */}
           <Link
             href={!isOnline ? "#" : "/mock"}
+            prefetch={true}
+            onClick={() => { if (isOnline) setPendingHref("/mock"); }}
             aria-label="Mock CBT Exam"
             title={!isOnline ? "Mock exams require an active internet connection" : "Mock CBT Exam"}
-            aria-current={isMockActive ? "page" : undefined}
+            aria-current={isMockSelected ? "page" : undefined}
             className={`flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95 ${
-              !isOnline ? "opacity-50 cursor-not-allowed" : ""
+              !isOnline ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
             }`}
           >
             <span
               className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
-                isMockActive
+                isMockSelected
                   ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              <Clock size={20} className={isMockActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
+              <Clock size={20} className={isMockSelected ? "stroke-[2.3]" : "stroke-[1.8]"} />
             </span>
             <span
               className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
-                isMockActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
+                isMockSelected ? "font-bold text-[#116149]" : "font-medium text-slate-500"
               }`}
             >
               Mock
@@ -464,22 +425,24 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
           {/* 4. Dictionary */}
           <Link
             href={!isPremium ? "/pricing" : "/dictionary"}
-            aria-current={isDictionaryActive ? "page" : undefined}
-            className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95"
+            prefetch={true}
+            onClick={() => setPendingHref(!isPremium ? "/pricing" : "/dictionary")}
+            aria-current={isDictionarySelected ? "page" : undefined}
+            className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95 cursor-pointer"
             title={!isPremium ? "Dictionary requires Pro — click to view plans" : "UTME Dictionary"}
           >
             <span
               className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
-                isDictionaryActive
+                isDictionarySelected
                   ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              <BookA size={20} className={isDictionaryActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
+              <BookA size={20} className={isDictionarySelected ? "stroke-[2.3]" : "stroke-[1.8]"} />
             </span>
             <span
               className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
-                isDictionaryActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
+                isDictionarySelected ? "font-bold text-[#116149]" : "font-medium text-slate-500"
               }`}
             >
               Dictionary
@@ -489,24 +452,26 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
           {/* 5. Performance */}
           <Link
             href={!isOnline ? "#" : "/analytics"}
-            aria-current={isAnalyticsActive ? "page" : undefined}
+            prefetch={true}
+            onClick={() => { if (isOnline) setPendingHref("/analytics"); }}
+            aria-current={isAnalyticsSelected ? "page" : undefined}
             className={`flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95 ${
-              !isOnline ? "opacity-50 cursor-not-allowed" : ""
+              !isOnline ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
             }`}
             title={!isOnline ? "Performance analytics requires an internet connection" : "Performance"}
           >
             <span
               className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
-                isAnalyticsActive
+                isAnalyticsSelected
                   ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              <ChartNoAxesCombined size={20} className={isAnalyticsActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
+              <ChartNoAxesCombined size={20} className={isAnalyticsSelected ? "stroke-[2.3]" : "stroke-[1.8]"} />
             </span>
             <span
               className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
-                isAnalyticsActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
+                isAnalyticsSelected ? "font-bold text-[#116149]" : "font-medium text-slate-500"
               }`}
             >
               Performance

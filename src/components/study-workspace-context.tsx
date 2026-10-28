@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 
 interface WorkspaceFocusContextValue {
   isFocusMode: boolean;
@@ -18,7 +18,12 @@ const WorkspaceFocusContext = createContext<WorkspaceFocusContextValue>({
 
 export function WorkspaceFocusProvider({ children }: { children: ReactNode }) {
   const [isFocusMode, setFocusMode] = useState(false);
-  const [onQuit, setOnQuit] = useState<(() => void) | undefined>(undefined);
+  const [onQuit, setOnQuitState] = useState<(() => void) | undefined>(undefined);
+
+  const setOnQuit = useCallback((handler?: (() => void) | undefined) => {
+    setOnQuitState(() => handler);
+  }, []);
+
   return (
     <WorkspaceFocusContext.Provider value={{ isFocusMode, setFocusMode, onQuit, setOnQuit }}>
       {children}

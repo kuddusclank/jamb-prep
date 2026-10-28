@@ -95,7 +95,7 @@ export function WeeklyPracticeClient() {
     const isPracticing = activeQuestions.length > 0;
     setFocusMode(isPracticing);
     if (isPracticing) {
-      setOnQuit(() => () => { setActiveQuestions([]); });
+      setOnQuit(() => { setActiveQuestions([]); });
     } else {
       setOnQuit(undefined);
     }

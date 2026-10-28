@@ -121,11 +121,13 @@ export function PracticeClient({
   const tier = useAccountTier();
   const { setFocusMode, setOnQuit } = useWorkspaceFocus();
 
+  const endPracticeRef = useRef<() => Promise<void>>(async () => {});
+
   useEffect(() => {
     const isPracticing = questions.length > 0;
     setFocusMode(isPracticing);
     if (isPracticing) {
-      setOnQuit(() => () => { void endPractice(); });
+      setOnQuit(() => { void endPracticeRef.current(); });
     } else {
       setOnQuit(undefined);
     }
@@ -133,7 +135,7 @@ export function PracticeClient({
       setFocusMode(false);
       setOnQuit(undefined);
     };
-  }, [questions.length, setFocusMode, setOnQuit, sessionId, selectedSubject, selectedTopic?.slug]);
+  }, [questions.length, setFocusMode, setOnQuit]);
 
   const subject=enrolledSubjects.find(s=>s.code===selectedSubject);
   const selectedTopic=subject?.topics.find(t=>t.slug===selectedTopicSlug||t.aliases.some(a=>a.toLowerCase()===selectedTopicSlug?.toLowerCase()));
@@ -168,6 +170,7 @@ export function PracticeClient({
       setIsSubmitting(false);
     }
   }
+  endPracticeRef.current = endPractice;
 
   const handleSelectOption = (label: string) => {
     if (answerResult || savedFeedback[questions[currentIndex]?.id]) return; // Prevent changing after answer is revealed
