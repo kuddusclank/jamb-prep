@@ -243,6 +243,20 @@ export function WeeklyPracticeClient() {
   const currentQ = activeQuestions[currentIndex] || null;
   const isCurrentFlagged = currentQ ? flaggedIds.has(currentQ.id) : false;
 
+  // Scroll to top whenever a question loads
+  useEffect(() => {
+    if (activeQuestions.length > 0 && currentQ) {
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        });
+      }
+    }
+  }, [currentIndex, currentQ?.id, activeQuestions.length]);
+
   const handleSelectOption = (label: "A" | "B" | "C" | "D") => {
     if (answerResult || isSubmitting) return;
     setSelectedOption(label);
@@ -331,8 +345,14 @@ export function WeeklyPracticeClient() {
         setSelectedOption(null);
         setAnswerResult(null);
       }
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      }
     } else {
       setIsSessionCompleted(true);
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      }
     }
   };
 
@@ -351,6 +371,9 @@ export function WeeklyPracticeClient() {
     } else {
       setSelectedOption(null);
       setAnswerResult(null);
+    }
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     }
   };
 

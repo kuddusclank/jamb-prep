@@ -202,12 +202,46 @@ export function PracticeClient({
     }
   };
 
-  const handleNextQuestion=async()=>{
-    if(currentIndex+1<questions.length){const next=currentIndex+1;setCurrentIndex(next);setSelectedOption(null);setAnswerResult(savedFeedback[questions[next].id]??null);}
-    else if(sessionId){setIsSubmitting(true);try{await finishPracticeSession(sessionId);setIsCompleted(true);}catch(error){setErrorMessage(error instanceof Error?error.message:'Unable to complete this session.');}finally{setIsSubmitting(false);}}
+  const handleNextQuestion = async () => {
+    if (currentIndex + 1 < questions.length) {
+      const next = currentIndex + 1;
+      setCurrentIndex(next);
+      setSelectedOption(null);
+      setAnswerResult(savedFeedback[questions[next].id] ?? null);
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      }
+    } else if (sessionId) {
+      setIsSubmitting(true);
+      try {
+        await finishPracticeSession(sessionId);
+        setIsCompleted(true);
+        if (typeof window !== "undefined") {
+          window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        }
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "Unable to complete this session.");
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
   };
 
   const currentQ = questions[currentIndex];
+
+  // Scroll to top whenever a new question is loaded into view
+  useEffect(() => {
+    if (questions.length > 0 && currentQ) {
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        });
+      }
+    }
+  }, [currentIndex, currentQ?.id, questions.length]);
 
   // 1. PRACTICE SETUP SCREEN
   if (questions.length === 0 || isCompleted) {
