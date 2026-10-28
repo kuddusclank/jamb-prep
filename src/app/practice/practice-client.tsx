@@ -405,54 +405,72 @@ export function PracticeClient({
     <div className="max-w-5xl mx-auto space-y-8">
       {errorMessage&&<p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{errorMessage}</p>}
       {/* Top Header / Progress */}
-      <div className="flex items-center justify-between text-xs text-slate-600 bg-white p-4 rounded-2xl border border-slate-200/80">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-[#116149] uppercase tracking-wider">
-            {currentQ.subjectName}
-          </span>
-          <span>•</span>
-          <span className="text-slate-500">{currentQ.topicTitle}</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2.5">
-          <span className="font-semibold text-slate-700">
-            Question {currentIndex + 1} of {questions.length}
-          </span>
-          <span className="px-2 py-0.5 rounded-full bg-slate-100 text-[11px] font-semibold text-slate-600 uppercase">
-            {currentQ.difficulty}
-          </span>
-          {isPremium ? (
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+        {/* Row 1: Question Progress Badge & Action Buttons */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-slate-800 text-sm">
+              Question {currentIndex + 1} <span className="text-slate-400 font-normal text-xs">of {questions.length}</span>
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-[10px] font-semibold text-slate-600 uppercase tracking-wide">
+              {currentQ.difficulty}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {isPremium ? (
+              <button
+                type="button"
+                onClick={() => setIsQuickLookupOpen(true)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-[#116149] border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+                title="Open Quick UTME Dictionary"
+              >
+                <BookA size={12} />
+                <span>Dictionary</span>
+              </button>
+            ) : (
+              <Link
+                href="/pricing"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 transition-colors cursor-pointer"
+                title={tier.isSchoolAttached ? `Quick Dictionary requires an active license from ${tier.school?.schoolName || 'your school'}` : "Quick Dictionary is a Pro feature — click to upgrade"}
+              >
+                {tier.isSchoolAttached ? <Building2 size={11} /> : <Lock size={11} />}
+                <span>Dictionary</span>
+                <span className="text-[9px] font-extrabold uppercase bg-amber-200/90 text-amber-950 px-1 rounded">
+                  {tier.isSchoolAttached ? "SCHOOL" : "PRO"}
+                </span>
+              </Link>
+            )}
+            <ReportQuestionDialog key={currentQ.id} questionId={currentQ.id} variant="icon" />
             <button
               type="button"
-              onClick={() => setIsQuickLookupOpen(true)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-[#116149] border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
-              title="Open Quick UTME Dictionary"
+              onClick={() => { void endPractice(); }}
+              disabled={isSubmitting}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 border border-slate-200 transition-colors cursor-pointer"
+              title="Quit practice session"
             >
-              <BookA size={12} />
-              <span>Dictionary</span>
+              <span>Quit</span>
             </button>
-          ) : (
-            <Link
-              href="/pricing"
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 transition-colors cursor-pointer"
-              title={tier.isSchoolAttached ? `Quick Dictionary requires an active license from ${tier.school?.schoolName || 'your school'}` : "Quick Dictionary is a Pro feature — click to upgrade"}
-            >
-              {tier.isSchoolAttached ? <Building2 size={11} /> : <Lock size={11} />}
-              <span>Dictionary</span>
-              <span className="text-[9px] font-extrabold uppercase bg-amber-200/90 text-amber-950 px-1 rounded">
-                {tier.isSchoolAttached ? "SCHOOL" : "PRO"}
-              </span>
-            </Link>
-          )}
-          <ReportQuestionDialog key={currentQ.id} questionId={currentQ.id} variant="icon" />
-          <button
-            type="button"
-            onClick={() => { void endPractice(); }}
-            disabled={isSubmitting}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 border border-slate-200 transition-colors cursor-pointer"
-            title="Quit practice session"
-          >
-            <span>Quit</span>
-          </button>
+          </div>
+        </div>
+
+        {/* Row 2: Subject & Topic (Clean full width without collisions) */}
+        <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-slate-100 min-w-0">
+          <span className="font-bold text-[#116149] text-xs uppercase tracking-wider shrink-0">
+            {currentQ.subjectName}
+          </span>
+          <span className="text-slate-300">•</span>
+          <span className="text-xs text-slate-500 font-medium truncate" title={currentQ.topicTitle}>
+            {currentQ.topicTitle}
+          </span>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden mt-2.5" role="progressbar" aria-valuenow={currentIndex + 1} aria-valuemin={1} aria-valuemax={questions.length}>
+          <div
+            className="h-full bg-[#116149] rounded-full transition-all duration-300"
+            style={{ width: `${Math.round(((currentIndex + 1) / questions.length) * 100)}%` }}
+          />
         </div>
       </div>
 

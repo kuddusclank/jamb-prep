@@ -460,6 +460,8 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     )}
 
     <NetworkStatusToast />
-    <footer className={styles.footer}><p>JAMBPrep · Your subjects. Your pace. Your next step.</p><PolicyLinks className="mt-3 justify-center"/></footer>
+    {!isPracticeActive && (
+      <footer className={styles.footer}><p>JAMBPrep · Your subjects. Your pace. Your next step.</p><PolicyLinks className="mt-3 justify-center"/></footer>
+    )}
   </div>;
 }
