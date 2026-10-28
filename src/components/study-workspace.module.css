@@ -36,7 +36,6 @@
 .content :global(input:not([type=checkbox]):not([type=radio]):not([type=range])), .content :global(select) { min-height: 48px; font-size: 1rem; min-width: 0; max-width: 100%; }
 .content :global(h1) { text-wrap: balance; }
 .content :global(button), .content :global(a) { touch-action: manipulation; }
-.footer { padding: 1.5rem 1rem calc(5.5rem + env(safe-area-inset-bottom, 0px)); text-align: center; font-size: .75rem; color: #64748b; }
 @media (min-width: 40rem) {
   .header { padding-inline: 1.5rem; }
   .context { display: inline; }
@@ -47,16 +46,15 @@
   .content { padding: 2rem 2rem calc(5rem + env(safe-area-inset-bottom, 0px)); }
 }
 @media (min-width: 64rem) {
-  .workspace { display: grid; grid-template-columns: 13.5rem minmax(0, 1fr); grid-template-rows: 4.5rem 1fr auto; }
+  .workspace { display: grid; grid-template-columns: 13.5rem minmax(0, 1fr); grid-template-rows: 4.5rem 1fr; }
   .header { grid-column: 1 / -1; }
-  .sidebar { display: flex; grid-column: 1; grid-row: 2 / 4; position: sticky; top: 4.5rem; height: calc(100dvh - 4.5rem); overflow-y: auto; background: #ffffff; border-right: 1px solid #e2e8f0; border-bottom: 0; flex-direction: column; padding: 1.5rem .75rem; scrollbar-width: none; -ms-overflow-style: none; }
+  .sidebar { display: flex; grid-column: 1; grid-row: 2; position: sticky; top: 4.5rem; height: calc(100dvh - 4.5rem); overflow-y: auto; background: #ffffff; border-right: 1px solid #e2e8f0; border-bottom: 0; flex-direction: column; padding: 1.5rem .75rem; scrollbar-width: none; -ms-overflow-style: none; }
   .caption { display: block; font-size: .625rem; letter-spacing: .12em; color: #64748b; margin: 0 .75rem 1rem; }
   .navigation { display: grid; padding: 0; gap: .4rem; overflow: visible; }
   .navLink { justify-content: flex-start; font-size: .875rem; }
   .sidebarFooter { display: block; margin-top: auto; padding: 2rem .75rem 0; color: #64748b; font-size: .75rem; }
   .signout { display: flex; gap: .5rem; align-items: center; min-height: 44px; margin-top: .75rem; color: #475569; cursor: pointer; }
   .content { grid-column: 2; padding: 2rem; }
-  .footer { grid-column: 2; padding: 1.5rem 1rem; }
 }
 @media (min-width: 80rem) {
   .workspace { grid-template-columns: 15rem minmax(0, 1fr); }
@@ -85,9 +83,6 @@
   max-width: 68rem;
   margin-inline: auto;
   padding: 0 0 calc(2rem + env(safe-area-inset-bottom, 0px)) !important;
-}
-.workspaceFocused .footer {
-  display: none !important;
 }
 @media (min-width: 40rem) {
   .workspaceFocused .header {

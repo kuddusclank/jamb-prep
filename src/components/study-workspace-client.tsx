@@ -13,7 +13,6 @@ import { signOutAction } from "@/lib/client-actions";
 import { purgeAllActorOfflineData } from "@/lib/offline/idb-storage";
 import { flushPendingSync, ensureWeeklyPackDownloaded } from "@/lib/offline/weekly-pack-client";
 import styles from "./study-workspace.module.css";
-import { PolicyLinks } from "@/components/legal-page";
 import { ResourceStatus } from "@/lib/api/use-api-resource";
 import { useNetworkStatus, isNetworkOrTimeoutError } from "@/lib/offline/network-state";
 import { getOfflineProfile } from "@/lib/offline/offline-profile-cache";
@@ -488,8 +487,5 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     )}
 
     <NetworkStatusToast />
-    {!isPracticeActive && (
-      <footer className={styles.footer}><p>JAMBPrep · Your subjects. Your pace. Your next step.</p><PolicyLinks className="mt-3 justify-center"/></footer>
-    )}
   </div>;
 }
