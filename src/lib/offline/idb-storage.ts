@@ -142,6 +142,20 @@ export async function getWeeklyPackFromIdb(userId: string, weekKey: string): Pro
 }
 
 /**
+ * Loads a weekly practice pack directly by its packId primary key.
+ */
+export async function getWeeklyPackByIdFromIdb(packId: string): Promise<StoredWeeklyPack | null> {
+  const db = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('weekly_packs', 'readonly');
+    const store = tx.objectStore('weekly_packs');
+    const req = store.get(packId);
+    req.onsuccess = () => resolve((req.result as StoredWeeklyPack) || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/**
  * Records a student answer locally in IndexedDB and enqueues an outbox sync event.
  */
 export async function recordLocalAnswer(answer: StoredAnswer): Promise<void> {
@@ -162,7 +176,7 @@ export async function recordLocalAnswer(answer: StoredAnswer): Promise<void> {
         const existing = existingReq.result as OutboxItem | undefined;
         const revision = (existing?.revision || 0) + 1;
         const outboxItem: OutboxItem = {
-          id: existing?.id,
+          ...(existing?.id !== undefined ? { id: existing.id } : {}),
           packId: answer.packId,
           questionId: answer.questionId,
           selectedOption: answer.selectedOption,
@@ -173,7 +187,11 @@ export async function recordLocalAnswer(answer: StoredAnswer): Promise<void> {
           retryCount: 0,
           idempotencyKey: `${answer.userId}_${answer.packId}_${answer.questionId}_${revision}`,
         };
-        outboxStore.put(outboxItem);
+        if (existing?.id !== undefined) {
+          outboxStore.put(outboxItem);
+        } else {
+          outboxStore.add(outboxItem);
+        }
       };
     } else {
       const outboxItem: OutboxItem = {
@@ -203,6 +221,12 @@ export async function recordLocalAnswer(answer: StoredAnswer): Promise<void> {
         };
 
         // Recalculate progress
+        if (!pack.progress) {
+          pack.progress = { total: pack.questions?.length || 250, answered: 0, bySubject: {} };
+        }
+        if (!pack.progress.bySubject) {
+          pack.progress.bySubject = {};
+        }
         const answeredCount = Object.keys(pack.answers).length;
         pack.progress.answered = answeredCount;
 

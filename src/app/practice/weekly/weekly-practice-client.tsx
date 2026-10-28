@@ -214,6 +214,7 @@ export function WeeklyPracticeClient() {
     if (!pack || !currentQ || !selectedOption || answerResult || isSubmitting) return;
 
     setIsSubmitting(true);
+    setErrorMessage(null);
     try {
       const res = await submitPackAnswer({
         userId,
@@ -483,6 +484,11 @@ export function WeeklyPracticeClient() {
 
     return (
       <div className="shell section-space max-w-5xl mx-auto space-y-8 pb-20">
+        {errorMessage && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-800">
+            {errorMessage}
+          </div>
+        )}
         {/* Top Session Progress Bar & Palette */}
         <div className="space-y-3 border-b border-slate-200 pb-4">
           <div className="flex items-center justify-between gap-4">
@@ -680,7 +686,7 @@ export function WeeklyPracticeClient() {
                 onClick={handleSubmitAnswer}
                 className="px-7 py-3 rounded-full bg-[#116149] text-white text-sm font-bold shadow-sm hover:bg-[#0b4936] transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? "Checking..." : "Submit Answer"}
+                {isSubmitting ? "Checking..." : "Check Answer"}
               </button>
             ) : (
               <button

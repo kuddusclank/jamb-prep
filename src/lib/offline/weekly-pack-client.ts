@@ -1,6 +1,7 @@
 import {
   saveWeeklyPackToIdb,
   getWeeklyPackFromIdb,
+  getWeeklyPackByIdFromIdb,
   recordLocalAnswer,
   type StoredWeeklyPack,
   type StoredAnswer,
@@ -81,7 +82,14 @@ export async function submitPackAnswer(params: {
   selectedOption: 'A' | 'B' | 'C' | 'D';
 }): Promise<{ isCorrect: boolean; correctOption: string; explanation: string }> {
   const weekKey = getCurrentWeekKey();
-  const pack = await getWeeklyPackFromIdb(params.userId, weekKey);
+  let pack = await getWeeklyPackFromIdb(params.userId, weekKey);
+  if (!pack) {
+    try {
+      pack = await getWeeklyPackByIdFromIdb(params.packId);
+    } catch {
+      // ignore
+    }
+  }
   const feedback = pack?.feedback?.[params.questionId] || {
     correctOption: 'A',
     explanation: 'No explanation provided.',

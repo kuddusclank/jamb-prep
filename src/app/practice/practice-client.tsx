@@ -191,7 +191,12 @@ export function PracticeClient({
         setScore((prev) => prev + 1);
       }
     } catch (err: unknown) {
-      setErrorMessage(err instanceof Error ? err.message : "Unable to check your answer. Please retry.");
+      const isOfflineErr = (typeof navigator !== "undefined" && !navigator.onLine) || (err instanceof Error && /network|fetch|offline|abort/i.test(err.message));
+      if (isOfflineErr) {
+        setErrorMessage("You are offline. Online practice requires an active internet connection. Please reconnect or use the Weekly Offline Pack.");
+      } else {
+        setErrorMessage(err instanceof Error ? err.message : "Unable to check your answer. Please retry.");
+      }
     } finally {
       setIsSubmitting(false);
     }
