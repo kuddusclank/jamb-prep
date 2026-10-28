@@ -49,3 +49,24 @@
   .header { padding-inline: 2rem; }
 }
 .mobileSignout { display: none; }
+
+/* Focused Study Mode (e.g. active practice questions session) */
+.workspaceFocused {
+  display: flex !important;
+  flex-direction: column !important;
+  grid-template-columns: none !important;
+}
+.workspaceFocused .sidebar {
+  display: none !important;
+}
+.workspaceFocused .content {
+  grid-column: 1 / -1 !important;
+  max-width: 68rem;
+  margin-inline: auto;
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)) !important;
+}
+.workspaceFocused .footer {
+  grid-column: 1 / -1 !important;
+  padding-bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px)) !important;
+}
+

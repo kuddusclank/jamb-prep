@@ -33,6 +33,7 @@ import Link from "@/components/pending-link";
 import { InspectableText } from "@/components/dictionary/inspectable-text";
 import { QuickLookupDialog } from "@/components/dictionary/quick-lookup-dialog";
 import { useAccountTier } from "@/lib/auth/use-account-tier";
+import { useWorkspaceFocus } from "@/components/study-workspace-context";
 
 import { PageHeader } from "@/components/page-header";
 import { useRouter } from "next/navigation";
@@ -80,6 +81,15 @@ export function PracticeClient({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isQuickLookupOpen, setIsQuickLookupOpen] = useState<boolean>(false);
   const tier = useAccountTier();
+  const { setFocusMode } = useWorkspaceFocus();
+
+  useEffect(() => {
+    const isPracticing = questions.length > 0;
+    setFocusMode(isPracticing);
+    return () => {
+      setFocusMode(false);
+    };
+  }, [questions.length, setFocusMode]);
 
   const subject=enrolledSubjects.find(s=>s.code===selectedSubject);
   const selectedTopic=subject?.topics.find(t=>t.slug===selectedTopicSlug||t.aliases.some(a=>a.toLowerCase()===selectedTopicSlug?.toLowerCase()));
@@ -434,6 +444,15 @@ export function PracticeClient({
             </Link>
           )}
           <ReportQuestionDialog key={currentQ.id} questionId={currentQ.id} variant="icon" />
+          <button
+            type="button"
+            onClick={() => { void endPractice(); }}
+            disabled={isSubmitting}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 border border-slate-200 transition-colors cursor-pointer"
+            title="Quit practice session"
+          >
+            <span>Quit</span>
+          </button>
         </div>
       </div>
 

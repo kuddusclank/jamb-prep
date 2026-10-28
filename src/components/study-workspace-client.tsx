@@ -18,6 +18,7 @@ import { ResourceStatus } from "@/lib/api/use-api-resource";
 import { useNetworkStatus, isNetworkOrTimeoutError } from "@/lib/offline/network-state";
 import { getOfflineProfile } from "@/lib/offline/offline-profile-cache";
 import { NetworkStatusToast } from "@/components/network-status-toast";
+import { useWorkspaceFocus } from "./study-workspace-context";
 
 const destinations = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, requiresOnline: false },
@@ -221,12 +222,13 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
   const isDictionaryActive = pathname === "/dictionary" || pathname.startsWith("/dictionary/");
   const isAnalyticsActive = pathname === "/analytics" || pathname.startsWith("/analytics/");
   const isPremium = Boolean(effectiveProfile.subscription.isPremium);
+  const { isFocusMode } = useWorkspaceFocus();
 
-  return <div className={styles.workspace}>
+  return <div className={`${styles.workspace} ${isFocusMode ? styles.workspaceFocused : ''}`}>
     <a href="#study-content" className="skip-link">Skip to study content</a>
     <header className={styles.header}>
       <Link href="/dashboard" className={styles.brand}><BrandMark size={32}/> JAMBPrep</Link>
-      <span className={styles.context}>{current?.label || 'Your study space'}</span>
+      <span className={styles.context}>{isFocusMode ? 'Practice Session' : (current?.label || 'Your study space')}</span>
 
       <div className="ml-auto flex items-center gap-2">
         <SyncStatusIndicator />
@@ -269,189 +271,193 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
         <span className="hidden sm:inline">Account</span>
       </Link>
     </header>
-    <aside className={styles.sidebar}>
-      <p className={styles.caption}>YOUR STUDY SPACE</p>
-      <nav
-        ref={navRef}
-        onScroll={handleNavScroll}
-        aria-label="Study navigation"
-        className={styles.navigation}
-      >
-        {visibleDestinations.map(({ href, label, icon: Icon, isPro, requiresOnline }) => {
-          const isLocked = isPro && effectiveProfile?.subscription?.isPremium === false;
-          const isOfflineDisabled = !isOnline && requiresOnline;
-          const targetHref = isLocked ? '/pricing' : (isOfflineDisabled ? '#' : href);
-          const isSchoolAttached = Boolean(effectiveProfile?.subscription?.isSchoolAttached);
-          const displayLabel = href === '/pricing' && isSchoolAttached ? 'School License' : label;
-          const lockTitle = isSchoolAttached
-            ? `${label} requires an active license from ${effectiveProfile?.subscription?.school?.schoolName || 'your school'} — click to view`
-            : `${label} is a Pro feature — click to upgrade`;
-          return (
-            <Link
-              key={href}
-              href={targetHref}
-              aria-current={current?.href === href ? 'page' : undefined}
-              className={`${styles.navLink} ${isOfflineDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-              title={isLocked ? lockTitle : (isOfflineDisabled ? `${label} requires an internet connection` : label)}
-            >
-              <Icon size={19} aria-hidden="true" />
-              <span>{displayLabel}</span>
-              {isLocked && (
-                <span className="ml-auto text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded-sm">
-                  {isSchoolAttached ? 'SCHOOL' : 'PRO'}
-                </span>
-              )}
-              {isOfflineDisabled && (
-                <span className="ml-auto text-[10px] font-medium text-slate-400">
-                  Online
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-      <div className={styles.sidebarFooter}>
-        <p>A little progress, every day.</p>
-        <form action={signOutAction} onSubmit={handleSignOut}><button type="submit" className={styles.signout}><LogOut size={17} aria-hidden="true" />Sign out</button></form>
-      </div>
-    </aside>
+    {!isFocusMode && (
+      <aside className={styles.sidebar}>
+        <p className={styles.caption}>YOUR STUDY SPACE</p>
+        <nav
+          ref={navRef}
+          onScroll={handleNavScroll}
+          aria-label="Study navigation"
+          className={styles.navigation}
+        >
+          {visibleDestinations.map(({ href, label, icon: Icon, isPro, requiresOnline }) => {
+            const isLocked = isPro && effectiveProfile?.subscription?.isPremium === false;
+            const isOfflineDisabled = !isOnline && requiresOnline;
+            const targetHref = isLocked ? '/pricing' : (isOfflineDisabled ? '#' : href);
+            const isSchoolAttached = Boolean(effectiveProfile?.subscription?.isSchoolAttached);
+            const displayLabel = href === '/pricing' && isSchoolAttached ? 'School License' : label;
+            const lockTitle = isSchoolAttached
+              ? `${label} requires an active license from ${effectiveProfile?.subscription?.school?.schoolName || 'your school'} — click to view`
+              : `${label} is a Pro feature — click to upgrade`;
+            return (
+              <Link
+                key={href}
+                href={targetHref}
+                aria-current={current?.href === href ? 'page' : undefined}
+                className={`${styles.navLink} ${isOfflineDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={isLocked ? lockTitle : (isOfflineDisabled ? `${label} requires an internet connection` : label)}
+              >
+                <Icon size={19} aria-hidden="true" />
+                <span>{displayLabel}</span>
+                {isLocked && (
+                  <span className="ml-auto text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded-sm">
+                    {isSchoolAttached ? 'SCHOOL' : 'PRO'}
+                  </span>
+                )}
+                {isOfflineDisabled && (
+                  <span className="ml-auto text-[10px] font-medium text-slate-400">
+                    Online
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className={styles.sidebarFooter}>
+          <p>A little progress, every day.</p>
+          <form action={signOutAction} onSubmit={handleSignOut}><button type="submit" className={styles.signout}><LogOut size={17} aria-hidden="true" />Sign out</button></form>
+        </div>
+      </aside>
+    )}
     <div id="study-content" tabIndex={-1} className={styles.content}>{children}</div>
 
     {/* Mobile Edge-to-Edge Bottom Navigation Bar */}
-    <nav
-      aria-label="Mobile navigation"
-      className="fixed inset-x-0 bottom-0 z-40 lg:hidden bg-white/95 backdrop-blur-md border-t border-slate-200/90 pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_12px_rgba(0,0,0,0.04)]"
-    >
-      <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-2">
-        {/* 1. Overview */}
-        <Link
-          href="/dashboard"
-          aria-current={isOverviewActive ? "page" : undefined}
-          className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95"
-        >
-          <span
-            className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
-              isOverviewActive
-                ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
+    {!isFocusMode && (
+      <nav
+        aria-label="Mobile navigation"
+        className="fixed inset-x-0 bottom-0 z-40 lg:hidden bg-white/95 backdrop-blur-md border-t border-slate-200/90 pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_12px_rgba(0,0,0,0.04)]"
+      >
+        <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-2">
+          {/* 1. Overview */}
+          <Link
+            href="/dashboard"
+            aria-current={isOverviewActive ? "page" : undefined}
+            className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95"
           >
-            <LayoutDashboard size={20} className={isOverviewActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
-          </span>
-          <span
-            className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
-              isOverviewActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
-            }`}
-          >
-            Overview
-          </span>
-        </Link>
+            <span
+              className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
+                isOverviewActive
+                  ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              <LayoutDashboard size={20} className={isOverviewActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
+            </span>
+            <span
+              className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
+                isOverviewActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
+              }`}
+            >
+              Overview
+            </span>
+          </Link>
 
-        {/* 2. Practice */}
-        <Link
-          href="/practice"
-          aria-current={isPracticeActive ? "page" : undefined}
-          className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95"
-        >
-          <span
-            className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
-              isPracticeActive
-                ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
+          {/* 2. Practice */}
+          <Link
+            href="/practice"
+            aria-current={isPracticeActive ? "page" : undefined}
+            className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95"
           >
-            <Layers size={20} className={isPracticeActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
-          </span>
-          <span
-            className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
-              isPracticeActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
-            }`}
-          >
-            Practice
-          </span>
-        </Link>
+            <span
+              className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
+                isPracticeActive
+                  ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              <Layers size={20} className={isPracticeActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
+            </span>
+            <span
+              className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
+                isPracticeActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
+              }`}
+            >
+              Practice
+            </span>
+          </Link>
 
-        {/* 3. Mock CBT Exam */}
-        <Link
-          href={!isOnline ? "#" : "/mock"}
-          aria-label="Mock CBT Exam"
-          title={!isOnline ? "Mock exams require an active internet connection" : "Mock CBT Exam"}
-          aria-current={isMockActive ? "page" : undefined}
-          className={`flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95 ${
-            !isOnline ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-        >
-          <span
-            className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
-              isMockActive
-                ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
-                : "text-slate-500 hover:text-slate-700"
+          {/* 3. Mock CBT Exam */}
+          <Link
+            href={!isOnline ? "#" : "/mock"}
+            aria-label="Mock CBT Exam"
+            title={!isOnline ? "Mock exams require an active internet connection" : "Mock CBT Exam"}
+            aria-current={isMockActive ? "page" : undefined}
+            className={`flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95 ${
+              !isOnline ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
-            <Clock size={20} className={isMockActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
-          </span>
-          <span
-            className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
-              isMockActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
-            }`}
-          >
-            Mock
-          </span>
-        </Link>
+            <span
+              className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
+                isMockActive
+                  ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              <Clock size={20} className={isMockActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
+            </span>
+            <span
+              className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
+                isMockActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
+              }`}
+            >
+              Mock
+            </span>
+          </Link>
 
-        {/* 4. Dictionary */}
-        <Link
-          href={!isPremium ? "/pricing" : "/dictionary"}
-          aria-current={isDictionaryActive ? "page" : undefined}
-          className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95"
-          title={!isPremium ? "Dictionary requires Pro — click to view plans" : "UTME Dictionary"}
-        >
-          <span
-            className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
-              isDictionaryActive
-                ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
+          {/* 4. Dictionary */}
+          <Link
+            href={!isPremium ? "/pricing" : "/dictionary"}
+            aria-current={isDictionaryActive ? "page" : undefined}
+            className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95"
+            title={!isPremium ? "Dictionary requires Pro — click to view plans" : "UTME Dictionary"}
           >
-            <BookA size={20} className={isDictionaryActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
-          </span>
-          <span
-            className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
-              isDictionaryActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
-            }`}
-          >
-            Dictionary
-          </span>
-        </Link>
+            <span
+              className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
+                isDictionaryActive
+                  ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              <BookA size={20} className={isDictionaryActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
+            </span>
+            <span
+              className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
+                isDictionaryActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
+              }`}
+            >
+              Dictionary
+            </span>
+          </Link>
 
-        {/* 5. Performance */}
-        <Link
-          href={!isOnline ? "#" : "/analytics"}
-          aria-current={isAnalyticsActive ? "page" : undefined}
-          className={`flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95 ${
-            !isOnline ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-          title={!isOnline ? "Performance analytics requires an internet connection" : "Performance"}
-        >
-          <span
-            className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
-              isAnalyticsActive
-                ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
-                : "text-slate-500 hover:text-slate-700"
+          {/* 5. Performance */}
+          <Link
+            href={!isOnline ? "#" : "/analytics"}
+            aria-current={isAnalyticsActive ? "page" : undefined}
+            className={`flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95 ${
+              !isOnline ? "opacity-50 cursor-not-allowed" : ""
             }`}
+            title={!isOnline ? "Performance analytics requires an internet connection" : "Performance"}
           >
-            <ChartNoAxesCombined size={20} className={isAnalyticsActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
-          </span>
-          <span
-            className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
-              isAnalyticsActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
-            }`}
-          >
-            Performance
-          </span>
-        </Link>
-      </div>
-    </nav>
+            <span
+              className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
+                isAnalyticsActive
+                  ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              <ChartNoAxesCombined size={20} className={isAnalyticsActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
+            </span>
+            <span
+              className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
+                isAnalyticsActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
+              }`}
+            >
+              Performance
+            </span>
+          </Link>
+        </div>
+      </nav>
+    )}
 
     <NetworkStatusToast />
     <footer className={styles.footer}><p>JAMBPrep · Your subjects. Your pace. Your next step.</p><PolicyLinks className="mt-3 justify-center"/></footer>

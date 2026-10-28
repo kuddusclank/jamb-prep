@@ -18,6 +18,7 @@ import { SyncStatusIndicator } from "@/components/sync-status-indicator";
 import { PageHeader } from "@/components/page-header";
 import { MathRenderer } from "@/components/math-renderer";
 import { QuestionDiagram } from "@/components/question-diagram";
+import { useWorkspaceFocus } from "@/components/study-workspace-context";
 import {
   ArrowLeft,
   ArrowRight,
@@ -88,6 +89,15 @@ export function WeeklyPracticeClient() {
   >({});
   const [isSessionCompleted, setIsSessionCompleted] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const { setFocusMode } = useWorkspaceFocus();
+
+  useEffect(() => {
+    const isPracticing = activeQuestions.length > 0;
+    setFocusMode(isPracticing);
+    return () => {
+      setFocusMode(false);
+    };
+  }, [activeQuestions.length, setFocusMode]);
 
   // Monitor network status
   useEffect(() => {
