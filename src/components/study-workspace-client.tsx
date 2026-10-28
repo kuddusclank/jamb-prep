@@ -313,51 +313,49 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     </aside>
     <div id="study-content" tabIndex={-1} className={styles.content}>{children}</div>
 
-    {/* Mobile Floating Bottom Navigation Dock */}
-    <div className="fixed inset-x-0 bottom-0 z-40 lg:hidden pointer-events-none pb-[max(0.75rem,env(safe-area-inset-bottom))] px-3 sm:px-6 flex justify-center">
-      <nav
-        aria-label="Mobile primary navigation"
-        className="pointer-events-auto relative w-full max-w-md bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-full shadow-[0_12px_36px_-6px_rgba(0,0,0,0.14),0_4px_14px_rgba(0,0,0,0.06)] px-2 py-1.5 flex items-center justify-between"
-      >
+    {/* Mobile Edge-to-Edge Bottom Navigation Bar */}
+    <nav
+      aria-label="Mobile navigation"
+      className="fixed inset-x-0 bottom-0 z-40 lg:hidden bg-white border-t border-slate-200 pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_10px_rgba(0,0,0,0.03)]"
+    >
+      <div className="relative mx-auto flex h-16 max-w-lg items-center justify-between px-3">
         {/* 1. Practice */}
         <Link
           href="/practice"
           aria-current={isPracticeActive ? "page" : undefined}
-          className={`flex flex-1 flex-col items-center justify-center py-1 text-[11px] transition-colors ${
-            isPracticeActive ? "text-[#116149] font-bold" : "text-slate-500 hover:text-slate-800 font-medium"
+          className={`flex flex-1 flex-col items-center justify-center py-1 transition-colors active:opacity-70 ${
+            isPracticeActive ? "text-[#116149] font-semibold" : "text-slate-500 hover:text-slate-700 font-medium"
           }`}
         >
-          <Layers size={19} className={isPracticeActive ? "stroke-[2.5]" : "stroke-[1.8]"} />
-          <span className="mt-0.5 tracking-tight">Practice</span>
-          {isPracticeActive && <span className="size-1 rounded-full bg-[#116149] mt-0.5" />}
+          <Layers size={20} className={isPracticeActive ? "stroke-[2.2]" : "stroke-[1.75]"} />
+          <span className="text-[10.5px] mt-1 tracking-tight">Practice</span>
         </Link>
 
         {/* 2. Mock */}
         <Link
           href={!isOnline ? "#" : "/mock"}
           aria-current={isMockActive ? "page" : undefined}
-          className={`flex flex-1 flex-col items-center justify-center py-1 text-[11px] transition-colors ${
-            isMockActive ? "text-[#116149] font-bold" : "text-slate-500 hover:text-slate-800 font-medium"
+          className={`flex flex-1 flex-col items-center justify-center py-1 transition-colors active:opacity-70 ${
+            isMockActive ? "text-[#116149] font-semibold" : "text-slate-500 hover:text-slate-700 font-medium"
           } ${!isOnline ? "opacity-50 cursor-not-allowed" : ""}`}
           title={!isOnline ? "Mock exams require an active internet connection" : "Mock exams"}
         >
-          <Clock size={19} className={isMockActive ? "stroke-[2.5]" : "stroke-[1.8]"} />
-          <span className="mt-0.5 tracking-tight">Mock</span>
-          {isMockActive && <span className="size-1 rounded-full bg-[#116149] mt-0.5" />}
+          <Clock size={20} className={isMockActive ? "stroke-[2.2]" : "stroke-[1.75]"} />
+          <span className="text-[10.5px] mt-1 tracking-tight">Mock</span>
         </Link>
 
-        {/* 3. Center Elevated Floating Overview Button (Circular with overlapping cutout, No label) */}
+        {/* 3. Center Elevated Overview Button (Native refined circular button, no label) */}
         <div className="flex flex-1 justify-center -my-3">
           <Link
             href="/dashboard"
             aria-label="Overview"
             title="Overview"
             aria-current={isOverviewActive ? "page" : undefined}
-            className={`size-13 sm:size-14 -mt-5 rounded-full bg-gradient-to-b from-[#116149] to-[#092E28] text-white shadow-[0_8px_20px_-2px_rgba(17,97,73,0.45)] ring-4 ring-white flex items-center justify-center transition-transform active:scale-95 cursor-pointer ${
-              isOverviewActive ? "ring-emerald-100 ring-offset-1" : ""
+            className={`flex size-12 -mt-5 items-center justify-center rounded-full bg-[#116149] text-white shadow-md border-4 border-white transition active:scale-95 ${
+              isOverviewActive ? "ring-2 ring-[#116149]/20" : ""
             }`}
           >
-            <LayoutDashboard size={22} className={isOverviewActive ? "text-[#E7B85A]" : "text-white"} />
+            <LayoutDashboard size={21} className={isOverviewActive ? "text-[#E7B85A]" : "text-white"} />
           </Link>
         </div>
 
@@ -365,31 +363,29 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
         <Link
           href={!isPremium ? "/pricing" : "/dictionary"}
           aria-current={isDictionaryActive ? "page" : undefined}
-          className={`flex flex-1 flex-col items-center justify-center py-1 text-[11px] transition-colors ${
-            isDictionaryActive ? "text-[#116149] font-bold" : "text-slate-500 hover:text-slate-800 font-medium"
+          className={`flex flex-1 flex-col items-center justify-center py-1 transition-colors active:opacity-70 ${
+            isDictionaryActive ? "text-[#116149] font-semibold" : "text-slate-500 hover:text-slate-700 font-medium"
           }`}
           title={!isPremium ? "Dictionary requires Pro — click to view plans" : "UTME Dictionary"}
         >
-          <BookA size={19} className={isDictionaryActive ? "stroke-[2.5]" : "stroke-[1.8]"} />
-          <span className="mt-0.5 tracking-tight">Dictionary</span>
-          {isDictionaryActive && <span className="size-1 rounded-full bg-[#116149] mt-0.5" />}
+          <BookA size={20} className={isDictionaryActive ? "stroke-[2.2]" : "stroke-[1.75]"} />
+          <span className="text-[10.5px] mt-1 tracking-tight">Dictionary</span>
         </Link>
 
         {/* 5. Performance */}
         <Link
           href={!isOnline ? "#" : "/analytics"}
           aria-current={isAnalyticsActive ? "page" : undefined}
-          className={`flex flex-1 flex-col items-center justify-center py-1 text-[11px] transition-colors ${
-            isAnalyticsActive ? "text-[#116149] font-bold" : "text-slate-500 hover:text-slate-800 font-medium"
+          className={`flex flex-1 flex-col items-center justify-center py-1 transition-colors active:opacity-70 ${
+            isAnalyticsActive ? "text-[#116149] font-semibold" : "text-slate-500 hover:text-slate-700 font-medium"
           } ${!isOnline ? "opacity-50 cursor-not-allowed" : ""}`}
           title={!isOnline ? "Performance analytics requires an internet connection" : "Performance"}
         >
-          <ChartNoAxesCombined size={19} className={isAnalyticsActive ? "stroke-[2.5]" : "stroke-[1.8]"} />
-          <span className="mt-0.5 tracking-tight">Performance</span>
-          {isAnalyticsActive && <span className="size-1 rounded-full bg-[#116149] mt-0.5" />}
+          <ChartNoAxesCombined size={20} className={isAnalyticsActive ? "stroke-[2.2]" : "stroke-[1.75]"} />
+          <span className="text-[10.5px] mt-1 tracking-tight">Performance</span>
         </Link>
-      </nav>
-    </div>
+      </div>
+    </nav>
 
     <NetworkStatusToast />
     <footer className={styles.footer}><p>JAMBPrep · Your subjects. Your pace. Your next step.</p><PolicyLinks className="mt-3 justify-center"/></footer>
