@@ -259,10 +259,14 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
         href="/profile"
         aria-label="Candidate profile"
         title="Candidate profile & preferences"
-        className="inline-flex items-center justify-center gap-2 min-h-10 min-w-10 px-2.5 sm:px-3 border border-slate-200 rounded-xl text-sm text-slate-700 hover:bg-slate-50 transition"
+        className={`inline-flex items-center justify-center gap-2 min-h-10 min-w-10 px-2.5 sm:px-3 border rounded-xl text-sm transition ${
+          pathname === "/profile" || pathname.startsWith("/profile/")
+            ? "border-[#116149] bg-emerald-50 text-[#116149] ring-2 ring-[#116149]/20 font-bold"
+            : "border-slate-200 text-slate-700 hover:bg-slate-50 font-medium"
+        }`}
       >
-        <UserRound size={18} aria-hidden="true" className="text-slate-700" />
-        <span className="hidden sm:inline font-medium">Account</span>
+        <UserRound size={18} aria-hidden="true" className={pathname === "/profile" || pathname.startsWith("/profile/") ? "text-[#116149]" : "text-slate-700"} />
+        <span className="hidden sm:inline">Account</span>
       </Link>
     </header>
     <aside className={styles.sidebar}>
@@ -316,72 +320,135 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     {/* Mobile Edge-to-Edge Bottom Navigation Bar */}
     <nav
       aria-label="Mobile navigation"
-      className="fixed inset-x-0 bottom-0 z-40 lg:hidden bg-white border-t border-slate-200 pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_10px_rgba(0,0,0,0.03)]"
+      className="fixed inset-x-0 bottom-0 z-40 lg:hidden bg-white/95 backdrop-blur-md border-t border-slate-200/90 pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_12px_rgba(0,0,0,0.04)]"
     >
-      <div className="relative mx-auto flex h-16 max-w-lg items-center justify-between px-3">
+      <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-2">
         {/* 1. Overview */}
         <Link
           href="/dashboard"
           aria-current={isOverviewActive ? "page" : undefined}
-          className={`flex flex-1 flex-col items-center justify-center py-1 transition-colors active:opacity-70 ${
-            isOverviewActive ? "text-[#116149] font-semibold" : "text-slate-500 hover:text-slate-700 font-medium"
-          }`}
+          className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95"
         >
-          <LayoutDashboard size={20} className={isOverviewActive ? "stroke-[2.2]" : "stroke-[1.75]"} />
-          <span className="text-[10.5px] mt-1 tracking-tight">Overview</span>
+          <span
+            className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
+              isOverviewActive
+                ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <LayoutDashboard size={20} className={isOverviewActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
+          </span>
+          <span
+            className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
+              isOverviewActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
+            }`}
+          >
+            Overview
+          </span>
         </Link>
 
         {/* 2. Practice */}
         <Link
           href="/practice"
           aria-current={isPracticeActive ? "page" : undefined}
-          className={`flex flex-1 flex-col items-center justify-center py-1 transition-colors active:opacity-70 ${
-            isPracticeActive ? "text-[#116149] font-semibold" : "text-slate-500 hover:text-slate-700 font-medium"
-          }`}
+          className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95"
         >
-          <Layers size={20} className={isPracticeActive ? "stroke-[2.2]" : "stroke-[1.75]"} />
-          <span className="text-[10.5px] mt-1 tracking-tight">Practice</span>
+          <span
+            className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
+              isPracticeActive
+                ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <Layers size={20} className={isPracticeActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
+          </span>
+          <span
+            className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
+              isPracticeActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
+            }`}
+          >
+            Practice
+          </span>
         </Link>
 
-        {/* 3. Center Elevated Mock Button (In the circle, a bit bigger) */}
-        <div className="flex flex-1 justify-center -my-3">
-          <Link
-            href={!isOnline ? "#" : "/mock"}
-            aria-label="Mock CBT Exam"
-            title={!isOnline ? "Mock exams require an active internet connection" : "Mock CBT Exam"}
-            aria-current={isMockActive ? "page" : undefined}
-            className={`flex size-14 -mt-6 items-center justify-center rounded-full bg-[#116149] text-white shadow-lg border-[3.5px] border-white transition active:scale-95 ${
-              isMockActive ? "ring-2 ring-[#116149]/20" : ""
-            } ${!isOnline ? "opacity-50 cursor-not-allowed" : ""}`}
+        {/* 3. Mock CBT Exam */}
+        <Link
+          href={!isOnline ? "#" : "/mock"}
+          aria-label="Mock CBT Exam"
+          title={!isOnline ? "Mock exams require an active internet connection" : "Mock CBT Exam"}
+          aria-current={isMockActive ? "page" : undefined}
+          className={`flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95 ${
+            !isOnline ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+        >
+          <span
+            className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
+              isMockActive
+                ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
           >
-            <Clock size={25} className={isMockActive ? "text-[#E7B85A] stroke-[2.4]" : "text-white stroke-[2.2]"} />
-          </Link>
-        </div>
+            <Clock size={20} className={isMockActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
+          </span>
+          <span
+            className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
+              isMockActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
+            }`}
+          >
+            Mock
+          </span>
+        </Link>
 
         {/* 4. Dictionary */}
         <Link
           href={!isPremium ? "/pricing" : "/dictionary"}
           aria-current={isDictionaryActive ? "page" : undefined}
-          className={`flex flex-1 flex-col items-center justify-center py-1 transition-colors active:opacity-70 ${
-            isDictionaryActive ? "text-[#116149] font-semibold" : "text-slate-500 hover:text-slate-700 font-medium"
-          }`}
+          className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95"
           title={!isPremium ? "Dictionary requires Pro — click to view plans" : "UTME Dictionary"}
         >
-          <BookA size={20} className={isDictionaryActive ? "stroke-[2.2]" : "stroke-[1.75]"} />
-          <span className="text-[10.5px] mt-1 tracking-tight">Dictionary</span>
+          <span
+            className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
+              isDictionaryActive
+                ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <BookA size={20} className={isDictionaryActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
+          </span>
+          <span
+            className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
+              isDictionaryActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
+            }`}
+          >
+            Dictionary
+          </span>
         </Link>
 
         {/* 5. Performance */}
         <Link
           href={!isOnline ? "#" : "/analytics"}
           aria-current={isAnalyticsActive ? "page" : undefined}
-          className={`flex flex-1 flex-col items-center justify-center py-1 transition-colors active:opacity-70 ${
-            isAnalyticsActive ? "text-[#116149] font-semibold" : "text-slate-500 hover:text-slate-700 font-medium"
-          } ${!isOnline ? "opacity-50 cursor-not-allowed" : ""}`}
+          className={`flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95 ${
+            !isOnline ? "opacity-50 cursor-not-allowed" : ""
+          }`}
           title={!isOnline ? "Performance analytics requires an internet connection" : "Performance"}
         >
-          <ChartNoAxesCombined size={20} className={isAnalyticsActive ? "stroke-[2.2]" : "stroke-[1.75]"} />
-          <span className="text-[10.5px] mt-1 tracking-tight">Performance</span>
+          <span
+            className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
+              isAnalyticsActive
+                ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <ChartNoAxesCombined size={20} className={isAnalyticsActive ? "stroke-[2.3]" : "stroke-[1.8]"} />
+          </span>
+          <span
+            className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
+              isAnalyticsActive ? "font-bold text-[#116149]" : "font-medium text-slate-500"
+            }`}
+          >
+            Performance
+          </span>
         </Link>
       </div>
     </nav>
