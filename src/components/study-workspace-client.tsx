@@ -319,7 +319,19 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
       className="fixed inset-x-0 bottom-0 z-40 lg:hidden bg-white border-t border-slate-200 pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_10px_rgba(0,0,0,0.03)]"
     >
       <div className="relative mx-auto flex h-16 max-w-lg items-center justify-between px-3">
-        {/* 1. Practice */}
+        {/* 1. Overview */}
+        <Link
+          href="/dashboard"
+          aria-current={isOverviewActive ? "page" : undefined}
+          className={`flex flex-1 flex-col items-center justify-center py-1 transition-colors active:opacity-70 ${
+            isOverviewActive ? "text-[#116149] font-semibold" : "text-slate-500 hover:text-slate-700 font-medium"
+          }`}
+        >
+          <LayoutDashboard size={20} className={isOverviewActive ? "stroke-[2.2]" : "stroke-[1.75]"} />
+          <span className="text-[10.5px] mt-1 tracking-tight">Overview</span>
+        </Link>
+
+        {/* 2. Practice */}
         <Link
           href="/practice"
           aria-current={isPracticeActive ? "page" : undefined}
@@ -331,31 +343,18 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
           <span className="text-[10.5px] mt-1 tracking-tight">Practice</span>
         </Link>
 
-        {/* 2. Mock */}
-        <Link
-          href={!isOnline ? "#" : "/mock"}
-          aria-current={isMockActive ? "page" : undefined}
-          className={`flex flex-1 flex-col items-center justify-center py-1 transition-colors active:opacity-70 ${
-            isMockActive ? "text-[#116149] font-semibold" : "text-slate-500 hover:text-slate-700 font-medium"
-          } ${!isOnline ? "opacity-50 cursor-not-allowed" : ""}`}
-          title={!isOnline ? "Mock exams require an active internet connection" : "Mock exams"}
-        >
-          <Clock size={20} className={isMockActive ? "stroke-[2.2]" : "stroke-[1.75]"} />
-          <span className="text-[10.5px] mt-1 tracking-tight">Mock</span>
-        </Link>
-
-        {/* 3. Center Elevated Overview Button (Native refined circular button, no label) */}
+        {/* 3. Center Elevated Mock Button (In the circle, a bit bigger) */}
         <div className="flex flex-1 justify-center -my-3">
           <Link
-            href="/dashboard"
-            aria-label="Overview"
-            title="Overview"
-            aria-current={isOverviewActive ? "page" : undefined}
-            className={`flex size-12 -mt-5 items-center justify-center rounded-full bg-[#116149] text-white shadow-md border-4 border-white transition active:scale-95 ${
-              isOverviewActive ? "ring-2 ring-[#116149]/20" : ""
-            }`}
+            href={!isOnline ? "#" : "/mock"}
+            aria-label="Mock CBT Exam"
+            title={!isOnline ? "Mock exams require an active internet connection" : "Mock CBT Exam"}
+            aria-current={isMockActive ? "page" : undefined}
+            className={`flex size-14 -mt-6 items-center justify-center rounded-full bg-[#116149] text-white shadow-lg border-[3.5px] border-white transition active:scale-95 ${
+              isMockActive ? "ring-2 ring-[#116149]/20" : ""
+            } ${!isOnline ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            <LayoutDashboard size={21} className={isOverviewActive ? "text-[#E7B85A]" : "text-white"} />
+            <Clock size={25} className={isMockActive ? "text-[#E7B85A] stroke-[2.4]" : "text-white stroke-[2.2]"} />
           </Link>
         </div>
 
