@@ -129,7 +129,7 @@ export async function updateSession(request: NextRequest) {
   let userRole =
     (claims?.user_metadata?.role as string) ||
     (claims?.app_metadata?.role as string) ||
-    (claims?.role as string) ||
+    (claims?.role === "admin" || claims?.role === "school_admin" ? (claims.role as string) : null) ||
     "student";
 
   // If attempting to access admin portal and token claims do not show admin,
