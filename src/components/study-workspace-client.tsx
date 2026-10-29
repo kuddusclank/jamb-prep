@@ -58,6 +58,21 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     void ensureWeeklyPackDownloaded(studentId).catch(() => {});
   }, [profile.data?.profile?.id, profile.data?.subscription?.isPremium, isOffline]);
 
+  // Proactive background pre-cache of core study workspace pages so offline refresh works on every screen
+  useEffect(() => {
+    if (typeof window === "undefined" || !isOnline) return;
+    if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller) return;
+
+    try {
+      navigator.serviceWorker.controller.postMessage({
+        type: "CACHE_ROUTES",
+        routes: ["/dashboard/", "/practice/", "/profile/"],
+      });
+    } catch {
+      // Non-blocking background precache
+    }
+  }, [isOnline]);
+
   const currentUserId =
     profile.data?.profile?.id ||
     account.identity?.user?.id ||

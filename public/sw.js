@@ -6,6 +6,8 @@ const CACHE_NAME = `jambprep-public-${EFFECTIVE_BUILD_ID}`;
 const ESSENTIALS = ['/offline.html', '/icon-192.png', '/icon-512.png', '/lecterniq-mark.svg'];
 const PUBLIC_ASSETS = new Set(ESSENTIALS);
 
+const RUNTIME_CACHE_LIMIT = (BUILD_ID === 'test-build') ? 32 : 500;
+
 function cacheableRequest(request) {
   const url = new URL(request.url);
   if (request.method !== 'GET' || request.headers.has('authorization') || url.origin !== self.location.origin || url.search) return false;
@@ -38,6 +40,23 @@ self.addEventListener('message', event => {
         event.waitUntil(p);
       }
     }
+  }
+  if (event.data && event.data.type === 'CACHE_ROUTES' && Array.isArray(event.data.routes)) {
+    event.waitUntil((async () => {
+      try {
+        const cache = await caches.open(CACHE_NAME);
+        await Promise.all(event.data.routes.map(async (route) => {
+          try {
+            const res = await fetch(new Request(new URL(route, self.location.origin), { credentials: 'include', cache: 'no-cache' }));
+            if (res.ok && res.status === 200 && validAsset(res, route)) {
+              await cache.put(route, res.clone());
+              const alt = route.endsWith('/') ? route.slice(0, -1) : `${route}/`;
+              await cache.put(alt, res.clone());
+            }
+          } catch { /* Ignore individual route prefetch failures */ }
+        }));
+      } catch { /* Ignore cache open failures */ }
+    })());
   }
 });
 self.addEventListener('install', event => {
@@ -84,23 +103,31 @@ self.addEventListener('fetch', event => {
         const cached = await cache.match(request);
         if (cached) return cached;
       } catch { /* A denied or evicted cache must not break the network website. */ }
-      const response = await fetch(request);
-      if (cache && validAsset(response, url.pathname)) {
-        try {
-        // Bound runtime objects; required assets and navigation pages cannot be evicted by runtime traffic.
-        const length = Number(response.headers.get('content-length'));
-        const bytes = Number.isFinite(length) && length > 0 ? length : (await response.clone().arrayBuffer()).byteLength;
-        if (bytes <= 512 * 1024) {
-          await cache.put(request, response.clone());
-          const runtime = (await cache.keys()).filter(key => {
-            const p = new URL(key.url).pathname;
-            return !PUBLIC_ASSETS.has(p) && p.startsWith('/_next/static/');
-          });
-          for (const key of runtime.slice(0, Math.max(0, runtime.length - 32))) await cache.delete(key);
+      try {
+        const response = await fetch(request);
+        if (cache && validAsset(response, url.pathname)) {
+          try {
+            // Bound runtime objects; required assets and navigation pages cannot be evicted by runtime traffic.
+            const length = Number(response.headers.get('content-length'));
+            const bytes = Number.isFinite(length) && length > 0 ? length : (await response.clone().arrayBuffer()).byteLength;
+            if (bytes <= 4 * 1024 * 1024) {
+              await cache.put(request, response.clone());
+              const runtime = (await cache.keys()).filter(key => {
+                const p = new URL(key.url).pathname;
+                return !PUBLIC_ASSETS.has(p) && p.startsWith('/_next/static/');
+              });
+              for (const key of runtime.slice(0, Math.max(0, runtime.length - RUNTIME_CACHE_LIMIT))) await cache.delete(key);
+            }
+          } catch { /* Cache quota/write failure leaves the network response usable. */ }
         }
-        } catch { /* Cache quota/write failure leaves the network response usable. */ }
+        return response;
+      } catch (networkErr) {
+        if (cache) {
+          const fallback = await cache.match(request) || await cache.match(url.pathname);
+          if (fallback) return fallback;
+        }
+        throw networkErr;
       }
-      return response;
     })());
     return;
   }
@@ -137,7 +164,7 @@ self.addEventListener('fetch', event => {
             let cached = await cache.match(request);
             if (cached) return cached;
 
-            // 2. Try matching the pathname
+            // 2. Try matching the pathname without query strings
             cached = await cache.match(url.pathname);
             if (cached) return cached;
 
@@ -145,19 +172,33 @@ self.addEventListener('fetch', event => {
             cached = await cache.match(altPath);
             if (cached) return cached;
 
-            // 3. Fall back to cached dashboard or app shell
-            cached = await cache.match('/dashboard') || await cache.match('/dashboard/') || await cache.match('/') || await cache.match('/index.html');
+            // 3. Match route domain if candidate is navigating within practice/profile/dashboard
+            if (url.pathname.startsWith('/practice')) {
+              cached = await cache.match('/practice/') || await cache.match('/practice');
+              if (cached) return cached;
+            }
+            if (url.pathname.startsWith('/profile')) {
+              cached = await cache.match('/profile/') || await cache.match('/profile');
+              if (cached) return cached;
+            }
+            if (url.pathname.startsWith('/dashboard')) {
+              cached = await cache.match('/dashboard/') || await cache.match('/dashboard');
+              if (cached) return cached;
+            }
+
+            // 4. Fall back to cached app shell (dashboard, root, or index)
+            cached = await cache.match('/dashboard/') || await cache.match('/dashboard') || await cache.match('/') || await cache.match('/index.html');
             if (cached) return cached;
 
-            // 4. Fall back to offline.html
+            // 5. Fall back to offline.html
             const offline = await cache.match('/offline.html');
             if (offline) return offline;
           } catch { /* Storage read failure */ }
         }
 
-        return new Response('You are offline. Reconnect and reload.', {
+        return new Response('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline | JAMBPrep</title><style>body{font-family:sans-serif;padding:32px 20px;text-align:center;background:#F6F8F5;color:#092E28;margin-top:10vh;}h1{font-size:22px;font-weight:700;}p{color:#4b5563;font-size:14px;margin-top:8px;}a{display:inline-block;margin-top:20px;padding:12px 24px;background:#116149;color:#fff;border-radius:99px;text-decoration:none;font-weight:600;font-size:14px;}</style></head><body><h1>Offline Mode</h1><p>You are offline. Connect to the internet or return to your cached study dashboard.</p><a href="/dashboard/">Open Dashboard</a></body></html>', {
           status: 503,
-          headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' },
+          headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
         });
       }
     })());

@@ -141,7 +141,7 @@
       Your offline progress and weekly practice packs remain securely saved on this device. We’ll resume your session automatically as soon as internet is detected.
     </p>
     <div class="actions">
-      <a href="/dashboard/" class="btn-primary" id="dashboardBtn" onclick="window.location.href='/dashboard/?reconnect=' + Date.now(); return false;">Continue to Dashboard</a>
+      <a href="/dashboard/" class="btn-primary" id="dashboardBtn" onclick="window.location.href='/dashboard/'; return false;">Continue to Dashboard</a>
       <button type="button" class="btn-secondary" onclick="attemptReconnect(true)">Retry Connection Now</button>
     </div>
     <p class="status-text" id="statusMessage">Checking connection in background…</p>
