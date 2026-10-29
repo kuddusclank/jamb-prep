@@ -453,7 +453,11 @@ export function createBrowserSessionManager(
         const updated = applySessionTransition(data.session);
         return updated.accessToken;
       } catch (error) {
-        if (isTransientAuthError(error)) throw new Error('Authentication service is temporarily unavailable. Please retry.');
+        const isOffline = (typeof navigator !== 'undefined' && !navigator.onLine) || isTransientAuthError(error);
+        if (isOffline) {
+          // In offline mode or during transient network drops, do not invalidate existing offline session
+          return null;
+        }
         if (identityGeneration !== refreshGeneration) { return null; }
         applySessionTransition(null, 'session_expired');
         return null;
@@ -502,9 +506,22 @@ export function createBrowserSessionManager(
           typeof session.expires_at === 'number' &&
           session.expires_at <= nowSec + TOKEN_EXPIRY_BUFFER_SECONDS
         ) {
-          const refreshedToken = await refreshAccessToken();
-          if (!refreshedToken) {
-            return state;
+          try {
+            const refreshedToken = await refreshAccessToken();
+            if (refreshedToken) {
+              return state;
+            }
+          } catch (refreshErr) {
+            const isOffline = (typeof navigator !== 'undefined' && !navigator.onLine) || isTransientAuthError(refreshErr);
+            if (isOffline) {
+              // Maintain local session when offline so student can access offline packs
+              return applySessionTransition(session);
+            }
+            throw refreshErr;
+          }
+          const isOffline = (typeof navigator !== 'undefined' && !navigator.onLine);
+          if (isOffline) {
+            return applySessionTransition(session);
           }
           return state;
         }

@@ -1,12 +1,12 @@
 /* Public assets only. Build identity is injected after static export. */
 'use strict';
 const BUILD_ID = '__PWA_BUILD_ID__';
-const CACHE_NAME = `jambprep-public-${BUILD_ID}`;
+const EFFECTIVE_BUILD_ID = (BUILD_ID && !BUILD_ID.startsWith('__')) ? BUILD_ID : '2026.10.29.v1';
+const CACHE_NAME = `jambprep-public-${EFFECTIVE_BUILD_ID}`;
 const ESSENTIALS = ['/offline.html', '/icon-192.png', '/icon-512.png', '/lecterniq-mark.svg'];
 const PUBLIC_ASSETS = new Set(ESSENTIALS);
 
 function cacheableRequest(request) {
-  if (BUILD_ID.startsWith('__')) return false;
   const url = new URL(request.url);
   if (request.method !== 'GET' || request.headers.has('authorization') || url.origin !== self.location.origin || url.search) return false;
   return PUBLIC_ASSETS.has(url.pathname) || /^\/_next\/static\/.+\.(?:js|css|woff2?)$/.test(url.pathname);
@@ -42,7 +42,6 @@ self.addEventListener('message', event => {
 });
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
-    if (BUILD_ID.startsWith('__')) return;
     const responses = await Promise.all(ESSENTIALS.map(async path => {
       const response = await fetch(new Request(new URL(path, self.location.origin), { cache: 'reload', credentials: 'omit' }));
       if (!validAsset(response, path)) throw new Error('Required offline asset unavailable');
@@ -88,12 +87,15 @@ self.addEventListener('fetch', event => {
       const response = await fetch(request);
       if (cache && validAsset(response, url.pathname)) {
         try {
-        // Bound runtime objects; required assets cannot be evicted by runtime traffic.
+        // Bound runtime objects; required assets and navigation pages cannot be evicted by runtime traffic.
         const length = Number(response.headers.get('content-length'));
         const bytes = Number.isFinite(length) && length > 0 ? length : (await response.clone().arrayBuffer()).byteLength;
         if (bytes <= 512 * 1024) {
           await cache.put(request, response.clone());
-          const runtime = (await cache.keys()).filter(key => !PUBLIC_ASSETS.has(new URL(key.url).pathname));
+          const runtime = (await cache.keys()).filter(key => {
+            const p = new URL(key.url).pathname;
+            return !PUBLIC_ASSETS.has(p) && p.startsWith('/_next/static/');
+          });
           for (const key of runtime.slice(0, Math.max(0, runtime.length - 32))) await cache.delete(key);
         }
         } catch { /* Cache quota/write failure leaves the network response usable. */ }

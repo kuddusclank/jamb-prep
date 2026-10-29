@@ -159,8 +159,8 @@ export default function DashboardPage() {
     }
   }, [resource.data, account.identity]);
 
-  const userId = account.identity?.user?.id || account.session.user?.id;
-  const offlineProfile = getOfflineProfile(userId);
+  const offlineProfile = getOfflineProfile(account.identity?.user?.id || account.session.user?.id);
+  const userId = account.identity?.user?.id || account.session.user?.id || offlineProfile?.userId;
   const offlineValidity = isOfflineAccessValid(offlineProfile);
 
   const isNetworkFailure = resource.error ? isNetworkOrTimeoutError(resource.error) : false;

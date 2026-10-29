@@ -177,11 +177,14 @@ export function getOfflineProfile(userId?: string | null): OfflineUserProfile | 
   const storage = getStorage();
   if (!storage) return null;
 
-  const resolvedUserId = userId || storage.getItem(LAST_ACTIVE_KEY) || storage.getItem('jambprep_active_user_id');
+  const resolvedUserId = (userId && userId.trim()) || storage.getItem(LAST_ACTIVE_KEY) || storage.getItem('jambprep_active_user_id');
   if (!resolvedUserId) return null;
 
   try {
-    const raw = storage.getItem(`${STORAGE_PREFIX}${resolvedUserId}`);
+    let raw = storage.getItem(`${STORAGE_PREFIX}${resolvedUserId}`);
+    if (!raw) {
+      raw = storage.getItem(`${STORAGE_PREFIX}${resolvedUserId.toLowerCase()}`);
+    }
     if (!raw) return null;
     const parsed = JSON.parse(raw) as OfflineUserProfile;
     if (parsed.schemaVersion !== 1 || !parsed.userId) return null;

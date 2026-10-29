@@ -18,7 +18,8 @@ import { useNetworkStatus, isNetworkOrTimeoutError } from "@/lib/offline/network
 function PracticePageContent() {
   const searchParams = useSearchParams();
   const account = useBrowserAccount();
-  const userId = account.identity?.user?.id || account.session.user?.id || "";
+  const offlineProfile = getOfflineProfile(account.identity?.user?.id || account.session.user?.id);
+  const userId = account.identity?.user?.id || account.session.user?.id || offlineProfile?.userId || "";
   const { isOffline, isOnline } = useNetworkStatus();
   const [hasCachedPack, setHasCachedPack] = useState(false);
   const [checkedCache, setCheckedCache] = useState(false);
@@ -26,7 +27,10 @@ function PracticePageContent() {
   const catalogue = useApiResource<PracticeCatalogue>("/api/v1/practice/catalogue");
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setCheckedCache(true);
+      return;
+    }
     const weekKey = getCurrentWeekKey();
     void getWeeklyPackFromIdb(userId, weekKey)
       .then((pack) => {
@@ -39,7 +43,6 @@ function PracticePageContent() {
       });
   }, [userId]);
 
-  const offlineProfile = getOfflineProfile(userId);
   const offlineValidity = isOfflineAccessValid(offlineProfile);
 
   const isNetworkFailure = catalogue.error ? isNetworkOrTimeoutError(catalogue.error) : false;
@@ -68,16 +71,18 @@ function PracticePageContent() {
       return <WeeklyPracticeClient />;
     }
 
-    if (checkedCache && !hasCachedPack) {
-      return (
-        <div className="rounded-3xl border border-amber-200 bg-amber-50/70 p-8 text-center max-w-lg mx-auto space-y-4">
-          <h2 className="text-xl font-bold text-[#092E28]">No Offline Questions Cached</h2>
-          <p className="text-sm text-slate-600">
-            Please connect to the internet once to automatically download your 250-question practice pack for offline use.
-          </p>
-        </div>
-      );
+    if (!checkedCache) {
+      return <StudySkeleton />;
     }
+
+    return (
+      <div className="rounded-3xl border border-amber-200 bg-amber-50/70 p-8 text-center max-w-lg mx-auto space-y-4">
+        <h2 className="text-xl font-bold text-[#092E28]">No Offline Questions Cached</h2>
+        <p className="text-sm text-slate-600">
+          Please connect to the internet once to automatically download your 250-question practice pack for offline use.
+        </p>
+      </div>
+    );
   }
 
   if (!catalogue.data) {

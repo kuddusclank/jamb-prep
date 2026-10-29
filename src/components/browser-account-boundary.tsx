@@ -15,10 +15,10 @@ import { getNetworkStateManager, isNetworkOrTimeoutError } from '@/lib/offline/n
 const initial: BrowserSessionSnapshot = { status: 'loading', user: null, accessToken: null, expiresAt: null, provisioned: false, role: null, error: null };
 
 function getInitialAccountIdentity(userId: string | undefined): SessionIdentityResponse | null {
-  if (!userId || typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') return null;
   const coordinator = getAccountCoordinator();
   const cached = coordinator.getCachedIdentity();
-  if (cached && cached.user.id === userId) return cached;
+  if (userId && cached && cached.user.id === userId) return cached;
   const offline = getOfflineProfile(userId);
   if (offline) {
     return {
@@ -34,7 +34,7 @@ function getInitialAccountIdentity(userId: string | undefined): SessionIdentityR
       referralCode: null,
     };
   }
-  return null;
+  return cached ?? null;
 }
 
 export function useBrowserAccount() {
@@ -85,8 +85,8 @@ export function useBrowserAccount() {
         if (isOfflineOrNetworkFailure) {
           getNetworkStateManager().markOffline(err instanceof Error ? err.message : String(err));
         }
-        if (isOfflineOrNetworkFailure && session.user) {
-          const cachedProfile = getOfflineProfile(session.user.id);
+        if (isOfflineOrNetworkFailure && (session.user || getOfflineProfile())) {
+          const cachedProfile = getOfflineProfile(session.user?.id) || getOfflineProfile();
           if (cachedProfile) {
             const offlineIdentity: SessionIdentityResponse = {
               authenticated: true,
@@ -109,7 +109,8 @@ export function useBrowserAccount() {
     }
     return () => { active = false; };
   }, [coordinator, session.status, session.user?.id, retry]);
-  return { session, identity: identity?.user.id === session.user?.id ? identity : null, error: error ?? session.error,
+  const effectiveIdentity = identity && (!session.user || identity.user.id === session.user.id) ? identity : null;
+  return { session, identity: effectiveIdentity, error: error ?? session.error,
     retry: () => { coordinator.clear(); void manager.initialize(); setRetry((value) => value + 1); } };
 }
 
