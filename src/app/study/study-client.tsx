@@ -30,6 +30,17 @@ import type { PracticeCatalogue } from "@/lib/api/practice-dtos";
 import { useBrowserAccount } from "@/components/browser-account-boundary";
 import { getOfflineProfile } from "@/lib/offline/offline-profile-cache";
 
+function getCleanSubjectSnippet(overview: string): string {
+  let text = overview;
+  if (text.includes("---")) {
+    text = text.split("---").slice(1).join("---");
+  }
+  text = text.replace(/^#+[^\n]*\n+/gm, "");
+  text = text.replace(/[*_`$#]/g, "");
+  text = text.replace(/\s+/g, " ").trim();
+  return text || "Official JAMB UTME syllabus revision and topic mastery.";
+}
+
 export function StudyClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -220,8 +231,8 @@ export function StudyClient() {
                 onClick={() => handleSelectTopic(activeSubject.code, prevTopic.slug)}
                 className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-700 hover:text-[#116149] transition cursor-pointer"
               >
-                <ArrowLeft size={16} />
-                <span className="truncate max-w-[200px]">Previous: {prevTopic.title}</span>
+                <ArrowLeft size={16} className="shrink-0" />
+                <span>Previous: {prevTopic.title}</span>
               </button>
             ) : (
               <div />
@@ -243,10 +254,10 @@ export function StudyClient() {
               <button
                 type="button"
                 onClick={() => handleSelectTopic(activeSubject.code, nextTopic.slug)}
-                className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-700 hover:text-[#116149] transition cursor-pointer"
+                className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-700 hover:text-[#116149] transition cursor-pointer text-right"
               >
-                <span className="truncate max-w-[200px]">Next: {nextTopic.title}</span>
-                <ArrowRight size={16} />
+                <span>Next: {nextTopic.title}</span>
+                <ArrowRight size={16} className="shrink-0" />
               </button>
             ) : (
               <button
@@ -255,7 +266,7 @@ export function StudyClient() {
                 className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-700 hover:text-[#116149] transition cursor-pointer"
               >
                 <span>Back to All Topics</span>
-                <ArrowRight size={16} />
+                <ArrowRight size={16} className="shrink-0" />
               </button>
             )}
           </div>
@@ -603,8 +614,8 @@ export function StudyClient() {
                     {subj.name}
                   </h3>
 
-                  <p className="text-xs sm:text-sm text-slate-600 line-clamp-2 leading-relaxed">
-                    {subj.overview.replace(/^## Overview[^\n]*\n+/i, "").slice(0, 160)}...
+                  <p className="text-xs sm:text-sm text-slate-600 line-clamp-3 leading-relaxed">
+                    {getCleanSubjectSnippet(subj.overview)}
                   </p>
                 </div>
 

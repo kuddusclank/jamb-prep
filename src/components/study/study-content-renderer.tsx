@@ -16,6 +16,117 @@ interface ParsedListItem {
   otherLines: string[];
 }
 
+interface MarkdownBlock {
+  type: "heading" | "hr" | "callout" | "table" | "code" | "ul" | "ol" | "p";
+  content: string;
+}
+
+function tokenizeMarkdownBlocks(markdown: string): MarkdownBlock[] {
+  const lines = markdown.split(/\r?\n/);
+  const blocks: MarkdownBlock[] = [];
+  let currentBlock: string[] = [];
+  let currentType: MarkdownBlock["type"] | null = null;
+
+  function flush() {
+    if (currentBlock.length > 0 && currentType) {
+      blocks.push({ type: currentType, content: currentBlock.join("\n").trim() });
+      currentBlock = [];
+      currentType = null;
+    }
+  }
+
+  let inCode = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    if (inCode) {
+      currentBlock.push(line);
+      if (trimmed.startsWith("```")) {
+        inCode = false;
+        flush();
+      }
+      continue;
+    }
+
+    if (!trimmed) {
+      flush();
+      continue;
+    }
+
+    if (trimmed.startsWith("```")) {
+      flush();
+      inCode = true;
+      currentType = "code";
+      currentBlock.push(line);
+      continue;
+    }
+
+    if (/^[-*_]{3,}$/.test(trimmed)) {
+      flush();
+      blocks.push({ type: "hr", content: trimmed });
+      continue;
+    }
+
+    if (/^#{1,6}\s+/.test(trimmed)) {
+      flush();
+      blocks.push({ type: "heading", content: trimmed });
+      continue;
+    }
+
+    if (trimmed.startsWith(">")) {
+      if (currentType !== "callout") flush();
+      currentType = "callout";
+      currentBlock.push(line);
+      continue;
+    }
+
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      if (currentType !== "table") flush();
+      currentType = "table";
+      currentBlock.push(line);
+      continue;
+    }
+
+    // Bullet list: starts with - or * at column 0
+    if (/^[-*]\s+/.test(trimmed)) {
+      if (currentType !== "ul") {
+        flush();
+        currentType = "ul";
+      }
+      currentBlock.push(line);
+      continue;
+    }
+
+    // Numbered list: starts with 1. or 2) etc.
+    if (/^\d+[\.\)]\s+/.test(trimmed)) {
+      if (currentType !== "ol") {
+        flush();
+        currentType = "ol";
+      }
+      currentBlock.push(line);
+      continue;
+    }
+
+    // Indented continuation lines (sub-bullets, indented block math, etc.)
+    if ((currentType === "ul" || currentType === "ol") && (/^\s+/.test(line) || trimmed.startsWith("$$"))) {
+      currentBlock.push(line);
+      continue;
+    }
+
+    // Regular paragraph text
+    if (currentType !== "p") {
+      flush();
+      currentType = "p";
+    }
+    currentBlock.push(line);
+  }
+
+  flush();
+  return blocks;
+}
+
 function parseListItem(itemText: string): ParsedListItem {
   const clean = itemText.replace(/^[-*]\s+/, "");
   const lines = clean.split("\n");
@@ -44,71 +155,53 @@ function parseListItem(itemText: string): ParsedListItem {
 export function StudyContentRenderer({ content, className = "" }: StudyContentRendererProps) {
   if (!content) return null;
 
-  // Split into blocks by double newline
-  const blocks = content.split(/\n\s*\n/);
+  const blocks = tokenizeMarkdownBlocks(content);
 
   return (
     <div className={`space-y-5 text-slate-800 text-[15px] sm:text-base leading-relaxed ${className}`}>
       {blocks.map((block, idx) => {
-        const trimmed = block.trim();
-        if (!trimmed) return null;
+        const text = block.content;
 
-        // 1. Horizontal Rules (---, ***, ___)
-        if (/^[-*_]{3,}$/.test(trimmed)) {
+        // 1. Horizontal Rule
+        if (block.type === "hr") {
           return <hr key={idx} className="my-8 border-slate-200" />;
         }
 
-        // 2. Heading 1 (# Heading or # SECTION...)
-        if (trimmed.startsWith("# ")) {
-          return (
-            <h2
-              key={idx}
-              className="text-xl sm:text-2xl font-extrabold text-[#092E28] mt-10 mb-4 tracking-tight border-b-2 border-emerald-100 pb-2"
-            >
-              <MathRenderer content={trimmed.slice(2).trim()} />
-            </h2>
-          );
+        // 2. Headings
+        if (block.type === "heading") {
+          if (text.startsWith("#### ")) {
+            return (
+              <h5 key={idx} className="text-sm sm:text-base font-bold text-slate-850 mt-5 mb-1.5 tracking-tight">
+                <MathRenderer content={text.slice(5).trim()} />
+              </h5>
+            );
+          }
+          if (text.startsWith("### ")) {
+            return (
+              <h4 key={idx} className="text-base sm:text-lg font-bold text-slate-900 mt-6 mb-2 tracking-tight">
+                <MathRenderer content={text.slice(4).trim()} />
+              </h4>
+            );
+          }
+          if (text.startsWith("## ")) {
+            return (
+              <h3 key={idx} className="text-lg sm:text-xl font-bold text-[#092E28] mt-8 mb-3 tracking-tight border-b border-slate-200 pb-1.5">
+                <MathRenderer content={text.slice(3).trim()} />
+              </h3>
+            );
+          }
+          if (text.startsWith("# ")) {
+            return (
+              <h2 key={idx} className="text-xl sm:text-2xl font-extrabold text-[#092E28] mt-10 mb-4 tracking-tight border-b-2 border-emerald-100 pb-2">
+                <MathRenderer content={text.slice(2).trim()} />
+              </h2>
+            );
+          }
         }
 
-        // 3. Heading 2 (## Heading)
-        if (trimmed.startsWith("## ")) {
-          return (
-            <h3
-              key={idx}
-              className="text-lg sm:text-xl font-bold text-[#092E28] mt-8 mb-3 tracking-tight border-b border-slate-200 pb-1.5"
-            >
-              <MathRenderer content={trimmed.slice(3).trim()} />
-            </h3>
-          );
-        }
-
-        // 4. Heading 3 (### Heading)
-        if (trimmed.startsWith("### ")) {
-          return (
-            <h4
-              key={idx}
-              className="text-base sm:text-lg font-bold text-slate-900 mt-6 mb-2 tracking-tight"
-            >
-              <MathRenderer content={trimmed.slice(4).trim()} />
-            </h4>
-          );
-        }
-
-        // 5. Heading 4 (#### Heading)
-        if (trimmed.startsWith("#### ")) {
-          return (
-            <h5
-              key={idx}
-              className="text-sm sm:text-base font-bold text-slate-800 mt-5 mb-1.5 tracking-tight"
-            >
-              <MathRenderer content={trimmed.slice(5).trim()} />
-            </h5>
-          );
-        }
-
-        // 6. GitHub-style Callouts (> [!IMPORTANT], > [!NOTE], etc.)
-        if (trimmed.startsWith(">")) {
-          const lines = trimmed.split("\n").map((l) => l.replace(/^>\s?/, ""));
+        // 3. Callout / Blockquote (> [!IMPORTANT], > [!NOTE], etc.)
+        if (block.type === "callout") {
+          const lines = text.split("\n").map((l) => l.replace(/^>\s?/, ""));
           const firstLine = lines[0] || "";
           const isImportant = firstLine.includes("[!IMPORTANT]") || firstLine.includes("[!WARNING]");
           const isTip = firstLine.includes("[!TIP]");
@@ -138,9 +231,9 @@ export function StudyContentRenderer({ content, className = "" }: StudyContentRe
           );
         }
 
-        // 7. Markdown Tables (| ... |)
-        if (trimmed.startsWith("|") && trimmed.includes("\n|")) {
-          const rows = trimmed
+        // 4. Tables
+        if (block.type === "table") {
+          const rows = text
             .split("\n")
             .map((r) => r.trim())
             .filter((r) => r.startsWith("|") && r.endsWith("|"));
@@ -186,9 +279,9 @@ export function StudyContentRenderer({ content, className = "" }: StudyContentRe
           }
         }
 
-        // 8. Code block (```)
-        if (trimmed.startsWith("```") && trimmed.endsWith("```")) {
-          const lines = trimmed.split("\n");
+        // 5. Code block
+        if (block.type === "code") {
+          const lines = text.split("\n");
           const code = lines.slice(1, -1).join("\n");
           return (
             <pre
@@ -200,45 +293,32 @@ export function StudyContentRenderer({ content, className = "" }: StudyContentRe
           );
         }
 
-        // 9. Standalone Display Math ($$ ... $$)
-        if (trimmed.startsWith("$$") && trimmed.endsWith("$$")) {
-          return (
-            <div key={idx} className="my-4 py-2 overflow-x-auto">
-              <MathRenderer content={trimmed} />
-            </div>
-          );
-        }
-
-        // 10. Bullet Lists (- or *) with nested math and sub-bullet support
-        if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-          // Split ONLY top-level bullets (unindented - or * at start of line)
-          const rawItems = trimmed.split(/\n(?=[-*]\s+)/);
+        // 6. Bullet Lists (- or *) with nested sub-bullets & equations
+        if (block.type === "ul") {
+          const rawItems = text.split(/\n(?=[-*]\s+)/);
           const validItems = rawItems
             .map((item) => parseListItem(item))
             .filter((parsed) => Boolean(parsed.mainLine));
 
           return (
-            <ul key={idx} className="my-3 space-y-2.5 list-disc list-outside pl-5 text-slate-700">
+            <ul key={idx} className="my-4 space-y-2.5 list-disc list-outside pl-5 text-slate-700">
               {validItems.map((item, itemIdx) => {
                 return (
                   <li key={itemIdx} className="leading-relaxed">
                     <MathRenderer content={item.mainLine} />
 
-                    {/* Continuation lines if any */}
                     {item.otherLines.length > 0 && (
                       <div className="mt-1 text-slate-700">
                         <MathRenderer content={item.otherLines.join(" ")} />
                       </div>
                     )}
 
-                    {/* Embedded block equations inside this bullet */}
                     {item.mathBlocks.map((mb, mbIdx) => (
                       <div key={mbIdx} className="my-2 overflow-x-auto">
                         <MathRenderer content={mb} />
                       </div>
                     ))}
 
-                    {/* Nested sub-bullets */}
                     {item.subBullets.length > 0 && (
                       <ul className="mt-2 space-y-1.5 list-circle list-outside pl-5 text-slate-600 text-sm">
                         {item.subBullets.map((sub, sIdx) => (
@@ -255,11 +335,11 @@ export function StudyContentRenderer({ content, className = "" }: StudyContentRe
           );
         }
 
-        // 11. Numbered Lists (1., 2., etc.)
-        if (/^\d+[\.\)]\s+/.test(trimmed)) {
-          const items = trimmed.split(/\n(?=\d+[\.\)]\s+)/);
+        // 7. Numbered Lists (1., 2., etc.)
+        if (block.type === "ol") {
+          const items = text.split(/\n(?=\d+[\.\)]\s+)/);
           return (
-            <ol key={idx} className="my-3 space-y-2 list-decimal list-outside pl-5 text-slate-700">
+            <ol key={idx} className="my-4 space-y-2.5 list-decimal list-outside pl-5 text-slate-700">
               {items.map((item, itemIdx) => {
                 const itemClean = item.replace(/^\d+[\.\)]\s+/, "").trim();
                 if (!itemClean) return null;
@@ -273,10 +353,10 @@ export function StudyContentRenderer({ content, className = "" }: StudyContentRe
           );
         }
 
-        // 12. Standard Paragraph
+        // 8. Standard Paragraph
         return (
           <p key={idx} className="leading-relaxed text-slate-800">
-            <MathRenderer content={trimmed} />
+            <MathRenderer content={text} />
           </p>
         );
       })}
