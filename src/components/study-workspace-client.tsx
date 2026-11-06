@@ -8,7 +8,7 @@ import { SyncStatusIndicator } from "./sync-status-indicator";
 import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
 import Link from "@/components/pending-link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Layers, Clock, ChartNoAxesCombined, Users, UserRound, CreditCard, LogOut, Flame, BookA, WifiOff, CheckCircle2, Sparkles, X } from "lucide-react";
+import { LayoutDashboard, Layers, Clock, ChartNoAxesCombined, Users, UserRound, CreditCard, LogOut, Flame, BookOpen, WifiOff, CheckCircle2, Sparkles, X } from "lucide-react";
 import { signOutAction } from "@/lib/client-actions";
 import { purgeAllActorOfflineData } from "@/lib/offline/idb-storage";
 import { flushPendingSync, ensureWeeklyPackDownloaded } from "@/lib/offline/weekly-pack-client";
@@ -23,7 +23,7 @@ const destinations = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, requiresOnline: false },
   { href: '/practice', label: 'Practice', icon: Layers, requiresOnline: false },
   { href: '/mock', label: 'Mock exams', icon: Clock, requiresOnline: true },
-  { href: '/dictionary', label: 'Dictionary', icon: BookA, isPro: true, requiresOnline: false },
+  { href: '/study', label: 'Study', icon: BookOpen, requiresOnline: false },
   { href: '/analytics', label: 'Performance', icon: ChartNoAxesCombined, requiresOnline: true },
   { href: '/referrals', label: 'Invite friends', icon: Users, requiresOnline: true },
   { href: '/profile', label: 'My profile', icon: UserRound, requiresOnline: false },
@@ -180,7 +180,7 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
   const isOverviewActive = normalizedPath === "/dashboard" || normalizedPath === "/";
   const isPracticeActive = normalizedPath === "/practice" || normalizedPath.startsWith("/practice/");
   const isMockActive = normalizedPath === "/mock" || normalizedPath.startsWith("/mock/") || normalizedPath.startsWith("/exam");
-  const isDictionaryActive = normalizedPath === "/dictionary" || normalizedPath.startsWith("/dictionary/");
+  const isStudyActive = normalizedPath === "/study" || normalizedPath.startsWith("/study/") || normalizedPath === "/dictionary" || normalizedPath.startsWith("/dictionary/");
   const isAnalyticsActive = normalizedPath === "/analytics" || normalizedPath.startsWith("/analytics/");
   const isProfileActive = normalizedPath === "/profile" || normalizedPath.startsWith("/profile/");
   const isPremium = Boolean(effectiveProfile.subscription.isPremium);
@@ -189,7 +189,7 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
   const isOverviewSelected = isOverviewActive || normalizedPendingHref === "/dashboard";
   const isPracticeSelected = isPracticeActive || normalizedPendingHref === "/practice";
   const isMockSelected = isMockActive || normalizedPendingHref === "/mock";
-  const isDictionarySelected = isDictionaryActive || normalizedPendingHref === "/dictionary";
+  const isStudySelected = isStudyActive || normalizedPendingHref === "/study";
   const isAnalyticsSelected = isAnalyticsActive || normalizedPendingHref === "/analytics";
 
   return <div className={`${styles.workspace} ${isFocusMode ? styles.workspaceFocused : ''}`}>
@@ -442,30 +442,30 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
             </span>
           </Link>
 
-          {/* 4. Dictionary */}
+          {/* 4. Study */}
           <Link
-            href={!isPremium ? "/pricing" : "/dictionary"}
+            href="/study"
             prefetch={true}
-            onClick={() => setPendingHref(!isPremium ? "/pricing" : "/dictionary")}
-            aria-current={isDictionarySelected ? "page" : undefined}
+            onClick={() => setPendingHref("/study")}
+            aria-current={isStudySelected ? "page" : undefined}
             className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95 cursor-pointer"
-            title={!isPremium ? "Dictionary requires Pro — click to view plans" : "UTME Dictionary"}
+            title="Official UTME Study Summaries & Revision"
           >
             <span
               className={`flex items-center justify-center px-3.5 py-1 rounded-full transition-colors ${
-                isDictionarySelected
+                isStudySelected
                   ? "bg-emerald-100 text-[#116149] ring-1 ring-[#116149]/20"
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              <BookA size={20} className={isDictionarySelected ? "stroke-[2.3]" : "stroke-[1.8]"} />
+              <BookOpen size={20} className={isStudySelected ? "stroke-[2.3]" : "stroke-[1.8]"} />
             </span>
             <span
               className={`text-[10.5px] mt-0.5 tracking-tight transition-colors ${
-                isDictionarySelected ? "font-bold text-[#116149]" : "font-medium text-slate-500"
+                isStudySelected ? "font-bold text-[#116149]" : "font-medium text-slate-500"
               }`}
             >
-              Dictionary
+              Study
             </span>
           </Link>
 

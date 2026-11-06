@@ -838,18 +838,18 @@ export default function DashboardPage() {
                 {isPremium ? (
                   <>
                     <Link
-                      href="/dictionary"
+                      href="/study"
                       onClick={handleDismissLexisModal}
                       className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-xs sm:text-sm font-bold text-[#092E28] hover:bg-emerald-50 transition shadow-md flex-1 text-center"
                     >
-                      <BookA size={16} /> Open Dictionary Hub
+                      <BookOpen size={16} /> Open Study Summaries
                     </Link>
                     <Link
-                      href="/dictionary?tab=games"
+                      href="/study"
                       onClick={handleDismissLexisModal}
                       className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-800/40 px-5 py-3 text-xs sm:text-sm font-semibold text-emerald-100 hover:bg-emerald-800/70 transition flex-1 text-center"
                     >
-                      <Gamepad2 size={16} /> Play Word Games <ArrowRight size={16} />
+                      <span>Explore Topics</span> <ArrowRight size={16} />
                     </Link>
                   </>
                 ) : (
