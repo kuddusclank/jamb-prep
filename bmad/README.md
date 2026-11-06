@@ -25,6 +25,7 @@ Read [UI design and component guide](ui-design-and-component-guide.md) before fr
 | **Course Combination Finder Plan** | [`course-combination-finder-plan.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/course-combination-finder-plan.md) | JAMB IBASS course-to-subject combination lookup (300+ courses), 10-second landing prompt, `/combinations` SEO route, and `/register` ↔ `/onboarding` round-trip funnel. |
 | **Course Combination Tasklist** | [`course-combination-finder-tasklist.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/course-combination-finder-tasklist.md) | Detailed task breakdown (`C00`–`C07`), acceptance criteria, and automated test verification. |
 | **Course Combination Agent Prompt** | [`course-combination-agent-prompt.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/course-combination-agent-prompt.md) | Handoff prompt for web-researching 300+ official JAMB IBASS courses and executing `C00`–`C07`. |
+| **JAMB IBASS Syllabus Research & Summaries** | [`jamb-ibass-syllabus-and-subject-summaries.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/jamb-ibass-syllabus-and-subject-summaries.md) | Authoritative JAMB IBASS research: master inventory of all 25 official UTME subjects, examination architecture, detailed syllabus breakdowns, themes, and pedagogical summaries. |
 
 ---
 
