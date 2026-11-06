@@ -172,9 +172,13 @@ self.addEventListener('fetch', event => {
             cached = await cache.match(altPath);
             if (cached) return cached;
 
-            // 3. Match route domain if candidate is navigating within practice/profile/dashboard
+            // 3. Match route domain if candidate is navigating within practice/study/profile/dashboard
             if (url.pathname.startsWith('/practice')) {
               cached = await cache.match('/practice/') || await cache.match('/practice');
+              if (cached) return cached;
+            }
+            if (url.pathname.startsWith('/study')) {
+              cached = await cache.match('/study/') || await cache.match('/study');
               if (cached) return cached;
             }
             if (url.pathname.startsWith('/profile')) {

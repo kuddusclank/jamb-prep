@@ -7,7 +7,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { SyncStatusIndicator } from "./sync-status-indicator";
 import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
 import Link from "@/components/pending-link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, Layers, Clock, ChartNoAxesCombined, Users, UserRound, CreditCard, LogOut, Flame, BookOpen, WifiOff, CheckCircle2, Sparkles, X } from "lucide-react";
 import { signOutAction } from "@/lib/client-actions";
 import { purgeAllActorOfflineData } from "@/lib/offline/idb-storage";
@@ -18,6 +18,7 @@ import { useNetworkStatus, isNetworkOrTimeoutError } from "@/lib/offline/network
 import { getOfflineProfile } from "@/lib/offline/offline-profile-cache";
 import { NetworkStatusToast } from "@/components/network-status-toast";
 import { useWorkspaceFocus } from "./study-workspace-context";
+import StudySkeleton from "@/components/study-skeleton";
 
 const destinations = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, requiresOnline: false },
@@ -35,7 +36,11 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
   const profile = useApiResource<ProfileData>("/api/v1/profile");
   const { isOnline, isOffline } = useNetworkStatus();
   const pathname = usePathname();
+  const router = useRouter();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  const normalizedPath = pathname ? pathname.replace(/\/+$/, "") || "/" : "/";
+  const normalizedPendingHref = pendingHref ? pendingHref.replace(/\/+$/, "") || "/" : null;
 
   useEffect(() => {
     setPendingHref(null);
@@ -43,11 +48,37 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!pendingHref) return;
-    const timer = setTimeout(() => {
+    const cleanPending = pendingHref.replace(/\/+$/, "") || "/";
+    if (cleanPending === normalizedPath) {
       setPendingHref(null);
-    }, 2500);
+      return;
+    }
+    const timer = setTimeout(() => {
+      if (typeof window !== "undefined") {
+        const currentClean = window.location.pathname.replace(/\/+$/, "") || "/";
+        if (currentClean !== cleanPending) {
+          // Hard navigation fallback if client-side transition was delayed or stalled
+          window.location.href = pendingHref;
+        } else {
+          setPendingHref(null);
+        }
+      }
+    }, 2200);
     return () => clearTimeout(timer);
-  }, [pendingHref]);
+  }, [pendingHref, normalizedPath]);
+
+  const handleNavClick = (targetHref: string, e?: React.MouseEvent) => {
+    if (targetHref === '#' || !targetHref) {
+      if (e) e.preventDefault();
+      return;
+    }
+    const cleanTarget = targetHref.replace(/\/+$/, "") || "/";
+    if (cleanTarget === normalizedPath) {
+      return;
+    }
+    setPendingHref(cleanTarget);
+    router.push(cleanTarget);
+  };
 
   useEffect(() => {
     const studentId = profile.data?.profile?.id;
@@ -74,7 +105,7 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
     try {
       navigator.serviceWorker.controller.postMessage({
         type: "CACHE_ROUTES",
-        routes: ["/dashboard/", "/practice/", "/profile/"],
+        routes: ["/dashboard", "/practice", "/study", "/profile"],
       });
     } catch {
       // Non-blocking background precache
@@ -143,9 +174,6 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
           studyStreak: null,
         }
       : null);
-
-  const normalizedPath = pathname ? pathname.replace(/\/+$/, "") || "/" : "/";
-  const normalizedPendingHref = pendingHref ? pendingHref.replace(/\/+$/, "") || "/" : null;
 
   const showFreeLinks = effectiveProfile?.subscription.isPremium === false;
   const visibleDestinations = destinations.filter(item => showFreeLinks || !["/referrals", "/pricing"].includes(item.href));
@@ -341,9 +369,9 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
                 href={targetHref}
                 prefetch={true}
                 aria-current={isSelected ? 'page' : undefined}
-                onClick={() => {
+                onClick={(e) => {
                   if (!isOfflineDisabled && targetHref !== '#') {
-                    setPendingHref(targetHref);
+                    handleNavClick(targetHref, e);
                   }
                 }}
                 className={`${styles.navLink} ${isOfflineDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -371,7 +399,13 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
         </div>
       </aside>
     )}
-    <div id="study-content" tabIndex={-1} className={styles.content}>{children}</div>
+    <div id="study-content" tabIndex={-1} className={styles.content}>
+      {pendingHref && pendingHref !== normalizedPath ? (
+        <StudySkeleton />
+      ) : (
+        children
+      )}
+    </div>
 
     {/* Mobile Edge-to-Edge Bottom Navigation Bar */}
     {!isFocusMode && (
@@ -382,9 +416,9 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
         <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-2">
           {/* 1. Overview */}
           <Link
-            href="/dashboard/"
+            href="/dashboard"
             prefetch={true}
-            onClick={() => setPendingHref("/dashboard")}
+            onClick={(e) => handleNavClick("/dashboard", e)}
             aria-current={isOverviewSelected ? "page" : undefined}
             className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95 cursor-pointer"
           >
@@ -408,9 +442,9 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
 
           {/* 2. Practice */}
           <Link
-            href="/practice/"
+            href="/practice"
             prefetch={true}
-            onClick={() => setPendingHref("/practice")}
+            onClick={(e) => handleNavClick("/practice", e)}
             aria-current={isPracticeSelected ? "page" : undefined}
             className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95 cursor-pointer"
           >
@@ -434,9 +468,9 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
 
           {/* 3. Mock CBT Exam */}
           <Link
-            href={!isOnline ? "#" : "/mock/"}
+            href={!isOnline ? "#" : "/mock"}
             prefetch={true}
-            onClick={() => { if (isOnline) setPendingHref("/mock"); }}
+            onClick={(e) => { if (isOnline) handleNavClick("/mock", e); }}
             aria-label="Mock CBT Exam"
             title={!isOnline ? "Mock exams require an active internet connection" : "Mock CBT Exam"}
             aria-current={isMockSelected ? "page" : undefined}
@@ -464,9 +498,9 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
 
           {/* 4. Study */}
           <Link
-            href="/study/"
+            href="/study"
             prefetch={true}
-            onClick={() => setPendingHref("/study")}
+            onClick={(e) => handleNavClick("/study", e)}
             aria-current={isStudySelected ? "page" : undefined}
             className="flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95 cursor-pointer"
             title="Official UTME Study Summaries & Revision"
@@ -491,9 +525,9 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
 
           {/* 5. Performance */}
           <Link
-            href={!isOnline ? "#" : "/analytics/"}
+            href={!isOnline ? "#" : "/analytics"}
             prefetch={true}
-            onClick={() => { if (isOnline) setPendingHref("/analytics"); }}
+            onClick={(e) => { if (isOnline) handleNavClick("/analytics", e); }}
             aria-current={isAnalyticsSelected ? "page" : undefined}
             className={`flex flex-1 flex-col items-center justify-center py-1 transition active:scale-95 ${
               !isOnline ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
