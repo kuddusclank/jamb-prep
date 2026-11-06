@@ -41,6 +41,22 @@ function getCleanSubjectSnippet(overview: string): string {
   return text || "Official JAMB UTME syllabus revision and topic mastery.";
 }
 
+function getCleanSubjectOverview(overview: string): string {
+  let text = overview;
+  if (text.includes("---")) {
+    // Strip everything before the first divider (which is the metadata block)
+    text = text.split("---").slice(1).join("---");
+  }
+  // Strip main section headings like ## Overview & How JAMB Tests...
+  text = text.replace(/^#+[^\n]*\n+/gm, "");
+  // Strip trailing horizontal rules
+  text = text.replace(/^[-*_]{3,}\s*$/gm, "");
+  // Extract the primary overview paragraphs before any deep topic subdivisions
+  const paragraphs = text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  const cleanParagraphs = paragraphs.filter((p) => !p.startsWith("#")).slice(0, 2);
+  return cleanParagraphs.join("\n\n") || "Official JAMB UTME syllabus overview and exam preparation structure.";
+}
+
 export function StudyClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -337,9 +353,9 @@ export function StudyClient() {
             </button>
           </div>
 
-          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            {activeSubject.overview.replace(/^## Overview[^\n]*\n+/i, "").slice(0, 340)}...
-          </p>
+          <div className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            <MathRenderer content={getCleanSubjectOverview(activeSubject.overview)} />
+          </div>
 
           {/* Collapsible 10 Golden Strategies */}
           {isStrategiesOpen && activeSubject.strategies.length > 0 && (
@@ -351,19 +367,19 @@ export function StudyClient() {
                 {activeSubject.strategies.map((strat) => (
                   <div
                     key={strat.number}
-                    className="p-3 rounded-xl border border-slate-200 bg-slate-50/70 space-y-1"
+                    className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 space-y-1.5"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
+                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold shrink-0">
                         {strat.number}
                       </span>
                       <span className="text-xs font-bold text-slate-900">
                         {strat.title}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 leading-normal pl-7">
-                      {strat.description}
-                    </p>
+                    <div className="text-xs text-slate-600 leading-relaxed pl-7">
+                      <MathRenderer content={strat.description} />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -417,7 +433,7 @@ export function StudyClient() {
                       {String(topic.order).padStart(2, "0")}
                     </span>
                     <h3 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-[#116149] transition-colors">
-                      {topic.title}
+                      <MathRenderer content={topic.title} />
                     </h3>
                   </div>
 
@@ -614,9 +630,9 @@ export function StudyClient() {
                     {subj.name}
                   </h3>
 
-                  <p className="text-xs sm:text-sm text-slate-600 line-clamp-3 leading-relaxed">
-                    {getCleanSubjectSnippet(subj.overview)}
-                  </p>
+                  <div className="text-xs sm:text-sm text-slate-600 line-clamp-3 leading-relaxed">
+                    <MathRenderer content={getCleanSubjectSnippet(subj.overview)} />
+                  </div>
                 </div>
 
                 {/* Footer row */}

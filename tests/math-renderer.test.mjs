@@ -113,3 +113,20 @@ test("MathRenderer handles inline math inside bold emphasis (**Conversion to Bas
   assert.match(html, /<strong[^>]*>Conversion from Base 10 to Base (?:<span[^>]*>)*<span[^>]*class="katex">n<\/span>(?:<\/span>)*:<\/strong>/);
 });
 
+test("MathRenderer renders inline backtick code and nested bold inside italics without leaks", () => {
+  const MathRenderer = loadMathRenderer();
+  const inputCode = "**Review First and Submit Deliberately:** Keep 5 minutes to review questions flagged with `R` before submission.";
+  const htmlCode = ReactDOMServer.renderToStaticMarkup(React.createElement(MathRenderer, { content: inputCode }));
+
+  assert.doesNotMatch(htmlCode, /`/, "Backticks must not leak out");
+  assert.doesNotMatch(htmlCode, /\*\*/, "Asterisks must not leak out");
+  assert.match(htmlCode, /<strong[^>]*>Review First and Submit Deliberately:<\/strong>/);
+  assert.match(htmlCode, /<code[^>]*>R<\/code>/);
+
+  const inputNested = "*The principal mandated that every student **wear** (not wears) uniform.*";
+  const htmlNested = ReactDOMServer.renderToStaticMarkup(React.createElement(MathRenderer, { content: inputNested }));
+
+  assert.doesNotMatch(htmlNested, /\*/, "Asterisks must not leak out in nested italic-bold");
+  assert.match(htmlNested, /<em[^>]*>The principal mandated that every student <strong[^>]*>wear<\/strong> \(not wears\) uniform\.<\/em>/);
+});
+
