@@ -104,3 +104,12 @@ test("MathRenderer normalizes chemical double subscripts and renders clean equat
   assert.match(html, /class="katex"/);
 });
 
+test("MathRenderer handles inline math inside bold emphasis (**Conversion to Base $n$:**) without markdown leaking", () => {
+  const MathRenderer = loadMathRenderer();
+  const input = "**Conversion from Base 10 to Base $n$:** Successive division by $n$.";
+  const html = ReactDOMServer.renderToStaticMarkup(React.createElement(MathRenderer, { content: input }));
+
+  assert.doesNotMatch(html, /\*\*/, "Raw asterisks must never leak out");
+  assert.match(html, /<strong[^>]*>Conversion from Base 10 to Base (?:<span[^>]*>)*<span[^>]*class="katex">n<\/span>(?:<\/span>)*:<\/strong>/);
+});
+

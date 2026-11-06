@@ -42,6 +42,14 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
+    if (!pendingHref) return;
+    const timer = setTimeout(() => {
+      setPendingHref(null);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [pendingHref]);
+
+  useEffect(() => {
     const studentId = profile.data?.profile?.id;
     if (studentId && isOnline) {
       void flushPendingSync(studentId);
@@ -186,11 +194,21 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
   const isPremium = Boolean(effectiveProfile.subscription.isPremium);
   const { isFocusMode, onQuit } = useWorkspaceFocus();
 
-  const isOverviewSelected = isOverviewActive || normalizedPendingHref === "/dashboard";
-  const isPracticeSelected = isPracticeActive || normalizedPendingHref === "/practice";
-  const isMockSelected = isMockActive || normalizedPendingHref === "/mock";
-  const isStudySelected = isStudyActive || normalizedPendingHref === "/study";
-  const isAnalyticsSelected = isAnalyticsActive || normalizedPendingHref === "/analytics";
+  // Single active destination: pending click takes immediate priority, preventing dual active highlights
+  const activeDestination = normalizedPendingHref ?? (
+    isOverviewActive ? "/dashboard" :
+    isPracticeActive ? "/practice" :
+    isMockActive ? "/mock" :
+    isStudyActive ? "/study" :
+    isAnalyticsActive ? "/analytics" :
+    null
+  );
+
+  const isOverviewSelected = activeDestination === "/dashboard";
+  const isPracticeSelected = activeDestination === "/practice";
+  const isMockSelected = activeDestination === "/mock";
+  const isStudySelected = activeDestination === "/study";
+  const isAnalyticsSelected = activeDestination === "/analytics";
 
   return <div className={`${styles.workspace} ${isFocusMode ? styles.workspaceFocused : ''}`}>
     <a href="#study-content" className="skip-link">Skip to study content</a>
@@ -314,7 +332,9 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
             const lockTitle = isSchoolAttached
               ? `${label} requires an active license from ${effectiveProfile?.subscription?.school?.schoolName || 'your school'} — click to view`
               : `${label} is a Pro feature — click to upgrade`;
-            const isSelected = (current?.href === href) || (pendingHref === targetHref) || (normalizedPendingHref === href);
+            const isSelected = normalizedPendingHref
+              ? (normalizedPendingHref === href || normalizedPendingHref === targetHref)
+              : (current?.href === href);
             return (
               <Link
                 key={href}
@@ -362,7 +382,7 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
         <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-2">
           {/* 1. Overview */}
           <Link
-            href="/dashboard"
+            href="/dashboard/"
             prefetch={true}
             onClick={() => setPendingHref("/dashboard")}
             aria-current={isOverviewSelected ? "page" : undefined}
@@ -388,7 +408,7 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
 
           {/* 2. Practice */}
           <Link
-            href="/practice"
+            href="/practice/"
             prefetch={true}
             onClick={() => setPendingHref("/practice")}
             aria-current={isPracticeSelected ? "page" : undefined}
@@ -414,7 +434,7 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
 
           {/* 3. Mock CBT Exam */}
           <Link
-            href={!isOnline ? "#" : "/mock"}
+            href={!isOnline ? "#" : "/mock/"}
             prefetch={true}
             onClick={() => { if (isOnline) setPendingHref("/mock"); }}
             aria-label="Mock CBT Exam"
@@ -444,7 +464,7 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
 
           {/* 4. Study */}
           <Link
-            href="/study"
+            href="/study/"
             prefetch={true}
             onClick={() => setPendingHref("/study")}
             aria-current={isStudySelected ? "page" : undefined}
@@ -471,7 +491,7 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
 
           {/* 5. Performance */}
           <Link
-            href={!isOnline ? "#" : "/analytics"}
+            href={!isOnline ? "#" : "/analytics/"}
             prefetch={true}
             onClick={() => { if (isOnline) setPendingHref("/analytics"); }}
             aria-current={isAnalyticsSelected ? "page" : undefined}
