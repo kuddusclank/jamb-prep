@@ -31,6 +31,7 @@ Read [UI design and component guide](ui-design-and-component-guide.md) before fr
 | **Physics Study Note** | [`Physics-Note.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/Physics-Note.md) | Complete candidate revision guide for UTME Physics: Mechanics, vectors, projectiles, thermal physics, waves & optics, electricity & magnetism, atomic/nuclear physics, and 10 golden exam strategies. |
 | **Chemistry Study Note** | [`Chemistry-Note.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/Chemistry-Note.md) | Complete candidate revision guide for UTME Chemistry: Separation techniques, mole concept, stoichiometry, atomic structure, bonding, gas laws, kinetics/equilibrium, redox/electrochemistry, inorganic, organic chemistry, qualitative analysis, and 10 golden exam strategies. |
 | **Biology Study Note** | [`Biology-Note.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/Biology-Note.md) | Complete candidate revision guide for UTME Biology: Classification, cell organelles, transport, plant/animal physiology, nervous/hormonal coordination, genetics, ecology, evolution, and 10 golden exam strategies. |
+| **Economics Study Note** | [`Economics-Note.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/Economics-Note.md) | Complete candidate revision guide for UTME Economics: Basic concepts, price theory, elasticity, production/cost curves, market structures, national income, money/banking, public finance, international trade, and 10 golden exam strategies. |
 
 ---
 
