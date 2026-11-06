@@ -26,6 +26,7 @@ Read [UI design and component guide](ui-design-and-component-guide.md) before fr
 | **Course Combination Tasklist** | [`course-combination-finder-tasklist.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/course-combination-finder-tasklist.md) | Detailed task breakdown (`C00`–`C07`), acceptance criteria, and automated test verification. |
 | **Course Combination Agent Prompt** | [`course-combination-agent-prompt.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/course-combination-agent-prompt.md) | Handoff prompt for web-researching 300+ official JAMB IBASS courses and executing `C00`–`C07`. |
 | **JAMB IBASS Syllabus Research & Summaries** | [`jamb-ibass-syllabus-and-subject-summaries.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/jamb-ibass-syllabus-and-subject-summaries.md) | Authoritative JAMB IBASS research: master inventory of all 25 official UTME subjects, examination architecture, detailed syllabus breakdowns, themes, and pedagogical summaries. |
+| **Use of English Study Note** | [`Use-Of-English-Note.md`](file:///Users/akanbiabdulquddus/Developer/LecternIQ/jambprep/bmad/Use-Of-English-Note.md) | Complete candidate revision guide for UTME Use of English: comprehension, cloze test, novel mastery, lexis & structure, 12 concord rules, oral forms, stress, and exam traps. |
 
 ---
 
