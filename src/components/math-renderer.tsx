@@ -86,10 +86,10 @@ function expandTokens(
   italicTokens: string[],
   depth = 0
 ): React.ReactNode {
-  if (!str || depth > 5) return str;
+  if (!str || depth > 5) return str ?? null;
 
   const parts = str.split(TOKEN_REGEX);
-  if (parts.length === 1 && !TOKEN_REGEX.test(str)) {
+  if (parts.length === 1) {
     return str;
   }
 

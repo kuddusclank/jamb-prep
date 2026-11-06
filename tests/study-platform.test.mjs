@@ -69,4 +69,17 @@ test("Study Platform — Data Registry Integrity", async (t) => {
     }
     assert.ok(totalTopics > 200, `Total topics across all 25 subjects should exceed 200 (got ${totalTopics})`);
   });
+
+  await t.test("StudyClient renders all 25 subjects cleanly without ReferenceError or runtime crashes", async () => {
+    const React = (await import("react")).default;
+    const ReactDOMServer = (await import("react-dom/server")).default;
+    const clientModule = await import("../src/app/study/study-client.tsx");
+    const StudyClient = clientModule.StudyClient;
+
+    const html = ReactDOMServer.renderToString(React.createElement(StudyClient));
+    assert.ok(html.length > 5000, "Rendered HTML must contain full subject directory");
+    assert.match(html, /Use of English/);
+    assert.match(html, /Mathematics/);
+    assert.doesNotMatch(html, /ReferenceError/);
+  });
 });

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { StudyPageHeader } from "@/components/study/study-page-header";
 import { StudyContentRenderer } from "@/components/study/study-content-renderer";
+import { MathRenderer } from "@/components/math-renderer";
 import {
   getAllStudySubjects,
   getStudySubject,
@@ -30,7 +31,10 @@ import type { PracticeCatalogue } from "@/lib/api/practice-dtos";
 import { useBrowserAccount } from "@/components/browser-account-boundary";
 import { getOfflineProfile } from "@/lib/offline/offline-profile-cache";
 
-function getCleanSubjectSnippet(overview: string): string {
+function getCleanSubjectSnippet(overview?: string | null): string {
+  if (typeof overview !== "string" || !overview.trim()) {
+    return "Official JAMB UTME syllabus revision and topic mastery.";
+  }
   let text = overview;
   if (text.includes("---")) {
     text = text.split("---").slice(1).join("---");
@@ -41,7 +45,10 @@ function getCleanSubjectSnippet(overview: string): string {
   return text || "Official JAMB UTME syllabus revision and topic mastery.";
 }
 
-function getCleanSubjectOverview(overview: string): string {
+function getCleanSubjectOverview(overview?: string | null): string {
+  if (typeof overview !== "string" || !overview.trim()) {
+    return "Official JAMB UTME syllabus overview and exam preparation structure.";
+  }
   let text = overview;
   if (text.includes("---")) {
     // Strip everything before the first divider (which is the metadata block)
@@ -71,13 +78,26 @@ export function StudyClient() {
   // Enrolled subjects from practice catalogue or offline cache
   const catalogue = useApiResource<PracticeCatalogue>("/api/v1/practice/catalogue");
   const enrolledSubjectCodes = useMemo(() => {
-    if (catalogue.data?.subjects && catalogue.data.subjects.length > 0) {
-      return catalogue.data.subjects.map((s) => s.code.toUpperCase());
+    const codes: string[] = [];
+    if (catalogue.data?.subjects && Array.isArray(catalogue.data.subjects)) {
+      for (const s of catalogue.data.subjects) {
+        if (typeof s === "string") {
+          codes.push((s as string).toUpperCase());
+        } else if (s && typeof s === "object" && "code" in s && typeof s.code === "string") {
+          codes.push(s.code.toUpperCase());
+        }
+      }
     }
-    if (offlineProfile?.enrolledSubjects && offlineProfile.enrolledSubjects.length > 0) {
-      return offlineProfile.enrolledSubjects.map((s) => s.code.toUpperCase());
+    if (codes.length === 0 && offlineProfile?.enrolledSubjects && Array.isArray(offlineProfile.enrolledSubjects)) {
+      for (const s of offlineProfile.enrolledSubjects) {
+        if (typeof s === "string") {
+          codes.push((s as string).toUpperCase());
+        } else if (s && typeof s === "object" && "code" in s && typeof s.code === "string") {
+          codes.push(s.code.toUpperCase());
+        }
+      }
     }
-    return ["ENG", "MTH", "PHY", "CHM"];
+    return codes.length > 0 ? codes : ["ENG", "MTH", "PHY", "CHM"];
   }, [catalogue.data?.subjects, offlineProfile?.enrolledSubjects]);
 
   // Tab: "enrolled" vs "all"

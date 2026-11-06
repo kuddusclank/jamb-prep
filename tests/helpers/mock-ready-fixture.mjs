@@ -24,6 +24,14 @@ registerHooks({
         shortCircuit: true,
       };
     }
+    if (specifier === 'next/navigation') {
+      const p = path.join(ROOT, 'tests/helpers/mock-next-nav.mjs');
+      return nextResolve(pathToFileURL(p).href, context);
+    }
+    if (specifier === 'next/link') {
+      const p = path.join(ROOT, 'tests/helpers/mock-next-link.mjs');
+      return nextResolve(pathToFileURL(p).href, context);
+    }
     if (context.parentURL && context.parentURL.includes('/node_modules/')) {
       return nextResolve(specifier, context);
     }
@@ -43,6 +51,9 @@ registerHooks({
     return nextResolve(specifier, context);
   },
   load(url, context, nextLoad) {
+    if (url.endsWith('.css')) {
+      return { format: 'module', shortCircuit: true, source: 'export default {};' };
+    }
     if (url.endsWith('.json')) {
       const raw = fs.readFileSync(fileURLToPath(url), 'utf8');
       return {
