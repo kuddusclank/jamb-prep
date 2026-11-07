@@ -114,8 +114,8 @@ export function useBrowserAccount() {
     retry: () => { coordinator.clear(); void manager.initialize(); setRetry((value) => value + 1); } };
 }
 
-type BoundaryProps = { children: ReactNode; mode?: 'protected' | 'auth' | 'public'; returnPath?: string };
-export function BrowserAccountBoundary({ children, mode = 'protected', returnPath }: BoundaryProps) {
+type BoundaryProps = { children: ReactNode; mode?: 'protected' | 'auth' | 'public'; returnPath?: string; fallback?: ReactNode };
+export function BrowserAccountBoundary({ children, mode = 'protected', returnPath, fallback }: BoundaryProps) {
   const account = useBrowserAccount();
   const rawPath = usePathname();
   const pathname = rawPath.replace(/\/$/, '') || '/';
@@ -163,7 +163,7 @@ export function BrowserAccountBoundary({ children, mode = 'protected', returnPat
       </div>
     </section>
   </main>;
-  if (destination || (!identity && mode !== 'auth')) return <StudyLoading />;
+  if (destination || (!identity && mode !== 'auth')) return <>{fallback ?? <StudyLoading />}</>;
   return <>{children}</>;
 }
 
