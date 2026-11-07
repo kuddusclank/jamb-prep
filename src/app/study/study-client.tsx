@@ -16,10 +16,14 @@ import {
   ShieldCheck,
   ChevronDown,
   ChevronUp,
+  Lock,
+  Sparkles,
+  Building2,
 } from "lucide-react";
 import { StudyPageHeader } from "@/components/study/study-page-header";
 import { StudyContentRenderer } from "@/components/study/study-content-renderer";
 import { MathRenderer } from "@/components/math-renderer";
+import StudySkeleton from "@/components/study-skeleton";
 import {
   getAllStudySubjects,
   getStudySubject,
@@ -28,8 +32,10 @@ import {
 } from "@/lib/study/study-registry";
 import { useApiResource } from "@/lib/api/use-api-resource";
 import type { PracticeCatalogue } from "@/lib/api/practice-dtos";
+import type { ProfileData } from "@/lib/api/app-dtos";
 import { useBrowserAccount } from "@/components/browser-account-boundary";
-import { getOfflineProfile } from "@/lib/offline/offline-profile-cache";
+import { useNetworkStatus } from "@/lib/offline/network-state";
+import { getOfflineProfile, isOfflineAccessValid } from "@/lib/offline/offline-profile-cache";
 
 function getCleanSubjectSnippet(overview?: string | null): string {
   if (typeof overview !== "string" || !overview.trim()) {
@@ -81,7 +87,14 @@ function getCleanSubjectOverview(overview?: string | null): string {
   return cleanParagraphs.join("\n\n") || "Official JAMB UTME syllabus overview and exam preparation structure.";
 }
 
-export function StudyClient() {
+export interface StudyClientProps {
+  initialEntitlement?: {
+    isPremium?: boolean;
+    isSchoolAttached?: boolean;
+  };
+}
+
+export function StudyClient({ initialEntitlement }: StudyClientProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const account = useBrowserAccount();
@@ -92,8 +105,36 @@ export function StudyClient() {
   const currentSubjectCode = searchParams.get("subject")?.toUpperCase() || null;
   const currentTopicSlug = searchParams.get("topic")?.toLowerCase() || null;
 
-  // Enrolled subjects from practice catalogue or offline cache
+  // Profile & Catalogue for Entitlement Checks
+  const profile = useApiResource<ProfileData>("/api/v1/profile");
   const catalogue = useApiResource<PracticeCatalogue>("/api/v1/practice/catalogue");
+  const { isOffline } = useNetworkStatus();
+  const offlineValidity = isOfflineAccessValid(offlineProfile);
+
+  const isSchoolAttached = Boolean(
+    initialEntitlement?.isSchoolAttached ??
+    profile.data?.subscription?.isSchoolAttached ??
+    offlineProfile?.subscription?.isSchoolAttached
+  );
+
+  const isPremium = Boolean(
+    initialEntitlement?.isPremium ??
+    profile.data?.subscription.isPremium ??
+    catalogue.data?.isPremium ??
+    (offlineValidity.valid ? offlineProfile?.subscription.isPremium : false)
+  );
+
+  const isCheckingSubscription =
+    typeof window !== "undefined" &&
+    initialEntitlement?.isPremium === undefined &&
+    !profile.data &&
+    !profile.error &&
+    !catalogue.data &&
+    !catalogue.error &&
+    !offlineValidity.valid &&
+    !isOffline;
+
+  // Enrolled subjects from practice catalogue or offline cache
   const enrolledSubjectCodes = useMemo(() => {
     const codes: string[] = [];
     if (catalogue.data?.subjects && Array.isArray(catalogue.data.subjects)) {
@@ -207,6 +248,109 @@ export function StudyClient() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [currentTopicSlug, currentSubjectCode]);
+
+  // ==========================================
+  // SUBSCRIPTION & PAYWALL GATE
+  // ==========================================
+  if (isCheckingSubscription) {
+    return <StudySkeleton />;
+  }
+
+  if (!isPremium) {
+    return (
+      <div className="py-6 sm:py-10 max-w-3xl mx-auto">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-12 shadow-xs text-center space-y-6">
+          <div className="size-16 rounded-full bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-center mx-auto shadow-xs">
+            <Lock size={28} />
+          </div>
+
+          <div className="space-y-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 text-amber-900 px-3.5 py-1 text-xs font-bold uppercase tracking-wider border border-amber-300">
+              <Sparkles size={13} className="text-amber-800" /> PRO FEATURE
+            </span>
+
+            <h1 className="text-2xl sm:text-3xl sm:leading-tight font-extrabold text-[#092E28] pt-1">
+              UTME Study & Subject Revision Coach
+            </h1>
+
+            <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
+              Master official JAMB IBASS syllabus topics, core formulas, key definitions, and distinction exam strategies across all 25 UTME examination subjects.
+            </p>
+          </div>
+
+          {/* 4 Feature Highlights Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-left pt-2 max-w-2xl mx-auto">
+            <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-1">
+              <span className="font-bold text-xs sm:text-sm text-[#092E28] flex items-center gap-1.5">
+                <CheckCircle2 size={16} className="text-[#116149] shrink-0" />
+                All 25 Official UTME Subjects
+              </span>
+              <p className="text-xs text-slate-600 leading-normal pl-5">
+                Complete syllabus notes for Use of English, Mathematics, Physics, Chemistry, Biology, Government, Economics, and all electives.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-1">
+              <span className="font-bold text-xs sm:text-sm text-[#092E28] flex items-center gap-1.5">
+                <CheckCircle2 size={16} className="text-[#116149] shrink-0" />
+                250+ High-Yield Syllabus Topics
+              </span>
+              <p className="text-xs text-slate-600 leading-normal pl-5">
+                Comprehensive candidate revision notes, definitions, formulas, and high-probability UTME exam concepts curated for Jambites.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-1">
+              <span className="font-bold text-xs sm:text-sm text-[#092E28] flex items-center gap-1.5">
+                <CheckCircle2 size={16} className="text-[#116149] shrink-0" />
+                10 Golden Strategies Per Subject
+              </span>
+              <p className="text-xs text-slate-600 leading-normal pl-5">
+                250 distinct exam-room pacing tactics, common trap warnings, novel revision heuristics, and time-management rules.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-1">
+              <span className="font-bold text-xs sm:text-sm text-[#092E28] flex items-center gap-1.5">
+                <CheckCircle2 size={16} className="text-[#116149] shrink-0" />
+                Direct CBT Practice Integration
+              </span>
+              <p className="text-xs text-slate-600 leading-normal pl-5">
+                Jump straight from any syllabus topic into targeted exam questions to test your retention and speed immediately.
+              </p>
+            </div>
+          </div>
+
+          {/* Action CTAs */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
+            <Link
+              href="/pricing"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-[#116149] text-white text-xs sm:text-sm font-bold shadow-xs hover:bg-[#0c4a37] transition cursor-pointer"
+            >
+              {isSchoolAttached ? (
+                <>
+                  <Building2 size={16} />
+                  <span>Contact School Admin to Unlock</span>
+                </>
+              ) : (
+                <>
+                  <span>Unlock with Pro (₦1,000)</span>
+                  <ArrowRight size={15} />
+                </>
+              )}
+            </Link>
+
+            <Link
+              href="/dashboard"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3.5 rounded-full bg-white border border-slate-200 text-slate-700 text-xs sm:text-sm font-semibold hover:bg-slate-50 transition cursor-pointer"
+            >
+              Back to Overview
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ==========================================
   // VIEW 3: TOPIC SUMMARY READER

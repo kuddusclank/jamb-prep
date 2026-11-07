@@ -24,7 +24,7 @@ const destinations = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, requiresOnline: false },
   { href: '/practice', label: 'Practice', icon: Layers, requiresOnline: false },
   { href: '/mock', label: 'Mock exams', icon: Clock, requiresOnline: true },
-  { href: '/study', label: 'Study', icon: BookOpen, requiresOnline: false },
+  { href: '/study', label: 'Study', icon: BookOpen, isPro: true, requiresOnline: false },
   { href: '/analytics', label: 'Performance', icon: ChartNoAxesCombined, requiresOnline: true },
   { href: '/referrals', label: 'Invite friends', icon: Users, requiresOnline: true },
   { href: '/profile', label: 'My profile', icon: UserRound, requiresOnline: false },
@@ -354,7 +354,7 @@ export function StudyWorkspaceClient({ children }: { children: ReactNode }) {
           {visibleDestinations.map(({ href, label, icon: Icon, isPro, requiresOnline }) => {
             const isLocked = isPro && effectiveProfile?.subscription?.isPremium === false;
             const isOfflineDisabled = !isOnline && requiresOnline;
-            const targetHref = isLocked ? '/pricing' : (isOfflineDisabled ? '#' : href);
+            const targetHref = isOfflineDisabled ? '#' : href;
             const isSchoolAttached = Boolean(effectiveProfile?.subscription?.isSchoolAttached);
             const displayLabel = href === '/pricing' && isSchoolAttached ? 'School License' : label;
             const lockTitle = isSchoolAttached

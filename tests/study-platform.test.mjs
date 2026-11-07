@@ -70,13 +70,30 @@ test("Study Platform — Data Registry Integrity", async (t) => {
     assert.ok(totalTopics > 200, `Total topics across all 25 subjects should exceed 200 (got ${totalTopics})`);
   });
 
-  await t.test("StudyClient renders all 25 subjects cleanly without ReferenceError or runtime crashes", async () => {
+  await t.test("StudyClient renders Paywall cleanly for free candidates without runtime crashes", async () => {
     const React = (await import("react")).default;
     const ReactDOMServer = (await import("react-dom/server")).default;
     const clientModule = await import("../src/app/study/study-client.tsx");
     const StudyClient = clientModule.StudyClient;
 
     const html = ReactDOMServer.renderToString(React.createElement(StudyClient));
+    assert.ok(html.length > 1000, "Rendered HTML must contain study paywall");
+    assert.match(html, /PRO FEATURE/);
+    assert.match(html, /UTME Study &amp; Subject Revision Coach|UTME Study & Subject Revision Coach/);
+    assert.match(html, /Unlock with Pro/);
+    assert.match(html, /All 25 Official UTME Subjects/);
+    assert.doesNotMatch(html, /ReferenceError/);
+  });
+
+  await t.test("StudyClient renders all 25 subjects cleanly for Pro candidates without raw markdown leaks", async () => {
+    const React = (await import("react")).default;
+    const ReactDOMServer = (await import("react-dom/server")).default;
+    const clientModule = await import("../src/app/study/study-client.tsx");
+    const StudyClient = clientModule.StudyClient;
+
+    const html = ReactDOMServer.renderToString(
+      React.createElement(StudyClient, { initialEntitlement: { isPremium: true } })
+    );
     assert.ok(html.length > 5000, "Rendered HTML must contain full subject directory");
     assert.match(html, /Use of English/);
     assert.match(html, /Mathematics/);
