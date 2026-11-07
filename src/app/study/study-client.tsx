@@ -37,12 +37,29 @@ function getCleanSubjectSnippet(overview?: string | null): string {
   }
   let text = overview;
   if (text.includes("---")) {
-    text = text.split("---").slice(1).join("---");
+    text = text.split("---")[1] || "";
   }
   text = text.replace(/^#+[^\n]*\n+/gm, "");
-  text = text.replace(/[*_`$#]/g, "");
-  text = text.replace(/\s+/g, " ").trim();
-  return text || "Official JAMB UTME syllabus revision and topic mastery.";
+  const paragraphs = text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  const firstParagraph = paragraphs.find((p) => !p.startsWith("#") && !p.startsWith(">")) || "";
+
+  let clean = firstParagraph
+    .replace(/[*_`$#]/g, "")
+    .replace(/>\s*\[!.*\]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!clean) {
+    return "Official JAMB UTME syllabus revision and topic mastery.";
+  }
+
+  if (clean.length > 150) {
+    const cut = clean.slice(0, 145);
+    const lastSpace = cut.lastIndexOf(" ");
+    clean = (lastSpace > 100 ? cut.slice(0, lastSpace) : cut).trim() + "…";
+  }
+
+  return clean;
 }
 
 function getCleanSubjectOverview(overview?: string | null): string {
@@ -650,9 +667,9 @@ export function StudyClient() {
                     {subj.name}
                   </h3>
 
-                  <div className="text-xs sm:text-sm text-slate-600 line-clamp-3 leading-relaxed">
-                    <MathRenderer content={getCleanSubjectSnippet(subj.overview)} />
-                  </div>
+                  <p className="text-xs sm:text-sm text-slate-600 line-clamp-3 leading-relaxed">
+                    {getCleanSubjectSnippet(subj.overview)}
+                  </p>
                 </div>
 
                 {/* Footer row */}

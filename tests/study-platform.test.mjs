@@ -81,5 +81,7 @@ test("Study Platform — Data Registry Integrity", async (t) => {
     assert.match(html, /Use of English/);
     assert.match(html, /Mathematics/);
     assert.doesNotMatch(html, /ReferenceError/);
+    assert.doesNotMatch(html, /---/, "Card snippets must never contain raw markdown dividers");
+    assert.doesNotMatch(html, /## Overview/, "Card snippets must never contain raw section headers");
   });
 });
