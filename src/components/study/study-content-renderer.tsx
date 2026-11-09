@@ -128,7 +128,7 @@ function tokenizeMarkdownBlocks(markdown: string): MarkdownBlock[] {
 }
 
 function parseListItem(itemText: string): ParsedListItem {
-  const clean = itemText.replace(/^[-*]\s+/, "");
+  const clean = itemText.replace(/^([-*]|\d+[\.\)])\s+/, "");
   const lines = clean.split("\n");
   const mainLine = lines[0].trim();
   const rest = lines.slice(1);
@@ -337,15 +337,39 @@ export function StudyContentRenderer({ content, className = "" }: StudyContentRe
 
         // 7. Numbered Lists (1., 2., etc.)
         if (block.type === "ol") {
-          const items = text.split(/\n(?=\d+[\.\)]\s+)/);
+          const rawItems = text.split(/\n(?=\d+[\.\)]\s+)/);
+          const validItems = rawItems
+            .map((item) => parseListItem(item))
+            .filter((parsed) => Boolean(parsed.mainLine));
+
           return (
-            <ol key={idx} className="my-4 space-y-2.5 list-decimal list-outside pl-5 text-slate-700">
-              {items.map((item, itemIdx) => {
-                const itemClean = item.replace(/^\d+[\.\)]\s+/, "").trim();
-                if (!itemClean) return null;
+            <ol key={idx} className="my-3 space-y-2 list-decimal list-outside pl-5 text-slate-700">
+              {validItems.map((item, itemIdx) => {
                 return (
                   <li key={itemIdx} className="leading-relaxed">
-                    <MathRenderer content={itemClean} />
+                    <MathRenderer content={item.mainLine} />
+
+                    {item.otherLines.length > 0 && (
+                      <div className="mt-1 text-slate-700">
+                        <MathRenderer content={item.otherLines.join(" ")} />
+                      </div>
+                    )}
+
+                    {item.mathBlocks.map((mb, mbIdx) => (
+                      <div key={mbIdx} className="my-2 overflow-x-auto">
+                        <MathRenderer content={mb} />
+                      </div>
+                    ))}
+
+                    {item.subBullets.length > 0 && (
+                      <ul className="mt-2 space-y-1.5 list-circle list-outside pl-5 text-slate-600 text-xs sm:text-sm">
+                        {item.subBullets.map((sub, sIdx) => (
+                          <li key={sIdx} className="leading-relaxed">
+                            <MathRenderer content={sub} />
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 );
               })}

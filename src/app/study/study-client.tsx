@@ -74,17 +74,15 @@ function getCleanSubjectOverview(overview?: string | null): string {
   }
   let text = overview;
   if (text.includes("---")) {
-    // Strip everything before the first divider (which is the metadata block)
-    text = text.split("---").slice(1).join("---");
+    // Extract Part 1 (syllabus overview section between first and second divider)
+    const parts = text.split("---");
+    text = parts[1] || "";
   }
   // Strip main section headings like ## Overview & How JAMB Tests...
   text = text.replace(/^#+[^\n]*\n+/gm, "");
   // Strip trailing horizontal rules
   text = text.replace(/^[-*_]{3,}\s*$/gm, "");
-  // Extract the primary overview paragraphs before any deep topic subdivisions
-  const paragraphs = text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
-  const cleanParagraphs = paragraphs.filter((p) => !p.startsWith("#")).slice(0, 2);
-  return cleanParagraphs.join("\n\n") || "Official JAMB UTME syllabus overview and exam preparation structure.";
+  return text.trim() || "Official JAMB UTME syllabus overview and exam preparation structure.";
 }
 
 export interface StudyClientProps {
@@ -535,7 +533,10 @@ export function StudyClient({ initialEntitlement }: StudyClientProps = {}) {
           </div>
 
           <div className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            <MathRenderer content={getCleanSubjectOverview(activeSubject.overview)} />
+            <StudyContentRenderer
+              content={getCleanSubjectOverview(activeSubject.overview)}
+              className="space-y-3.5 text-xs sm:text-sm text-slate-700"
+            />
           </div>
 
           {/* Collapsible 10 Golden Strategies */}

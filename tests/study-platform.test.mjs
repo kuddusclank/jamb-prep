@@ -101,4 +101,24 @@ test("Study Platform — Data Registry Integrity", async (t) => {
     assert.doesNotMatch(html, /---/, "Card snippets must never contain raw markdown dividers");
     assert.doesNotMatch(html, /## Overview/, "Card snippets must never contain raw section headers");
   });
+
+  await t.test("StudyContentRenderer renders numbered items as structured HTML ordered lists", async () => {
+    const React = (await import("react")).default;
+    const ReactDOMServer = (await import("react-dom/server")).default;
+    const { StudyContentRenderer } = await import("../src/components/study/study-content-renderer.tsx");
+    const subjects = JSON.parse(fs.readFileSync(studyDataPath, "utf-8"));
+    const eng = subjects.find((s) => s.code === "ENG");
+
+    const parts = eng.overview.split("---");
+    const cleanOverview = parts[1].replace(/^#+[^\n]*\n+/gm, "").trim();
+
+    const html = ReactDOMServer.renderToString(
+      React.createElement(StudyContentRenderer, { content: cleanOverview })
+    );
+
+    assert.match(html, /<ol[^>]*>/, "Numbered syllabus breakdown must be rendered as an ordered list <ol>");
+    assert.match(html, /<li[^>]*>/, "Numbered items must be individual <li> elements");
+    assert.match(html, /Comprehension and Summary \(15 Questions\)/);
+    assert.match(html, /Oral Forms \(10 Questions\)/);
+  });
 });
