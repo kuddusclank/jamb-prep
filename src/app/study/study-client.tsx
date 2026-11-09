@@ -49,7 +49,10 @@ function getCleanSubjectSnippet(overview?: string | null): string {
   const paragraphs = text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
   const firstParagraph = paragraphs.find((p) => !p.startsWith("#") && !p.startsWith(">")) || "";
 
-  let clean = firstParagraph
+  // Strip list items from the teaser snippet so it remains a clean, complete sentence
+  const proseOnly = firstParagraph.split(/\n\s*(?:\d+[\.\)]|[-*])\s+/)[0].trim();
+
+  let clean = proseOnly
     .replace(/[*_`$#]/g, "")
     .replace(/>\s*\[!.*\]/g, "")
     .replace(/\s+/g, " ")
@@ -58,6 +61,9 @@ function getCleanSubjectSnippet(overview?: string | null): string {
   if (!clean) {
     return "Official JAMB UTME syllabus revision and topic mastery.";
   }
+
+  // Normalize trailing punctuation if list was stripped
+  clean = clean.replace(/[:\-–—]\s*$/, ".");
 
   if (clean.length > 150) {
     const cut = clean.slice(0, 145);

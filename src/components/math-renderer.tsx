@@ -279,7 +279,7 @@ export function MathRenderer({ content, className = '' }: MathRendererProps) {
   return (
     <span
       dir={isRtl ? 'rtl' : undefined}
-      className={`inline-block leading-relaxed ${isRtl ? 'text-right [direction:rtl]' : ''} ${className}`}
+      className={`inline-block leading-relaxed whitespace-pre-line ${isRtl ? 'text-right [direction:rtl]' : ''} ${className}`}
     >
       {renderedChildren}
     </span>
