@@ -423,7 +423,7 @@ export function StudyClient({ initialEntitlement }: StudyClientProps = {}) {
           <StudyContentRenderer content={activeTopic.content} />
         </article>
 
-        {/* Bottom Navigation & Practice Action */}
+        {/* Bottom Navigation */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200">
           <div>
             {prevTopic ? (
@@ -438,16 +438,6 @@ export function StudyClient({ initialEntitlement }: StudyClientProps = {}) {
             ) : (
               <div />
             )}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href={`/practice?subject=${encodeURIComponent(activeSubject.code)}`}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#116149] hover:bg-[#092E28] text-white text-xs sm:text-sm font-bold transition shadow-xs"
-            >
-              <CheckCircle2 size={16} />
-              <span>Practice Questions for this Topic</span>
-            </Link>
           </div>
 
           <div>

@@ -100,6 +100,7 @@ test("Study Platform — Data Registry Integrity", async (t) => {
     assert.doesNotMatch(html, /ReferenceError/);
     assert.doesNotMatch(html, /---/, "Card snippets must never contain raw markdown dividers");
     assert.doesNotMatch(html, /## Overview/, "Card snippets must never contain raw section headers");
+    assert.doesNotMatch(html, /Practice Questions for this Topic/, "Practice questions button in topic view must be removed");
   });
 
   await t.test("StudyContentRenderer renders numbered items as structured HTML ordered lists", async () => {
