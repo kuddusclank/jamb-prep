@@ -121,12 +121,14 @@ export default function PwaProvider() {
         .then((registration) => {
           if (!active) return;
           registrationRef.current = registration;
+          registration.update().catch(() => undefined);
 
           const onFound = () => {
             const worker = registration.installing;
             if (!worker) return;
             const changed = () => {
               if (active && worker.state === 'installed' && navigator.serviceWorker.controller) {
+                worker.postMessage({ type: 'SKIP_WAITING' });
                 if (!isUpdateSuppressed()) {
                   setUpdate(true);
                 }

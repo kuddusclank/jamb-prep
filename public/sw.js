@@ -60,6 +60,9 @@ self.addEventListener('message', event => {
   }
 });
 self.addEventListener('install', event => {
+  if (typeof self.skipWaiting === 'function') {
+    self.skipWaiting();
+  }
   event.waitUntil((async () => {
     const responses = await Promise.all(ESSENTIALS.map(async path => {
       const response = await fetch(new Request(new URL(path, self.location.origin), { cache: 'reload', credentials: 'omit' }));
